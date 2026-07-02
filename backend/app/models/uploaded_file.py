@@ -17,8 +17,14 @@ class UploadedFile(db.Model):
         nullable=False,
     )
     original_filename = db.Column(db.String(255), nullable=False)
-    stored_filename = db.Column(db.String(64), nullable=False)
+    stored_filename = db.Column(db.String(255), nullable=False)
     storage_path = db.Column(db.String(512), nullable=False)
+    source_type = db.Column(
+        db.String(32),
+        nullable=False,
+        default="uploaded",
+        server_default="uploaded",
+    )
     sha256 = db.Column(db.String(64), nullable=False)
     size_bytes = db.Column(db.BigInteger, nullable=False)
     mime_type = db.Column(db.String(255), nullable=True)

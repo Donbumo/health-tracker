@@ -1,4 +1,5 @@
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from flask import Flask, render_template
 
@@ -20,6 +21,15 @@ def create_app(test_config: dict | None = None) -> Flask:
         raise RuntimeError("SECRET_KEY must be a non-placeholder value of at least 32 characters")
 
     Path(app.config["UPLOAD_ROOT"]).mkdir(parents=True, exist_ok=True)
+    Path(app.config["GENERATED_UPLOAD_ROOT"]).mkdir(parents=True, exist_ok=True)
+
+    schema_root = Path(app.config["SCHEMA_ROOT"])
+    if not schema_root.is_dir():
+        raise RuntimeError(f"SCHEMA_ROOT does not exist: {schema_root}")
+    try:
+        ZoneInfo(app.config["APP_TIMEZONE"])
+    except ZoneInfoNotFoundError as error:
+        raise RuntimeError("APP_TIMEZONE must be a valid IANA timezone") from error
 
     db.init_app(app)
     migrate.init_app(app, db)

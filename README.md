@@ -1,6 +1,6 @@
 # Health Tracker
 
-Aplicación web privada, self-hosted y multiusuario. Esta primera fase incluye autenticación, roles y almacenamiento aislado de archivos con deduplicación por usuario.
+Aplicación web privada, self-hosted y multiusuario. Las dos primeras fases incluyen autenticación, almacenamiento aislado y captura manual validada mediante JSON Schema.
 
 ## Alcance de la Fase 1
 
@@ -11,7 +11,18 @@ Aplicación web privada, self-hosted y multiusuario. Esta primera fase incluye a
 - SHA256 y restricción única por `(user_id, sha256)`.
 - Persistencia de los bytes originales y del nombre original como metadato.
 
-Nutrición, rutinas, estudios médicos, importadores especializados, APK y reloj quedan fuera de esta fase.
+Nutrición completa, rutinas avanzadas, estudios médicos, importadores especializados, APK y reloj quedan fuera de estas fases.
+
+## Alcance de la Fase 2
+
+- Schemas JSON Draft 2020-12 para `weigh_in`, `daily_energy`, `daily_nutrition` mínimo y `completed_workout` mínimo.
+- Servicio común de validación con comprobación de formatos `date` y `date-time`.
+- Generador determinista de archivos JSON estándar para capturas manuales.
+- Formulario inicial de pesaje con peso, grasa corporal opcional y notas.
+- Archivos generados en `data/uploads/generated/user_<id>/`.
+- Registro con `source_type=manual_generated`, SHA256 y deduplicación por usuario.
+
+La Fase 2 todavía no importa el contenido del pesaje a una tabla clínica: conserva el JSON validado como fuente estándar para una fase posterior.
 
 ## Requisitos
 
@@ -51,6 +62,15 @@ Cuando el log indique que Gunicorn está escuchando en el puerto 8000, abre [htt
 
 El contenedor ejecuta automáticamente `flask db upgrade` y `flask seed-admin` antes de iniciar el servidor. Si el administrador ya existe, no cambia su contraseña ni sus datos.
 
+## Captura manual de pesaje
+
+1. Inicia sesión.
+2. Abre **Registrar pesaje** en la navegación o visita [http://localhost:8000/manual/weigh-in](http://localhost:8000/manual/weigh-in).
+3. Indica la fecha/hora, el peso y, opcionalmente, grasa corporal y notas.
+4. Al guardar, la aplicación genera el JSON, lo valida contra `schemas/weigh_in.schema.json`, calcula su SHA256 y lo registra en MariaDB.
+
+La fecha se interpreta con `APP_TIMEZONE`. El valor recomendado para esta instalación es `America/Mexico_City`; usa un nombre válido de la base IANA si necesitas cambiarlo. Enviar exactamente la misma captura nuevamente no crea otro archivo ni registro.
+
 ## Comandos habituales
 
 ```powershell
@@ -81,7 +101,7 @@ python -m pip install -r requirements-dev.txt
 pytest
 ```
 
-## Estructura de esta fase
+## Estructura de estas fases
 
 ```text
 backend/
@@ -89,12 +109,16 @@ backend/
     auth/                 # login y logout
     main/                 # inicio y página de uploads
     models/               # User y UploadedFile
-    services/files.py     # hash y guardado aislado
+    services/files.py     # uploads originales
+    services/manual_json.py
+    services/validation.py
     templates/
-  migrations/             # migración inicial
+  migrations/
   Dockerfile
 data/
-  uploads/raw/             # datos locales ignorados por Git
+  uploads/raw/             # uploads originales ignorados por Git
+  uploads/generated/       # JSON manuales ignorados por Git
+schemas/                   # contratos JSON versionados
 docker-compose.yml
 ```
 

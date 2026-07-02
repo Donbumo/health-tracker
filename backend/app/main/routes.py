@@ -1,11 +1,20 @@
-from flask import flash, redirect, render_template, url_for
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from flask import current_app, flash, redirect, render_template, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.main import main_bp
-from app.main.forms import UploadForm
+from app.main.forms import UploadForm, WeighInForm
 from app.models import UploadedFile
 from app.services.files import UploadError, store_uploaded_file
+from app.services.manual_json import (
+    ManualJsonGenerationError,
+    build_weigh_in_document,
+    generate_standard_json,
+)
+from app.services.validation import JsonSchemaValidationError
 
 
 def _current_user_files():
@@ -42,3 +51,49 @@ def uploads():
             return redirect(url_for("main.uploads"))
 
     return render_template("uploads/upload.html", form=form, files=_current_user_files())
+
+
+@main_bp.route("/manual/weigh-in", methods=["GET", "POST"])
+@login_required
+def manual_weigh_in():
+    app_timezone = ZoneInfo(current_app.config["APP_TIMEZONE"])
+    form = WeighInForm()
+    if not form.is_submitted():
+        form.recorded_at.data = datetime.now(app_timezone).replace(
+            tzinfo=None,
+            second=0,
+            microsecond=0,
+        )
+
+    if form.validate_on_submit():
+        recorded_at = form.recorded_at.data.replace(tzinfo=app_timezone)
+        document = build_weigh_in_document(
+            user_id=current_user.id,
+            recorded_at=recorded_at,
+            weight_kg=form.weight_kg.data,
+            body_fat_percent=form.body_fat_percent.data,
+            notes=form.notes.data,
+        )
+        original_filename = f"weigh_in_{recorded_at.strftime('%Y%m%dT%H%M%S%z')}.json"
+
+        try:
+            record, duplicate = generate_standard_json(
+                document=document,
+                schema_name="weigh_in",
+                user_id=current_user.id,
+                original_filename=original_filename,
+            )
+        except (JsonSchemaValidationError, ManualJsonGenerationError) as error:
+            flash(f"No fue posible generar el pesaje: {error}", "danger")
+        else:
+            if duplicate:
+                flash("Este pesaje ya estaba registrado para tu usuario.", "warning")
+            else:
+                flash(f"Pesaje guardado como '{record.original_filename}'.", "success")
+            return redirect(url_for("main.manual_weigh_in"))
+
+    return render_template(
+        "manual/weigh_in.html",
+        form=form,
+        timezone_name=current_app.config["APP_TIMEZONE"],
+    )

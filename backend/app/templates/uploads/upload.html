@@ -29,12 +29,13 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Nombre original</th><th>Tamaño</th><th>SHA256</th><th>Fecha</th></tr>
+            <tr><th>Nombre original</th><th>Origen</th><th>Tamaño</th><th>SHA256</th><th>Fecha</th></tr>
           </thead>
           <tbody>
             {% for file in file_list %}
               <tr>
                 <td>{{ file.original_filename }}</td>
+                <td>{{ file.source_type }}</td>
                 <td>{{ file.size_bytes }} bytes</td>
                 <td><code title="{{ file.sha256 }}">{{ file.sha256[:12] }}…</code></td>
                 <td>{{ file.created_at.strftime('%Y-%m-%d %H:%M') }}</td>

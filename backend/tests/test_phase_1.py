@@ -70,6 +70,7 @@ def test_upload_is_hashed_stored_and_deduplicated(app, client, user):
         record = db.session.execute(db.select(UploadedFile)).scalar_one()
         assert record.user_id == user
         assert record.original_filename == "report.txt"
+        assert record.source_type == "uploaded"
         assert record.sha256 == expected_hash
         assert record.stored_filename == expected_hash
         stored_path = app.config["UPLOAD_ROOT"] / f"user_{user}" / expected_hash

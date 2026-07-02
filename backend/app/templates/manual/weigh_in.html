@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Registrar pesaje · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Registrar pesaje</h1>
+      <p>La captura genera primero un JSON estándar validado antes de registrarlo.</p>
+    </div>
+  </section>
+
+  <section class="card narrow-form">
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="field">
+        {{ form.recorded_at.label }}
+        {{ form.recorded_at() }}
+        <span class="help">Zona horaria: {{ timezone_name }}</span>
+        {% for error in form.recorded_at.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="field">
+        {{ form.weight_kg.label }}
+        {{ form.weight_kg(type="number") }}
+        {% for error in form.weight_kg.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="field">
+        {{ form.body_fat_percent.label }}
+        {{ form.body_fat_percent(type="number") }}
+        {% for error in form.body_fat_percent.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="field">
+        {{ form.notes.label }}
+        {{ form.notes(rows=4) }}
+        {% for error in form.notes.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      {{ form.submit(class_="button") }}
+    </form>
+  </section>
+{% endblock %}

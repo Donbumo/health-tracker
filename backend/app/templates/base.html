@@ -12,6 +12,7 @@
       <a class="brand" href="{{ url_for('main.index') }}">Health Tracker</a>
       {% if current_user.is_authenticated %}
         <div class="nav-actions">
+          <a href="{{ url_for('main.manual_weigh_in') }}">Registrar pesaje</a>
           <a href="{{ url_for('main.uploads') }}">Archivos</a>
           <span>{{ current_user.username }}</span>
           <form action="{{ url_for('auth.logout') }}" method="post">

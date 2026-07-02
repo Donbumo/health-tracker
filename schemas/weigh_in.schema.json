@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/weigh_in.schema.json",
+  "title": "Weigh-in",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "record_type", "user_id", "source_type", "data"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "record_type": {"const": "weigh_in"},
+    "user_id": {"type": "integer", "minimum": 1},
+    "source_type": {
+      "type": "string",
+      "enum": ["manual_generated", "uploaded", "device_sync"]
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["recorded_at", "weight_kg"],
+      "properties": {
+        "recorded_at": {"type": "string", "format": "date-time"},
+        "weight_kg": {"type": "number", "exclusiveMinimum": 0, "maximum": 1000},
+        "body_fat_percent": {"type": "number", "minimum": 0, "maximum": 100},
+        "notes": {"type": "string", "maxLength": 2000}
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/completed_workout.schema.json",
+  "title": "Completed workout (minimum)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "record_type", "user_id", "source_type", "data"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "record_type": {"const": "completed_workout"},
+    "user_id": {"type": "integer", "minimum": 1},
+    "source_type": {
+      "type": "string",
+      "enum": ["manual_generated", "uploaded", "device_sync"]
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["activity_type", "started_at", "duration_seconds"],
+      "properties": {
+        "activity_type": {"type": "string", "minLength": 1, "maxLength": 80},
+        "started_at": {"type": "string", "format": "date-time"},
+        "duration_seconds": {"type": "integer", "minimum": 0},
+        "distance_m": {"type": "number", "minimum": 0},
+        "calories_kcal": {"type": "number", "minimum": 0},
+        "notes": {"type": "string", "maxLength": 2000}
+      }
+    }
+  }
+}

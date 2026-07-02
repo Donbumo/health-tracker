@@ -11,10 +11,11 @@ COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ ./
+COPY schemas/ /app/schemas/
 RUN chmod +x /app/docker-entrypoint.sh \
     && addgroup --system app \
     && adduser --system --ingroup app app \
-    && mkdir -p /data/uploads/raw \
+    && mkdir -p /data/uploads/raw /data/uploads/generated \
     && chown -R app:app /app /data
 
 USER app

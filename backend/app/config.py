@@ -29,7 +29,10 @@ class Config:
 
     DATA_ROOT = Path(os.getenv("DATA_ROOT", PROJECT_ROOT / "data"))
     UPLOAD_ROOT = DATA_ROOT / "uploads" / "raw"
+    GENERATED_UPLOAD_ROOT = DATA_ROOT / "uploads" / "generated"
+    SCHEMA_ROOT = Path(os.getenv("SCHEMA_ROOT", PROJECT_ROOT / "schemas"))
     MAX_CONTENT_LENGTH = int(os.getenv("MAX_UPLOAD_MB", "100")) * 1024 * 1024
+    APP_TIMEZONE = os.getenv("APP_TIMEZONE", "UTC")
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"

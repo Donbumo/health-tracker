@@ -18,9 +18,11 @@ a { color: #075985; }
 .card { background: #fff; border-radius: .75rem; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgb(15 23 42 / 12%); }
 .narrow { max-width: 30rem; margin: 4rem auto; }
 .page-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
+.page-actions { display: flex; gap: .75rem; }
+.narrow-form { max-width: 40rem; }
 h1, h2 { margin-top: 0; }
 .field { display: grid; gap: .4rem; margin-bottom: 1rem; }
-input[type="text"], input[type="password"], input[type="file"] { width: 100%; padding: .65rem; border: 1px solid #94a3b8; border-radius: .35rem; background: #fff; }
+input[type="text"], input[type="password"], input[type="file"], input[type="number"], input[type="datetime-local"], textarea { width: 100%; padding: .65rem; border: 1px solid #94a3b8; border-radius: .35rem; background: #fff; font: inherit; }
 .checkbox { display: block; margin-bottom: 1rem; }
 .button { display: inline-block; border: 0; border-radius: .4rem; padding: .65rem 1rem; color: #fff; background: #0369a1; text-decoration: none; cursor: pointer; font: inherit; }
 .button:hover { background: #075985; }
@@ -38,6 +40,6 @@ th, td { padding: .7rem; border-bottom: 1px solid #e2e8f0; text-align: left; }
 code { white-space: nowrap; }
 
 @media (max-width: 650px) {
-  .nav, .nav-actions, .page-heading { align-items: flex-start; flex-direction: column; }
+  .nav, .nav-actions, .page-heading, .page-actions { align-items: flex-start; flex-direction: column; }
   .nav { padding-block: 1rem; }
 }

@@ -1,167 +1,88 @@
 # AGENTS.md
 
-## Proyecto
+## Instrucciones principales para agentes de código
 
-Este repositorio contiene una aplicación web self-hosted, privada y multiusuario para seguimiento de salud, nutrición, gasto energético, composición corporal, estudios médicos, rutinas, entrenamientos y datos de dispositivos.
-
-El backend principal debe desarrollarse en Python con Flask. La base de datos debe ser MariaDB. El sistema debe correr con Docker Compose.
-
-Lee primero:
+Antes de modificar el proyecto, lee primero:
 
 * `docs/PROJECT_CONTEXT.md`
 
-Ese archivo contiene la visión completa del producto, arquitectura, módulos, fases, schemas, importadores, exportadores y reglas de privacidad.
+Ese archivo contiene la visión completa del producto, arquitectura, módulos, fases, schemas, importadores, exportadores, reglas de privacidad y estado actual del desarrollo.
 
-## Principios obligatorios
+## Reglas de trabajo
 
-1. La aplicación es multiusuario.
-2. Todo dato debe estar asociado a `user_id`.
-3. No asumir modo single-user.
-4. Todo dato capturado manualmente debe generar primero un archivo JSON estándar.
-5. Todo archivo generado/subido debe validarse contra JSON Schema antes de importarse.
-6. El sistema debe conservar archivos originales.
-7. El sistema debe registrar hash SHA256 para evitar duplicados.
-8. El código del repo no debe incluir datos personales reales.
-9. `/data`, `.env`, estudios médicos reales, archivos `.fit`, `.pdf`, `.csv`, `.xlsx` reales y exports deben estar ignorados por Git.
-10. La app debe estar pensada para uso local o por VPN, no como SaaS público.
+* No inventes datos reales de salud, nutrición, entrenamiento, médicos o personales.
+* No agregues datos reales al repositorio.
+* No subas ni generes archivos reales dentro de Git que pertenezcan a usuarios.
+* Todo dato real debe vivir en `/data` o en volúmenes Docker ignorados por Git.
+* Mantén aislamiento por `user_id`.
+* Antes de cambiar modelos o migraciones, revisa si realmente se necesita una migración.
+* Si agregas tablas o columnas, crea migración Alembic/Flask-Migrate.
+* Si no agregas tablas ni columnas, no generes migraciones innecesarias.
+* Conserva compatibilidad con Docker Compose y MariaDB.
+* Evita romper pruebas existentes.
+* Cuando agregues funcionalidades, agrega o actualiza pruebas.
 
-## Stack inicial
+## Comandos esperados de verificación
 
-* Python
-* Flask
-* Flask-SQLAlchemy
-* Flask-Migrate
-* MariaDB
-* Dockerfile
-* docker-compose.yml
-* Jinja templates para MVP
-* JSON Schema para validación
-* Bootstrap o CSS simple para UI inicial
+Cuando sea posible, ejecutar:
 
-## MVP prioritario
-
-Construir primero:
-
-1. Estructura base del repositorio.
-2. Dockerfile.
-3. docker-compose con Flask + MariaDB.
-4. `.env.example`.
-5. `.gitignore` seguro.
-6. App Flask mínima.
-7. Modelo `User`.
-8. Login/logout.
-9. Usuario admin inicial desde variables `.env`.
-10. Modelo `UploadedFile`.
-11. Upload básico de archivos por usuario.
-12. Guardado en `/data/uploads/raw/user_<id>/`.
-13. Cálculo de SHA256.
-14. Registro del archivo en MariaDB.
-15. Primer schema JSON de ejemplo.
-16. Servicio base de validación.
-17. Servicio base de generación de archivos manuales.
-
-## Módulos futuros
-
-No implementar todo al inicio, pero dejar arquitectura preparada para:
-
-* Nutrición diaria.
-* Gasto energético.
-* Pesajes.
-* Estudios médicos.
-* Rutinas versionables.
-* Sesiones de entrenamiento.
-* Sobrecarga progresiva.
-* Plan vs realidad.
-* Importadores `.fit`, `.json`, `.gpx`, `.tcx`, `.csv`.
-* Exportadores JSON, CSV, HTML, PDF, GPX, ZWO, ERG, MRC, FIT experimental.
-* Perfil Magene.
-* Perfil Huawei companion.
-* APK Android companion.
-* App de reloj.
-
-## Arquitectura esperada
-
-Usar una estructura parecida a:
-
-```text
-backend/
-  app/
-    auth/
-    routes/
-    models/
-    services/
-      files/
-      importers/
-      exporters/
-      training/
-      nutrition/
-      medical/
-    templates/
-    static/
-  migrations/
-  Dockerfile
-  requirements.txt
-
-schemas/
-examples/
-docs/
-android-app/
-watch-app/
-docker-compose.yml
-.env.example
-.gitignore
-README.md
+```bash
+python -m compileall .
+pytest
+flask db check
+docker compose config
 ```
 
-## Flujo de datos obligatorio
+Si el entorno Docker está disponible:
 
-Todo dato debe seguir este patrón:
-
-```text
-archivo subido / captura manual / sync dispositivo
-        ↓
-conversor o generador
-        ↓
-archivo JSON estándar interno
-        ↓
-validación JSON Schema
-        ↓
-importación a MariaDB
-        ↓
-dashboard / análisis / exportación
+```bash
+docker compose up -d --build
+docker compose ps
+docker compose exec app pytest
+docker compose exec app flask db check
 ```
 
-## Reglas de privacidad
+## Estado actual importante
 
-Nunca incluir datos reales en commits.
+El proyecto ya completó una Fase 6 inicial enfocada en exportadores e importadores de rutinas/sesiones:
 
-Ignorar como mínimo:
+* Interfaz común de exportadores.
+* Exportación de rutinas en JSON y CSV.
+* Exportación de sesiones en JSON, CSV y HTML imprimible.
+* Importadores separados para `training_plan` y `completed_workout`.
+* Conservación de originales, SHA256 y deduplicación.
+* Aislamiento por usuario.
+* Stubs documentados para FIT, GPX y Magene.
+* Advertencias visibles sobre pérdida de información en CSV.
+* TODO documentado para futuro modelo `ExportRecord`.
 
-```text
-.env
-data/uploads/raw/*
-data/uploads/processed/*
-data/uploads/generated/*
-data/exports/*
-*.fit
-*.tcx
-*.gpx
-*.csv
-*.xlsx
-*.xls
-*.pdf
-*.zip
-```
+No se añadieron tablas ni migraciones en esa fase.
 
-Mantener `.gitkeep` donde haga falta para conservar carpetas vacías.
+Últimas verificaciones conocidas:
 
-## Estilo de desarrollo
+* Pruebas locales: 29 passed.
+* Docker: 29 passed.
+* `compileall`: correcto.
+* `flask db check` local: sin cambios pendientes.
+* `flask db check` con MariaDB: sin cambios pendientes.
+* Compose: válido.
+* MariaDB: saludable.
+* Login real en `localhost:8000`: correcto.
+* Exportaciones HTTP JSON/CSV/HTML y aislamiento: cubiertos por la suite en Docker.
 
-* Hacer cambios pequeños e iterativos.
-* Priorizar código funcional y simple.
-* No sobrearquitectar antes del MVP.
-* Crear modelos y servicios separados.
-* Mantener importadores/exportadores como adaptadores independientes.
-* Escribir nombres claros en inglés para código.
-* Documentar decisiones importantes en `docs/`.
-* Cuando haya ambigüedad, implementar la versión más segura y extensible.
+Archivos modificados en esa fase:
+
+* `README.md`
+* `training_plans.py`
+* `workout_sessions.py`
+* `sessions`
+
+## Prioridad
+
+Si hay conflicto entre README, comentarios antiguos o código viejo, tomar como referencia:
+
+1. `docs/PROJECT_CONTEXT.md`
+2. Pruebas existentes
+3. Estado real del código
+4. README
+5. Comentarios antiguos

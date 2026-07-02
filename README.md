@@ -1,6 +1,6 @@
 # Health Tracker
 
-Aplicación web privada, self-hosted y multiusuario. Las dos primeras fases incluyen autenticación, almacenamiento aislado y captura manual validada mediante JSON Schema.
+Aplicación web privada, self-hosted y multiusuario. Las tres primeras fases incluyen autenticación, almacenamiento aislado, captura manual validada y rutinas versionables.
 
 ## Alcance de la Fase 1
 
@@ -23,6 +23,17 @@ Nutrición completa, rutinas avanzadas, estudios médicos, importadores especial
 - Registro con `source_type=manual_generated`, SHA256 y deduplicación por usuario.
 
 La Fase 2 todavía no importa el contenido del pesaje a una tabla clínica: conserva el JSON validado como fuente estándar para una fase posterior.
+
+## Alcance de la Fase 3
+
+- Schema `training_plan` con semanas, días, ejercicios y series mínimas.
+- Modelos `TrainingPlan` y `TrainingPlanVersion`, ambos aislados por `user_id`.
+- Importación desde `.json`, conservando el upload original y registrando `source_file_id`.
+- Primera importación guardada como versión 1 y versión activa.
+- Listado, detalle y exportación JSON de la versión activa.
+- Deduplicación: importar nuevamente el mismo archivo devuelve la rutina existente.
+
+Edición visual avanzada, sobrecarga progresiva, plan vs realidad e integraciones con dispositivos permanecen fuera de esta fase.
 
 ## Requisitos
 
@@ -71,6 +82,34 @@ El contenedor ejecuta automáticamente `flask db upgrade` y `flask seed-admin` a
 
 La fecha se interpreta con `APP_TIMEZONE`. El valor recomendado para esta instalación es `America/Mexico_City`; usa un nombre válido de la base IANA si necesitas cambiarlo. Enviar exactamente la misma captura nuevamente no crea otro archivo ni registro.
 
+## Rutinas versionables
+
+Abre **Rutinas → Importar rutina** o visita [http://localhost:8000/training-plans/import](http://localhost:8000/training-plans/import). La página muestra el `user_id` que debe contener el documento.
+
+Ejemplo mínimo con un día de descanso:
+
+```json
+{
+  "schema_version": "1.0",
+  "record_type": "training_plan",
+  "user_id": 1,
+  "source_type": "uploaded",
+  "data": {
+    "name": "Example foundation plan",
+    "weeks": [
+      {
+        "week_number": 1,
+        "days": [
+          {"day_number": 1, "name": "Rest day", "exercises": []}
+        ]
+      }
+    ]
+  }
+}
+```
+
+Reemplaza `user_id` por el valor mostrado en la página. El archivo debe usar extensión `.json`. Tras importarlo puedes abrir su detalle y descargar la versión activa desde **Exportar JSON**.
+
 ## Comandos habituales
 
 ```powershell
@@ -108,9 +147,11 @@ backend/
   app/
     auth/                 # login y logout
     main/                 # inicio y página de uploads
-    models/               # User y UploadedFile
+    models/               # usuarios, archivos y training plans versionados
+    training/             # importar, listar, ver y exportar rutinas
     services/files.py     # uploads originales
     services/manual_json.py
+    services/training_plans.py
     services/validation.py
     templates/
   migrations/

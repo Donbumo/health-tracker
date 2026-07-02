@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/training_plan.schema.json",
+  "title": "Versionable training plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "record_type", "user_id", "source_type", "data"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "record_type": {"const": "training_plan"},
+    "user_id": {"type": "integer", "minimum": 1},
+    "source_type": {
+      "type": "string",
+      "enum": ["uploaded", "manual_generated"]
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "weeks"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "description": {"type": "string", "maxLength": 5000},
+        "weeks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 104,
+          "items": {"$ref": "#/$defs/week"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "week": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["week_number", "days"],
+      "properties": {
+        "week_number": {"type": "integer", "minimum": 1},
+        "name": {"type": "string", "maxLength": 200},
+        "days": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 7,
+          "items": {"$ref": "#/$defs/day"}
+        }
+      }
+    },
+    "day": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["day_number", "name", "exercises"],
+      "properties": {
+        "day_number": {"type": "integer", "minimum": 1, "maximum": 7},
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "exercises": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {"$ref": "#/$defs/exercise"}
+        }
+      }
+    },
+    "exercise": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exercise_order", "name", "sets"],
+      "properties": {
+        "exercise_order": {"type": "integer", "minimum": 1},
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "notes": {"type": "string", "maxLength": 2000},
+        "sets": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {"$ref": "#/$defs/set"}
+        }
+      }
+    },
+    "set": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["set_number"],
+      "properties": {
+        "set_number": {"type": "integer", "minimum": 1},
+        "reps": {"type": "integer", "minimum": 1},
+        "duration_seconds": {"type": "integer", "minimum": 1},
+        "distance_m": {"type": "number", "exclusiveMinimum": 0},
+        "target": {"type": "string", "maxLength": 200},
+        "rest_seconds": {"type": "integer", "minimum": 0}
+      },
+      "anyOf": [
+        {"required": ["reps"]},
+        {"required": ["duration_seconds"]},
+        {"required": ["distance_m"]}
+      ]
+    }
+  }
+}

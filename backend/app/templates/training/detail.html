@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ plan.name }} · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>{{ plan.name }}</h1>
+      {% if plan.description %}<p>{{ plan.description }}</p>{% endif %}
+    </div>
+    <div class="page-actions">
+      <a class="button" href="{{ url_for('training.export_active', plan_id=plan.id) }}">Exportar JSON</a>
+      <a class="button button-secondary" href="{{ url_for('training.list_plans') }}">Volver</a>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Versión activa {{ active_version.version_number }}</h2>
+    <dl class="metadata">
+      <dt>Schema</dt><dd>{{ active_version.schema_version }}</dd>
+      <dt>SHA256</dt><dd><code>{{ active_version.sha256 }}</code></dd>
+      <dt>Archivo origen</dt><dd>{{ active_version.source_file_id }}</dd>
+      <dt>Creada</dt><dd>{{ active_version.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>Contenido</h2>
+    <pre class="code-block"><code>{{ active_version.content | tojson(indent=2) }}</code></pre>
+  </section>
+{% endblock %}

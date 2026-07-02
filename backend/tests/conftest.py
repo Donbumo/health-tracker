@@ -22,6 +22,7 @@ def app(tmp_path):
             "SECRET_KEY": "test-secret-key-that-is-long-enough",
             "SQLALCHEMY_DATABASE_URI": "sqlite://",
             "SQLALCHEMY_ENGINE_OPTIONS": {},
+            "DATA_ROOT": tmp_path,
             "UPLOAD_ROOT": tmp_path / "uploads" / "raw",
             "GENERATED_UPLOAD_ROOT": tmp_path / "uploads" / "generated",
             "SCHEMA_ROOT": _schema_root(),

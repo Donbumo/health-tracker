@@ -38,6 +38,11 @@ input[type="text"], input[type="password"], input[type="file"], input[type="numb
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: .7rem; border-bottom: 1px solid #e2e8f0; text-align: left; }
 code { white-space: nowrap; }
+.code-block { overflow-x: auto; padding: 1rem; border-radius: .4rem; background: #0f172a; color: #e2e8f0; }
+.code-block code { white-space: pre; }
+.metadata { display: grid; grid-template-columns: max-content 1fr; gap: .5rem 1rem; }
+.metadata dt { font-weight: 700; }
+.metadata dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 
 @media (max-width: 650px) {
   .nav, .nav-actions, .page-heading, .page-actions { align-items: flex-start; flex-direction: column; }

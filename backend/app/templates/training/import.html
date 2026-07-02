@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Importar rutina · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Importar rutina</h1>
+      <p>El archivo original se conserva y debe cumplir el schema de training plan.</p>
+    </div>
+  </section>
+
+  <section class="card narrow-form">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="field">
+        {{ form.file.label }}
+        {{ form.file(accept="application/json,.json") }}
+        {% for error in form.file.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <p class="help">
+        El documento debe incluir <code>user_id: {{ current_user.id }}</code>,
+        <code>record_type: training_plan</code> y <code>source_type: uploaded</code>.
+      </p>
+      {{ form.submit(class_="button") }}
+    </form>
+  </section>
+{% endblock %}

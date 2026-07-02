@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Rutinas · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Rutinas</h1>
+      <p>Planes versionados asociados exclusivamente a tu usuario.</p>
+    </div>
+    <a class="button" href="{{ url_for('training.import_plan') }}">Importar rutina</a>
+  </section>
+
+  <section class="card">
+    {% set plan_list = plans|list %}
+    {% if plan_list %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Nombre</th><th>Versión activa</th><th>Actualización</th><th></th></tr>
+          </thead>
+          <tbody>
+            {% for plan in plan_list %}
+              <tr>
+                <td>{{ plan.name }}</td>
+                <td>{{ plan.active_version_number }}</td>
+                <td>{{ plan.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td><a href="{{ url_for('training.detail', plan_id=plan.id) }}">Ver detalle</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p>Todavía no has importado rutinas.</p>
+    {% endif %}
+  </section>
+{% endblock %}

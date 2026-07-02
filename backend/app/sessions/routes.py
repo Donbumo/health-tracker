@@ -1,12 +1,31 @@
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+from io import BytesIO
 from zoneinfo import ZoneInfo
 
-from flask import abort, current_app, flash, redirect, render_template, request, url_for
+from flask import (
+    abort,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for,
+)
 from flask_login import current_user, login_required
+from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import TrainingSession
+from app.services.exporters.training_session import (
+    TrainingSessionCsvExporter,
+    TrainingSessionHtmlExporter,
+    TrainingSessionJsonExporter,
+)
+from app.services.files import UploadError, store_uploaded_file
+from app.services.importers.base import ImporterError
+from app.services.importers.completed_workout import import_completed_workout_file
 from app.services.manual_json import ManualJsonGenerationError
 from app.services.validation import JsonSchemaValidationError
 from app.services.workout_sessions import (
@@ -18,7 +37,14 @@ from app.services.workout_sessions import (
     resolve_planned_day,
 )
 from app.sessions import sessions_bp
-from app.sessions.forms import TrainingSessionForm
+from app.sessions.forms import CompletedWorkoutImportForm, TrainingSessionForm
+
+
+SESSION_EXPORTERS = {
+    "json": TrainingSessionJsonExporter(),
+    "csv": TrainingSessionCsvExporter(),
+    "html": TrainingSessionHtmlExporter(),
+}
 
 
 def _user_session_or_404(session_id: int) -> TrainingSession:
@@ -113,6 +139,38 @@ def list_sessions():
     return render_template("sessions/list.html", sessions=sessions)
 
 
+@sessions_bp.route("/import", methods=["GET", "POST"])
+@login_required
+def import_session():
+    form = CompletedWorkoutImportForm()
+    if form.validate_on_submit():
+        try:
+            source_file, _file_duplicate = store_uploaded_file(
+                form.file.data,
+                current_user.id,
+            )
+            training_session, duplicate = import_completed_workout_file(
+                source_file,
+                current_user.id,
+            )
+        except (
+            ImporterError,
+            JsonSchemaValidationError,
+            TrainingSessionError,
+            UploadError,
+        ) as error:
+            flash(f"No fue posible importar la sesión: {error}", "danger")
+        else:
+            if duplicate:
+                flash("Esta sesión ya había sido importada.", "warning")
+            else:
+                flash("Sesión JSON importada correctamente.", "success")
+            return redirect(
+                url_for("sessions.detail", session_id=training_session.id)
+            )
+    return render_template("sessions/import.html", form=form)
+
+
 @sessions_bp.route("/new", methods=["GET", "POST"])
 @login_required
 def new_session():
@@ -179,4 +237,24 @@ def detail(session_id: int):
         "sessions/detail.html",
         session=session,
         comparison=comparison,
+    )
+
+
+@sessions_bp.get("/<int:session_id>/export/<string:format_name>")
+@login_required
+def export_format(session_id: int, format_name: str):
+    training_session = _user_session_or_404(session_id)
+    exporter = SESSION_EXPORTERS.get(format_name)
+    if exporter is None:
+        abort(404)
+    artifact = exporter.export(training_session, current_user.id)
+    plan_name = secure_filename(training_session.training_plan.name)
+    filename_base = plan_name or f"training_session_{training_session.id}"
+    return send_file(
+        BytesIO(artifact.content),
+        mimetype=artifact.mimetype,
+        as_attachment=not artifact.inline,
+        download_name=(
+            f"{filename_base}_session_{training_session.id}.{artifact.extension}"
+        ),
     )

@@ -6,16 +6,25 @@ from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import TrainingPlan
+from app.services.exporters.training_plan import (
+    TrainingPlanCsvExporter,
+    TrainingPlanJsonExporter,
+)
 from app.services.files import UploadError, store_uploaded_file
+from app.services.importers.training_plan import import_training_plan_file
 from app.services.training_plans import (
     TrainingPlanImportError,
     get_active_version,
-    import_training_plan,
-    serialize_training_plan,
 )
 from app.services.validation import JsonSchemaValidationError
 from app.training import training_bp
 from app.training.forms import TrainingPlanImportForm
+
+
+PLAN_EXPORTERS = {
+    "json": TrainingPlanJsonExporter(),
+    "csv": TrainingPlanCsvExporter(),
+}
 
 
 def _user_plan_or_404(plan_id: int) -> TrainingPlan:
@@ -51,7 +60,10 @@ def import_plan():
                 form.file.data,
                 current_user.id,
             )
-            plan, plan_duplicate = import_training_plan(source_file, current_user.id)
+            plan, plan_duplicate = import_training_plan_file(
+                source_file,
+                current_user.id,
+            )
         except (UploadError, TrainingPlanImportError, JsonSchemaValidationError) as error:
             flash(f"No fue posible importar la rutina: {error}", "danger")
         else:
@@ -79,12 +91,28 @@ def detail(plan_id: int):
 @training_bp.get("/<int:plan_id>/export")
 @login_required
 def export_active(plan_id: int):
+    return _export_plan(plan_id, "json")
+
+
+@training_bp.get("/<int:plan_id>/export/<string:format_name>")
+@login_required
+def export_format(plan_id: int, format_name: str):
+    return _export_plan(plan_id, format_name)
+
+
+def _export_plan(plan_id: int, format_name: str):
     plan = _user_plan_or_404(plan_id)
+    exporter = PLAN_EXPORTERS.get(format_name)
+    if exporter is None:
+        abort(404)
     active_version = get_active_version(plan, current_user.id)
+    artifact = exporter.export(plan, current_user.id)
     filename_base = secure_filename(plan.name) or f"training_plan_{plan.id}"
     return send_file(
-        BytesIO(serialize_training_plan(active_version.content)),
-        mimetype="application/json",
+        BytesIO(artifact.content),
+        mimetype=artifact.mimetype,
         as_attachment=True,
-        download_name=f"{filename_base}_v{active_version.version_number}.json",
+        download_name=(
+            f"{filename_base}_v{active_version.version_number}.{artifact.extension}"
+        ),
     )

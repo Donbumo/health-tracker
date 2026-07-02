@@ -8,8 +8,15 @@
     </div>
     <div class="page-actions">
       <a class="button" href="{{ url_for('progress.session_summary', session_id=session.id) }}">Ver progreso</a>
+      <a class="button" href="{{ url_for('sessions.export_format', session_id=session.id, format_name='json') }}">Sesión JSON</a>
+      <a class="button button-secondary" href="{{ url_for('sessions.export_format', session_id=session.id, format_name='csv') }}">Sesión CSV</a>
+      <a class="button button-secondary" href="{{ url_for('sessions.export_format', session_id=session.id, format_name='html') }}">Vista imprimible</a>
       <a class="button button-secondary" href="{{ url_for('sessions.list_sessions') }}">Volver</a>
     </div>
+  </section>
+
+  <section class="notice warning">
+    JSON conserva el formato interno validado. CSV aplana ejercicios y series y puede omitir estructura; la vista HTML está pensada para impresión simple.
   </section>
 
   <section class="card">

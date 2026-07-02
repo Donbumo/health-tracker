@@ -1,6 +1,6 @@
 # Health Tracker
 
-Aplicación web privada, self-hosted y multiusuario. Las cinco primeras fases incluyen autenticación, almacenamiento aislado, captura manual validada, rutinas versionables, sesiones realizadas y análisis básico de sobrecarga.
+Aplicación web privada, self-hosted y multiusuario. Las seis primeras fases incluyen autenticación, almacenamiento aislado, captura manual validada, rutinas versionables, sesiones realizadas, análisis básico de sobrecarga e importación/exportación base.
 
 ## Alcance de la Fase 1
 
@@ -54,6 +54,17 @@ Edición visual avanzada, sobrecarga progresiva, comparación avanzada plan vs r
 - Resumen de progreso desde el detalle de cada sesión.
 
 Para planes de fuerza, cada serie puede usar `reps` como objetivo exacto o el par `reps_min` y `reps_max` como rango. La sugerencia es **Subir carga** cuando se completan todas las series en el extremo alto con al menos 2 RIR; **Mantener** cuando el trabajo queda dentro del rango; y **Revisar fatiga** cuando falta una serie o sus reps caen por debajo del mínimo. Son reglas descriptivas del entrenamiento registrado, no recomendaciones médicas ni un motor avanzado de programación.
+
+## Alcance de la Fase 6
+
+- Interfaz común para exportadores y adaptadores separados por tipo de recurso.
+- Rutinas exportables como JSON interno validado o CSV plano.
+- Sesiones exportables como JSON interno validado, CSV plano o HTML imprimible.
+- Importadores separados para `training_plan` y `completed_workout` JSON.
+- Conservación del archivo original, SHA256 y deduplicación por `(user_id, sha256)`.
+- Stubs documentados, sin parser real, para FIT genérico, GPX y Magene FIT.
+
+Las descargas se generan en memoria. No se registran como `UploadedFile`, porque ese modelo representa archivos fuente; queda pendiente un modelo específico de auditoría de exports si se necesita en una fase posterior.
 
 ## Requisitos
 
@@ -128,7 +139,7 @@ Ejemplo mínimo con un día de descanso:
 }
 ```
 
-Reemplaza `user_id` por el valor mostrado en la página. El archivo debe usar extensión `.json`. Tras importarlo puedes abrir su detalle y descargar la versión activa desde **Exportar JSON**.
+Reemplaza `user_id` por el valor mostrado en la página. El archivo debe usar extensión `.json`. Tras importarlo puedes abrir su detalle y descargar la versión activa como **Rutina JSON** o **Rutina CSV**.
 
 ## Registrar una sesión realizada
 
@@ -149,6 +160,23 @@ Después de registrar una sesión:
 3. Consulta la diferencia contra la ejecución anterior y la sugerencia básica calculada desde el rango de reps y el RIR.
 
 El historial agrupa por nombre de ejercicio sin distinguir mayúsculas y siempre se limita al usuario autenticado. Si el plan usa un objetivo exacto `reps`, ese valor funciona como mínimo y máximo del rango.
+
+## Importar y exportar
+
+En el detalle de una rutina están disponibles:
+
+- **Rutina JSON**: documento interno completo, validado contra `training_plan.schema.json`.
+- **Rutina CSV**: una fila por serie planeada; los días de descanso conservan una fila vacía de ejercicio.
+
+En el detalle de una sesión están disponibles:
+
+- **Sesión JSON**: documento interno completo, validado contra `completed_workout.schema.json`.
+- **Sesión CSV**: una fila por serie realizada.
+- **Vista imprimible**: HTML sencillo con tabla de ejercicios y series.
+
+CSV aplana la jerarquía y puede perder estructura o metadatos; usa JSON para respaldos o intercambio entre instalaciones compatibles. Para importar una sesión abre **Sesiones → Importar JSON**. El documento debe usar tu `user_id` y referenciar una rutina y versión que ya existan en tu cuenta. Los archivos válidos, inválidos y duplicados se conservan como fuentes originales bajo `data/uploads/raw/user_<id>/`.
+
+Formatos futuros, todavía sin implementación real: FIT, GPX, TCX, Magene, Huawei, PDF avanzado e integraciones de APK/reloj. Los módulos stub de FIT, GPX y Magene solo reservan el punto de extensión y lanzan `NotImplementedError`.
 
 ## Comandos habituales
 
@@ -192,6 +220,8 @@ backend/
     sessions/             # registro y detalle de sesiones realizadas
     training/             # importar, listar, ver y exportar rutinas
     services/files.py     # uploads originales
+    services/exporters/   # JSON, CSV y HTML base
+    services/importers/   # JSON interno y stubs de formatos futuros
     services/manual_json.py
     services/overload.py
     services/training_plans.py

@@ -31,6 +31,8 @@ input[type="text"], input[type="password"], input[type="file"], input[type="numb
 .alert { border-radius: .4rem; padding: .75rem 1rem; margin-bottom: .5rem; }
 .alert-success { background: #dcfce7; color: #14532d; }
 .alert-warning { background: #fef3c7; color: #78350f; }
+.notice { margin: 1rem 0; padding: 1rem; border-radius: .65rem; }
+.notice.warning { background: #fef3c7; color: #78350f; border: 1px solid #f59e0b; }
 .alert-danger { background: #fee2e2; color: #7f1d1d; }
 .field-error { color: #b91c1c; }
 .help { color: #475569; font-size: .9rem; }

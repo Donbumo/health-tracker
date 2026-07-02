@@ -6,7 +6,10 @@
       <h1>Sesiones realizadas</h1>
       <p>Entrenamientos asociados a la versión exacta de su rutina.</p>
     </div>
-    <a class="button" href="{{ url_for('sessions.new_session') }}">Registrar sesión</a>
+    <div class="page-actions">
+      <a class="button" href="{{ url_for('sessions.new_session') }}">Registrar sesión</a>
+      <a class="button button-secondary" href="{{ url_for('sessions.import_session') }}">Importar JSON</a>
+    </div>
   </section>
 
   <section class="card">

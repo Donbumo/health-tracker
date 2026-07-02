@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Importar sesión · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Importar sesión JSON</h1>
+      <p>El archivo debe cumplir <code>completed_workout.schema.json</code> y usar tu <code>user_id</code>.</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('sessions.list_sessions') }}">Volver</a>
+  </section>
+
+  <section class="card narrow-card">
+    <form method="post" enctype="multipart/form-data">
+      {{ form.hidden_tag() }}
+      <div class="form-group">
+        {{ form.file.label }}
+        {{ form.file(accept="application/json,.json") }}
+        {% for error in form.file.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      {{ form.submit(class="button") }}
+    </form>
+  </section>
+
+  <section class="notice warning">
+    El import conserva el archivo original, calcula SHA256 y evita duplicados por usuario. Los identificadores de rutina y versión deben existir para tu cuenta.
+  </section>
+{% endblock %}

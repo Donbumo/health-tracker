@@ -113,17 +113,7 @@ def build_completed_workout_document(
     if not exercises:
         raise TrainingSessionError("Complete at least one training set")
 
-    planned_exercises = {
-        exercise["exercise_order"]: exercise
-        for exercise in planned_day.day["exercises"]
-    }
-    for exercise in exercises:
-        planned_exercise = planned_exercises.get(exercise["planned_exercise_order"])
-        if planned_exercise is None or planned_exercise["name"] != exercise["name"]:
-            raise TrainingSessionError("Completed exercise does not match the plan")
-        planned_sets = {item["set_number"] for item in planned_exercise["sets"]}
-        if any(item["planned_set_number"] not in planned_sets for item in exercise["sets"]):
-            raise TrainingSessionError("Completed set does not match the plan")
+    _validate_completed_exercises(exercises, planned_day)
 
     data: dict[str, Any] = {
         "training_plan_id": planned_day.plan.id,
@@ -143,6 +133,31 @@ def build_completed_workout_document(
         "source_type": "manual_generated",
         "data": data,
     }
+
+
+def _validate_completed_exercises(
+    exercises: list[dict[str, Any]],
+    planned_day: PlannedDay,
+) -> None:
+    if len({item["exercise_order"] for item in exercises}) != len(exercises):
+        raise TrainingSessionError("Completed exercise order must be unique")
+    if len({item["planned_exercise_order"] for item in exercises}) != len(exercises):
+        raise TrainingSessionError("Planned exercise order must be unique")
+
+    planned_exercises = {
+        exercise["exercise_order"]: exercise
+        for exercise in planned_day.day["exercises"]
+    }
+    for exercise in exercises:
+        planned_exercise = planned_exercises.get(exercise["planned_exercise_order"])
+        if planned_exercise is None or planned_exercise["name"] != exercise["name"]:
+            raise TrainingSessionError("Completed exercise does not match the plan")
+        planned_sets = {item["set_number"] for item in planned_exercise["sets"]}
+        if any(item["planned_set_number"] not in planned_sets for item in exercise["sets"]):
+            raise TrainingSessionError("Completed set does not match the plan")
+        set_numbers = [item["set_number"] for item in exercise["sets"]]
+        if len(set(set_numbers)) != len(set_numbers):
+            raise TrainingSessionError("Completed set numbers must be unique")
 
 
 def _existing_session(source_file_id: int, user_id: int) -> TrainingSession | None:
@@ -167,16 +182,24 @@ def import_completed_workout(
     validate_json_document(document, "completed_workout")
     if document["user_id"] != user_id or source_file.user_id != user_id:
         raise TrainingSessionError("Completed workout does not belong to this user")
-    if document["source_type"] != "manual_generated":
-        raise TrainingSessionError("Manual sessions require manual_generated source_type")
-    if source_file.source_type != "manual_generated":
-        raise TrainingSessionError("Session source file must be manually generated")
+    if source_file.source_type not in {"manual_generated", "uploaded"}:
+        raise TrainingSessionError("Unsupported session source file type")
+    if (
+        source_file.source_type == "manual_generated"
+        and document["source_type"] != "manual_generated"
+    ):
+        raise TrainingSessionError("Generated sessions require manual_generated source_type")
 
     data = document["data"]
     if data["training_plan_id"] != planned_day.plan.id:
         raise TrainingSessionError("Training plan association does not match")
     if data["training_plan_version_id"] != planned_day.version.id:
         raise TrainingSessionError("Training plan version association does not match")
+    if data["planned_week_number"] != planned_day.week["week_number"]:
+        raise TrainingSessionError("Planned week association does not match")
+    if data["planned_day_number"] != planned_day.day["day_number"]:
+        raise TrainingSessionError("Planned day association does not match")
+    _validate_completed_exercises(data["exercises"], planned_day)
 
     performed_at = datetime.fromisoformat(data["performed_at"])
     session = TrainingSession(

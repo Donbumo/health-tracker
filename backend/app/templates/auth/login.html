@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Iniciar sesión · Health Tracker{% endblock %}
+{% block content %}
+  <section class="card narrow">
+    <h1>Iniciar sesión</h1>
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="field">
+        {{ form.username.label }}
+        {{ form.username(autofocus=true) }}
+        {% for error in form.username.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="field">
+        {{ form.password.label }}
+        {{ form.password() }}
+        {% for error in form.password.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <label class="checkbox">{{ form.remember() }} {{ form.remember.label.text }}</label>
+      {{ form.submit(class_="button") }}
+    </form>
+  </section>
+{% endblock %}

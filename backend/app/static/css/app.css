@@ -1,0 +1,43 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #1e293b;
+  background: #f1f5f9;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: #075985; }
+.container { width: min(1100px, calc(100% - 2rem)); margin: 0 auto; }
+.site-header { background: #0f172a; color: #fff; margin-bottom: 2rem; }
+.nav { min-height: 4rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.nav a { color: #fff; text-decoration: none; }
+.brand { font-weight: 700; font-size: 1.1rem; }
+.nav-actions { display: flex; align-items: center; gap: 1rem; }
+.nav-actions form { margin: 0; }
+.card { background: #fff; border-radius: .75rem; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgb(15 23 42 / 12%); }
+.narrow { max-width: 30rem; margin: 4rem auto; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
+h1, h2 { margin-top: 0; }
+.field { display: grid; gap: .4rem; margin-bottom: 1rem; }
+input[type="text"], input[type="password"], input[type="file"] { width: 100%; padding: .65rem; border: 1px solid #94a3b8; border-radius: .35rem; background: #fff; }
+.checkbox { display: block; margin-bottom: 1rem; }
+.button { display: inline-block; border: 0; border-radius: .4rem; padding: .65rem 1rem; color: #fff; background: #0369a1; text-decoration: none; cursor: pointer; font: inherit; }
+.button:hover { background: #075985; }
+.button-secondary { padding: .45rem .7rem; background: #334155; }
+.messages { margin-bottom: 1rem; }
+.alert { border-radius: .4rem; padding: .75rem 1rem; margin-bottom: .5rem; }
+.alert-success { background: #dcfce7; color: #14532d; }
+.alert-warning { background: #fef3c7; color: #78350f; }
+.alert-danger { background: #fee2e2; color: #7f1d1d; }
+.field-error { color: #b91c1c; }
+.help { color: #475569; font-size: .9rem; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: .7rem; border-bottom: 1px solid #e2e8f0; text-align: left; }
+code { white-space: nowrap; }
+
+@media (max-width: 650px) {
+  .nav, .nav-actions, .page-heading { align-items: flex-start; flex-direction: column; }
+  .nav { padding-block: 1rem; }
+}

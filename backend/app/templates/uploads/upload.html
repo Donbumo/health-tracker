@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Archivos · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Archivos</h1>
+      <p>Cada archivo queda aislado dentro del directorio de tu usuario.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Subir un archivo</h2>
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="field">
+        {{ form.file.label }}
+        {{ form.file() }}
+        {% for error in form.file.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <p class="help">Tamaño máximo configurado: {{ config.MAX_CONTENT_LENGTH // (1024 * 1024) }} MB.</p>
+      {{ form.submit(class_="button") }}
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Tus archivos</h2>
+    {% set file_list = files|list %}
+    {% if file_list %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Nombre original</th><th>Tamaño</th><th>SHA256</th><th>Fecha</th></tr>
+          </thead>
+          <tbody>
+            {% for file in file_list %}
+              <tr>
+                <td>{{ file.original_filename }}</td>
+                <td>{{ file.size_bytes }} bytes</td>
+                <td><code title="{{ file.sha256 }}">{{ file.sha256[:12] }}…</code></td>
+                <td>{{ file.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p>Todavía no has subido archivos.</p>
+    {% endif %}
+  </section>
+{% endblock %}

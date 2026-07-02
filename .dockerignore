@@ -1,0 +1,16 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+data
+**/__pycache__
+**/*.py[cod]
+**/.venv
+**/venv
+**/instance
+.pytest_cache
+.coverage
+htmlcov
+android-app
+watch-app

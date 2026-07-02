@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Archivo demasiado grande · Health Tracker{% endblock %}
+{% block content %}
+  <section class="card narrow">
+    <h1>Archivo demasiado grande</h1>
+    <p>El archivo supera el límite configurado por el administrador.</p>
+    <a class="button" href="{{ url_for('main.uploads') }}">Volver</a>
+  </section>
+{% endblock %}

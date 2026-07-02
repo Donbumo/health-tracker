@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Inicio</h1>
+      <p>Archivos registrados para tu usuario: {{ files|list|length }}</p>
+    </div>
+    <a class="button" href="{{ url_for('main.uploads') }}">Subir archivo</a>
+  </section>
+{% endblock %}

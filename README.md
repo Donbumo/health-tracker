@@ -1,6 +1,6 @@
 # Health Tracker
 
-Aplicación web privada, self-hosted y multiusuario. Las cuatro primeras fases incluyen autenticación, almacenamiento aislado, captura manual validada, rutinas versionables y sesiones realizadas.
+Aplicación web privada, self-hosted y multiusuario. Las cinco primeras fases incluyen autenticación, almacenamiento aislado, captura manual validada, rutinas versionables, sesiones realizadas y análisis básico de sobrecarga.
 
 ## Alcance de la Fase 1
 
@@ -44,7 +44,16 @@ Edición visual avanzada, sobrecarga progresiva, comparación avanzada plan vs r
 - Asociación histórica con `training_plan_id` y `training_plan_version_id`.
 - Comparación básica de ejercicios, series y reps objetivo contra reps reales.
 
-Esta fase no incluye recomendaciones automáticas ni motor de sobrecarga progresiva.
+## Alcance de la Fase 5
+
+- Historial por ejercicio a partir de las sesiones ya registradas.
+- Volumen por serie (`peso × reps`) y volumen acumulado por ejercicio y sesión.
+- Reps totales, peso máximo y mejor serie por volumen.
+- Comparación de volumen, reps y peso máximo contra la sesión anterior del mismo ejercicio.
+- Sugerencias simples de carga usando el rango planeado y el RIR registrado.
+- Resumen de progreso desde el detalle de cada sesión.
+
+Para planes de fuerza, cada serie puede usar `reps` como objetivo exacto o el par `reps_min` y `reps_max` como rango. La sugerencia es **Subir carga** cuando se completan todas las series en el extremo alto con al menos 2 RIR; **Mantener** cuando el trabajo queda dentro del rango; y **Revisar fatiga** cuando falta una serie o sus reps caen por debajo del mínimo. Son reglas descriptivas del entrenamiento registrado, no recomendaciones médicas ni un motor avanzado de programación.
 
 ## Requisitos
 
@@ -129,7 +138,17 @@ Reemplaza `user_id` por el valor mostrado en la página. El archivo debe usar ex
 4. Marca las series efectivamente realizadas e indica peso, reps, RIR opcional y notas.
 5. Guarda la sesión para ver su detalle y la comparación plan vs realidad.
 
-Las series no marcadas aparecen como omitidas. En este MVP solo se capturan series correspondientes al día planeado; no existe todavía edición avanzada, ejercicios adicionales ni recomendaciones de progresión.
+Las series no marcadas aparecen como omitidas. En este MVP solo se capturan series correspondientes al día planeado; no existe todavía edición avanzada ni captura de ejercicios adicionales.
+
+## Consultar el progreso
+
+Después de registrar una sesión:
+
+1. Abre su detalle y pulsa **Ver progreso** para consultar volumen total, reps, peso máximo, mejor serie y cambios por ejercicio.
+2. Pulsa el nombre de un ejercicio para abrir su historial completo.
+3. Consulta la diferencia contra la ejecución anterior y la sugerencia básica calculada desde el rango de reps y el RIR.
+
+El historial agrupa por nombre de ejercicio sin distinguir mayúsculas y siempre se limita al usuario autenticado. Si el plan usa un objetivo exacto `reps`, ese valor funciona como mínimo y máximo del rango.
 
 ## Comandos habituales
 
@@ -169,10 +188,12 @@ backend/
     auth/                 # login y logout
     main/                 # inicio y página de uploads
     models/               # usuarios, archivos y training plans versionados
+    progress/             # historial y resumen de sobrecarga básica
     sessions/             # registro y detalle de sesiones realizadas
     training/             # importar, listar, ver y exportar rutinas
     services/files.py     # uploads originales
     services/manual_json.py
+    services/overload.py
     services/training_plans.py
     services/workout_sessions.py
     services/validation.py

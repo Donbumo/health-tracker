@@ -6,7 +6,10 @@
       <h1>Sesión realizada</h1>
       <p>{{ session.training_plan.name }} · versión {{ session.training_plan_version.version_number }}</p>
     </div>
-    <a class="button button-secondary" href="{{ url_for('sessions.list_sessions') }}">Volver</a>
+    <div class="page-actions">
+      <a class="button" href="{{ url_for('progress.session_summary', session_id=session.id) }}">Ver progreso</a>
+      <a class="button button-secondary" href="{{ url_for('sessions.list_sessions') }}">Volver</a>
+    </div>
   </section>
 
   <section class="card">
@@ -35,7 +38,13 @@
             <tr>
               <td>{{ row.exercise_name }}</td>
               <td>{{ row.planned_set_number }}</td>
-              <td>{{ row.target_reps if row.target_reps is not none else '—' }}</td>
+              <td>
+                {% if row.target_reps is not none %}
+                  {{ row.target_reps }}
+                {% elif row.target_reps_min is not none %}
+                  {{ row.target_reps_min }}–{{ row.target_reps_max }}
+                {% else %}—{% endif %}
+              </td>
               <td>{{ row.actual_reps if row.actual_reps is not none else '—' }}</td>
               <td>{{ row.reps_difference if row.reps_difference is not none else '—' }}</td>
               <td>{{ 'Realizada' if row.performed else 'Omitida' }}</td>
@@ -49,7 +58,7 @@
   <section class="card">
     <h2>Series registradas</h2>
     {% for exercise in session.exercises %}
-      <h3>{{ exercise.name }}</h3>
+      <h3><a href="{{ url_for('progress.exercise_detail', exercise_id=exercise.id) }}">{{ exercise.name }}</a></h3>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Serie</th><th>Peso kg</th><th>Reps</th><th>RIR</th><th>Notas</th></tr></thead>

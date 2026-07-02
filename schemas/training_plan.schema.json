@@ -82,6 +82,8 @@
       "properties": {
         "set_number": {"type": "integer", "minimum": 1},
         "reps": {"type": "integer", "minimum": 1},
+        "reps_min": {"type": "integer", "minimum": 1},
+        "reps_max": {"type": "integer", "minimum": 1},
         "duration_seconds": {"type": "integer", "minimum": 1},
         "distance_m": {"type": "number", "exclusiveMinimum": 0},
         "target": {"type": "string", "maxLength": 200},
@@ -89,9 +91,14 @@
       },
       "anyOf": [
         {"required": ["reps"]},
+        {"required": ["reps_min", "reps_max"]},
         {"required": ["duration_seconds"]},
         {"required": ["distance_m"]}
-      ]
+      ],
+      "dependentRequired": {
+        "reps_min": ["reps_max"],
+        "reps_max": ["reps_min"]
+      }
     }
   }
 }

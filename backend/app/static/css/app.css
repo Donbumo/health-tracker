@@ -51,6 +51,10 @@ select { width: 100%; padding: .65rem; border: 1px solid #94a3b8; border-radius:
 .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
 .metric { display: grid; gap: .35rem; padding: 1.25rem; border-radius: .75rem; background: #fff; box-shadow: 0 1px 3px rgb(15 23 42 / 12%); }
 .metric strong { font-size: 1.8rem; color: #0369a1; }
+.suggestion { display: inline-block; padding: .2rem .5rem; border-radius: 999px; font-weight: 700; white-space: nowrap; }
+.suggestion-increase_load { background: #dcfce7; color: #14532d; }
+.suggestion-maintain { background: #dbeafe; color: #1e3a8a; }
+.suggestion-review_fatigue { background: #fee2e2; color: #7f1d1d; }
 
 @media (max-width: 650px) {
   .nav, .nav-actions, .page-heading, .page-actions, .inline-selection { align-items: flex-start; flex-direction: column; }

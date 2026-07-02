@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Progreso de {{ exercise_name }} · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>{{ exercise_name }}</h1>
+      <p>Historial por sesión y comparación con la ejecución anterior.</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('sessions.list_sessions') }}">Volver a sesiones</a>
+  </section>
+
+  <section class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Volumen</th><th>Reps</th><th>Peso máximo</th>
+            <th>Mejor set</th><th>Δ volumen</th><th>Δ reps</th><th>Δ peso</th><th>Sugerencia</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in history %}
+            <tr>
+              <td><a href="{{ url_for('sessions.detail', session_id=item.metrics.session_id) }}">{{ item.metrics.performed_at.strftime('%Y-%m-%d %H:%M') }}</a></td>
+              <td>{{ item.metrics.volume }}</td>
+              <td>{{ item.metrics.total_reps }}</td>
+              <td>{{ item.metrics.max_weight }}</td>
+              <td>
+                {% if item.metrics.best_set %}
+                  {{ item.metrics.best_set.weight_kg }} kg × {{ item.metrics.best_set.reps }}
+                {% else %}—{% endif %}
+              </td>
+              <td>{{ item.comparison.volume_delta if item.comparison.has_previous else '—' }}</td>
+              <td>{{ item.comparison.reps_delta if item.comparison.has_previous else '—' }}</td>
+              <td>{{ item.comparison.max_weight_delta if item.comparison.has_previous else '—' }}</td>
+              <td><span class="suggestion suggestion-{{ item.suggestion.code }}">{{ item.suggestion.label }}</span><br><small>{{ item.suggestion.reason }}</small></td>
+            </tr>
+          {% else %}
+            <tr><td colspan="9">No hay historial disponible.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Progreso de sesión {{ session.id }} · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Resumen de progreso</h1>
+      <p>{{ session.training_plan.name }} · {{ session.performed_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('sessions.detail', session_id=session.id) }}">Volver a la sesión</a>
+  </section>
+
+  <section class="summary-grid">
+    <div class="metric"><strong>{{ summary.metrics.volume }}</strong><span>volumen total</span></div>
+    <div class="metric"><strong>{{ summary.metrics.total_reps }}</strong><span>reps totales</span></div>
+    <div class="metric"><strong>{{ summary.metrics.max_weight }}</strong><span>peso máximo</span></div>
+    <div class="metric">
+      <strong>{{ 'Sí' if summary.progress_detected else 'No' }}</strong>
+      <span>progreso contra sesiones anteriores</span>
+    </div>
+  </section>
+
+  {% if summary.metrics.best_set %}
+    <section class="card">
+      <h2>Mejor set</h2>
+      <p>{{ summary.metrics.best_set.exercise_name }}: {{ summary.metrics.best_set.weight_kg }} kg × {{ summary.metrics.best_set.reps }} reps (volumen {{ summary.metrics.best_set.volume }}).</p>
+    </section>
+  {% endif %}
+
+  <section class="card">
+    <h2>Progreso por ejercicio</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Ejercicio</th><th>Volumen</th><th>Reps</th><th>Peso máximo</th><th>Comparación anterior</th><th>Sugerencia</th></tr>
+        </thead>
+        <tbody>
+          {% for item in summary.exercises %}
+            <tr>
+              <td><a href="{{ url_for('progress.exercise_detail', exercise_id=item.exercise.id) }}">{{ item.exercise.name }}</a></td>
+              <td>{{ item.metrics.volume }}</td>
+              <td>{{ item.metrics.total_reps }}</td>
+              <td>{{ item.metrics.max_weight }}</td>
+              <td>
+                {% if item.comparison.has_previous %}
+                  volumen {{ item.comparison.volume_delta }}, reps {{ item.comparison.reps_delta }}, peso {{ item.comparison.max_weight_delta }}
+                {% else %}
+                  Primera sesión
+                {% endif %}
+              </td>
+              <td><span class="suggestion suggestion-{{ item.suggestion.code }}">{{ item.suggestion.label }}</span><br><small>{{ item.suggestion.reason }}</small></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

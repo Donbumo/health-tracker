@@ -59,9 +59,15 @@
                   <tr>
                     <td><input type="checkbox" name="{{ prefix }}_completed" value="1" {% if request.form.get(prefix ~ '_completed') %}checked{% endif %}></td>
                     <td>{{ planned_set.set_number }}</td>
-                    <td>{{ planned_set.reps|default('—') }}</td>
+                    <td>
+                      {% if planned_set.reps is defined %}
+                        {{ planned_set.reps }}
+                      {% elif planned_set.reps_min is defined %}
+                        {{ planned_set.reps_min }}–{{ planned_set.reps_max }}
+                      {% else %}—{% endif %}
+                    </td>
                     <td><input class="compact-input" type="number" min="0" max="2000" step="0.01" name="{{ prefix }}_weight_kg" value="{{ request.form.get(prefix ~ '_weight_kg', '') }}"></td>
-                    <td><input class="compact-input" type="number" min="1" max="10000" step="1" name="{{ prefix }}_reps" value="{{ request.form.get(prefix ~ '_reps', planned_set.reps|default('')) }}"></td>
+                    <td><input class="compact-input" type="number" min="1" max="10000" step="1" name="{{ prefix }}_reps" value="{{ request.form.get(prefix ~ '_reps', planned_set.reps|default(planned_set.reps_min|default(''))) }}"></td>
                     <td><input class="compact-input" type="number" min="0" max="10" step="0.5" name="{{ prefix }}_rir" value="{{ request.form.get(prefix ~ '_rir', '') }}"></td>
                     <td><input type="text" maxlength="2000" name="{{ prefix }}_notes" value="{{ request.form.get(prefix ~ '_notes', '') }}"></td>
                   </tr>

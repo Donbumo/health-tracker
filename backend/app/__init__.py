@@ -38,11 +38,13 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     from app.auth import auth_bp
     from app.main import main_bp
+    from app.progress import progress_bp
     from app.sessions import sessions_bp
     from app.training import training_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
+    app.register_blueprint(progress_bp)
     app.register_blueprint(sessions_bp)
     app.register_blueprint(training_bp)
     register_commands(app)

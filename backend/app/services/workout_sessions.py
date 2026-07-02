@@ -289,18 +289,26 @@ def compare_plan_to_session(session: TrainingSession) -> dict[str, Any]:
             planned_set_count += 1
             actual_set = actual_sets.get(planned_set["set_number"])
             target_reps = planned_set.get("reps")
+            target_reps_min = planned_set.get("reps_min", target_reps)
+            target_reps_max = planned_set.get("reps_max", target_reps)
             actual_reps = actual_set.reps if actual_set else None
+            reps_difference = None
+            if actual_reps is not None and target_reps_min is not None:
+                if actual_reps < target_reps_min:
+                    reps_difference = actual_reps - target_reps_min
+                elif actual_reps > target_reps_max:
+                    reps_difference = actual_reps - target_reps_max
+                else:
+                    reps_difference = 0
             rows.append(
                 {
                     "exercise_name": planned_exercise["name"],
                     "planned_set_number": planned_set["set_number"],
                     "target_reps": target_reps,
+                    "target_reps_min": target_reps_min,
+                    "target_reps_max": target_reps_max,
                     "actual_reps": actual_reps,
-                    "reps_difference": (
-                        actual_reps - target_reps
-                        if actual_reps is not None and target_reps is not None
-                        else None
-                    ),
+                    "reps_difference": reps_difference,
                     "performed": actual_set is not None,
                 }
             )

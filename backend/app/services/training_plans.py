@@ -34,6 +34,14 @@ def _validate_plan_ordering(document: dict[str, Any]) -> None:
             )
             for exercise in day["exercises"]:
                 _require_unique_numbers(exercise["sets"], "set_number", "Set")
+                for planned_set in exercise["sets"]:
+                    if (
+                        planned_set.get("reps_min") is not None
+                        and planned_set["reps_min"] > planned_set["reps_max"]
+                    ):
+                        raise TrainingPlanImportError(
+                            "Set reps_min must not exceed reps_max"
+                        )
 
 
 def serialize_training_plan(document: dict[str, Any]) -> bytes:

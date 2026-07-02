@@ -1,6 +1,6 @@
 # Health Tracker
 
-Aplicación web privada, self-hosted y multiusuario. Las tres primeras fases incluyen autenticación, almacenamiento aislado, captura manual validada y rutinas versionables.
+Aplicación web privada, self-hosted y multiusuario. Las cuatro primeras fases incluyen autenticación, almacenamiento aislado, captura manual validada, rutinas versionables y sesiones realizadas.
 
 ## Alcance de la Fase 1
 
@@ -33,7 +33,18 @@ La Fase 2 todavía no importa el contenido del pesaje a una tabla clínica: cons
 - Listado, detalle y exportación JSON de la versión activa.
 - Deduplicación: importar nuevamente el mismo archivo devuelve la rutina existente.
 
-Edición visual avanzada, sobrecarga progresiva, plan vs realidad e integraciones con dispositivos permanecen fuera de esta fase.
+Edición visual avanzada, sobrecarga progresiva, comparación avanzada plan vs realidad e integraciones con dispositivos permanecen fuera de esta fase.
+
+## Alcance de la Fase 4
+
+- Modelos `TrainingSession`, `TrainingSessionExercise` y `TrainingSet`, todos aislados por `user_id`.
+- Registro manual basado en un día de la versión activa de una rutina.
+- Generación previa de un `completed_workout` en `data/uploads/generated/user_<id>/`.
+- Peso, reps, RIR opcional y notas por serie, además de notas generales de sesión.
+- Asociación histórica con `training_plan_id` y `training_plan_version_id`.
+- Comparación básica de ejercicios, series y reps objetivo contra reps reales.
+
+Esta fase no incluye recomendaciones automáticas ni motor de sobrecarga progresiva.
 
 ## Requisitos
 
@@ -110,6 +121,16 @@ Ejemplo mínimo con un día de descanso:
 
 Reemplaza `user_id` por el valor mostrado en la página. El archivo debe usar extensión `.json`. Tras importarlo puedes abrir su detalle y descargar la versión activa desde **Exportar JSON**.
 
+## Registrar una sesión realizada
+
+1. Importa al menos una rutina que contenga un día con ejercicios.
+2. Abre **Sesiones → Registrar sesión**, o usa **Registrar sesión** desde el detalle de una rutina.
+3. Selecciona el día planeado y pulsa **Cargar ejercicios**.
+4. Marca las series efectivamente realizadas e indica peso, reps, RIR opcional y notas.
+5. Guarda la sesión para ver su detalle y la comparación plan vs realidad.
+
+Las series no marcadas aparecen como omitidas. En este MVP solo se capturan series correspondientes al día planeado; no existe todavía edición avanzada, ejercicios adicionales ni recomendaciones de progresión.
+
 ## Comandos habituales
 
 ```powershell
@@ -148,10 +169,12 @@ backend/
     auth/                 # login y logout
     main/                 # inicio y página de uploads
     models/               # usuarios, archivos y training plans versionados
+    sessions/             # registro y detalle de sesiones realizadas
     training/             # importar, listar, ver y exportar rutinas
     services/files.py     # uploads originales
     services/manual_json.py
     services/training_plans.py
+    services/workout_sessions.py
     services/validation.py
     templates/
   migrations/

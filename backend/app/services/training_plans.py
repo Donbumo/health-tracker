@@ -15,6 +15,27 @@ class TrainingPlanImportError(ValueError):
     pass
 
 
+def _require_unique_numbers(items: list[dict[str, Any]], field: str, label: str) -> None:
+    values = [item[field] for item in items]
+    if len(values) != len(set(values)):
+        raise TrainingPlanImportError(f"{label} numbers must be unique")
+
+
+def _validate_plan_ordering(document: dict[str, Any]) -> None:
+    weeks = document["data"]["weeks"]
+    _require_unique_numbers(weeks, "week_number", "Week")
+    for week in weeks:
+        _require_unique_numbers(week["days"], "day_number", "Day")
+        for day in week["days"]:
+            _require_unique_numbers(
+                day["exercises"],
+                "exercise_order",
+                "Exercise order",
+            )
+            for exercise in day["exercises"]:
+                _require_unique_numbers(exercise["sets"], "set_number", "Set")
+
+
 def serialize_training_plan(document: dict[str, Any]) -> bytes:
     return (
         json.dumps(
@@ -75,6 +96,7 @@ def import_training_plan(
         raise TrainingPlanImportError("Document user_id does not match its owner")
     if document["source_type"] != "uploaded":
         raise TrainingPlanImportError("Imported plans require uploaded source_type")
+    _validate_plan_ordering(document)
 
     name = document["data"]["name"].strip()
     if not name:

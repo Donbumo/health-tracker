@@ -42,11 +42,28 @@ VALID_DOCUMENTS = {
         "schema_version": "1.0",
         "record_type": "completed_workout",
         "user_id": 1,
-        "source_type": "device_sync",
+        "source_type": "manual_generated",
         "data": {
-            "activity_type": "cycling",
-            "started_at": "2026-07-01T12:00:00Z",
-            "duration_seconds": 3600,
+            "training_plan_id": 1,
+            "training_plan_version_id": 1,
+            "performed_at": "2026-07-01T12:00:00Z",
+            "planned_week_number": 1,
+            "planned_day_number": 1,
+            "exercises": [
+                {
+                    "exercise_order": 1,
+                    "planned_exercise_order": 1,
+                    "name": "Example exercise",
+                    "sets": [
+                        {
+                            "set_number": 1,
+                            "planned_set_number": 1,
+                            "weight_kg": 40,
+                            "reps": 8,
+                        }
+                    ],
+                }
+            ],
         },
     },
 }

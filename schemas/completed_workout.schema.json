@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://health-tracker.local/schemas/completed_workout.schema.json",
-  "title": "Completed workout (minimum)",
+  "title": "Completed workout",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "record_type", "user_id", "source_type", "data"],
@@ -16,13 +16,58 @@
     "data": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["activity_type", "started_at", "duration_seconds"],
+      "required": [
+        "training_plan_id",
+        "training_plan_version_id",
+        "performed_at",
+        "planned_week_number",
+        "planned_day_number",
+        "exercises"
+      ],
       "properties": {
-        "activity_type": {"type": "string", "minLength": 1, "maxLength": 80},
-        "started_at": {"type": "string", "format": "date-time"},
-        "duration_seconds": {"type": "integer", "minimum": 0},
-        "distance_m": {"type": "number", "minimum": 0},
-        "calories_kcal": {"type": "number", "minimum": 0},
+        "training_plan_id": {"type": "integer", "minimum": 1},
+        "training_plan_version_id": {"type": "integer", "minimum": 1},
+        "performed_at": {"type": "string", "format": "date-time"},
+        "planned_week_number": {"type": "integer", "minimum": 1},
+        "planned_day_number": {"type": "integer", "minimum": 1, "maximum": 7},
+        "notes": {"type": "string", "maxLength": 5000},
+        "exercises": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {"$ref": "#/$defs/exercise"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "exercise": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exercise_order", "planned_exercise_order", "name", "sets"],
+      "properties": {
+        "exercise_order": {"type": "integer", "minimum": 1},
+        "planned_exercise_order": {"type": "integer", "minimum": 1},
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "notes": {"type": "string", "maxLength": 2000},
+        "sets": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {"$ref": "#/$defs/set"}
+        }
+      }
+    },
+    "set": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["set_number", "planned_set_number", "weight_kg", "reps"],
+      "properties": {
+        "set_number": {"type": "integer", "minimum": 1},
+        "planned_set_number": {"type": "integer", "minimum": 1},
+        "weight_kg": {"type": "number", "minimum": 0, "maximum": 2000},
+        "reps": {"type": "integer", "minimum": 1, "maximum": 10000},
+        "rir": {"type": "number", "minimum": 0, "maximum": 10},
         "notes": {"type": "string", "maxLength": 2000}
       }
     }

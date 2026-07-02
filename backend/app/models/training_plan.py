@@ -49,6 +49,11 @@ class TrainingPlan(db.Model):
         passive_deletes=True,
         order_by="TrainingPlanVersion.version_number",
     )
+    sessions = db.relationship(
+        "TrainingSession",
+        back_populates="training_plan",
+        passive_deletes=True,
+    )
 
 
 class TrainingPlanVersion(db.Model):
@@ -108,3 +113,8 @@ class TrainingPlanVersion(db.Model):
 
     training_plan = db.relationship("TrainingPlan", back_populates="versions")
     source_file = db.relationship("UploadedFile")
+    sessions = db.relationship(
+        "TrainingSession",
+        back_populates="training_plan_version",
+        passive_deletes=True,
+    )

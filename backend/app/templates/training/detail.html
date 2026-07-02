@@ -7,6 +7,7 @@
       {% if plan.description %}<p>{{ plan.description }}</p>{% endif %}
     </div>
     <div class="page-actions">
+      <a class="button" href="{{ url_for('sessions.new_session', plan_id=plan.id) }}">Registrar sesión</a>
       <a class="button" href="{{ url_for('training.export_active', plan_id=plan.id) }}">Exportar JSON</a>
       <a class="button button-secondary" href="{{ url_for('training.list_plans') }}">Volver</a>
     </div>

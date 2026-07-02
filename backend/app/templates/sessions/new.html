@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Registrar sesión · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Registrar sesión</h1>
+      <p>Selecciona un día planeado y marca únicamente las series realizadas.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <form method="get" class="inline-selection">
+      {% if plan_id %}<input type="hidden" name="plan_id" value="{{ plan_id }}">{% endif %}
+      <div class="field grow">
+        <label for="planned-day-selection">Día planeado</label>
+        <select id="planned-day-selection" name="planned_day" required>
+          <option value="">Selecciona una opción</option>
+          {% for option in options %}
+            <option value="{{ option.key }}" {% if selected_day and selected_day.key == option.key %}selected{% endif %}>{{ option.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button class="button" type="submit">Cargar ejercicios</button>
+    </form>
+    {% if not options %}<p>No hay días con ejercicios en las rutinas activas disponibles.</p>{% endif %}
+  </section>
+
+  {% if selected_day %}
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+      <section class="card">
+        <h2>{{ selected_day.label }}</h2>
+        <div class="field">
+          {{ form.performed_at.label }}
+          {{ form.performed_at() }}
+          <span class="help">Zona horaria: {{ timezone_name }}</span>
+          {% for error in form.performed_at.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+        <div class="field">
+          {{ form.notes.label }}
+          {{ form.notes(rows=3) }}
+          {% for error in form.notes.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+      </section>
+
+      {% for exercise in selected_day.day.exercises %}
+        {% set exercise_index = loop.index0 %}
+        <section class="card">
+          <h2>{{ exercise.exercise_order }}. {{ exercise.name }}</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Realizada</th><th>Serie</th><th>Reps objetivo</th><th>Peso kg</th><th>Reps reales</th><th>RIR</th><th>Notas</th></tr>
+              </thead>
+              <tbody>
+                {% for planned_set in exercise.sets %}
+                  {% set set_index = loop.index0 %}
+                  {% set prefix = 'exercise_' ~ exercise_index ~ '_set_' ~ set_index %}
+                  <tr>
+                    <td><input type="checkbox" name="{{ prefix }}_completed" value="1" {% if request.form.get(prefix ~ '_completed') %}checked{% endif %}></td>
+                    <td>{{ planned_set.set_number }}</td>
+                    <td>{{ planned_set.reps|default('—') }}</td>
+                    <td><input class="compact-input" type="number" min="0" max="2000" step="0.01" name="{{ prefix }}_weight_kg" value="{{ request.form.get(prefix ~ '_weight_kg', '') }}"></td>
+                    <td><input class="compact-input" type="number" min="1" max="10000" step="1" name="{{ prefix }}_reps" value="{{ request.form.get(prefix ~ '_reps', planned_set.reps|default('')) }}"></td>
+                    <td><input class="compact-input" type="number" min="0" max="10" step="0.5" name="{{ prefix }}_rir" value="{{ request.form.get(prefix ~ '_rir', '') }}"></td>
+                    <td><input type="text" maxlength="2000" name="{{ prefix }}_notes" value="{{ request.form.get(prefix ~ '_notes', '') }}"></td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      {% endfor %}
+
+      <section class="form-actions">
+        {{ form.submit(class_="button") }}
+      </section>
+    </form>
+  {% endif %}
+{% endblock %}

@@ -43,8 +43,16 @@ code { white-space: nowrap; }
 .metadata { display: grid; grid-template-columns: max-content 1fr; gap: .5rem 1rem; }
 .metadata dt { font-weight: 700; }
 .metadata dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.inline-selection { display: flex; align-items: end; gap: 1rem; }
+.inline-selection .grow { flex: 1; margin-bottom: 0; }
+select { width: 100%; padding: .65rem; border: 1px solid #94a3b8; border-radius: .35rem; background: #fff; font: inherit; }
+.compact-input { min-width: 6rem; }
+.form-actions { margin: 1.5rem 0; }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.metric { display: grid; gap: .35rem; padding: 1.25rem; border-radius: .75rem; background: #fff; box-shadow: 0 1px 3px rgb(15 23 42 / 12%); }
+.metric strong { font-size: 1.8rem; color: #0369a1; }
 
 @media (max-width: 650px) {
-  .nav, .nav-actions, .page-heading, .page-actions { align-items: flex-start; flex-direction: column; }
+  .nav, .nav-actions, .page-heading, .page-actions, .inline-selection { align-items: flex-start; flex-direction: column; }
   .nav { padding-block: 1rem; }
 }

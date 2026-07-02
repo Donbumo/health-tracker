@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Sesión {{ session.id }} · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Sesión realizada</h1>
+      <p>{{ session.training_plan.name }} · versión {{ session.training_plan_version.version_number }}</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('sessions.list_sessions') }}">Volver</a>
+  </section>
+
+  <section class="card">
+    <dl class="metadata">
+      <dt>Fecha</dt><dd>{{ session.performed_at.strftime('%Y-%m-%d %H:%M') }}</dd>
+      <dt>Semana/día planeado</dt><dd>{{ session.planned_week_number }}/{{ session.planned_day_number }}</dd>
+      <dt>Archivo fuente</dt><dd>{{ session.source_file_id }}</dd>
+      {% if session.notes %}<dt>Notas</dt><dd>{{ session.notes }}</dd>{% endif %}
+    </dl>
+  </section>
+
+  <section class="summary-grid">
+    <div class="metric"><strong>{{ comparison.actual_exercises }}/{{ comparison.planned_exercises }}</strong><span>ejercicios realizados/planeados</span></div>
+    <div class="metric"><strong>{{ comparison.actual_sets }}/{{ comparison.planned_sets }}</strong><span>series realizadas/planeadas</span></div>
+  </section>
+
+  <section class="card">
+    <h2>Plan vs realidad</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Ejercicio</th><th>Serie</th><th>Reps objetivo</th><th>Reps reales</th><th>Diferencia</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          {% for row in comparison.rows %}
+            <tr>
+              <td>{{ row.exercise_name }}</td>
+              <td>{{ row.planned_set_number }}</td>
+              <td>{{ row.target_reps if row.target_reps is not none else '—' }}</td>
+              <td>{{ row.actual_reps if row.actual_reps is not none else '—' }}</td>
+              <td>{{ row.reps_difference if row.reps_difference is not none else '—' }}</td>
+              <td>{{ 'Realizada' if row.performed else 'Omitida' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Series registradas</h2>
+    {% for exercise in session.exercises %}
+      <h3>{{ exercise.name }}</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Serie</th><th>Peso kg</th><th>Reps</th><th>RIR</th><th>Notas</th></tr></thead>
+          <tbody>
+            {% for item in exercise.sets %}
+              <tr>
+                <td>{{ item.set_number }}</td>
+                <td>{{ item.weight_kg }}</td>
+                <td>{{ item.reps }}</td>
+                <td>{{ item.rir if item.rir is not none else '—' }}</td>
+                <td>{{ item.notes or '—' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endfor %}
+  </section>
+{% endblock %}

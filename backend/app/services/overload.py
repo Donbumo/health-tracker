@@ -3,6 +3,11 @@ from typing import Any
 
 from app.extensions import db
 from app.models import TrainingSession, TrainingSessionExercise, TrainingSet
+from app.services.exercise_identity import (
+    exercise_identity_names,
+    find_exercise_identity,
+    normalize_exercise_name,
+)
 
 
 RIR_FOR_LOAD_INCREASE = Decimal("2")
@@ -289,6 +294,12 @@ def _stagnation_signal(appearances_without_progress: int) -> dict[str, Any]:
 
 
 def exercise_history(user_id: int, exercise_name: str) -> list[dict[str, Any]]:
+    identity = find_exercise_identity(user_id, exercise_name)
+    matching_names = (
+        exercise_identity_names(identity)
+        if identity is not None
+        else {normalize_exercise_name(exercise_name)}
+    )
     exercises = db.session.execute(
         db.select(TrainingSessionExercise).where(
             TrainingSessionExercise.user_id == user_id
@@ -297,7 +308,7 @@ def exercise_history(user_id: int, exercise_name: str) -> list[dict[str, Any]]:
     matching = [
         exercise
         for exercise in exercises
-        if exercise.name.casefold() == exercise_name.casefold()
+        if normalize_exercise_name(exercise.name) in matching_names
         and exercise.training_session.user_id == user_id
     ]
     matching.sort(

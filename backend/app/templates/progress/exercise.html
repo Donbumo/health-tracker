@@ -10,6 +10,25 @@
   </section>
 
   <section class="card">
+    <h2>Identidad del ejercicio</h2>
+    <p>
+      Nombre canónico: <strong>{{ identity.canonical_name if identity else exercise.name }}</strong>.
+      Los nombres originales de las sesiones se conservan.
+    </p>
+    {% if identity and identity.aliases %}
+      <p>Aliases: {{ identity.aliases | map(attribute='alias_name') | join(', ') }}</p>
+    {% endif %}
+    <form method="post" action="{{ url_for('progress.add_alias', exercise_id=exercise.id) }}" class="inline-selection">
+      {{ alias_form.hidden_tag() }}
+      <div class="field grow">
+        {{ alias_form.alias_name.label }}
+        {{ alias_form.alias_name(placeholder='Ej. T-bar row') }}
+      </div>
+      {{ alias_form.submit(class_='button button-secondary') }}
+    </form>
+  </section>
+
+  <section class="card">
     <div class="table-wrap">
       <table>
         <thead>

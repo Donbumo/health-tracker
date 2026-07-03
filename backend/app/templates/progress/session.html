@@ -13,16 +13,29 @@
     <div class="metric"><strong>{{ summary.metrics.volume }}</strong><span>volumen total</span></div>
     <div class="metric"><strong>{{ summary.metrics.total_reps }}</strong><span>reps totales</span></div>
     <div class="metric"><strong>{{ summary.metrics.max_weight }}</strong><span>peso máximo</span></div>
-    <div class="metric">
-      <strong>{{ 'Sí' if summary.progress_detected else 'No' }}</strong>
-      <span>progreso contra sesiones anteriores</span>
-    </div>
+    <div class="metric"><strong>{{ summary.metrics.best_estimated_one_rep_max }}</strong><span>mejor 1RM estimado</span></div>
+    <div class="metric"><strong>{{ summary.metrics.average_rpe if summary.metrics.average_rpe is not none else '—' }}</strong><span>RPE promedio</span></div>
+    <div class="metric"><strong>{% if summary.metrics.average_rest_seconds is not none %}{{ summary.metrics.average_rest_seconds }} s{% else %}—{% endif %}</strong><span>descanso promedio</span></div>
+    <div class="metric"><strong>{{ 'Sí' if summary.progress_detected else 'No' }}</strong><span>progreso contra sesiones anteriores</span></div>
+    <div class="metric"><strong>{{ 'Sí' if summary.stagnation_detected else 'No' }}</strong><span>estancamiento detectado</span></div>
+    <div class="metric"><strong>{{ 'Sí' if summary.fatigue_detected else 'No' }}</strong><span>señal de fatiga</span></div>
   </section>
+
+  {% if summary.metrics.duration_seconds is not none or summary.metrics.average_heart_rate_bpm is not none or summary.metrics.calories_burned is not none %}
+    <section class="card">
+      <h2>Contexto de la sesión</h2>
+      <dl class="metadata">
+        {% if summary.metrics.duration_seconds is not none %}<dt>Duración</dt><dd>{{ summary.metrics.duration_seconds }} segundos</dd>{% endif %}
+        {% if summary.metrics.average_heart_rate_bpm is not none %}<dt>FC promedio</dt><dd>{{ summary.metrics.average_heart_rate_bpm }} bpm</dd>{% endif %}
+        {% if summary.metrics.calories_burned is not none %}<dt>Calorías</dt><dd>{{ summary.metrics.calories_burned }}</dd>{% endif %}
+      </dl>
+    </section>
+  {% endif %}
 
   {% if summary.metrics.best_set %}
     <section class="card">
       <h2>Mejor set</h2>
-      <p>{{ summary.metrics.best_set.exercise_name }}: {{ summary.metrics.best_set.weight_kg }} kg × {{ summary.metrics.best_set.reps }} reps (volumen {{ summary.metrics.best_set.volume }}).</p>
+      <p>{{ summary.metrics.best_set.exercise_name }}: {{ summary.metrics.best_set.weight_kg }} kg × {{ summary.metrics.best_set.reps }} reps (volumen {{ summary.metrics.best_set.volume }}, 1RM estimado {{ summary.metrics.best_set.estimated_one_rep_max }} kg).</p>
     </section>
   {% endif %}
 
@@ -31,7 +44,7 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Ejercicio</th><th>Volumen</th><th>Reps</th><th>Peso máximo</th><th>Comparación anterior</th><th>Sugerencia</th></tr>
+          <tr><th>Ejercicio</th><th>Volumen</th><th>Reps</th><th>Peso máximo</th><th>1RM estimado</th><th>RPE promedio</th><th>Descanso promedio</th><th>Comparación anterior</th><th>Señales</th><th>Sugerencia</th></tr>
         </thead>
         <tbody>
           {% for item in summary.exercises %}
@@ -40,11 +53,27 @@
               <td>{{ item.metrics.volume }}</td>
               <td>{{ item.metrics.total_reps }}</td>
               <td>{{ item.metrics.max_weight }}</td>
+              <td>{{ item.metrics.best_estimated_one_rep_max }}</td>
+              <td>{{ item.metrics.average_rpe if item.metrics.average_rpe is not none else '—' }}</td>
+              <td>{% if item.metrics.average_rest_seconds is not none %}{{ item.metrics.average_rest_seconds }} s{% else %}—{% endif %}</td>
               <td>
                 {% if item.comparison.has_previous %}
-                  volumen {{ item.comparison.volume_delta }}, reps {{ item.comparison.reps_delta }}, peso {{ item.comparison.max_weight_delta }}
+                  volumen {{ item.comparison.volume_delta }}, reps {{ item.comparison.reps_delta }}, peso {{ item.comparison.max_weight_delta }}, 1RM {{ item.comparison.estimated_one_rep_max_delta }}
                 {% else %}
                   Primera sesión
+                {% endif %}
+              </td>
+              <td>
+                {% if item.fatigue.detected %}
+                  <strong>Fatiga</strong><br><small>{{ item.fatigue.reason }}</small>
+                {% elif item.stagnation.detected %}
+                  <strong>Estancamiento</strong><br><small>{{ item.stagnation.reason }}</small>
+                {% elif item.comparison.progress_detected %}
+                  Progreso
+                {% elif item.comparison.has_previous %}
+                  Sin mejora
+                {% else %}
+                  Sin historial previo
                 {% endif %}
               </td>
               <td><span class="suggestion suggestion-{{ item.suggestion.code }}">{{ item.suggestion.label }}</span><br><small>{{ item.suggestion.reason }}</small></td>

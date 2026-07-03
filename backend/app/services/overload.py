@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Any
 
 from app.extensions import db
@@ -6,10 +6,32 @@ from app.models import TrainingSession, TrainingSessionExercise, TrainingSet
 
 
 RIR_FOR_LOAD_INCREASE = Decimal("2")
+HIGH_RPE_THRESHOLD = Decimal("9")
+STRONG_DROP_RATIO = Decimal("0.10")
+STAGNATION_APPEARANCES = 3
+TWO_DECIMAL_PLACES = Decimal("0.01")
+ONE_DECIMAL_PLACE = Decimal("0.1")
 
 
 def _set_volume(training_set: TrainingSet) -> Decimal:
     return training_set.weight_kg * training_set.reps
+
+
+def estimated_one_rep_max(training_set: TrainingSet) -> Decimal:
+    """Estimate one-repetition maximum with the Epley formula."""
+    estimate = training_set.weight_kg * (
+        Decimal("1") + (Decimal(training_set.reps) / Decimal("30"))
+    )
+    return estimate.quantize(TWO_DECIMAL_PLACES, rounding=ROUND_HALF_UP)
+
+
+def _average(values: list[Decimal]) -> Decimal | None:
+    if not values:
+        return None
+    return (sum(values, Decimal("0")) / Decimal(len(values))).quantize(
+        TWO_DECIMAL_PLACES,
+        rounding=ROUND_HALF_UP,
+    )
 
 
 def _best_set(sets: list[TrainingSet]) -> dict[str, Any] | None:
@@ -24,12 +46,21 @@ def _best_set(sets: list[TrainingSet]) -> dict[str, Any] | None:
         "weight_kg": best.weight_kg,
         "reps": best.reps,
         "rir": best.rir,
+        "rpe": best.rpe,
+        "rest_seconds": best.rest_seconds,
         "volume": _set_volume(best),
+        "estimated_one_rep_max": estimated_one_rep_max(best),
     }
 
 
 def exercise_metrics(exercise: TrainingSessionExercise) -> dict[str, Any]:
     sets = list(exercise.sets)
+    rpe_values = [item.rpe for item in sets if item.rpe is not None]
+    rest_values = [
+        Decimal(item.rest_seconds)
+        for item in sets
+        if item.rest_seconds is not None
+    ]
     return {
         "exercise_id": exercise.id,
         "session_id": exercise.training_session_id,
@@ -37,12 +68,28 @@ def exercise_metrics(exercise: TrainingSessionExercise) -> dict[str, Any]:
         "volume": sum((_set_volume(item) for item in sets), Decimal("0")),
         "total_reps": sum(item.reps for item in sets),
         "max_weight": max((item.weight_kg for item in sets), default=Decimal("0")),
+        "best_estimated_one_rep_max": max(
+            (estimated_one_rep_max(item) for item in sets),
+            default=Decimal("0"),
+        ),
+        "average_rpe": _average(rpe_values),
+        "average_rest_seconds": _average(rest_values),
         "best_set": _best_set(sets),
     }
 
 
 def session_metrics(training_session: TrainingSession) -> dict[str, Any]:
-    all_sets = [item for exercise in training_session.exercises for item in exercise.sets]
+    all_sets = [
+        item
+        for exercise in training_session.exercises
+        for item in exercise.sets
+    ]
+    rpe_values = [item.rpe for item in all_sets if item.rpe is not None]
+    rest_values = [
+        Decimal(item.rest_seconds)
+        for item in all_sets
+        if item.rest_seconds is not None
+    ]
     best = _best_set(all_sets)
     if best:
         best_set_id = best["set_id"]
@@ -60,6 +107,15 @@ def session_metrics(training_session: TrainingSession) -> dict[str, Any]:
             (item.weight_kg for item in all_sets),
             default=Decimal("0"),
         ),
+        "best_estimated_one_rep_max": max(
+            (estimated_one_rep_max(item) for item in all_sets),
+            default=Decimal("0"),
+        ),
+        "average_rpe": _average(rpe_values),
+        "average_rest_seconds": _average(rest_values),
+        "duration_seconds": training_session.duration_seconds,
+        "average_heart_rate_bpm": training_session.average_heart_rate_bpm,
+        "calories_burned": training_session.calories_burned,
         "best_set": best,
     }
 
@@ -145,19 +201,89 @@ def _comparison(
             "volume_delta": None,
             "reps_delta": None,
             "max_weight_delta": None,
+            "estimated_one_rep_max_delta": None,
             "progress_detected": False,
         }
 
     volume_delta = current["volume"] - previous["volume"]
     reps_delta = current["total_reps"] - previous["total_reps"]
     max_weight_delta = current["max_weight"] - previous["max_weight"]
+    estimated_one_rep_max_delta = (
+        current["best_estimated_one_rep_max"]
+        - previous["best_estimated_one_rep_max"]
+    )
     return {
         "has_previous": True,
         "volume_delta": volume_delta,
         "reps_delta": reps_delta,
         "max_weight_delta": max_weight_delta,
+        "estimated_one_rep_max_delta": estimated_one_rep_max_delta,
         "progress_detected": (
-            volume_delta > 0 or reps_delta > 0 or max_weight_delta > 0
+            volume_delta > 0
+            or reps_delta > 0
+            or max_weight_delta > 0
+            or estimated_one_rep_max_delta > 0
+        ),
+    }
+
+
+def _drop_percentage(current: Decimal, previous: Decimal) -> Decimal | None:
+    if previous <= 0 or current >= previous:
+        return None
+    return (
+        ((previous - current) / previous) * Decimal("100")
+    ).quantize(ONE_DECIMAL_PLACE, rounding=ROUND_HALF_UP)
+
+
+def _fatigue_signal(
+    current: dict[str, Any],
+    previous: dict[str, Any] | None,
+) -> dict[str, Any]:
+    average_rpe = current["average_rpe"]
+    if previous is None or average_rpe is None or average_rpe < HIGH_RPE_THRESHOLD:
+        return {
+            "detected": False,
+            "reason": None,
+            "volume_drop_percent": None,
+            "reps_drop_percent": None,
+        }
+
+    volume_drop = _drop_percentage(current["volume"], previous["volume"])
+    reps_drop = _drop_percentage(
+        Decimal(current["total_reps"]),
+        Decimal(previous["total_reps"]),
+    )
+    strong_volume_drop = (
+        volume_drop is not None
+        and volume_drop >= STRONG_DROP_RATIO * Decimal("100")
+    )
+    strong_reps_drop = (
+        reps_drop is not None
+        and reps_drop >= STRONG_DROP_RATIO * Decimal("100")
+    )
+    detected = strong_volume_drop or strong_reps_drop
+    return {
+        "detected": detected,
+        "reason": (
+            "RPE promedio alto junto con una caída de al menos 10% en reps o volumen."
+            if detected
+            else None
+        ),
+        "volume_drop_percent": volume_drop,
+        "reps_drop_percent": reps_drop,
+    }
+
+
+def _stagnation_signal(appearances_without_progress: int) -> dict[str, Any]:
+    detected = appearances_without_progress >= STAGNATION_APPEARANCES
+    return {
+        "detected": detected,
+        "appearances": appearances_without_progress,
+        "reason": (
+            "No mejoraron peso, reps, volumen ni 1RM estimado en al menos "
+            f"{STAGNATION_APPEARANCES} apariciones consecutivas."
+            if detected
+            else None
         ),
     }
 
@@ -183,13 +309,21 @@ def exercise_history(user_id: int, exercise_name: str) -> list[dict[str, Any]]:
 
     history = []
     previous_metrics = None
+    appearances_without_progress = 0
     for exercise in matching:
         current_metrics = exercise_metrics(exercise)
+        comparison = _comparison(current_metrics, previous_metrics)
+        if previous_metrics is None or comparison["progress_detected"]:
+            appearances_without_progress = 1
+        else:
+            appearances_without_progress += 1
         history.append(
             {
                 "exercise": exercise,
                 "metrics": current_metrics,
-                "comparison": _comparison(current_metrics, previous_metrics),
+                "comparison": comparison,
+                "stagnation": _stagnation_signal(appearances_without_progress),
+                "fatigue": _fatigue_signal(current_metrics, previous_metrics),
                 "suggestion": overload_suggestion(exercise),
             }
         )
@@ -217,5 +351,11 @@ def session_progress_summary(
         "exercises": exercise_rows,
         "progress_detected": any(
             item["comparison"]["progress_detected"] for item in exercise_rows
+        ),
+        "stagnation_detected": any(
+            item["stagnation"]["detected"] for item in exercise_rows
+        ),
+        "fatigue_detected": any(
+            item["fatigue"]["detected"] for item in exercise_rows
         ),
     }

@@ -77,6 +77,12 @@ class User(UserMixin, db.Model):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    medical_lab_reports = db.relationship(
+        "MedicalLabReport",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)

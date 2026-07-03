@@ -1,0 +1,172 @@
+from datetime import date, datetime
+from decimal import Decimal
+from zoneinfo import ZoneInfo
+
+from app.extensions import db
+from app.models import TrainingSession, WeighIn
+from app.services.daily_balance import daily_balance
+from app.services.overload import session_metrics
+
+
+def _local_date(value: datetime, app_timezone: ZoneInfo) -> date:
+    if value.tzinfo is None or value.utcoffset() is None:
+        return value.date()
+    return value.astimezone(app_timezone).date()
+
+
+def _latest_weigh_in(
+    user_id: int,
+    target_date: date,
+    app_timezone: ZoneInfo,
+) -> dict:
+    records = db.session.execute(
+        db.select(WeighIn)
+        .where(WeighIn.user_id == user_id)
+        .order_by(WeighIn.recorded_at.asc(), WeighIn.id.asc())
+    ).scalars()
+    eligible = [
+        record
+        for record in records
+        if _local_date(record.recorded_at, app_timezone) <= target_date
+    ]
+    if not eligible:
+        return {
+            "record": None,
+            "is_exact_date": False,
+            "previous_record": None,
+            "change_from_previous": None,
+            "state": "missing",
+        }
+    latest = eligible[-1]
+    previous = eligible[-2] if len(eligible) > 1 else None
+    is_exact_date = _local_date(latest.recorded_at, app_timezone) == target_date
+    return {
+        "record": latest,
+        "is_exact_date": is_exact_date,
+        "previous_record": previous,
+        "change_from_previous": (
+            latest.weight_kg - previous.weight_kg if previous is not None else None
+        ),
+        "state": "today" if is_exact_date else "carried_forward",
+    }
+
+
+def _session_summaries(
+    user_id: int,
+    target_date: date,
+    app_timezone: ZoneInfo,
+) -> list[dict]:
+    sessions = db.session.execute(
+        db.select(TrainingSession)
+        .where(TrainingSession.user_id == user_id)
+        .order_by(TrainingSession.performed_at.asc(), TrainingSession.id.asc())
+    ).scalars()
+    summaries = []
+    for training_session in sessions:
+        if _local_date(training_session.performed_at, app_timezone) != target_date:
+            continue
+        metrics = session_metrics(training_session)
+        summaries.append(
+            {
+                "record": training_session,
+                "duration_seconds": training_session.duration_seconds,
+                "volume": metrics["volume"],
+                "exercise_names": [
+                    exercise.name for exercise in training_session.exercises
+                ],
+                "calories_burned": training_session.calories_burned,
+            }
+        )
+    return summaries
+
+
+def _domain_state(record, required_value) -> str:
+    if record is None:
+        return "missing"
+    return "complete" if required_value is not None else "partial"
+
+
+def _balance_state(balance) -> str:
+    if balance is None:
+        return "incomplete"
+    if balance > 0:
+        return "surplus"
+    if balance < 0:
+        return "deficit"
+    return "even"
+
+
+def _training_totals(sessions: list[dict]) -> dict:
+    durations = [
+        item["duration_seconds"]
+        for item in sessions
+        if item["duration_seconds"] is not None
+    ]
+    calories = [
+        item["calories_burned"]
+        for item in sessions
+        if item["calories_burned"] is not None
+    ]
+    return {
+        "session_count": len(sessions),
+        "duration_seconds": sum(durations) if durations else None,
+        "volume": sum(
+            (item["volume"] for item in sessions),
+            start=Decimal("0"),
+        ),
+        "exercise_count": sum(len(item["exercise_names"]) for item in sessions),
+        "calories_burned": sum(calories) if calories else None,
+    }
+
+
+def _completion_summary(balance: dict, weight: dict, sessions: list[dict]) -> dict:
+    nutrition_state = _domain_state(
+        balance["nutrition"],
+        balance["calories_consumed"],
+    )
+    energy_state = _domain_state(
+        balance["energy"],
+        balance["calories_expended"],
+    )
+    core_states = (nutrition_state, energy_state)
+    completed_count = sum(state == "complete" for state in core_states)
+    if completed_count == 2:
+        status = "complete"
+    elif all(state == "missing" for state in core_states):
+        status = "empty"
+    else:
+        status = "partial"
+    return {
+        "status": status,
+        "completed_count": completed_count,
+        "required_count": 2,
+        "nutrition_state": nutrition_state,
+        "energy_state": energy_state,
+        "weight_state": weight["state"],
+        "training_state": "recorded" if sessions else "none",
+    }
+
+
+def daily_health_dashboard(
+    user_id: int,
+    target_date: date,
+    timezone_name: str,
+) -> dict:
+    app_timezone = ZoneInfo(timezone_name)
+    balance = daily_balance(user_id, target_date)
+    weight = _latest_weigh_in(
+        user_id,
+        target_date,
+        app_timezone,
+    )
+    sessions = _session_summaries(user_id, target_date, app_timezone)
+    return {
+        **balance,
+        "balance_state": _balance_state(balance["balance"]),
+        "weigh_in": weight["record"],
+        "weigh_in_is_exact_date": weight["is_exact_date"],
+        "weight_change": weight["change_from_previous"],
+        "sessions": sessions,
+        "training_totals": _training_totals(sessions),
+        "completion": _completion_summary(balance, weight, sessions),
+    }

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Importar pesaje · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading"><div><h1>Importar pesaje</h1><p>El JSON debe usar tu user_id y el schema weigh_in.</p></div></section>
+  <section class="card narrow-form">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="field">{{ form.file.label }}{{ form.file() }}{% for error in form.file.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+      {{ form.submit(class_='button') }}
+    </form>
+  </section>
+{% endblock %}

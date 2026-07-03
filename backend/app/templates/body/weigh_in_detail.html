@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Pesaje {{ record.recorded_at.date().isoformat() }} · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div><h1>Pesaje {{ record.recorded_at.isoformat(sep=' ', timespec='minutes') }}</h1><p>Fuente: {{ record.source }}</p></div>
+    <div class="page-actions"><a class="button" href="{{ url_for('body.export_weigh_in_json', record_id=record.id) }}">JSON</a><a class="button button-secondary" href="{{ url_for('body.list_weigh_ins') }}">Volver</a></div>
+  </section>
+  <section class="card">
+    <dl class="metadata">
+      <dt>Peso</dt><dd>{{ record.weight_kg }} kg</dd>
+      <dt>Grasa corporal</dt><dd>{% if record.body_fat_percentage is not none %}{{ record.body_fat_percentage }} %{% else %}—{% endif %}</dd>
+      <dt>Masa muscular</dt><dd>{% if record.muscle_mass_kg is not none %}{{ record.muscle_mass_kg }} kg{% else %}—{% endif %}</dd>
+      <dt>Agua corporal</dt><dd>{% if record.water_percentage is not none %}{{ record.water_percentage }} %{% else %}—{% endif %}</dd>
+      <dt>Grasa visceral</dt><dd>{{ record.visceral_fat if record.visceral_fat is not none else '—' }}</dd>
+      <dt>BMR</dt><dd>{% if record.bmr_kcal is not none %}{{ record.bmr_kcal }} kcal{% else %}—{% endif %}</dd>
+      <dt>BMI / IMC</dt><dd>{{ record.bmi if record.bmi is not none else '—' }}</dd>
+      <dt>Archivo fuente</dt><dd>{{ record.source_file_id or '—' }}</dd>
+      {% if record.notes %}<dt>Notas</dt><dd>{{ record.notes }}</dd>{% endif %}
+    </dl>
+  </section>
+{% endblock %}

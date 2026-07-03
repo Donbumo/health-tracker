@@ -1,6 +1,6 @@
 # Health Tracker
 
-Aplicación web privada, self-hosted y multiusuario. Las seis primeras fases incluyen autenticación, almacenamiento aislado, captura manual validada, rutinas versionables, sesiones realizadas, análisis básico de sobrecarga e importación/exportación base.
+Aplicación web privada, self-hosted y multiusuario. El MVP actual incluye autenticación, almacenamiento aislado, entrenamiento versionable, nutrición/energía diaria, peso y composición corporal, además de un dashboard diario consolidado.
 
 ## Alcance de la Fase 1
 
@@ -22,7 +22,7 @@ Nutrición completa, rutinas avanzadas, estudios médicos, importadores especial
 - Archivos generados en `data/uploads/generated/user_<id>/`.
 - Registro con `source_type=manual_generated`, SHA256 y deduplicación por usuario.
 
-La Fase 2 todavía no importa el contenido del pesaje a una tabla clínica: conserva el JSON validado como fuente estándar para una fase posterior.
+El flujo actual conserva ese JSON como fuente y también lo importa a la tabla `weigh_ins`; esta persistencia posterior mantiene compatibilidad con los documentos creados desde la Fase 2.
 
 ## Alcance de la Fase 3
 
@@ -111,10 +111,35 @@ El contenedor ejecuta automáticamente `flask db upgrade` y `flask seed-admin` a
 
 1. Inicia sesión.
 2. Abre **Registrar pesaje** en la navegación o visita [http://localhost:8000/manual/weigh-in](http://localhost:8000/manual/weigh-in).
-3. Indica la fecha/hora, el peso y, opcionalmente, grasa corporal y notas.
-4. Al guardar, la aplicación genera el JSON, lo valida contra `schemas/weigh_in.schema.json`, calcula su SHA256 y lo registra en MariaDB.
+3. Indica fecha/hora y peso. Opcionalmente agrega grasa corporal, masa muscular, agua, grasa visceral, BMR, BMI y notas.
+4. Al guardar, la aplicación genera el JSON, lo valida contra `schemas/weigh_in.schema.json`, calcula su SHA256, conserva el archivo fuente y persiste el pesaje en MariaDB.
 
 La fecha se interpreta con `APP_TIMEZONE`. El valor recomendado para esta instalación es `America/Mexico_City`; usa un nombre válido de la base IANA si necesitas cambiarlo. Enviar exactamente la misma captura nuevamente no crea otro archivo ni registro.
+
+También están disponibles:
+
+- `/weigh-ins`: listado y accesos de peso.
+- `/weigh-ins/import`: importación de JSON interno validado.
+- `/weigh-ins/history`: historial con cambios, promedio de los últimos siete registros y tendencia simple.
+- `/weigh-ins/<id>/export/json`: documento completo de un pesaje.
+- `/weigh-ins/export/csv`: resumen tabular del historial.
+
+Los imports válidos, duplicados o con error actualizan el estado de `UploadedFile`. El JSON es el formato recomendado para conservar todos los campos; CSV omite notas y metadatos de procedencia.
+
+## Dashboard diario
+
+Abre **Dashboard** o visita `/dashboard?date=AAAA-MM-DD`. Para la fecha elegida muestra:
+
+- calorías y macros nutricionales básicos;
+- gasto total/activo, pasos y balance de calorías;
+- pesaje del día o, si falta, el último pesaje anterior;
+- sesiones realizadas con duración, volumen, ejercicios y calorías.
+
+El estado del día considera esenciales una nutrición con calorías y una energía con gasto total. Distingue entre dato completo, registro parcial y dato faltante. Peso y entrenamiento se muestran como contexto opcional: un día de descanso o sin pesaje no se marca como incompleto.
+
+El bloque corporal muestra el cambio contra el pesaje anterior cuando existe. Si hay varias sesiones, entrenamiento presenta totales de duración, volumen, ejercicios y calorías registradas. Las calorías de sesión no se suman al gasto diario porque el dispositivo o fuente de energía podría haberlas incluido ya.
+
+Cada bloque conserva estados explícitos cuando faltan datos y todas las consultas quedan limitadas al usuario autenticado. No se generan estimaciones para valores ausentes ni interpretaciones médicas del balance.
 
 ## Rutinas versionables
 
@@ -239,7 +264,12 @@ cd backend
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements-dev.txt
-pytest
+python -m compileall -q .
+python -m pytest -q
+flask db check
+
+cd ..
+docker compose config --quiet
 ```
 
 ## Estructura de estas fases
@@ -249,19 +279,22 @@ backend/
   app/
     auth/                 # login y logout
     admin/                # listado y creación básica de usuarios
-    main/                 # inicio y página de uploads
-    models/               # usuarios, archivos y training plans versionados
+    body/                 # pesajes, composición, historial e imports/exports
+    main/                 # dashboard diario y página de uploads
+    models/               # usuarios, archivos, wellness y entrenamiento
     progress/             # historial y resumen de sobrecarga básica
     sessions/             # registro y detalle de sesiones realizadas
     training/             # importar, listar, ver y exportar rutinas
     wellness/             # nutrición, energía, balance, captura e imports
     services/files.py     # uploads originales
     services/daily_balance.py
+    services/daily_dashboard.py
     services/exercise_identity.py # nombres canónicos y aliases privados
     services/exporters/   # JSON, CSV y HTML base
     services/importers/   # JSON interno y stubs de formatos futuros
     services/manual_json.py
     services/overload.py
+    services/weight_history.py
     services/training_plans.py
     services/workout_sessions.py
     services/validation.py

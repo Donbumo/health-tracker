@@ -1,9 +1,13 @@
-from flask import abort, flash, redirect, render_template, url_for
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
+
+from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.models import DailyEnergy, DailyNutrition
 from app.services.files import UploadError, mark_import_status, store_uploaded_file
+from app.services.daily_balance import daily_balance
 from app.services.importers.daily_energy import (
     DailyEnergyImportError,
     import_daily_energy_file,
@@ -170,4 +174,23 @@ def nutrition_detail(record_id: int):
     return render_template(
         "wellness/nutrition_detail.html",
         record=_user_nutrition_or_404(record_id),
+    )
+
+
+@wellness_bp.get("/daily-balance")
+@login_required
+def balance():
+    requested_date = request.args.get("date", "").strip()
+    if requested_date:
+        try:
+            target_date = date.fromisoformat(requested_date)
+        except ValueError:
+            abort(400)
+    else:
+        target_date = datetime.now(
+            ZoneInfo(current_app.config["APP_TIMEZONE"])
+        ).date()
+    return render_template(
+        "wellness/balance.html",
+        summary=daily_balance(current_user.id, target_date),
     )

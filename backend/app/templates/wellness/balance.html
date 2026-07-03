@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Balance diario · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div><h1>Balance diario</h1><p>Nutrición frente a gasto energético.</p></div>
+  </section>
+  <section class="card">
+    <form method="get" class="inline-selection">
+      <div class="field"><label for="balance-date">Fecha</label><input id="balance-date" type="date" name="date" value="{{ summary.date.isoformat() }}" required></div>
+      <button class="button" type="submit">Consultar</button>
+    </form>
+  </section>
+  <section class="summary-grid">
+    <div class="metric"><strong>{{ summary.calories_consumed if summary.calories_consumed is not none else '—' }}</strong><span>calorías ingeridas</span></div>
+    <div class="metric"><strong>{{ summary.protein_g if summary.protein_g is not none else '—' }}</strong><span>proteína g</span></div>
+    <div class="metric"><strong>{{ summary.fat_g if summary.fat_g is not none else '—' }}</strong><span>grasa g</span></div>
+    <div class="metric"><strong>{{ summary.net_carbs_g if summary.net_carbs_g is not none else '—' }}</strong><span>net carbs g</span></div>
+    <div class="metric"><strong>{{ summary.fiber_g if summary.fiber_g is not none else '—' }}</strong><span>fibra g</span></div>
+    <div class="metric"><strong>{{ summary.calories_expended if summary.calories_expended is not none else '—' }}</strong><span>calorías gastadas</span></div>
+    <div class="metric"><strong>{{ summary.active_calories if summary.active_calories is not none else '—' }}</strong><span>calorías activas</span></div>
+    <div class="metric"><strong>{{ summary.balance if summary.balance is not none else '—' }}</strong><span>balance</span></div>
+  </section>
+  {% if not summary.complete %}<section class="notice warning">Día incompleto: falta nutrición, gasto total o ambos.</section>{% endif %}
+{% endblock %}

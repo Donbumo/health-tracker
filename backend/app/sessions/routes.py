@@ -23,7 +23,7 @@ from app.services.exporters.training_session import (
     TrainingSessionHtmlExporter,
     TrainingSessionJsonExporter,
 )
-from app.services.files import UploadError, store_uploaded_file
+from app.services.files import UploadError, mark_import_status, store_uploaded_file
 from app.services.importers.base import ImporterError
 from app.services.importers.completed_workout import import_completed_workout_file
 from app.services.manual_json import ManualJsonGenerationError
@@ -165,8 +165,9 @@ def list_sessions():
 def import_session():
     form = CompletedWorkoutImportForm()
     if form.validate_on_submit():
+        source_file = None
         try:
-            source_file, _file_duplicate = store_uploaded_file(
+            source_file, file_duplicate = store_uploaded_file(
                 form.file.data,
                 current_user.id,
             )
@@ -180,8 +181,23 @@ def import_session():
             TrainingSessionError,
             UploadError,
         ) as error:
+            if source_file is not None:
+                mark_import_status(
+                    source_file,
+                    current_user.id,
+                    status="error",
+                    detected_type="completed_workout",
+                    error_message=str(error),
+                )
             flash(f"No fue posible importar la sesión: {error}", "danger")
         else:
+            duplicate = file_duplicate or duplicate
+            mark_import_status(
+                source_file,
+                current_user.id,
+                status="duplicate" if duplicate else "imported",
+                detected_type="completed_workout",
+            )
             if duplicate:
                 flash("Esta sesión ya había sido importada.", "warning")
             else:

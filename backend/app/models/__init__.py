@@ -1,3 +1,4 @@
+from app.models.exercise import Exercise, ExerciseAlias
 from app.models.training_plan import TrainingPlan, TrainingPlanVersion
 from app.models.training_session import (
     TrainingSession,
@@ -9,6 +10,8 @@ from app.models.user import User
 
 
 __all__ = [
+    "Exercise",
+    "ExerciseAlias",
     "TrainingPlan",
     "TrainingPlanVersion",
     "TrainingSession",

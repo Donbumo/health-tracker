@@ -13,7 +13,8 @@ class User(UserMixin, db.Model):
     )
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), nullable=False, unique=True, index=True)
+    username = db.Column(db.String(254), nullable=False, unique=True, index=True)
+    email = db.Column(db.String(254), nullable=True, unique=True, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(
         db.String(20),
@@ -42,6 +43,18 @@ class User(UserMixin, db.Model):
     )
     training_sessions = db.relationship(
         "TrainingSession",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    exercises = db.relationship(
+        "Exercise",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    exercise_aliases = db.relationship(
+        "ExerciseAlias",
         back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,

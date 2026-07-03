@@ -2,6 +2,7 @@ from urllib.parse import urlsplit
 
 from flask import flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_user, logout_user
+from sqlalchemy import or_
 
 from app.auth import auth_bp
 from app.auth.forms import LoginForm, LogoutForm
@@ -31,7 +32,12 @@ def login():
     if form.validate_on_submit():
         username = form.username.data.strip()
         user = db.session.execute(
-            db.select(User).where(User.username == username)
+            db.select(User).where(
+                or_(
+                    User.username == username,
+                    User.email == username.casefold(),
+                )
+            )
         ).scalar_one_or_none()
 
         if user and user.check_password(form.password.data):

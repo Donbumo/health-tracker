@@ -10,13 +10,32 @@
   </section>
 
   <section class="card">
+    <h2>Identidad del ejercicio</h2>
+    <p>
+      Nombre canónico: <strong>{{ identity.canonical_name if identity else exercise.name }}</strong>.
+      Los nombres originales de las sesiones se conservan.
+    </p>
+    {% if identity and identity.aliases %}
+      <p>Aliases: {{ identity.aliases | map(attribute='alias_name') | join(', ') }}</p>
+    {% endif %}
+    <form method="post" action="{{ url_for('progress.add_alias', exercise_id=exercise.id) }}" class="inline-selection">
+      {{ alias_form.hidden_tag() }}
+      <div class="field grow">
+        {{ alias_form.alias_name.label }}
+        {{ alias_form.alias_name(placeholder='Ej. T-bar row') }}
+      </div>
+      {{ alias_form.submit(class_='button button-secondary') }}
+    </form>
+  </section>
+
+  <section class="card">
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
             <th>Fecha</th><th>Volumen</th><th>Reps</th><th>Peso máximo</th>
             <th>1RM estimado</th><th>RPE promedio</th><th>Descanso promedio</th>
-            <th>Mejor set</th><th>Comparación anterior</th><th>Señales</th><th>Sugerencia</th>
+            <th>Mejor set</th><th>Comparación anterior</th><th>Tendencia</th><th>Recomendación</th>
           </tr>
         </thead>
         <tbody>
@@ -43,19 +62,9 @@
                 {% endif %}
               </td>
               <td>
-                {% if item.fatigue.detected %}
-                  <strong>Fatiga</strong><br><small>{{ item.fatigue.reason }}</small>
-                {% elif item.stagnation.detected %}
-                  <strong>Estancamiento</strong><br><small>{{ item.stagnation.reason }}</small>
-                {% elif item.comparison.progress_detected %}
-                  Progreso
-                {% elif item.comparison.has_previous %}
-                  Sin mejora
-                {% else %}
-                  Sin historial previo
-                {% endif %}
+                {{ item.trend.label }}
               </td>
-              <td><span class="suggestion suggestion-{{ item.suggestion.code }}">{{ item.suggestion.label }}</span><br><small>{{ item.suggestion.reason }}</small></td>
+              <td><span class="suggestion suggestion-{{ item.recommendation.code }}">{{ item.recommendation.label }}</span><br><small>{{ item.recommendation.reason }}</small></td>
             </tr>
           {% else %}
             <tr><td colspan="11">No hay historial disponible.</td></tr>

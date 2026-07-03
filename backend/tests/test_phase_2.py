@@ -105,6 +105,8 @@ def test_manual_weigh_in_generates_valid_deduplicated_json(app, client, user):
         record = db.session.execute(db.select(UploadedFile)).scalar_one()
         assert record.user_id == user
         assert record.source_type == "manual_generated"
+        assert record.detected_type == "weigh_in"
+        assert record.import_status == "imported"
         assert record.mime_type == "application/json"
         assert record.storage_path.startswith(f"uploads/generated/user_{user}/")
 

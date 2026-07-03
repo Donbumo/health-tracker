@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Usuarios · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Usuarios</h1>
+      <p>Administración básica de cuentas locales.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Crear usuario</h2>
+    <form method="post" action="{{ url_for('admin.create_user') }}" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="field">
+        {{ form.email.label }}
+        {{ form.email() }}
+        {% for error in form.email.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="field">
+        {{ form.password.label }}
+        {{ form.password() }}
+        {% for error in form.password.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="field">
+        {{ form.role.label }}
+        {{ form.role() }}
+        {% for error in form.role.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      {{ form.submit(class_="button") }}
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Cuentas existentes</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>Usuario</th><th>Email</th><th>Rol</th><th>Creado</th></tr></thead>
+        <tbody>
+          {% for user in users %}
+            <tr>
+              <td>{{ user.id }}</td>
+              <td>{{ user.username }}</td>
+              <td>{{ user.email or '—' }}</td>
+              <td>{{ user.role }}</td>
+              <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

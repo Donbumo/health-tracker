@@ -10,7 +10,7 @@ from app.services.exporters.training_plan import (
     TrainingPlanCsvExporter,
     TrainingPlanJsonExporter,
 )
-from app.services.files import UploadError, store_uploaded_file
+from app.services.files import UploadError, mark_import_status, store_uploaded_file
 from app.services.importers.training_plan import import_training_plan_file
 from app.services.training_plans import (
     TrainingPlanImportError,
@@ -78,8 +78,9 @@ def list_plans():
 def import_plan():
     form = TrainingPlanImportForm()
     if form.validate_on_submit():
+        source_file = None
         try:
-            source_file, _file_duplicate = store_uploaded_file(
+            source_file, file_duplicate = store_uploaded_file(
                 form.file.data,
                 current_user.id,
             )
@@ -88,9 +89,24 @@ def import_plan():
                 current_user.id,
             )
         except (UploadError, TrainingPlanImportError, JsonSchemaValidationError) as error:
+            if source_file is not None:
+                mark_import_status(
+                    source_file,
+                    current_user.id,
+                    status="error",
+                    detected_type="training_plan",
+                    error_message=str(error),
+                )
             flash(f"No fue posible importar la rutina: {error}", "danger")
         else:
-            if plan_duplicate:
+            duplicate = file_duplicate or plan_duplicate
+            mark_import_status(
+                source_file,
+                current_user.id,
+                status="duplicate" if duplicate else "imported",
+                detected_type="training_plan",
+            )
+            if duplicate:
                 flash("Esta rutina ya había sido importada.", "warning")
             else:
                 flash("Rutina importada como versión 1.", "success")
@@ -130,8 +146,9 @@ def new_version(plan_id: int):
     plan = _user_plan_or_404(plan_id)
     form = TrainingPlanVersionForm()
     if form.validate_on_submit():
+        source_file = None
         try:
-            source_file, _file_duplicate = store_uploaded_file(
+            source_file, file_duplicate = store_uploaded_file(
                 form.file.data,
                 current_user.id,
             )
@@ -142,8 +159,23 @@ def new_version(plan_id: int):
                 change_reason=form.change_reason.data,
             )
         except (UploadError, TrainingPlanImportError, JsonSchemaValidationError) as error:
+            if source_file is not None:
+                mark_import_status(
+                    source_file,
+                    current_user.id,
+                    status="error",
+                    detected_type="training_plan",
+                    error_message=str(error),
+                )
             flash(f"No fue posible crear la versión: {error}", "danger")
         else:
+            duplicate = file_duplicate or duplicate
+            mark_import_status(
+                source_file,
+                current_user.id,
+                status="duplicate" if duplicate else "imported",
+                detected_type="training_plan",
+            )
             if duplicate:
                 flash(
                     f"Ese contenido ya existe como versión {version.version_number}.",

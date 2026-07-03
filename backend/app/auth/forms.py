@@ -5,8 +5,8 @@ from wtforms.validators import DataRequired, Length
 
 class LoginForm(FlaskForm):
     username = StringField(
-        "Usuario",
-        validators=[DataRequired(), Length(max=80)],
+        "Usuario o email",
+        validators=[DataRequired(), Length(max=254)],
         render_kw={"autocomplete": "username"},
     )
     password = PasswordField(

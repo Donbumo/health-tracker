@@ -52,6 +52,9 @@ Edición visual avanzada, sobrecarga progresiva, comparación avanzada plan vs r
 - Comparación de volumen, reps y peso máximo contra la sesión anterior del mismo ejercicio.
 - Sugerencias simples de carga usando el rango planeado y el RIR registrado.
 - Resumen de progreso desde el detalle de cada sesión.
+- Estimación de 1RM con Epley, RPE promedio y descanso promedio cuando existen.
+- Tendencia contra la sesión anterior, detección básica de estancamiento y señales de fatiga.
+- Identidades canónicas y aliases privados por usuario para agrupar nombres equivalentes sin reescribir las sesiones históricas.
 
 Para planes de fuerza, cada serie puede usar `reps` como objetivo exacto o el par `reps_min` y `reps_max` como rango. La sugerencia es **Subir carga** cuando se completan todas las series en el extremo alto con al menos 2 RIR; **Mantener** cuando el trabajo queda dentro del rango; y **Revisar fatiga** cuando falta una serie o sus reps caen por debajo del mínimo. Son reglas descriptivas del entrenamiento registrado, no recomendaciones médicas ni un motor avanzado de programación.
 
@@ -146,8 +149,9 @@ Reemplaza `user_id` por el valor mostrado en la página. El archivo debe usar ex
 1. Importa al menos una rutina que contenga un día con ejercicios.
 2. Abre **Sesiones → Registrar sesión**, o usa **Registrar sesión** desde el detalle de una rutina.
 3. Selecciona el día planeado y pulsa **Cargar ejercicios**.
-4. Marca las series efectivamente realizadas e indica peso, reps, RIR opcional y notas.
-5. Guarda la sesión para ver su detalle y la comparación plan vs realidad.
+4. Marca las series efectivamente realizadas e indica peso, reps, RIR, RPE, descanso y notas cuando apliquen.
+5. Opcionalmente registra duración total, frecuencia cardiaca promedio y calorías.
+6. Guarda la sesión para ver su detalle y la comparación plan vs realidad.
 
 Las series no marcadas aparecen como omitidas. En este MVP solo se capturan series correspondientes al día planeado; no existe todavía edición avanzada ni captura de ejercicios adicionales.
 
@@ -155,11 +159,12 @@ Las series no marcadas aparecen como omitidas. En este MVP solo se capturan seri
 
 Después de registrar una sesión:
 
-1. Abre su detalle y pulsa **Ver progreso** para consultar volumen total, reps, peso máximo, mejor serie y cambios por ejercicio.
+1. Abre su detalle y pulsa **Ver progreso** para consultar volumen total, reps, peso máximo, mejor serie, 1RM estimado, RPE y descanso promedio.
 2. Pulsa el nombre de un ejercicio para abrir su historial completo.
-3. Consulta la diferencia contra la ejecución anterior y la sugerencia básica calculada desde el rango de reps y el RIR.
+3. Consulta la tendencia, la diferencia contra la ejecución anterior y la recomendación básica calculada desde el rango de reps, RIR, RPE e historial.
+4. Desde el historial agrega aliases para nombres equivalentes, por ejemplo `Remo en T` y `T-bar row`.
 
-El historial agrupa por nombre de ejercicio sin distinguir mayúsculas y siempre se limita al usuario autenticado. Si el plan usa un objetivo exacto `reps`, ese valor funciona como mínimo y máximo del rango.
+El historial usa la identidad canónica cuando existe; de lo contrario mantiene el fallback por nombre sin distinguir mayúsculas. Los aliases son privados y siempre se limitan al usuario autenticado. Si el plan usa un objetivo exacto `reps`, ese valor funciona como mínimo y máximo del rango.
 
 ## Importar y exportar
 
@@ -175,6 +180,12 @@ En el detalle de una sesión están disponibles:
 - **Vista imprimible**: HTML sencillo con tabla de ejercicios y series.
 
 CSV aplana la jerarquía y puede perder estructura o metadatos; usa JSON para respaldos o intercambio entre instalaciones compatibles. Para importar una sesión abre **Sesiones → Importar JSON**. El documento debe usar tu `user_id` y referenciar una rutina y versión que ya existan en tu cuenta. Los archivos válidos, inválidos y duplicados se conservan como fuentes originales bajo `data/uploads/raw/user_<id>/`.
+
+La página **Archivos** muestra el tipo detectado, estado de importación (`pending`, `imported`, `duplicate` o `error`) y el mensaje de error cuando corresponde.
+
+## Administración básica de usuarios
+
+Los usuarios con rol `admin` pueden abrir **Usuarios** o visitar [http://localhost:8000/admin/users](http://localhost:8000/admin/users). Desde ahí pueden listar cuentas y crear usuarios con email, contraseña temporal y rol `admin` o `user`. Los usuarios normales reciben HTTP 403. Las cuentas creadas desde este panel pueden iniciar sesión con su email; los usernames existentes siguen siendo compatibles.
 
 Formatos futuros, todavía sin implementación real: FIT, GPX, TCX, Magene, Huawei, PDF avanzado e integraciones de APK/reloj. Los módulos stub de FIT, GPX y Magene solo reservan el punto de extensión y lanzan `NotImplementedError`.
 
@@ -214,12 +225,14 @@ pytest
 backend/
   app/
     auth/                 # login y logout
+    admin/                # listado y creación básica de usuarios
     main/                 # inicio y página de uploads
     models/               # usuarios, archivos y training plans versionados
     progress/             # historial y resumen de sobrecarga básica
     sessions/             # registro y detalle de sesiones realizadas
     training/             # importar, listar, ver y exportar rutinas
     services/files.py     # uploads originales
+    services/exercise_identity.py # nombres canónicos y aliases privados
     services/exporters/   # JSON, CSV y HTML base
     services/importers/   # JSON interno y stubs de formatos futuros
     services/manual_json.py

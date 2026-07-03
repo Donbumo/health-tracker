@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Nutrición {{ record.date.isoformat() }} · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div><h1>Nutrición {{ record.date.isoformat() }}</h1><p>Fuente: {{ record.source }}</p></div>
+    <div class="page-actions"><a class="button" href="{{ url_for('wellness.nutrition_export', record_id=record.id, format_name='json') }}">JSON</a><a class="button button-secondary" href="{{ url_for('wellness.nutrition_export', record_id=record.id, format_name='csv') }}">CSV resumen</a><a class="button button-secondary" href="{{ url_for('wellness.nutrition_list') }}">Volver</a></div>
+  </section>
+  <section class="summary-grid">
+    <div class="metric"><strong>{{ record.calories if record.calories is not none else '—' }}</strong><span>calorías</span></div>
+    <div class="metric"><strong>{{ record.protein_g if record.protein_g is not none else '—' }}</strong><span>proteína g</span></div>
+    <div class="metric"><strong>{{ record.fat_g if record.fat_g is not none else '—' }}</strong><span>grasa g</span></div>
+    <div class="metric"><strong>{{ record.net_carbs_g if record.net_carbs_g is not none else '—' }}</strong><span>net carbs g</span></div>
+    <div class="metric"><strong>{{ record.total_carbs_g if record.total_carbs_g is not none else '—' }}</strong><span>carbs totales g</span></div>
+    <div class="metric"><strong>{{ record.fiber_g if record.fiber_g is not none else '—' }}</strong><span>fibra g</span></div>
+  </section>
+  {% for meal in record.meals %}
+    <section class="card">
+      <h2>{{ meal.name or meal.meal_type }}</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Item</th><th>Cantidad</th><th>Calorías</th><th>Proteína</th><th>Grasa</th><th>Net carbs</th></tr></thead>
+        <tbody>{% for item in meal.items %}<tr>
+          <td>{{ item.name }}</td><td>{{ item.quantity if item.quantity is not none else '—' }} {{ item.unit or '' }}</td>
+          <td>{{ item.calories if item.calories is not none else '—' }}</td><td>{{ item.protein_g if item.protein_g is not none else '—' }}</td>
+          <td>{{ item.fat_g if item.fat_g is not none else '—' }}</td><td>{{ item.net_carbs_g if item.net_carbs_g is not none else '—' }}</td>
+        </tr>{% endfor %}</tbody>
+      </table></div>
+    </section>
+  {% endfor %}
+  {% if record.notes %}<section class="card"><h2>Notas</h2><p>{{ record.notes }}</p></section>{% endif %}
+{% endblock %}

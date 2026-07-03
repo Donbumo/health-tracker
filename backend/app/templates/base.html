@@ -15,6 +15,9 @@
           <a href="{{ url_for('main.manual_weigh_in') }}">Registrar pesaje</a>
           <a href="{{ url_for('training.list_plans') }}">Rutinas</a>
           <a href="{{ url_for('sessions.list_sessions') }}">Sesiones</a>
+          <a href="{{ url_for('wellness.energy_list') }}">Energía</a>
+          <a href="{{ url_for('wellness.nutrition_list') }}">Nutrición</a>
+          <a href="{{ url_for('wellness.balance') }}">Balance</a>
           <a href="{{ url_for('main.uploads') }}">Archivos</a>
           {% if current_user.is_admin %}<a href="{{ url_for('admin.users') }}">Usuarios</a>{% endif %}
           <span>{{ current_user.username }}</span>

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Importar energía · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading"><div><h1>Importar energía diaria</h1><p>El JSON debe usar tu user_id y el schema daily_energy.</p></div></section>
+  <section class="card">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="field">{{ form.file.label }}{{ form.file() }}{% for error in form.file.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+      {{ form.submit(class_='button') }}
+    </form>
+  </section>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Capturar nutrición · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading"><div><h1>Captura manual de nutrición</h1><p>MVP: una comida y un item por registro diario.</p></div></section>
+  <section class="notice warning">Para varios items usa la importación JSON. El editor dinámico queda pendiente.</section>
+  <section class="card"><form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {% for field in [form.date, form.meal_type, form.meal_name, form.item_name, form.quantity, form.unit, form.calories, form.protein_g, form.fat_g, form.net_carbs_g, form.total_carbs_g, form.fiber_g, form.sugar_g, form.sodium_mg, form.notes] %}
+      <div class="field">{{ field.label }}{{ field() }}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+    {% endfor %}
+    {{ form.submit(class_='button') }}
+  </form></section>
+{% endblock %}

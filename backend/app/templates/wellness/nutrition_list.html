@@ -3,7 +3,7 @@
 {% block content %}
   <section class="page-heading">
     <div><h1>Nutrición diaria</h1><p>Totales calculados y comidas registradas por fecha.</p></div>
-    <a class="button" href="{{ url_for('wellness.nutrition_import') }}">Importar JSON</a>
+    <div class="page-actions"><a class="button" href="{{ url_for('wellness.manual_nutrition') }}">Captura manual</a><a class="button button-secondary" href="{{ url_for('wellness.nutrition_import') }}">Importar JSON</a></div>
   </section>
   <section class="card">
     <div class="table-wrap">

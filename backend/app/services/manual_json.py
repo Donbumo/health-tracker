@@ -3,7 +3,7 @@ import json
 import math
 import os
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -51,6 +51,98 @@ def build_weigh_in_document(
     return {
         "schema_version": "1.0",
         "record_type": "weigh_in",
+        "user_id": user_id,
+        "source_type": "manual_generated",
+        "data": data,
+    }
+
+
+def build_daily_energy_document(
+    *,
+    user_id: int,
+    record_date: date,
+    total_calories: Decimal | float | int | None = None,
+    active_calories: Decimal | float | int | None = None,
+    resting_calories: Decimal | float | int | None = None,
+    steps: int | None = None,
+    distance_meters: Decimal | float | int | None = None,
+    notes: str | None = None,
+) -> dict[str, Any]:
+    data: dict[str, Any] = {"date": record_date.isoformat(), "source": "manual"}
+    optional_numbers = {
+        "total_expenditure_kcal": total_calories,
+        "active_expenditure_kcal": active_calories,
+        "resting_expenditure_kcal": resting_calories,
+        "distance_meters": distance_meters,
+    }
+    for field, value in optional_numbers.items():
+        if value is not None:
+            data[field] = _finite_number(value)
+    if steps is not None:
+        data["steps"] = steps
+    if notes and notes.strip():
+        data["notes"] = notes.strip()
+    return {
+        "schema_version": "1.0",
+        "record_type": "daily_energy",
+        "user_id": user_id,
+        "source_type": "manual_generated",
+        "data": data,
+    }
+
+
+def build_daily_nutrition_document(
+    *,
+    user_id: int,
+    record_date: date,
+    meal_type: str,
+    meal_name: str | None,
+    item_name: str,
+    quantity: Decimal | float | int | None = None,
+    unit: str | None = None,
+    calories: Decimal | float | int | None = None,
+    protein_g: Decimal | float | int | None = None,
+    fat_g: Decimal | float | int | None = None,
+    net_carbs_g: Decimal | float | int | None = None,
+    total_carbs_g: Decimal | float | int | None = None,
+    fiber_g: Decimal | float | int | None = None,
+    sugar_g: Decimal | float | int | None = None,
+    sodium_mg: Decimal | float | int | None = None,
+    notes: str | None = None,
+) -> dict[str, Any]:
+    item: dict[str, Any] = {"name": item_name.strip()}
+    if not item["name"]:
+        raise ManualJsonGenerationError("Nutrition item name must not be blank")
+    if quantity is not None:
+        item["quantity"] = _finite_number(quantity)
+    if unit and unit.strip():
+        item["unit"] = unit.strip()
+    for field, value in {
+        "calories_kcal": calories,
+        "protein_g": protein_g,
+        "fat_g": fat_g,
+        "net_carbs_g": net_carbs_g,
+        "total_carbs_g": total_carbs_g,
+        "fiber_g": fiber_g,
+        "sugar_g": sugar_g,
+        "sodium_mg": sodium_mg,
+    }.items():
+        if value is not None:
+            item[field] = _finite_number(value)
+
+    meal: dict[str, Any] = {"meal_type": meal_type, "items": [item]}
+    if meal_name and meal_name.strip():
+        meal["name"] = meal_name.strip()
+    data: dict[str, Any] = {
+        "date": record_date.isoformat(),
+        "source": "manual",
+        "meals": [meal],
+    }
+    if notes and notes.strip():
+        data["notes"] = notes.strip()
+    return {
+        "schema_version": "1.0",
+        "record_type": "daily_nutrition",
         "user_id": user_id,
         "source_type": "manual_generated",
         "data": data,

@@ -16,9 +16,20 @@ from app.services.importers.daily_nutrition import (
     DailyNutritionImportError,
     import_daily_nutrition_file,
 )
+from app.services.manual_json import (
+    ManualJsonGenerationError,
+    build_daily_energy_document,
+    build_daily_nutrition_document,
+    generate_standard_json,
+)
 from app.services.validation import JsonSchemaValidationError
 from app.wellness import wellness_bp
-from app.wellness.forms import DailyEnergyImportForm, DailyNutritionImportForm
+from app.wellness.forms import (
+    DailyEnergyImportForm,
+    DailyEnergyManualForm,
+    DailyNutritionImportForm,
+    DailyNutritionManualForm,
+)
 
 
 def _user_energy_or_404(record_id: int) -> DailyEnergy:
@@ -194,3 +205,139 @@ def balance():
         "wellness/balance.html",
         summary=daily_balance(current_user.id, target_date),
     )
+
+
+@wellness_bp.route("/manual/energy", methods=["GET", "POST"])
+@login_required
+def manual_energy():
+    form = DailyEnergyManualForm()
+    if not form.is_submitted():
+        form.date.data = datetime.now(
+            ZoneInfo(current_app.config["APP_TIMEZONE"])
+        ).date()
+    if form.validate_on_submit():
+        document = build_daily_energy_document(
+            user_id=current_user.id,
+            record_date=form.date.data,
+            total_calories=form.total_calories.data,
+            active_calories=form.active_calories.data,
+            resting_calories=form.resting_calories.data,
+            steps=form.steps.data,
+            distance_meters=form.distance_meters.data,
+            notes=form.notes.data,
+        )
+        source_file = None
+        try:
+            source_file, file_duplicate = generate_standard_json(
+                document=document,
+                schema_name="daily_energy",
+                user_id=current_user.id,
+                original_filename=f"daily_energy_{form.date.data.isoformat()}.json",
+            )
+            record, record_duplicate = import_daily_energy_file(
+                source_file,
+                current_user.id,
+            )
+        except (
+            DailyEnergyImportError,
+            JsonSchemaValidationError,
+            ManualJsonGenerationError,
+        ) as error:
+            if source_file is not None:
+                mark_import_status(
+                    source_file,
+                    current_user.id,
+                    status="error",
+                    detected_type="daily_energy",
+                    error_message=str(error),
+                )
+            flash(f"No fue posible guardar la energía diaria: {error}", "danger")
+        else:
+            duplicate = file_duplicate or record_duplicate
+            mark_import_status(
+                source_file,
+                current_user.id,
+                status="duplicate" if duplicate else "imported",
+                detected_type="daily_energy",
+            )
+            flash(
+                "Ese registro de energía ya existía."
+                if duplicate
+                else "Energía diaria guardada correctamente.",
+                "warning" if duplicate else "success",
+            )
+            return redirect(url_for("wellness.energy_detail", record_id=record.id))
+    return render_template("wellness/manual_energy.html", form=form)
+
+
+@wellness_bp.route("/manual/nutrition", methods=["GET", "POST"])
+@login_required
+def manual_nutrition():
+    form = DailyNutritionManualForm()
+    if not form.is_submitted():
+        form.date.data = datetime.now(
+            ZoneInfo(current_app.config["APP_TIMEZONE"])
+        ).date()
+    if form.validate_on_submit():
+        document = build_daily_nutrition_document(
+            user_id=current_user.id,
+            record_date=form.date.data,
+            meal_type=form.meal_type.data,
+            meal_name=form.meal_name.data,
+            item_name=form.item_name.data,
+            quantity=form.quantity.data,
+            unit=form.unit.data,
+            calories=form.calories.data,
+            protein_g=form.protein_g.data,
+            fat_g=form.fat_g.data,
+            net_carbs_g=form.net_carbs_g.data,
+            total_carbs_g=form.total_carbs_g.data,
+            fiber_g=form.fiber_g.data,
+            sugar_g=form.sugar_g.data,
+            sodium_mg=form.sodium_mg.data,
+            notes=form.notes.data,
+        )
+        source_file = None
+        try:
+            source_file, file_duplicate = generate_standard_json(
+                document=document,
+                schema_name="daily_nutrition",
+                user_id=current_user.id,
+                original_filename=f"daily_nutrition_{form.date.data.isoformat()}.json",
+            )
+            record, record_duplicate = import_daily_nutrition_file(
+                source_file,
+                current_user.id,
+            )
+        except (
+            DailyNutritionImportError,
+            JsonSchemaValidationError,
+            ManualJsonGenerationError,
+        ) as error:
+            if source_file is not None:
+                mark_import_status(
+                    source_file,
+                    current_user.id,
+                    status="error",
+                    detected_type="daily_nutrition",
+                    error_message=str(error),
+                )
+            flash(f"No fue posible guardar la nutrición diaria: {error}", "danger")
+        else:
+            duplicate = file_duplicate or record_duplicate
+            mark_import_status(
+                source_file,
+                current_user.id,
+                status="duplicate" if duplicate else "imported",
+                detected_type="daily_nutrition",
+            )
+            flash(
+                "Ese registro de nutrición ya existía."
+                if duplicate
+                else "Nutrición diaria guardada correctamente.",
+                "warning" if duplicate else "success",
+            )
+            return redirect(
+                url_for("wellness.nutrition_detail", record_id=record.id)
+            )
+    return render_template("wellness/manual_nutrition.html", form=form)

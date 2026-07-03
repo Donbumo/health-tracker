@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Capturar energía · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading"><div><h1>Captura manual de energía</h1><p>Ingresa al menos una métrica del día.</p></div></section>
+  <section class="card"><form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {% for field in [form.date, form.total_calories, form.active_calories, form.resting_calories, form.steps, form.distance_meters, form.notes] %}
+      <div class="field">{{ field.label }}{{ field() }}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+    {% endfor %}
+    {{ form.submit(class_='button') }}
+  </form></section>
+{% endblock %}

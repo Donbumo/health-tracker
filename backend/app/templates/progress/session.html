@@ -44,7 +44,7 @@
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Ejercicio</th><th>Volumen</th><th>Reps</th><th>Peso máximo</th><th>1RM estimado</th><th>RPE promedio</th><th>Descanso promedio</th><th>Comparación anterior</th><th>Señales</th><th>Sugerencia</th></tr>
+          <tr><th>Ejercicio</th><th>Volumen</th><th>Reps</th><th>Peso máximo</th><th>1RM estimado</th><th>RPE promedio</th><th>Descanso promedio</th><th>Comparación anterior</th><th>Tendencia</th><th>Recomendación</th></tr>
         </thead>
         <tbody>
           {% for item in summary.exercises %}
@@ -64,19 +64,9 @@
                 {% endif %}
               </td>
               <td>
-                {% if item.fatigue.detected %}
-                  <strong>Fatiga</strong><br><small>{{ item.fatigue.reason }}</small>
-                {% elif item.stagnation.detected %}
-                  <strong>Estancamiento</strong><br><small>{{ item.stagnation.reason }}</small>
-                {% elif item.comparison.progress_detected %}
-                  Progreso
-                {% elif item.comparison.has_previous %}
-                  Sin mejora
-                {% else %}
-                  Sin historial previo
-                {% endif %}
+                {{ item.trend.label }}
               </td>
-              <td><span class="suggestion suggestion-{{ item.suggestion.code }}">{{ item.suggestion.label }}</span><br><small>{{ item.suggestion.reason }}</small></td>
+              <td><span class="suggestion suggestion-{{ item.recommendation.code }}">{{ item.recommendation.label }}</span><br><small>{{ item.recommendation.reason }}</small></td>
             </tr>
           {% endfor %}
         </tbody>

@@ -293,6 +293,47 @@ def _stagnation_signal(appearances_without_progress: int) -> dict[str, Any]:
     }
 
 
+def _comparison_trend(comparison: dict[str, Any]) -> dict[str, str]:
+    if not comparison["has_previous"]:
+        return {"code": "baseline", "label": "Primera sesión"}
+
+    deltas = (
+        comparison["volume_delta"],
+        comparison["reps_delta"],
+        comparison["max_weight_delta"],
+        comparison["estimated_one_rep_max_delta"],
+    )
+    has_improvement = any(delta > 0 for delta in deltas)
+    has_decline = any(delta < 0 for delta in deltas)
+    if has_improvement and has_decline:
+        return {"code": "mixed", "label": "Tendencia mixta"}
+    if has_improvement:
+        return {"code": "improved", "label": "Mejora"}
+    if has_decline:
+        return {"code": "declined", "label": "Baja"}
+    return {"code": "stable", "label": "Sin cambio"}
+
+
+def _effective_recommendation(
+    suggestion: dict[str, str],
+    stagnation: dict[str, Any],
+    fatigue: dict[str, Any],
+) -> dict[str, str]:
+    if fatigue["detected"]:
+        return {
+            "code": "review_fatigue",
+            "label": "Revisar fatiga",
+            "reason": fatigue["reason"],
+        }
+    if stagnation["detected"]:
+        return {
+            "code": "possible_stagnation",
+            "label": "Posible estancamiento",
+            "reason": stagnation["reason"],
+        }
+    return suggestion
+
+
 def exercise_history(user_id: int, exercise_name: str) -> list[dict[str, Any]]:
     identity = find_exercise_identity(user_id, exercise_name)
     matching_names = (
@@ -328,14 +369,23 @@ def exercise_history(user_id: int, exercise_name: str) -> list[dict[str, Any]]:
             appearances_without_progress = 1
         else:
             appearances_without_progress += 1
+        stagnation = _stagnation_signal(appearances_without_progress)
+        fatigue = _fatigue_signal(current_metrics, previous_metrics)
+        suggestion = overload_suggestion(exercise)
         history.append(
             {
                 "exercise": exercise,
                 "metrics": current_metrics,
                 "comparison": comparison,
-                "stagnation": _stagnation_signal(appearances_without_progress),
-                "fatigue": _fatigue_signal(current_metrics, previous_metrics),
-                "suggestion": overload_suggestion(exercise),
+                "trend": _comparison_trend(comparison),
+                "stagnation": stagnation,
+                "fatigue": fatigue,
+                "suggestion": suggestion,
+                "recommendation": _effective_recommendation(
+                    suggestion,
+                    stagnation,
+                    fatigue,
+                ),
             }
         )
         previous_metrics = current_metrics

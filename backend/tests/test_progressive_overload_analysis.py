@@ -146,6 +146,7 @@ def test_history_compares_estimated_one_rep_max_and_detects_progress(
             "7.83"
         )
         assert current["comparison"]["progress_detected"] is True
+        assert current["trend"]["code"] == "improved"
         assert current["stagnation"]["detected"] is False
 
 
@@ -167,6 +168,8 @@ def test_three_unchanged_appearances_detect_stagnation(app, client, user):
         assert history[-2]["stagnation"]["detected"] is False
         assert latest["stagnation"]["detected"] is True
         assert latest["stagnation"]["appearances"] == 3
+        assert latest["trend"]["code"] == "stable"
+        assert latest["recommendation"]["code"] == "possible_stagnation"
         assert session_progress_summary(
             latest["exercise"].training_session,
             user,
@@ -174,7 +177,7 @@ def test_three_unchanged_appearances_detect_stagnation(app, client, user):
 
     response = client.get(f"/progress/sessions/{session_id}")
     assert response.status_code == 200
-    assert b"Estancamiento" in response.data
+    assert b"Posible estancamiento" in response.data
 
 
 def test_high_rpe_with_strong_drop_detects_fatigue(app, client, user):
@@ -201,6 +204,8 @@ def test_high_rpe_with_strong_drop_detects_fatigue(app, client, user):
         assert latest["fatigue"]["detected"] is True
         assert latest["fatigue"]["volume_drop_percent"] == Decimal("37.5")
         assert latest["fatigue"]["reps_drop_percent"] == Decimal("37.5")
+        assert latest["trend"]["code"] == "declined"
+        assert latest["recommendation"]["code"] == "review_fatigue"
         assert session_progress_summary(
             latest["exercise"].training_session,
             user,

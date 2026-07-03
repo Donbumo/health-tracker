@@ -119,6 +119,8 @@ def test_overload_metrics_history_and_increase_suggestion(app, client, user):
         assert history[1]["comparison"]["reps_delta"] == 2
         assert history[1]["comparison"]["max_weight_delta"] == Decimal("5.00")
         assert history[1]["comparison"]["progress_detected"] is True
+        assert history[1]["trend"]["code"] == "improved"
+        assert history[1]["recommendation"]["code"] == "increase_load"
 
         total = session_metrics(sessions[1])
         assert total["volume"] == Decimal("880.00")
@@ -138,6 +140,7 @@ def test_overload_metrics_history_and_increase_suggestion(app, client, user):
     exercise_view = client.get(f"/progress/exercises/{exercise_id}")
     assert exercise_view.status_code == 200
     assert b"Subir carga" in exercise_view.data
+    assert b"Mejora" in exercise_view.data
     assert b"180.00" in exercise_view.data
 
     session_view = client.get(f"/progress/sessions/{session_id}")

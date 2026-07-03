@@ -3,7 +3,7 @@
 {% block content %}
   <section class="page-heading">
     <div><h1>Nutrición {{ record.date.isoformat() }}</h1><p>Fuente: {{ record.source }}</p></div>
-    <a class="button button-secondary" href="{{ url_for('wellness.nutrition_list') }}">Volver</a>
+    <div class="page-actions"><a class="button" href="{{ url_for('wellness.nutrition_export', record_id=record.id, format_name='json') }}">JSON</a><a class="button button-secondary" href="{{ url_for('wellness.nutrition_export', record_id=record.id, format_name='csv') }}">CSV resumen</a><a class="button button-secondary" href="{{ url_for('wellness.nutrition_list') }}">Volver</a></div>
   </section>
   <section class="summary-grid">
     <div class="metric"><strong>{{ record.calories if record.calories is not none else '—' }}</strong><span>calorías</span></div>

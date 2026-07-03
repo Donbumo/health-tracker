@@ -1,13 +1,20 @@
 from datetime import date, datetime
+from io import BytesIO
 from zoneinfo import ZoneInfo
 
-from flask import abort, current_app, flash, redirect, render_template, request, url_for
+from flask import abort, current_app, flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.models import DailyEnergy, DailyNutrition
 from app.services.files import UploadError, mark_import_status, store_uploaded_file
 from app.services.daily_balance import daily_balance
+from app.services.exporters.wellness import (
+    DailyEnergyCsvExporter,
+    DailyEnergyJsonExporter,
+    DailyNutritionCsvExporter,
+    DailyNutritionJsonExporter,
+)
 from app.services.importers.daily_energy import (
     DailyEnergyImportError,
     import_daily_energy_file,
@@ -30,6 +37,16 @@ from app.wellness.forms import (
     DailyNutritionImportForm,
     DailyNutritionManualForm,
 )
+
+
+ENERGY_EXPORTERS = {
+    "json": DailyEnergyJsonExporter(),
+    "csv": DailyEnergyCsvExporter(),
+}
+NUTRITION_EXPORTERS = {
+    "json": DailyNutritionJsonExporter(),
+    "csv": DailyNutritionCsvExporter(),
+}
 
 
 def _user_energy_or_404(record_id: int) -> DailyEnergy:
@@ -119,6 +136,22 @@ def energy_detail(record_id: int):
     )
 
 
+@wellness_bp.get("/daily-energy/<int:record_id>/export/<string:format_name>")
+@login_required
+def energy_export(record_id: int, format_name: str):
+    record = _user_energy_or_404(record_id)
+    exporter = ENERGY_EXPORTERS.get(format_name)
+    if exporter is None:
+        abort(404)
+    artifact = exporter.export(record, current_user.id)
+    return send_file(
+        BytesIO(artifact.content),
+        mimetype=artifact.mimetype,
+        as_attachment=True,
+        download_name=f"daily_energy_{record.date.isoformat()}.{artifact.extension}",
+    )
+
+
 @wellness_bp.get("/daily-nutrition")
 @login_required
 def nutrition_list():
@@ -185,6 +218,22 @@ def nutrition_detail(record_id: int):
     return render_template(
         "wellness/nutrition_detail.html",
         record=_user_nutrition_or_404(record_id),
+    )
+
+
+@wellness_bp.get("/daily-nutrition/<int:record_id>/export/<string:format_name>")
+@login_required
+def nutrition_export(record_id: int, format_name: str):
+    record = _user_nutrition_or_404(record_id)
+    exporter = NUTRITION_EXPORTERS.get(format_name)
+    if exporter is None:
+        abort(404)
+    artifact = exporter.export(record, current_user.id)
+    return send_file(
+        BytesIO(artifact.content),
+        mimetype=artifact.mimetype,
+        as_attachment=True,
+        download_name=f"daily_nutrition_{record.date.isoformat()}.{artifact.extension}",
     )
 
 

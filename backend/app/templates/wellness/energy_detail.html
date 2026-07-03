@@ -3,7 +3,7 @@
 {% block content %}
   <section class="page-heading">
     <div><h1>Energía {{ record.date.isoformat() }}</h1><p>Fuente: {{ record.source }}</p></div>
-    <a class="button button-secondary" href="{{ url_for('wellness.energy_list') }}">Volver</a>
+    <div class="page-actions"><a class="button" href="{{ url_for('wellness.energy_export', record_id=record.id, format_name='json') }}">JSON</a><a class="button button-secondary" href="{{ url_for('wellness.energy_export', record_id=record.id, format_name='csv') }}">CSV</a><a class="button button-secondary" href="{{ url_for('wellness.energy_list') }}">Volver</a></div>
   </section>
   <section class="card">
     <dl class="metadata">

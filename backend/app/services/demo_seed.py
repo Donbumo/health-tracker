@@ -11,6 +11,8 @@ from app.extensions import db
 from app.models import (
     DailyEnergy,
     DailyNutrition,
+    MedicalLabReport,
+    MedicalLabResult,
     NutritionItem,
     NutritionMeal,
     TrainingPlan,
@@ -29,6 +31,8 @@ DEMO_PASSWORD = "demo12345"
 DEMO_SOURCE = "demo_seed"
 DEMO_PLAN_NAME = "Rutina ficticia QA"
 DEMO_SESSION_NOTE = "QA_DEMO_SEED: sesión completamente ficticia."
+DEMO_LAB_NAME = "Laboratorio ficticio QA"
+DEMO_LAB_NOTE = "QA_DEMO_MEDICAL_SEED: reporte completamente ficticio y no clínico."
 
 
 class DemoSeedError(ValueError):
@@ -351,6 +355,53 @@ def _seed_session(
     created["training_sessions"] += 1
 
 
+def _seed_medical_lab(user: User, target_date, created: dict[str, int]) -> None:
+    existing = db.session.execute(
+        db.select(MedicalLabReport).where(
+            MedicalLabReport.user_id == user.id,
+            MedicalLabReport.date == target_date,
+            MedicalLabReport.source == DEMO_SOURCE,
+            MedicalLabReport.notes == DEMO_LAB_NOTE,
+        )
+    ).scalar_one_or_none()
+    if existing is not None:
+        return
+
+    report = MedicalLabReport(
+        user_id=user.id,
+        date=target_date,
+        laboratory_name=DEMO_LAB_NAME,
+        source=DEMO_SOURCE,
+        notes=DEMO_LAB_NOTE,
+    )
+    db.session.add(report)
+    db.session.flush()
+
+    markers = (
+        ("Glucosa", "GLU", "92.0", "mg/dL"),
+        ("HbA1c", "HBA1C", "5.3", "%"),
+        ("Colesterol total", "CHOL", "178.0", "mg/dL"),
+        ("LDL", "LDL", "105.0", "mg/dL"),
+        ("HDL", "HDL", "52.0", "mg/dL"),
+        ("Triglicéridos", "TG", "110.0", "mg/dL"),
+        ("Vitamina D", "VITD", "32.0", "ng/mL"),
+    )
+    for marker_name, marker_code, value, unit in markers:
+        db.session.add(
+            MedicalLabResult(
+                user_id=user.id,
+                report_id=report.id,
+                marker_name=marker_name,
+                marker_code=marker_code,
+                value=Decimal(value),
+                unit=unit,
+                status="unknown",
+                notes="Valor ficticio para QA; no representa un resultado clínico.",
+            )
+        )
+    created["medical_lab_reports"] += 1
+
+
 def seed_demo_data() -> tuple[User, dict[str, int]]:
     """Create idempotent, obviously fictional records for browser QA."""
     created = {
@@ -361,6 +412,7 @@ def seed_demo_data() -> tuple[User, dict[str, int]]:
         "training_plans": 0,
         "training_plan_versions": 0,
         "training_sessions": 0,
+        "medical_lab_reports": 0,
     }
     app_timezone = ZoneInfo(current_app.config["APP_TIMEZONE"])
     today = datetime.now(app_timezone).date()
@@ -373,6 +425,7 @@ def seed_demo_data() -> tuple[User, dict[str, int]]:
         _seed_nutrition(user, days, created)
         plan, version = _seed_plan(user, created)
         _seed_session(user, plan, version, today, app_timezone, created)
+        _seed_medical_lab(user, today, created)
         db.session.commit()
     except Exception:
         db.session.rollback()

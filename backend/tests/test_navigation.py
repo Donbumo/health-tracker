@@ -16,6 +16,7 @@ def test_primary_navigation_exposes_health_modules(app, client, user):
         ("Entrenamiento", "/training-plans"),
         ("Sesiones", "/training-sessions"),
         ("Progreso", "/progress"),
+        ("Laboratorios", "/medical/labs"),
         ("Uploads", "/uploads"),
     ):
         assert label.encode() in response.data

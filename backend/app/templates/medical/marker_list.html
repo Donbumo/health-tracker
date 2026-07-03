@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Marcadores médicos · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading"><div><h1>Marcadores registrados</h1><p>Historial simple agrupado por nombre.</p></div><a class="button button-secondary" href="{{ url_for('medical.list_reports') }}">Ver reportes</a></section>
+  <section class="notice warning">Esta app organiza datos; no sustituye evaluación médica.</section>
+  <section class="card">
+    {% if markers %}<div class="table-wrap"><table>
+      <thead><tr><th>Marcador</th><th>Registros</th><th>Última fecha</th><th>Último valor</th><th>Estado</th></tr></thead>
+      <tbody>{% for marker in markers %}<tr>
+        <td><a href="{{ url_for('medical.marker_detail', marker_name=marker.name) }}">{{ marker.name }}</a></td><td>{{ marker.count }}</td><td>{{ marker.latest_date.isoformat() }}</td><td>{{ marker.latest_value }} {{ marker.unit }}</td><td>{{ marker.status }}</td>
+      </tr>{% endfor %}</tbody>
+    </table></div>{% else %}
+      <p>No hay marcadores registrados.</p><a class="button" href="{{ url_for('medical.manual_report') }}">Capturar nuevo</a>
+    {% endif %}
+  </section>
+{% endblock %}

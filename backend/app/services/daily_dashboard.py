@@ -3,7 +3,7 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from app.extensions import db
-from app.models import TrainingSession, WeighIn
+from app.models import MedicalLabReport, TrainingSession, WeighIn
 from app.services.daily_balance import daily_balance
 from app.services.overload import session_metrics
 
@@ -119,6 +119,17 @@ def _training_totals(sessions: list[dict]) -> dict:
     }
 
 
+def _latest_medical_report(user_id: int, target_date: date):
+    return db.session.execute(
+        db.select(MedicalLabReport)
+        .where(
+            MedicalLabReport.user_id == user_id,
+            MedicalLabReport.date <= target_date,
+        )
+        .order_by(MedicalLabReport.date.desc(), MedicalLabReport.id.desc())
+    ).scalars().first()
+
+
 def _completion_summary(balance: dict, weight: dict, sessions: list[dict]) -> dict:
     nutrition_state = _domain_state(
         balance["nutrition"],
@@ -160,6 +171,7 @@ def daily_health_dashboard(
         app_timezone,
     )
     sessions = _session_summaries(user_id, target_date, app_timezone)
+    medical_report = _latest_medical_report(user_id, target_date)
     return {
         **balance,
         "balance_state": _balance_state(balance["balance"]),
@@ -168,5 +180,9 @@ def daily_health_dashboard(
         "weight_change": weight["change_from_previous"],
         "sessions": sessions,
         "training_totals": _training_totals(sessions),
+        "latest_medical_report": medical_report,
+        "medical_marker_count": (
+            len(medical_report.results) if medical_report is not None else 0
+        ),
         "completion": _completion_summary(balance, weight, sessions),
     }

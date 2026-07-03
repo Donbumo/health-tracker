@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ marker_name }} · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading"><div><h1>{{ marker_name }}</h1><p>Evolución ordenada por fecha.</p></div><div class="page-actions"><a class="button" href="{{ url_for('medical.export_marker_csv', marker_name=marker_name) }}">Exportar CSV</a><a class="button button-secondary" href="{{ url_for('medical.marker_list') }}">Volver</a></div></section>
+  <section class="notice warning">Esta app organiza datos; no sustituye evaluación médica.</section>
+  <section class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Fecha</th><th>Valor</th><th>Unidad</th><th>Estado</th><th>Laboratorio</th><th>Cambio anterior</th></tr></thead>
+    <tbody>{% for entry in history %}<tr>
+      <td><a href="{{ url_for('medical.report_detail', report_id=entry.report.id) }}">{{ entry.report.date.isoformat() }}</a></td>
+      <td>{{ entry.result.value if entry.result.value is not none else entry.result.value_text }}</td><td>{{ entry.result.unit }}</td><td>{{ entry.result.status }}</td><td>{{ entry.report.laboratory_name or '—' }}</td>
+      <td>{% if entry.change_previous is not none %}{{ '%+.6f'|format(entry.change_previous) }}{% else %}—{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div></section>
+{% endblock %}

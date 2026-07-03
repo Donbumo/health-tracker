@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Capturar laboratorio · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading"><div><h1>Captura manual de laboratorio</h1><p>Esta captura mínima crea un reporte con un marcador.</p></div></section>
+  <section class="notice warning">Esta app organiza datos; no sustituye evaluación médica.</section>
+  <section class="card narrow-form"><form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {% for field in [form.date, form.laboratory_name, form.doctor_name, form.marker_name, form.marker_code, form.value, form.unit, form.reference_min, form.reference_max, form.reference_text, form.status, form.notes, form.marker_notes] %}
+      <div class="field">{{ field.label }}{{ field() }}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+    {% endfor %}
+    {{ form.submit(class_='button') }}
+  </form></section>
+{% endblock %}

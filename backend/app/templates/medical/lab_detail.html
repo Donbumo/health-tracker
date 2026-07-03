@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Laboratorio {{ report.date.isoformat() }} · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading"><div><h1>Reporte {{ report.date.isoformat() }}</h1><p>{{ report.laboratory_name or 'Laboratorio no indicado' }}</p></div><div class="page-actions"><a class="button" href="{{ url_for('medical.export_report_json', report_id=report.id) }}">Exportar JSON</a><a class="button button-secondary" href="{{ url_for('medical.export_report_csv', report_id=report.id) }}">Exportar CSV</a><a class="button button-secondary" href="{{ url_for('medical.list_reports') }}">Volver</a></div></section>
+  <section class="notice warning">Esta app organiza datos; no sustituye evaluación médica.</section>
+  <section class="card"><dl class="metadata">
+    <dt>Fecha</dt><dd>{{ report.date.isoformat() }}</dd><dt>Laboratorio</dt><dd>{{ report.laboratory_name or '—' }}</dd><dt>Profesional</dt><dd>{{ report.doctor_name or '—' }}</dd><dt>Fuente</dt><dd>{{ report.source }}</dd><dt>Archivo fuente</dt><dd>{{ report.source_file_id or '—' }}</dd>{% if report.notes %}<dt>Notas</dt><dd>{{ report.notes }}</dd>{% endif %}
+  </dl></section>
+  <section class="card"><h2>Marcadores</h2><div class="table-wrap"><table>
+    <thead><tr><th>Marcador</th><th>Valor</th><th>Unidad</th><th>Referencia</th><th>Estado</th><th>Notas</th></tr></thead>
+    <tbody>{% for result in report.results %}<tr>
+      <td><a href="{{ url_for('medical.marker_detail', marker_name=result.marker_name) }}">{{ result.marker_name }}</a>{% if result.marker_code %} ({{ result.marker_code }}){% endif %}</td>
+      <td>{{ result.value if result.value is not none else result.value_text }}</td><td>{{ result.unit }}</td>
+      <td>{% if result.reference_text %}{{ result.reference_text }}{% elif result.reference_min is not none or result.reference_max is not none %}{{ result.reference_min if result.reference_min is not none else '—' }} – {{ result.reference_max if result.reference_max is not none else '—' }}{% else %}—{% endif %}</td>
+      <td>{{ result.status }}</td><td>{{ result.notes or '—' }}</td>
+    </tr>{% endfor %}</tbody>
+  </table></div></section>
+{% endblock %}

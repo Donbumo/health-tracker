@@ -24,6 +24,8 @@ def test_authenticated_primary_web_routes_and_admin_permissions(app, client, use
         "/training-plans",
         "/training-sessions",
         "/progress",
+        "/medical/labs",
+        "/medical/markers",
         "/uploads",
         "/manual/energy",
         "/manual/nutrition",

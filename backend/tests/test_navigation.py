@@ -15,10 +15,15 @@ def test_primary_navigation_exposes_health_modules(app, client, user):
         ("Energ", "/daily-energy"),
         ("Entrenamiento", "/training-plans"),
         ("Sesiones", "/training-sessions"),
+        ("Progreso", "/progress"),
+        ("Uploads", "/uploads"),
     ):
         assert label.encode() in response.data
         assert f'href="{path}"'.encode() in response.data
-    assert b"Usuarios" not in response.data
+    assert b'href="/admin/users"' not in response.data
+    progress = client.get("/progress")
+    assert progress.status_code == 200
+    assert b"Registrar primera sesi" in progress.data
 
 
 def test_admin_navigation_remains_role_scoped(app, client):
@@ -31,5 +36,5 @@ def test_admin_navigation_remains_role_scoped(app, client):
     login(client, "navigation-admin", "admin-password")
     response = client.get("/dashboard")
     assert response.status_code == 200
-    assert b"Usuarios" in response.data
+    assert b"Admin" in response.data
     assert b'href="/admin/users"' in response.data

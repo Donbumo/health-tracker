@@ -23,7 +23,9 @@
               <td>{% if record.muscle_mass_kg is not none %}{{ record.muscle_mass_kg }} kg{% else %}—{% endif %}</td>
               <td>{{ record.source }}</td>
             </tr>
-          {% else %}<tr><td colspan="5">No hay pesajes registrados.</td></tr>{% endfor %}
+          {% else %}
+            <tr><td colspan="5"><p>No hay pesajes registrados.</p><a class="button" href="{{ url_for('main.manual_weigh_in') }}">Capturar nuevo</a> <a class="button button-secondary" href="{{ url_for('body.import_weigh_in') }}">Importar JSON</a></td></tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>

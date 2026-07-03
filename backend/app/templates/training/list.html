@@ -31,6 +31,7 @@
       </div>
     {% else %}
       <p>Todavía no has importado rutinas.</p>
+      <a class="button" href="{{ url_for('training.import_plan') }}">Importar JSON</a>
     {% endif %}
   </section>
 {% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Progreso · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Progreso</h1>
+      <p>Abre una sesión reciente para revisar volumen, tendencia y progreso por ejercicio.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button" href="{{ url_for('sessions.new_session') }}">Registrar sesión</a>
+      <a class="button button-secondary" href="{{ url_for('sessions.list_sessions') }}">Ver sesiones</a>
+    </div>
+  </section>
+
+  <section class="card">
+    {% set session_list = sessions|list %}
+    {% if session_list %}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Rutina</th><th>Ejercicios</th><th></th></tr></thead>
+          <tbody>
+            {% for session in session_list %}
+              <tr>
+                <td>{{ session.performed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ session.training_plan.name }}</td>
+                <td>{{ session.exercises|length }}</td>
+                <td><a href="{{ url_for('progress.session_summary', session_id=session.id) }}">Ver progreso</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p>No hay sesiones para analizar todavía.</p>
+      <a class="button" href="{{ url_for('sessions.new_session') }}">Registrar primera sesión</a>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Página no encontrada · Health Tracker{% endblock %}
+{% block content %}
+  <section class="card narrow">
+    <h1>Página no encontrada</h1>
+    <p>El recurso no existe o no está disponible para tu usuario.</p>
+    {% if current_user.is_authenticated %}<a class="button" href="{{ url_for('main.dashboard') }}">Volver al dashboard</a>{% endif %}
+  </section>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Laboratorios · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div><h1>Reportes de laboratorio</h1><p>Datos organizados; no sustituyen evaluación médica.</p></div>
+    <div class="page-actions"><a class="button" href="{{ url_for('medical.manual_report') }}">Capturar nuevo</a><a class="button button-secondary" href="{{ url_for('medical.import_report') }}">Importar JSON</a></div>
+  </section>
+  <section class="card">
+    {% set report_list = reports|list %}
+    {% if report_list %}
+      <div class="table-wrap"><table>
+        <thead><tr><th>Fecha</th><th>Laboratorio</th><th>Marcadores</th><th>Fuente</th><th></th></tr></thead>
+        <tbody>{% for report in report_list %}<tr>
+          <td>{{ report.date.isoformat() }}</td><td>{{ report.laboratory_name or '—' }}</td><td>{{ report.results|length }}</td><td>{{ report.source }}</td>
+          <td><a href="{{ url_for('medical.report_detail', report_id=report.id) }}">Ver detalle</a></td>
+        </tr>{% endfor %}</tbody>
+      </table></div>
+    {% else %}
+      <p>Sin estudios registrados.</p>
+      <a class="button" href="{{ url_for('medical.manual_report') }}">Capturar nuevo</a>
+      <a class="button button-secondary" href="{{ url_for('medical.import_report') }}">Importar JSON</a>
+    {% endif %}
+  </section>
+{% endblock %}

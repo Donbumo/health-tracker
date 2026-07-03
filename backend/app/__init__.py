@@ -40,6 +40,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     from app.admin import admin_bp
     from app.body import body_bp
     from app.main import main_bp
+    from app.medical import medical_bp
     from app.progress import progress_bp
     from app.sessions import sessions_bp
     from app.training import training_bp
@@ -49,6 +50,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(admin_bp)
     app.register_blueprint(body_bp)
     app.register_blueprint(main_bp)
+    app.register_blueprint(medical_bp)
     app.register_blueprint(progress_bp)
     app.register_blueprint(sessions_bp)
     app.register_blueprint(training_bp)

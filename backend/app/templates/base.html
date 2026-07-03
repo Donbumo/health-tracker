@@ -20,6 +20,7 @@
           <a href="{{ url_for('training.list_plans') }}">Entrenamiento</a>
           <a href="{{ url_for('sessions.list_sessions') }}">Sesiones</a>
           <a href="{{ url_for('progress.overview') }}">Progreso</a>
+          <a href="{{ url_for('medical.list_reports') }}">Laboratorios</a>
           <a href="{{ url_for('main.uploads') }}">Uploads</a>
           {% if current_user.is_admin %}<a href="{{ url_for('admin.users') }}">Admin</a>{% endif %}
           <span>{{ current_user.username }}</span>

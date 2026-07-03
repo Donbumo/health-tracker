@@ -132,7 +132,7 @@ email: demo@example.com
 password: demo12345
 ```
 
-El comando crea dos pesajes, dos días de energía, dos días de nutrición, una rutina y una sesión para hoy/ayer según `APP_TIMEZONE`. Es idempotente al repetirlo para las mismas fechas y restablece la contraseña conocida de la cuenta demo. Solo debe usarse en desarrollo o QA; no se ejecuta automáticamente ni crea archivos en `/data`.
+El comando crea dos pesajes, dos días de energía, dos días de nutrición, una rutina, una sesión y un reporte de laboratorio con siete marcadores ficticios para hoy/ayer según `APP_TIMEZONE`. Es idempotente al repetirlo para las mismas fechas y restablece la contraseña conocida de la cuenta demo. Solo debe usarse en desarrollo o QA; no se ejecuta automáticamente ni crea archivos en `/data`.
 
 Checklist sugerido:
 
@@ -146,7 +146,8 @@ Checklist sugerido:
 8. Importa una rutina JSON o usa la rutina demo.
 9. Registra una sesión basada en la rutina y revisa su detalle.
 10. Abre **Progreso** y entra al análisis de la sesión.
-11. Comprueba estados vacíos y mensajes 403/404 con una cuenta sin datos/permisos.
+11. Abre **Laboratorios**, revisa el reporte demo, su historial y sus exports JSON/CSV.
+12. Comprueba estados vacíos y mensajes 403/404 con una cuenta sin datos/permisos.
 
 Verificación dentro del contenedor:
 
@@ -191,6 +192,7 @@ Abre **Dashboard** o visita `/dashboard?date=AAAA-MM-DD`. Para la fecha elegida 
 - gasto total/activo, pasos y balance de calorías;
 - pesaje del día o, si falta, el último pesaje anterior;
 - sesiones realizadas con duración, volumen, ejercicios y calorías.
+- último reporte de laboratorio disponible en la fecha y cantidad de marcadores.
 
 El estado del día considera esenciales una nutrición con calorías y una energía con gasto total. Distingue entre dato completo, registro parcial y dato faltante. Peso y entrenamiento se muestran como contexto opcional: un día de descanso o sin pesaje no se marca como incompleto.
 
@@ -294,6 +296,54 @@ Desde el detalle de cada registro están disponibles JSON estándar y CSV. El CS
 
 Formatos futuros, todavía sin implementación real: FIT, GPX, TCX, Magene, Huawei, PDF avanzado e integraciones de APK/reloj. Los módulos stub de FIT, GPX y Magene solo reservan el punto de extensión y lanzan `NotImplementedError`.
 
+## Estudios de laboratorio
+
+El módulo organiza reportes y marcadores ficticios o capturados por el usuario. No interpreta resultados, emite diagnósticos ni sustituye una evaluación médica.
+
+Rutas principales:
+
+- `/medical/labs`: lista de reportes y accesos para captura/importación.
+- `/medical/labs/manual`: captura mínima de un reporte con un marcador.
+- `/medical/labs/import`: importación del JSON interno validado.
+- `/medical/labs/<id>`: detalle y exports del reporte.
+- `/medical/markers`: marcadores disponibles.
+- `/medical/markers/<nombre>`: historial cronológico y cambio numérico cuando la unidad coincide.
+
+Ejemplo deliberadamente ficticio; sustituye `user_id` por el identificador mostrado en la pantalla de importación:
+
+```json
+{
+  "schema_version": "1.0",
+  "type": "medical_lab",
+  "user_id": 1,
+  "source_type": "uploaded",
+  "date": "2026-01-15",
+  "laboratory_name": "Laboratorio ficticio QA",
+  "notes": "Ejemplo ficticio; no es un resultado clínico.",
+  "markers": [
+    {
+      "name": "Marcador ficticio QA",
+      "code": "DEMO",
+      "value": 12.3,
+      "unit": "unidad-demo",
+      "status": "unknown"
+    }
+  ]
+}
+```
+
+El import valida `schemas/medical_lab.schema.json`, conserva el archivo original, calcula SHA256 y marca el upload como `imported`, `duplicate` o `error`. La deduplicación se aplica por usuario y contenido; el mismo documento puede pertenecer a usuarios distintos sin mezclar datos. JSON conserva toda la estructura del reporte. CSV aplana los marcadores y se ofrece tanto por reporte como para el historial de un marcador.
+
+Checklist médico para QA:
+
+1. Captura manualmente un reporte ficticio de un marcador.
+2. Importa un JSON ficticio con varios marcadores.
+3. Repite el import y confirma el aviso de duplicado.
+4. Abre el detalle, los historiales y los exports JSON/CSV.
+5. Verifica con otra cuenta que los IDs ajenos respondan 404 y no aparezcan en listas.
+
+No se admiten OCR, PDF médico, FHIR ni interpretación clínica en esta fase.
+
 ## Comandos habituales
 
 ```powershell
@@ -337,8 +387,9 @@ backend/
     auth/                 # login y logout
     admin/                # listado y creación básica de usuarios
     body/                 # pesajes, composición, historial e imports/exports
+    medical/              # reportes de laboratorio, marcadores e imports/exports
     main/                 # dashboard diario y página de uploads
-    models/               # usuarios, archivos, wellness y entrenamiento
+    models/               # usuarios, archivos, wellness, entrenamiento y laboratorios
     progress/             # historial y resumen de sobrecarga básica
     sessions/             # registro y detalle de sesiones realizadas
     training/             # importar, listar, ver y exportar rutinas

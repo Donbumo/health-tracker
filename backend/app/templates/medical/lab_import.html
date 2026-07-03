@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Importar laboratorio · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading"><div><h1>Importar reporte de laboratorio</h1><p>Solo JSON validado; PDF/OCR todavía no están soportados.</p></div></section>
+  <section class="card narrow-form"><form method="post" enctype="multipart/form-data" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="field">{{ form.file.label }}{{ form.file() }}{% for error in form.file.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+    {{ form.submit(class_='button') }}
+  </form></section>
+{% endblock %}

@@ -19,6 +19,7 @@
       <a class="button button-secondary" href="{{ url_for('sessions.new_session') }}">Registrar sesión</a>
       <a class="button button-secondary" href="{{ url_for('training.import_plan') }}">Importar rutina</a>
       <a class="button button-secondary" href="{{ url_for('progress.overview') }}">Ver progreso</a>
+      <a class="button button-secondary" href="{{ url_for('medical.manual_report') }}">Capturar laboratorio</a>
     </div>
   </section>
 
@@ -131,5 +132,18 @@
         </dl>
       </article>
     {% else %}<p>No hay sesión registrada para esta fecha.</p>{% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>Laboratorios</h2>
+    {% if summary.latest_medical_report %}
+      <p><a href="{{ url_for('medical.report_detail', report_id=summary.latest_medical_report.id) }}">Reporte {{ summary.latest_medical_report.date.isoformat() }}</a> · {{ summary.latest_medical_report.laboratory_name or 'Laboratorio no indicado' }}</p>
+      <p>{{ summary.medical_marker_count }} marcadores registrados.</p>
+      <a class="button button-secondary" href="{{ url_for('medical.list_reports') }}">Ver reportes</a>
+    {% else %}
+      <p>Sin estudios registrados.</p>
+      <a class="button" href="{{ url_for('medical.manual_report') }}">Capturar laboratorio</a>
+      <a class="button button-secondary" href="{{ url_for('medical.import_report') }}">Importar JSON</a>
+    {% endif %}
   </section>
 {% endblock %}

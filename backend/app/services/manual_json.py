@@ -71,6 +71,69 @@ def build_weigh_in_document(
     }
 
 
+def build_medical_lab_document(
+    *,
+    user_id: int,
+    report_date: date,
+    marker_name: str,
+    marker_value: Decimal | float | int | str,
+    unit: str,
+    laboratory_name: str | None = None,
+    doctor_name: str | None = None,
+    marker_code: str | None = None,
+    reference_min: Decimal | float | int | None = None,
+    reference_max: Decimal | float | int | None = None,
+    reference_text: str | None = None,
+    status: str = "unknown",
+    notes: str | None = None,
+    marker_notes: str | None = None,
+) -> dict[str, Any]:
+    marker: dict[str, Any] = {
+        "name": marker_name.strip(),
+        "value": (
+            marker_value.strip()
+            if isinstance(marker_value, str)
+            else _finite_number(marker_value)
+        ),
+        "unit": unit.strip(),
+        "status": status,
+    }
+    if not marker["name"] or not marker["unit"] or marker["value"] == "":
+        raise ManualJsonGenerationError(
+            "Medical marker name, value and unit must not be blank"
+        )
+    optional_marker_text = {
+        "code": marker_code,
+        "reference_text": reference_text,
+        "notes": marker_notes,
+    }
+    for field, value in optional_marker_text.items():
+        if value and value.strip():
+            marker[field] = value.strip()
+    if reference_min is not None:
+        marker["reference_min"] = _finite_number(reference_min)
+    if reference_max is not None:
+        marker["reference_max"] = _finite_number(reference_max)
+
+    document: dict[str, Any] = {
+        "schema_version": "1.0",
+        "type": "medical_lab",
+        "user_id": user_id,
+        "source_type": "manual_generated",
+        "date": report_date.isoformat(),
+        "source": "manual",
+        "markers": [marker],
+    }
+    for field, value in {
+        "laboratory_name": laboratory_name,
+        "doctor_name": doctor_name,
+        "notes": notes,
+    }.items():
+        if value and value.strip():
+            document[field] = value.strip()
+    return document
+
+
 def build_daily_energy_document(
     *,
     user_id: int,

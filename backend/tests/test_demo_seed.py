@@ -5,6 +5,8 @@ from app.extensions import db
 from app.models import (
     DailyEnergy,
     DailyNutrition,
+    MedicalLabReport,
+    MedicalLabResult,
     TrainingPlan,
     TrainingPlanVersion,
     TrainingSession,
@@ -54,6 +56,8 @@ def test_demo_seed_is_fictional_complete_and_idempotent(app, client):
         assert _count(TrainingSession, user_id) == 1
         assert _count(TrainingSessionExercise, user_id) == 1
         assert _count(TrainingSet, user_id) == 2
+        assert _count(MedicalLabReport, user_id) == 1
+        assert _count(MedicalLabResult, user_id) == 7
         assert db.session.execute(db.select(UploadedFile)).scalar_one_or_none() is None
 
         plan = db.session.execute(
@@ -68,6 +72,7 @@ def test_demo_seed_is_fictional_complete_and_idempotent(app, client):
     assert dashboard.status_code == 200
     assert "Día completo para el balance energético".encode() in dashboard.data
     assert b"Sentadilla ficticia QA" in dashboard.data
+    assert "Laboratorio ficticio QA".encode() in dashboard.data
     plans = client.get("/training-plans")
     assert plans.status_code == 200
     assert "Rutina ficticia QA".encode() in plans.data

@@ -10,10 +10,52 @@
     </form>
   </section>
 
+  <section class="card">
+    <h2>Estado del día</h2>
+    {% if summary.completion.status == 'complete' %}
+      <p><strong>Día completo para el balance energético.</strong></p>
+    {% elif summary.completion.status == 'partial' %}
+      <p><strong>Día parcialmente registrado.</strong></p>
+    {% else %}
+      <p><strong>Sin datos esenciales para el balance.</strong></p>
+    {% endif %}
+    <p>{{ summary.completion.completed_count }}/{{ summary.completion.required_count }} datos esenciales completos. Peso y entrenamiento son contexto opcional.</p>
+    <ul>
+      <li>
+        Nutrición:
+        {% if summary.completion.nutrition_state == 'complete' %}completa
+        {% elif summary.completion.nutrition_state == 'partial' %}parcial, falta el total de calorías
+        {% else %}faltante · <a href="{{ url_for('wellness.manual_nutrition') }}">registrar</a>{% endif %}
+      </li>
+      <li>
+        Energía:
+        {% if summary.completion.energy_state == 'complete' %}completa
+        {% elif summary.completion.energy_state == 'partial' %}parcial, falta el gasto total
+        {% else %}faltante · <a href="{{ url_for('wellness.manual_energy') }}">registrar</a>{% endif %}
+      </li>
+      <li>
+        Peso:
+        {% if summary.completion.weight_state == 'today' %}registrado hoy
+        {% elif summary.completion.weight_state == 'carried_forward' %}se usa el último registro anterior
+        {% else %}sin referencia · <a href="{{ url_for('main.manual_weigh_in') }}">registrar</a>{% endif %}
+      </li>
+      <li>Entrenamiento: {% if summary.completion.training_state == 'recorded' %}registrado{% else %}sin sesión; puede ser un día de descanso{% endif %}</li>
+    </ul>
+  </section>
+
   <section class="summary-grid">
     <div class="metric"><strong>{{ summary.calories_consumed if summary.calories_consumed is not none else '—' }}</strong><span>kcal ingeridas</span></div>
     <div class="metric"><strong>{{ summary.calories_expended if summary.calories_expended is not none else '—' }}</strong><span>kcal gastadas</span></div>
-    <div class="metric"><strong>{{ summary.balance if summary.balance is not none else '—' }}</strong><span>balance kcal</span></div>
+    <div class="metric">
+      <strong>{{ summary.balance if summary.balance is not none else '—' }}</strong>
+      <span>
+        balance kcal ·
+        {% if summary.balance_state == 'deficit' %}déficit
+        {% elif summary.balance_state == 'surplus' %}superávit
+        {% elif summary.balance_state == 'even' %}equilibrio
+        {% else %}incompleto{% endif %}
+      </span>
+    </div>
     <div class="metric"><strong>{% if summary.weigh_in %}{{ summary.weigh_in.weight_kg }} kg{% else %}—{% endif %}</strong><span>peso</span></div>
   </section>
 
@@ -49,12 +91,23 @@
       <dl class="metadata">
         <dt>Grasa corporal</dt><dd>{% if summary.weigh_in.body_fat_percentage is not none %}{{ summary.weigh_in.body_fat_percentage }} %{% else %}—{% endif %}</dd>
         <dt>Masa muscular</dt><dd>{% if summary.weigh_in.muscle_mass_kg is not none %}{{ summary.weigh_in.muscle_mass_kg }} kg{% else %}—{% endif %}</dd>
+        <dt>Cambio contra pesaje anterior</dt><dd>{% if summary.weight_change is not none %}{{ '%+.3f'|format(summary.weight_change) }} kg{% else %}—{% endif %}</dd>
       </dl>
     {% else %}<p>No hay un pesaje en esta fecha ni en fechas anteriores.</p>{% endif %}
   </section>
 
   <section class="card">
     <h2>Entrenamiento</h2>
+    {% if summary.sessions %}
+      <dl class="metadata">
+        <dt>Sesiones</dt><dd>{{ summary.training_totals.session_count }}</dd>
+        <dt>Duración acumulada</dt><dd>{% if summary.training_totals.duration_seconds is not none %}{{ summary.training_totals.duration_seconds }} s{% else %}—{% endif %}</dd>
+        <dt>Volumen acumulado</dt><dd>{{ summary.training_totals.volume }} kg·reps</dd>
+        <dt>Ejercicios registrados</dt><dd>{{ summary.training_totals.exercise_count }}</dd>
+        <dt>Calorías de sesión</dt><dd>{{ summary.training_totals.calories_burned if summary.training_totals.calories_burned is not none else '—' }}</dd>
+      </dl>
+      <p class="help">Las calorías de sesión son contexto y no se suman al gasto diario, porque la fuente de energía podría incluirlas ya.</p>
+    {% endif %}
     {% for item in summary.sessions %}
       <article>
         <h3><a href="{{ url_for('sessions.detail', session_id=item.record.id) }}">Sesión {{ item.record.id }}</a></h3>

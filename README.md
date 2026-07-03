@@ -135,7 +135,11 @@ Abre **Dashboard** o visita `/dashboard?date=AAAA-MM-DD`. Para la fecha elegida 
 - pesaje del día o, si falta, el último pesaje anterior;
 - sesiones realizadas con duración, volumen, ejercicios y calorías.
 
-Cada bloque muestra un estado incompleto cuando no existen datos y todas las consultas quedan limitadas al usuario autenticado. No se generan estimaciones para valores ausentes.
+El estado del día considera esenciales una nutrición con calorías y una energía con gasto total. Distingue entre dato completo, registro parcial y dato faltante. Peso y entrenamiento se muestran como contexto opcional: un día de descanso o sin pesaje no se marca como incompleto.
+
+El bloque corporal muestra el cambio contra el pesaje anterior cuando existe. Si hay varias sesiones, entrenamiento presenta totales de duración, volumen, ejercicios y calorías registradas. Las calorías de sesión no se suman al gasto diario porque el dispositivo o fuente de energía podría haberlas incluido ya.
+
+Cada bloque conserva estados explícitos cuando faltan datos y todas las consultas quedan limitadas al usuario autenticado. No se generan estimaciones para valores ausentes ni interpretaciones médicas del balance.
 
 ## Rutinas versionables
 

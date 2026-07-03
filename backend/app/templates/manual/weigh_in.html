@@ -27,6 +27,13 @@
         {{ form.body_fat_percent(type="number") }}
         {% for error in form.body_fat_percent.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
       </div>
+      {% for field in [form.muscle_mass_kg, form.water_percent, form.visceral_fat, form.bmr_kcal, form.bmi] %}
+        <div class="field">
+          {{ field.label }}
+          {{ field(type="number") }}
+          {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        </div>
+      {% endfor %}
       <div class="field">
         {{ form.notes.label }}
         {{ form.notes(rows=4) }}

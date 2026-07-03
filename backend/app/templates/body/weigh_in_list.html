@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Peso y composición · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div><h1>Peso y composición</h1><p>Pesajes persistidos y aislados para tu usuario.</p></div>
+    <div class="page-actions">
+      <a class="button" href="{{ url_for('main.manual_weigh_in') }}">Captura manual</a>
+      <a class="button button-secondary" href="{{ url_for('body.import_weigh_in') }}">Importar JSON</a>
+    </div>
+  </section>
+  <section class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fecha y hora</th><th>Peso</th><th>Grasa</th><th>Músculo</th><th>Fuente</th></tr></thead>
+        <tbody>
+          {% for record in records %}
+            <tr>
+              <td><a href="{{ url_for('body.weigh_in_detail', record_id=record.id) }}">{{ record.recorded_at.isoformat(sep=' ', timespec='minutes') }}</a></td>
+              <td>{{ record.weight_kg }} kg</td>
+              <td>{% if record.body_fat_percentage is not none %}{{ record.body_fat_percentage }} %{% else %}—{% endif %}</td>
+              <td>{% if record.muscle_mass_kg is not none %}{{ record.muscle_mass_kg }} kg{% else %}—{% endif %}</td>
+              <td>{{ record.source }}</td>
+            </tr>
+          {% else %}<tr><td colspan="5">No hay pesajes registrados.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

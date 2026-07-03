@@ -38,6 +38,7 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     from app.auth import auth_bp
     from app.admin import admin_bp
+    from app.body import body_bp
     from app.main import main_bp
     from app.progress import progress_bp
     from app.sessions import sessions_bp
@@ -46,6 +47,7 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(body_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(progress_bp)
     app.register_blueprint(sessions_bp)

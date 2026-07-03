@@ -9,6 +9,8 @@ from app.main import main_bp
 from app.main.forms import UploadForm, WeighInForm
 from app.models import UploadedFile
 from app.services.files import UploadError, store_uploaded_file
+from app.services.files import mark_import_status
+from app.services.importers.weigh_in import WeighInImportError, import_weigh_in_file
 from app.services.manual_json import (
     ManualJsonGenerationError,
     build_weigh_in_document,
@@ -72,25 +74,57 @@ def manual_weigh_in():
             recorded_at=recorded_at,
             weight_kg=form.weight_kg.data,
             body_fat_percent=form.body_fat_percent.data,
+            muscle_mass_kg=form.muscle_mass_kg.data,
+            water_percent=form.water_percent.data,
+            visceral_fat=form.visceral_fat.data,
+            bmr_kcal=form.bmr_kcal.data,
+            bmi=form.bmi.data,
             notes=form.notes.data,
         )
         original_filename = f"weigh_in_{recorded_at.strftime('%Y%m%dT%H%M%S%z')}.json"
 
+        source_file = None
         try:
-            record, duplicate = generate_standard_json(
+            source_file, file_duplicate = generate_standard_json(
                 document=document,
                 schema_name="weigh_in",
                 user_id=current_user.id,
                 original_filename=original_filename,
             )
-        except (JsonSchemaValidationError, ManualJsonGenerationError) as error:
+            weigh_in, record_duplicate = import_weigh_in_file(
+                source_file,
+                current_user.id,
+            )
+        except (
+            JsonSchemaValidationError,
+            ManualJsonGenerationError,
+            WeighInImportError,
+        ) as error:
+            if source_file is not None:
+                mark_import_status(
+                    source_file,
+                    current_user.id,
+                    status="error",
+                    detected_type="weigh_in",
+                    error_message=str(error),
+                )
             flash(f"No fue posible generar el pesaje: {error}", "danger")
         else:
+            duplicate = file_duplicate or record_duplicate
+            mark_import_status(
+                source_file,
+                current_user.id,
+                status="duplicate" if duplicate else "imported",
+                detected_type="weigh_in",
+            )
             if duplicate:
                 flash("Este pesaje ya estaba registrado para tu usuario.", "warning")
             else:
-                flash(f"Pesaje guardado como '{record.original_filename}'.", "success")
-            return redirect(url_for("main.manual_weigh_in"))
+                flash(
+                    f"Pesaje guardado como '{source_file.original_filename}'.",
+                    "success",
+                )
+            return redirect(url_for("body.weigh_in_detail", record_id=weigh_in.id))
 
     return render_template(
         "manual/weigh_in.html",

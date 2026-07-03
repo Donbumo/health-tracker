@@ -21,6 +21,12 @@
         "recorded_at": {"type": "string", "format": "date-time"},
         "weight_kg": {"type": "number", "exclusiveMinimum": 0, "maximum": 1000},
         "body_fat_percent": {"type": "number", "minimum": 0, "maximum": 100},
+        "muscle_mass_kg": {"type": "number", "minimum": 0, "maximum": 1000},
+        "water_percent": {"type": "number", "minimum": 0, "maximum": 100},
+        "visceral_fat": {"type": "number", "minimum": 0, "maximum": 1000},
+        "bmr_kcal": {"type": "number", "minimum": 0, "maximum": 100000},
+        "bmi": {"type": "number", "minimum": 0, "maximum": 1000},
+        "source": {"type": "string", "minLength": 1, "maxLength": 32},
         "notes": {"type": "string", "maxLength": 2000}
       }
     }

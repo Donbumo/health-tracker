@@ -34,6 +34,11 @@ def build_weigh_in_document(
     recorded_at: datetime,
     weight_kg: Decimal | float,
     body_fat_percent: Decimal | float | None = None,
+    muscle_mass_kg: Decimal | float | None = None,
+    water_percent: Decimal | float | None = None,
+    visceral_fat: Decimal | float | None = None,
+    bmr_kcal: Decimal | float | None = None,
+    bmi: Decimal | float | None = None,
     notes: str | None = None,
 ) -> dict[str, Any]:
     if recorded_at.tzinfo is None or recorded_at.utcoffset() is None:
@@ -42,9 +47,18 @@ def build_weigh_in_document(
     data: dict[str, Any] = {
         "recorded_at": recorded_at.isoformat(timespec="seconds"),
         "weight_kg": _finite_number(weight_kg),
+        "source": "manual",
     }
-    if body_fat_percent is not None:
-        data["body_fat_percent"] = _finite_number(body_fat_percent)
+    for field, value in {
+        "body_fat_percent": body_fat_percent,
+        "muscle_mass_kg": muscle_mass_kg,
+        "water_percent": water_percent,
+        "visceral_fat": visceral_fat,
+        "bmr_kcal": bmr_kcal,
+        "bmi": bmi,
+    }.items():
+        if value is not None:
+            data[field] = _finite_number(value)
     if notes and notes.strip():
         data["notes"] = notes.strip()
 

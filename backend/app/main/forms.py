@@ -30,5 +30,30 @@ class WeighInForm(FlaskForm):
         validators=[Optional(), finite_decimal, NumberRange(min=0, max=100)],
         render_kw={"min": "0", "max": "100", "step": "0.1"},
     )
+    muscle_mass_kg = DecimalField(
+        "Masa muscular (kg)",
+        validators=[Optional(), finite_decimal, NumberRange(min=0, max=1000)],
+        render_kw={"min": "0", "max": "1000", "step": "0.01"},
+    )
+    water_percent = DecimalField(
+        "Agua corporal (%)",
+        validators=[Optional(), finite_decimal, NumberRange(min=0, max=100)],
+        render_kw={"min": "0", "max": "100", "step": "0.1"},
+    )
+    visceral_fat = DecimalField(
+        "Grasa visceral",
+        validators=[Optional(), finite_decimal, NumberRange(min=0, max=1000)],
+        render_kw={"min": "0", "max": "1000", "step": "0.1"},
+    )
+    bmr_kcal = DecimalField(
+        "Metabolismo basal (kcal)",
+        validators=[Optional(), finite_decimal, NumberRange(min=0, max=100000)],
+        render_kw={"min": "0", "max": "100000", "step": "1"},
+    )
+    bmi = DecimalField(
+        "BMI / IMC",
+        validators=[Optional(), finite_decimal, NumberRange(min=0, max=1000)],
+        render_kw={"min": "0", "max": "1000", "step": "0.01"},
+    )
     notes = TextAreaField("Notas", validators=[Optional(), Length(max=2000)])
     submit = SubmitField("Guardar pesaje")

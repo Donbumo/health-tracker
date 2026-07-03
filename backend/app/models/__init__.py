@@ -9,6 +9,7 @@ from app.models.training_session import (
 )
 from app.models.uploaded_file import UploadedFile
 from app.models.user import User
+from app.models.weigh_in import WeighIn
 
 
 __all__ = [
@@ -25,4 +26,5 @@ __all__ = [
     "TrainingSet",
     "UploadedFile",
     "User",
+    "WeighIn",
 ]

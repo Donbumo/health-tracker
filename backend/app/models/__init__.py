@@ -1,3 +1,4 @@
+from app.models.daily_energy import DailyEnergy
 from app.models.exercise import Exercise, ExerciseAlias
 from app.models.training_plan import TrainingPlan, TrainingPlanVersion
 from app.models.training_session import (
@@ -10,6 +11,7 @@ from app.models.user import User
 
 
 __all__ = [
+    "DailyEnergy",
     "Exercise",
     "ExerciseAlias",
     "TrainingPlan",

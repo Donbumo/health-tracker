@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Energía {{ record.date.isoformat() }} · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div><h1>Energía {{ record.date.isoformat() }}</h1><p>Fuente: {{ record.source }}</p></div>
+    <a class="button button-secondary" href="{{ url_for('wellness.energy_list') }}">Volver</a>
+  </section>
+  <section class="card">
+    <dl class="metadata">
+      <dt>Calorías totales</dt><dd>{{ record.total_calories if record.total_calories is not none else '—' }}</dd>
+      <dt>Calorías activas</dt><dd>{{ record.active_calories if record.active_calories is not none else '—' }}</dd>
+      <dt>Calorías de reposo</dt><dd>{{ record.resting_calories if record.resting_calories is not none else '—' }}</dd>
+      <dt>Pasos</dt><dd>{{ record.steps if record.steps is not none else '—' }}</dd>
+      <dt>Distancia</dt><dd>{% if record.distance_meters is not none %}{{ record.distance_meters }} m{% else %}—{% endif %}</dd>
+      <dt>Archivo fuente</dt><dd>{{ record.source_file_id or '—' }}</dd>
+      {% if record.notes %}<dt>Notas</dt><dd>{{ record.notes }}</dd>{% endif %}
+    </dl>
+  </section>
+{% endblock %}

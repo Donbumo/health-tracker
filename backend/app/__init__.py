@@ -42,6 +42,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     from app.progress import progress_bp
     from app.sessions import sessions_bp
     from app.training import training_bp
+    from app.wellness import wellness_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
@@ -49,6 +50,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(progress_bp)
     app.register_blueprint(sessions_bp)
     app.register_blueprint(training_bp)
+    app.register_blueprint(wellness_bp)
     register_commands(app)
 
     @app.errorhandler(413)

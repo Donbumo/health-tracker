@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Energía diaria · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div><h1>Energía diaria</h1><p>Gasto energético registrado por fecha.</p></div>
+    <a class="button" href="{{ url_for('wellness.energy_import') }}">Importar JSON</a>
+  </section>
+  <section class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fecha</th><th>Total</th><th>Activas</th><th>Reposo</th><th>Pasos</th><th>Distancia</th></tr></thead>
+        <tbody>
+          {% for record in records %}
+            <tr>
+              <td><a href="{{ url_for('wellness.energy_detail', record_id=record.id) }}">{{ record.date.isoformat() }}</a></td>
+              <td>{{ record.total_calories if record.total_calories is not none else '—' }}</td>
+              <td>{{ record.active_calories if record.active_calories is not none else '—' }}</td>
+              <td>{{ record.resting_calories if record.resting_calories is not none else '—' }}</td>
+              <td>{{ record.steps if record.steps is not none else '—' }}</td>
+              <td>{% if record.distance_meters is not none %}{{ record.distance_meters }} m{% else %}—{% endif %}</td>
+            </tr>
+          {% else %}<tr><td colspan="6">No hay registros de energía.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

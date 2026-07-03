@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Historial de peso · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div><h1>Historial de peso</h1><p>Tendencia descriptiva basada en los pesajes registrados.</p></div>
+    <div class="page-actions"><a class="button button-secondary" href="{{ url_for('body.list_weigh_ins') }}">Volver</a></div>
+  </section>
+
+  <section class="card">
+    <dl class="metadata">
+      <dt>Peso actual</dt><dd>{% if history.current_weight is not none %}{{ history.current_weight }} kg{% else %}—{% endif %}</dd>
+      <dt>Cambio anterior</dt><dd>{% if history.change_previous is not none %}{{ '%+.3f'|format(history.change_previous) }} kg{% else %}—{% endif %}</dd>
+      <dt>Cambio desde el inicio</dt><dd>{% if history.change_first is not none %}{{ '%+.3f'|format(history.change_first) }} kg{% else %}—{% endif %}</dd>
+      <dt>Promedio últimos 7</dt><dd>{% if history.average_last_seven is not none %}{{ '%.3f'|format(history.average_last_seven) }} kg{% else %}Se requieren 7 registros{% endif %}</dd>
+      <dt>Tendencia</dt>
+      <dd>{% if history.trend == 'rising' %}Subiendo{% elif history.trend == 'falling' %}Bajando{% elif history.trend == 'stable' %}Estable{% else %}—{% endif %}</dd>
+    </dl>
+  </section>
+
+  <section class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fecha</th><th>Peso</th><th>Δ anterior</th><th>Δ inicio</th></tr></thead>
+        <tbody>
+          {% for entry in history.entries|reverse %}
+            <tr>
+              <td><a href="{{ url_for('body.weigh_in_detail', record_id=entry.record.id) }}">{{ entry.record.recorded_at.isoformat(sep=' ', timespec='minutes') }}</a></td>
+              <td>{{ entry.record.weight_kg }} kg</td>
+              <td>{% if entry.change_previous is not none %}{{ '%+.3f'|format(entry.change_previous) }} kg{% else %}—{% endif %}</td>
+              <td>{{ '%+.3f'|format(entry.change_first) }} kg</td>
+            </tr>
+          {% else %}<tr><td colspan="4">No hay pesajes registrados.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <p class="help">“Estable” significa que el cambio contra el registro anterior no supera 0.1 kg.</p>
+{% endblock %}

@@ -3,7 +3,7 @@
 {% block content %}
   <section class="page-heading">
     <div><h1>Pesaje {{ record.recorded_at.isoformat(sep=' ', timespec='minutes') }}</h1><p>Fuente: {{ record.source }}</p></div>
-    <div class="page-actions"><a class="button button-secondary" href="{{ url_for('body.list_weigh_ins') }}">Volver</a></div>
+    <div class="page-actions"><a class="button" href="{{ url_for('body.export_weigh_in_json', record_id=record.id) }}">JSON</a><a class="button button-secondary" href="{{ url_for('body.list_weigh_ins') }}">Volver</a></div>
   </section>
   <section class="card">
     <dl class="metadata">

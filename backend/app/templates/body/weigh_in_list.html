@@ -6,6 +6,8 @@
     <div class="page-actions">
       <a class="button" href="{{ url_for('main.manual_weigh_in') }}">Captura manual</a>
       <a class="button button-secondary" href="{{ url_for('body.import_weigh_in') }}">Importar JSON</a>
+      <a class="button button-secondary" href="{{ url_for('body.weigh_in_history') }}">Ver historial</a>
+      <a class="button button-secondary" href="{{ url_for('body.export_weigh_in_history') }}">Historial CSV</a>
     </div>
   </section>
   <section class="card">
@@ -26,4 +28,5 @@
       </table>
     </div>
   </section>
+  <p class="help">CSV resume el historial y puede perder notas o metadatos del archivo fuente.</p>
 {% endblock %}

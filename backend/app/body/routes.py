@@ -1,16 +1,23 @@
-from flask import abort, flash, redirect, render_template, url_for
+from io import BytesIO
+
+from flask import abort, flash, redirect, render_template, send_file, url_for
 from flask_login import current_user, login_required
 
 from app.body import body_bp
 from app.body.forms import WeighInImportForm
 from app.extensions import db
 from app.models import WeighIn
+from app.services.exporters.weigh_in import (
+    WeighInHistoryCsvExporter,
+    WeighInJsonExporter,
+)
 from app.services.files import UploadError, mark_import_status, store_uploaded_file
 from app.services.importers.weigh_in import (
     WeighInImportError,
     import_weigh_in_file,
 )
 from app.services.validation import JsonSchemaValidationError
+from app.services.weight_history import weight_history
 
 
 def _user_weigh_in_or_404(record_id: int) -> WeighIn:
@@ -34,6 +41,32 @@ def list_weigh_ins():
         .order_by(WeighIn.recorded_at.desc())
     ).scalars()
     return render_template("body/weigh_in_list.html", records=records)
+
+
+@body_bp.get("/weigh-ins/history")
+@login_required
+def weigh_in_history():
+    return render_template(
+        "body/weigh_in_history.html",
+        history=weight_history(current_user.id),
+    )
+
+
+@body_bp.get("/weigh-ins/export/csv")
+@login_required
+def export_weigh_in_history():
+    records = db.session.execute(
+        db.select(WeighIn)
+        .where(WeighIn.user_id == current_user.id)
+        .order_by(WeighIn.recorded_at.asc())
+    ).scalars()
+    artifact = WeighInHistoryCsvExporter().export(records, current_user.id)
+    return send_file(
+        BytesIO(artifact.content),
+        mimetype=artifact.mimetype,
+        as_attachment=True,
+        download_name="weigh_in_history.csv",
+    )
 
 
 @body_bp.route("/weigh-ins/import", methods=["GET", "POST"])
@@ -85,4 +118,17 @@ def weigh_in_detail(record_id: int):
     return render_template(
         "body/weigh_in_detail.html",
         record=_user_weigh_in_or_404(record_id),
+    )
+
+
+@body_bp.get("/weigh-ins/<int:record_id>/export/json")
+@login_required
+def export_weigh_in_json(record_id: int):
+    record = _user_weigh_in_or_404(record_id)
+    artifact = WeighInJsonExporter().export(record, current_user.id)
+    return send_file(
+        BytesIO(artifact.content),
+        mimetype=artifact.mimetype,
+        as_attachment=True,
+        download_name=f"weigh_in_{record.recorded_at.date().isoformat()}.json",
     )

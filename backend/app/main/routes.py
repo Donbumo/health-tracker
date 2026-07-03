@@ -1,7 +1,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from flask import current_app, flash, redirect, render_template, url_for
+from flask import current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
@@ -10,6 +10,7 @@ from app.main.forms import UploadForm, WeighInForm
 from app.models import UploadedFile
 from app.services.files import UploadError, store_uploaded_file
 from app.services.files import mark_import_status
+from app.services.daily_dashboard import daily_health_dashboard
 from app.services.importers.weigh_in import WeighInImportError, import_weigh_in_file
 from app.services.manual_json import (
     ManualJsonGenerationError,
@@ -30,7 +31,32 @@ def _current_user_files():
 @main_bp.get("/")
 @login_required
 def index():
-    return render_template("index.html", files=_current_user_files())
+    return _render_dashboard()
+
+
+@main_bp.get("/dashboard")
+@login_required
+def dashboard():
+    return _render_dashboard()
+
+
+def _render_dashboard():
+    app_timezone = ZoneInfo(current_app.config["APP_TIMEZONE"])
+    target_date = datetime.now(app_timezone).date()
+    requested_date = request.args.get("date", "").strip()
+    if requested_date:
+        try:
+            target_date = datetime.strptime(requested_date, "%Y-%m-%d").date()
+        except ValueError:
+            flash("La fecha del dashboard no es válida; se muestra hoy.", "warning")
+    return render_template(
+        "index.html",
+        summary=daily_health_dashboard(
+            current_user.id,
+            target_date,
+            current_app.config["APP_TIMEZONE"],
+        ),
+    )
 
 
 @main_bp.route("/uploads", methods=["GET", "POST"])

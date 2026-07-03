@@ -107,6 +107,63 @@ Cuando el log indique que Gunicorn está escuchando en el puerto 8000, abre [htt
 
 El contenedor ejecuta automáticamente `flask db upgrade` y `flask seed-admin` antes de iniciar el servidor. Si el administrador ya existe, no cambia su contraseña ni sus datos.
 
+## QA manual web
+
+Desde la raíz del repositorio, construye y levanta la aplicación:
+
+```powershell
+docker compose up --build -d
+docker compose exec web flask db upgrade
+docker compose ps
+```
+
+El administrador inicial usa `ADMIN_USERNAME` y `ADMIN_PASSWORD` de `.env`. El entrypoint ejecuta `flask seed-admin` de forma idempotente; después abre [http://localhost:8000](http://localhost:8000) e inicia sesión con esas credenciales. Desde **Admin** puedes crear otras cuentas locales.
+
+Para poblar una cuenta de QA con datos completamente ficticios ejecuta, de forma explícita:
+
+```powershell
+docker compose exec web flask seed demo
+```
+
+Credenciales demo:
+
+```text
+email: demo@example.com
+password: demo12345
+```
+
+El comando crea dos pesajes, dos días de energía, dos días de nutrición, una rutina y una sesión para hoy/ayer según `APP_TIMEZONE`. Es idempotente al repetirlo para las mismas fechas y restablece la contraseña conocida de la cuenta demo. Solo debe usarse en desarrollo o QA; no se ejecuta automáticamente ni crea archivos en `/data`.
+
+Checklist sugerido:
+
+1. Inicia sesión como administrador y crea un usuario desde **Admin**.
+2. Inicia sesión con el usuario creado o con `demo@example.com`.
+3. Abre **Peso → Captura manual** y registra un pesaje ficticio.
+4. Abre **Energía → Captura manual** y registra gasto ficticio.
+5. Abre **Nutrición → Captura manual** y registra un item ficticio.
+6. Revisa el estado completo/parcial/faltante en **Dashboard**.
+7. Prueba imports JSON y exports JSON/CSV desde los detalles correspondientes.
+8. Importa una rutina JSON o usa la rutina demo.
+9. Registra una sesión basada en la rutina y revisa su detalle.
+10. Abre **Progreso** y entra al análisis de la sesión.
+11. Comprueba estados vacíos y mensajes 403/404 con una cuenta sin datos/permisos.
+
+Verificación dentro del contenedor:
+
+```powershell
+docker compose exec -T web flask db check
+
+# pytest es una dependencia de desarrollo; esta instalación es temporal en el contenedor actual.
+docker compose exec -T --user root web python -m pip install --no-cache-dir -r requirements-dev.txt
+docker compose exec -T web python -m pytest -q
+```
+
+Para detener los servicios sin borrar MariaDB ni archivos locales:
+
+```powershell
+docker compose down
+```
+
 ## Captura manual de pesaje
 
 1. Inicia sesión.

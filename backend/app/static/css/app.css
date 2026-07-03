@@ -10,10 +10,10 @@ body { margin: 0; }
 a { color: #075985; }
 .container { width: min(1100px, calc(100% - 2rem)); margin: 0 auto; }
 .site-header { background: #0f172a; color: #fff; margin-bottom: 2rem; }
-.nav { min-height: 4rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.nav { min-height: 4rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: .75rem; }
 .nav a { color: #fff; text-decoration: none; }
 .brand { font-weight: 700; font-size: 1.1rem; }
-.nav-actions { display: flex; align-items: center; gap: 1rem; }
+.nav-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: .75rem 1rem; }
 .nav-actions form { margin: 0; }
 .card { background: #fff; border-radius: .75rem; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgb(15 23 42 / 12%); }
 .narrow { max-width: 30rem; margin: 4rem auto; }

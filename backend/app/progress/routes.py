@@ -38,6 +38,18 @@ def _user_exercise_or_404(exercise_id: int) -> TrainingSessionExercise:
     return exercise
 
 
+@progress_bp.get("")
+@login_required
+def overview():
+    sessions = db.session.execute(
+        db.select(TrainingSession)
+        .where(TrainingSession.user_id == current_user.id)
+        .order_by(TrainingSession.performed_at.desc(), TrainingSession.id.desc())
+        .limit(20)
+    ).scalars()
+    return render_template("progress/index.html", sessions=sessions)
+
+
 @progress_bp.get("/exercises/<int:exercise_id>")
 @login_required
 def exercise_detail(exercise_id: int):

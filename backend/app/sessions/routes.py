@@ -109,6 +109,27 @@ def _actual_exercises(planned_day: PlannedDay) -> list[dict]:
                         Decimal("10"),
                     )
                 )
+            rpe_value = request.form.get(f"{prefix}_rpe", "").strip()
+            if rpe_value:
+                set_data["rpe"] = float(
+                    _decimal_value(
+                        rpe_value,
+                        "RPE",
+                        Decimal("1"),
+                        Decimal("10"),
+                    )
+                )
+            rest_value = request.form.get(f"{prefix}_rest_seconds", "").strip()
+            if rest_value:
+                rest_seconds = _decimal_value(
+                    rest_value,
+                    "Rest seconds",
+                    Decimal("0"),
+                    Decimal("86400"),
+                )
+                if rest_seconds != rest_seconds.to_integral_value():
+                    raise TrainingSessionError("Rest seconds must be a whole number")
+                set_data["rest_seconds"] = int(rest_seconds)
             notes = request.form.get(f"{prefix}_notes", "").strip()
             if len(notes) > 2000:
                 raise TrainingSessionError("Set notes are too long")
@@ -203,6 +224,13 @@ def new_session():
                 planned_day=selected_day,
                 performed_at=performed_at,
                 exercises=_actual_exercises(selected_day),
+                duration_seconds=(
+                    form.duration_minutes.data * 60
+                    if form.duration_minutes.data is not None
+                    else None
+                ),
+                average_heart_rate_bpm=form.average_heart_rate_bpm.data,
+                calories_burned=form.calories_burned.data,
                 notes=form.notes.data,
             )
         except (

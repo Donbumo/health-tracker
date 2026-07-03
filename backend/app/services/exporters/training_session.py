@@ -52,6 +52,10 @@ def build_completed_workout_document(
             }
             if training_set.rir is not None:
                 set_data["rir"] = float(training_set.rir)
+            if training_set.rpe is not None:
+                set_data["rpe"] = float(training_set.rpe)
+            if training_set.rest_seconds is not None:
+                set_data["rest_seconds"] = training_set.rest_seconds
             if training_set.notes:
                 set_data["notes"] = training_set.notes
             exercise_data["sets"].append(set_data)
@@ -67,6 +71,12 @@ def build_completed_workout_document(
     }
     if session.notes:
         data["notes"] = session.notes
+    if session.duration_seconds is not None:
+        data["duration_seconds"] = session.duration_seconds
+    if session.average_heart_rate_bpm is not None:
+        data["average_heart_rate_bpm"] = session.average_heart_rate_bpm
+    if session.calories_burned is not None:
+        data["calories_burned"] = float(session.calories_burned)
 
     source_type = (
         session.source_file.source_type
@@ -107,6 +117,9 @@ class TrainingSessionCsvExporter(BaseExporter):
         "plan_version",
         "planned_week",
         "planned_day",
+        "duration_seconds",
+        "average_heart_rate_bpm",
+        "calories_burned",
         "exercise_order",
         "exercise_name",
         "set_number",
@@ -114,6 +127,8 @@ class TrainingSessionCsvExporter(BaseExporter):
         "weight_kg",
         "reps",
         "rir",
+        "rpe",
+        "rest_seconds",
         "session_notes",
         "exercise_notes",
         "set_notes",
@@ -137,6 +152,15 @@ class TrainingSessionCsvExporter(BaseExporter):
                         "plan_version": resource.training_plan_version.version_number,
                         "planned_week": resource.planned_week_number,
                         "planned_day": resource.planned_day_number,
+                        "duration_seconds": resource.duration_seconds or "",
+                        "average_heart_rate_bpm": (
+                            resource.average_heart_rate_bpm or ""
+                        ),
+                        "calories_burned": (
+                            resource.calories_burned
+                            if resource.calories_burned is not None
+                            else ""
+                        ),
                         "exercise_order": exercise.exercise_order,
                         "exercise_name": exercise.name,
                         "set_number": training_set.set_number,
@@ -144,6 +168,12 @@ class TrainingSessionCsvExporter(BaseExporter):
                         "weight_kg": training_set.weight_kg,
                         "reps": training_set.reps,
                         "rir": training_set.rir if training_set.rir is not None else "",
+                        "rpe": training_set.rpe if training_set.rpe is not None else "",
+                        "rest_seconds": (
+                            training_set.rest_seconds
+                            if training_set.rest_seconds is not None
+                            else ""
+                        ),
                         "session_notes": resource.notes or "",
                         "exercise_notes": exercise.notes or "",
                         "set_notes": training_set.notes or "",
@@ -175,15 +205,26 @@ class TrainingSessionHtmlExporter(BaseExporter):
                     f"<td>{training_set.weight_kg}</td>"
                     f"<td>{training_set.reps}</td>"
                     f"<td>{training_set.rir if training_set.rir is not None else '—'}</td>"
+                    f"<td>{training_set.rpe if training_set.rpe is not None else '—'}</td>"
+                    f"<td>{training_set.rest_seconds if training_set.rest_seconds is not None else '—'}</td>"
                     "</tr>"
                 )
+        summary = []
+        if resource.duration_seconds is not None:
+            summary.append(f"Duración: {resource.duration_seconds} s")
+        if resource.average_heart_rate_bpm is not None:
+            summary.append(f"FC promedio: {resource.average_heart_rate_bpm} bpm")
+        if resource.calories_burned is not None:
+            summary.append(f"Calorías: {resource.calories_burned}")
+        summary_html = f"<p>{' · '.join(summary)}</p>" if summary else ""
         html = f"""<!doctype html>
 <html lang="es"><head><meta charset="utf-8"><title>Sesión {resource.id}</title>
 <style>body{{font-family:system-ui;margin:2rem;color:#172033}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #94a3b8;padding:.5rem;text-align:left}}@media print{{button{{display:none}}}}</style>
 </head><body><button onclick="window.print()">Imprimir</button>
 <h1>{escape(resource.training_plan.name)}</h1>
 <p>Sesión: {escape(document['data']['performed_at'])} · versión {resource.training_plan_version.version_number}</p>
-<table><thead><tr><th>Ejercicio</th><th>Serie</th><th>Peso kg</th><th>Reps</th><th>RIR</th></tr></thead>
+{summary_html}
+<table><thead><tr><th>Ejercicio</th><th>Serie</th><th>Peso kg</th><th>Reps</th><th>RIR</th><th>RPE</th><th>Descanso s</th></tr></thead>
 <tbody>{''.join(rows)}</tbody></table></body></html>"""
         return ExportArtifact(
             content=html.encode("utf-8"),

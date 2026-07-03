@@ -14,6 +14,19 @@ class TrainingSession(db.Model):
             "planned_day_number BETWEEN 1 AND 7",
             name="ck_training_sessions_day_number",
         ),
+        db.CheckConstraint(
+            "duration_seconds IS NULL OR duration_seconds BETWEEN 1 AND 604800",
+            name="ck_training_sessions_duration",
+        ),
+        db.CheckConstraint(
+            "average_heart_rate_bpm IS NULL OR "
+            "average_heart_rate_bpm BETWEEN 20 AND 250",
+            name="ck_training_sessions_average_heart_rate",
+        ),
+        db.CheckConstraint(
+            "calories_burned IS NULL OR calories_burned >= 0",
+            name="ck_training_sessions_calories",
+        ),
         db.UniqueConstraint(
             "source_file_id",
             name="uq_training_sessions_source_file",
@@ -49,6 +62,9 @@ class TrainingSession(db.Model):
     performed_at = db.Column(db.DateTime(timezone=True), nullable=False)
     planned_week_number = db.Column(db.Integer, nullable=False)
     planned_day_number = db.Column(db.Integer, nullable=False)
+    duration_seconds = db.Column(db.Integer, nullable=True)
+    average_heart_rate_bpm = db.Column(db.Integer, nullable=True)
+    calories_burned = db.Column(db.Numeric(10, 2), nullable=True)
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
@@ -136,6 +152,14 @@ class TrainingSet(db.Model):
             "rir IS NULL OR (rir >= 0 AND rir <= 10)",
             name="ck_training_sets_rir",
         ),
+        db.CheckConstraint(
+            "rpe IS NULL OR (rpe >= 1 AND rpe <= 10)",
+            name="ck_training_sets_rpe",
+        ),
+        db.CheckConstraint(
+            "rest_seconds IS NULL OR rest_seconds BETWEEN 0 AND 86400",
+            name="ck_training_sets_rest_seconds",
+        ),
         db.UniqueConstraint(
             "training_session_exercise_id",
             "set_number",
@@ -164,6 +188,8 @@ class TrainingSet(db.Model):
     weight_kg = db.Column(db.Numeric(8, 2), nullable=False)
     reps = db.Column(db.Integer, nullable=False)
     rir = db.Column(db.Numeric(4, 1), nullable=True)
+    rpe = db.Column(db.Numeric(4, 1), nullable=True)
+    rest_seconds = db.Column(db.Integer, nullable=True)
     notes = db.Column(db.Text, nullable=True)
 
     session_exercise = db.relationship(

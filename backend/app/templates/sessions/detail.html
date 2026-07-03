@@ -24,6 +24,9 @@
       <dt>Fecha</dt><dd>{{ session.performed_at.strftime('%Y-%m-%d %H:%M') }}</dd>
       <dt>Semana/día planeado</dt><dd>{{ session.planned_week_number }}/{{ session.planned_day_number }}</dd>
       <dt>Archivo fuente</dt><dd>{{ session.source_file_id }}</dd>
+      {% if session.duration_seconds is not none %}<dt>Duración</dt><dd>{{ session.duration_seconds }} segundos</dd>{% endif %}
+      {% if session.average_heart_rate_bpm is not none %}<dt>FC promedio</dt><dd>{{ session.average_heart_rate_bpm }} bpm</dd>{% endif %}
+      {% if session.calories_burned is not none %}<dt>Calorías</dt><dd>{{ session.calories_burned }}</dd>{% endif %}
       {% if session.notes %}<dt>Notas</dt><dd>{{ session.notes }}</dd>{% endif %}
     </dl>
   </section>
@@ -68,7 +71,7 @@
       <h3><a href="{{ url_for('progress.exercise_detail', exercise_id=exercise.id) }}">{{ exercise.name }}</a></h3>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Serie</th><th>Peso kg</th><th>Reps</th><th>RIR</th><th>Notas</th></tr></thead>
+          <thead><tr><th>Serie</th><th>Peso kg</th><th>Reps</th><th>RIR</th><th>RPE</th><th>Descanso s</th><th>Notas</th></tr></thead>
           <tbody>
             {% for item in exercise.sets %}
               <tr>
@@ -76,6 +79,8 @@
                 <td>{{ item.weight_kg }}</td>
                 <td>{{ item.reps }}</td>
                 <td>{{ item.rir if item.rir is not none else '—' }}</td>
+                <td>{{ item.rpe if item.rpe is not none else '—' }}</td>
+                <td>{{ item.rest_seconds if item.rest_seconds is not none else '—' }}</td>
                 <td>{{ item.notes or '—' }}</td>
               </tr>
             {% endfor %}

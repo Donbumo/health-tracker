@@ -104,6 +104,9 @@ def build_completed_workout_document(
     planned_day: PlannedDay,
     performed_at: datetime,
     exercises: list[dict[str, Any]],
+    duration_seconds: int | None = None,
+    average_heart_rate_bpm: int | None = None,
+    calories_burned: Decimal | float | int | None = None,
     notes: str | None = None,
 ) -> dict[str, Any]:
     if performed_at.tzinfo is None or performed_at.utcoffset() is None:
@@ -125,6 +128,12 @@ def build_completed_workout_document(
     }
     if notes and notes.strip():
         data["notes"] = notes.strip()
+    if duration_seconds is not None:
+        data["duration_seconds"] = duration_seconds
+    if average_heart_rate_bpm is not None:
+        data["average_heart_rate_bpm"] = average_heart_rate_bpm
+    if calories_burned is not None:
+        data["calories_burned"] = float(calories_burned)
 
     return {
         "schema_version": "1.0",
@@ -210,6 +219,13 @@ def import_completed_workout(
         performed_at=performed_at,
         planned_week_number=data["planned_week_number"],
         planned_day_number=data["planned_day_number"],
+        duration_seconds=data.get("duration_seconds"),
+        average_heart_rate_bpm=data.get("average_heart_rate_bpm"),
+        calories_burned=(
+            Decimal(str(data["calories_burned"]))
+            if data.get("calories_burned") is not None
+            else None
+        ),
         notes=data.get("notes"),
     )
     db.session.add(session)
@@ -241,6 +257,12 @@ def import_completed_workout(
                             if set_data.get("rir") is not None
                             else None
                         ),
+                        rpe=(
+                            Decimal(str(set_data["rpe"]))
+                            if set_data.get("rpe") is not None
+                            else None
+                        ),
+                        rest_seconds=set_data.get("rest_seconds"),
                         notes=set_data.get("notes"),
                     )
                 )
@@ -260,6 +282,9 @@ def create_manual_training_session(
     planned_day: PlannedDay,
     performed_at: datetime,
     exercises: list[dict[str, Any]],
+    duration_seconds: int | None = None,
+    average_heart_rate_bpm: int | None = None,
+    calories_burned: Decimal | float | int | None = None,
     notes: str | None = None,
 ) -> tuple[TrainingSession, bool]:
     document = build_completed_workout_document(
@@ -267,6 +292,9 @@ def create_manual_training_session(
         planned_day=planned_day,
         performed_at=performed_at,
         exercises=exercises,
+        duration_seconds=duration_seconds,
+        average_heart_rate_bpm=average_heart_rate_bpm,
+        calories_burned=calories_burned,
         notes=notes,
     )
     filename = (

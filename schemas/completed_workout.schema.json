@@ -30,6 +30,9 @@
         "performed_at": {"type": "string", "format": "date-time"},
         "planned_week_number": {"type": "integer", "minimum": 1},
         "planned_day_number": {"type": "integer", "minimum": 1, "maximum": 7},
+        "duration_seconds": {"type": "integer", "minimum": 1, "maximum": 604800},
+        "average_heart_rate_bpm": {"type": "integer", "minimum": 20, "maximum": 250},
+        "calories_burned": {"type": "number", "minimum": 0, "maximum": 100000},
         "notes": {"type": "string", "maxLength": 5000},
         "exercises": {
           "type": "array",
@@ -68,6 +71,8 @@
         "weight_kg": {"type": "number", "minimum": 0, "maximum": 2000},
         "reps": {"type": "integer", "minimum": 1, "maximum": 10000},
         "rir": {"type": "number", "minimum": 0, "maximum": 10},
+        "rpe": {"type": "number", "minimum": 1, "maximum": 10},
+        "rest_seconds": {"type": "integer", "minimum": 0, "maximum": 86400},
         "notes": {"type": "string", "maxLength": 2000}
       }
     }

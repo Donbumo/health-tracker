@@ -35,6 +35,10 @@
       </div>
     {% else %}
       <p>Todavía no has registrado sesiones.</p>
+      <div class="page-actions">
+        <a class="button" href="{{ url_for('sessions.new_session') }}">Capturar nuevo</a>
+        <a class="button button-secondary" href="{{ url_for('sessions.import_session') }}">Importar JSON</a>
+      </div>
     {% endif %}
   </section>
 {% endblock %}

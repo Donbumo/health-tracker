@@ -19,7 +19,9 @@
               <td>{{ record.net_carbs_g if record.net_carbs_g is not none else '—' }}</td>
               <td>{{ record.fiber_g if record.fiber_g is not none else '—' }}</td>
             </tr>
-          {% else %}<tr><td colspan="6">No hay registros de nutrición.</td></tr>{% endfor %}
+          {% else %}
+            <tr><td colspan="6"><p>No hay registros de nutrición.</p><a class="button" href="{{ url_for('wellness.manual_nutrition') }}">Capturar nuevo</a> <a class="button button-secondary" href="{{ url_for('wellness.nutrition_import') }}">Importar JSON</a></td></tr>
+          {% endfor %}
         </tbody>
       </table>
     </div>

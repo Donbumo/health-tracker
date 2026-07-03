@@ -8,7 +8,7 @@
     </div>
   </section>
 
-  <section class="card">
+  <section class="card" id="upload-form">
     <h2>Subir un archivo</h2>
     <form method="post" enctype="multipart/form-data" novalidate>
       {{ form.hidden_tag() }}
@@ -49,6 +49,7 @@
       </div>
     {% else %}
       <p>Todavía no has subido archivos.</p>
+      <a class="button" href="#upload-form">Seleccionar archivo</a>
     {% endif %}
   </section>
 {% endblock %}

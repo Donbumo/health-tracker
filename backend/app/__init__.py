@@ -55,6 +55,14 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(wellness_bp)
     register_commands(app)
 
+    @app.errorhandler(403)
+    def forbidden(_error):
+        return render_template("403.html"), 403
+
+    @app.errorhandler(404)
+    def not_found(_error):
+        return render_template("404.html"), 404
+
     @app.errorhandler(413)
     def request_too_large(_error):
         return render_template("413.html"), 413

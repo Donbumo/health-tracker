@@ -187,6 +187,29 @@ La página **Archivos** muestra el tipo detectado, estado de importación (`pend
 
 Los usuarios con rol `admin` pueden abrir **Usuarios** o visitar [http://localhost:8000/admin/users](http://localhost:8000/admin/users). Desde ahí pueden listar cuentas y crear usuarios con email, contraseña temporal y rol `admin` o `user`. Los usuarios normales reciben HTTP 403. Las cuentas creadas desde este panel pueden iniciar sesión con su email; los usernames existentes siguen siendo compatibles.
 
+## Nutrición y energía diaria
+
+El módulo persiste:
+
+- `DailyEnergy`: calorías totales, activas y de reposo, pasos, distancia, fuente y payload original opcional.
+- `DailyNutrition`: totales diarios y notas.
+- `NutritionMeal` y `NutritionItem`: comidas ordenadas e items con cantidad, unidad y macros básicos.
+
+Rutas principales:
+
+- `/daily-energy` y `/daily-energy/import`.
+- `/daily-nutrition` y `/daily-nutrition/import`.
+- `/daily-balance?date=AAAA-MM-DD`.
+- `/manual/energy` y `/manual/nutrition`.
+
+Los imports JSON se validan contra `daily_energy.schema.json` o `daily_nutrition.schema.json`, conservan el archivo original y registran su estado. Existe un único agregado de energía y uno de nutrición por usuario y fecha.
+
+Cuando un día nutricional contiene items, cada macro presente en esos items se suma y tiene prioridad. Los totales del documento se usan como fallback únicamente para métricas que ningún item aporte. Esto permite conservar el formato legado de totales sin tratar datos desconocidos como cero.
+
+La captura manual de nutrición es intencionalmente mínima: crea una comida con un item. Para días con varios items o comidas se usa el JSON importable; queda pendiente un editor dinámico.
+
+Desde el detalle de cada registro están disponibles JSON estándar y CSV. El CSV nutricional contiene solo el resumen diario y pierde la jerarquía de comidas/items; JSON es el formato recomendado para reimportación y respaldo.
+
 Formatos futuros, todavía sin implementación real: FIT, GPX, TCX, Magene, Huawei, PDF avanzado e integraciones de APK/reloj. Los módulos stub de FIT, GPX y Magene solo reservan el punto de extensión y lanzan `NotImplementedError`.
 
 ## Comandos habituales
@@ -231,7 +254,9 @@ backend/
     progress/             # historial y resumen de sobrecarga básica
     sessions/             # registro y detalle de sesiones realizadas
     training/             # importar, listar, ver y exportar rutinas
+    wellness/             # nutrición, energía, balance, captura e imports
     services/files.py     # uploads originales
+    services/daily_balance.py
     services/exercise_identity.py # nombres canónicos y aliases privados
     services/exporters/   # JSON, CSV y HTML base
     services/importers/   # JSON interno y stubs de formatos futuros

@@ -11,6 +11,18 @@
   </section>
 
   <section class="card">
+    <h2>Acciones rápidas de QA</h2>
+    <div class="quick-actions">
+      <a class="button" href="{{ url_for('wellness.manual_nutrition') }}">Capturar nutrición</a>
+      <a class="button" href="{{ url_for('wellness.manual_energy') }}">Capturar energía</a>
+      <a class="button" href="{{ url_for('main.manual_weigh_in') }}">Capturar peso</a>
+      <a class="button button-secondary" href="{{ url_for('sessions.new_session') }}">Registrar sesión</a>
+      <a class="button button-secondary" href="{{ url_for('training.import_plan') }}">Importar rutina</a>
+      <a class="button button-secondary" href="{{ url_for('progress.overview') }}">Ver progreso</a>
+    </div>
+  </section>
+
+  <section class="card">
     <h2>Estado del día</h2>
     {% if summary.completion.status == 'complete' %}
       <p><strong>Día completo para el balance energético.</strong></p>

@@ -50,6 +50,7 @@ code { white-space: nowrap; }
 select { width: 100%; padding: .65rem; border: 1px solid #94a3b8; border-radius: .35rem; background: #fff; font: inherit; }
 .compact-input { min-width: 6rem; }
 .form-actions { margin: 1.5rem 0; }
+.quick-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
 .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
 .metric { display: grid; gap: .35rem; padding: 1.25rem; border-radius: .75rem; background: #fff; box-shadow: 0 1px 3px rgb(15 23 42 / 12%); }
 .metric strong { font-size: 1.8rem; color: #0369a1; }

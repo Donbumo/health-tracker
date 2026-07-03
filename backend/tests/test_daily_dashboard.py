@@ -17,6 +17,22 @@ from tests.conftest import login
 TARGET_DATE = "2026-07-09"
 
 
+def test_empty_dashboard_exposes_all_qa_quick_actions(client, user):
+    login(client)
+    response = client.get("/dashboard", query_string={"date": TARGET_DATE})
+    assert response.status_code == 200
+    for label, path in (
+        ("Capturar nutrición", "/manual/nutrition"),
+        ("Capturar energía", "/manual/energy"),
+        ("Capturar peso", "/manual/weigh-in"),
+        ("Registrar sesión", "/training-sessions/new"),
+        ("Importar rutina", "/training-plans/import"),
+        ("Ver progreso", "/progress"),
+    ):
+        assert label.encode() in response.data
+        assert f'href="{path}"'.encode() in response.data
+
+
 def _create_wellness_day(client):
     client.post(
         "/manual/energy",

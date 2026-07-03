@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Nutrición diaria · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div><h1>Nutrición diaria</h1><p>Totales calculados y comidas registradas por fecha.</p></div>
+    <a class="button" href="{{ url_for('wellness.nutrition_import') }}">Importar JSON</a>
+  </section>
+  <section class="card">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fecha</th><th>Calorías</th><th>Proteína</th><th>Grasa</th><th>Net carbs</th><th>Fibra</th></tr></thead>
+        <tbody>
+          {% for record in records %}
+            <tr>
+              <td><a href="{{ url_for('wellness.nutrition_detail', record_id=record.id) }}">{{ record.date.isoformat() }}</a></td>
+              <td>{{ record.calories if record.calories is not none else '—' }}</td>
+              <td>{{ record.protein_g if record.protein_g is not none else '—' }}</td>
+              <td>{{ record.fat_g if record.fat_g is not none else '—' }}</td>
+              <td>{{ record.net_carbs_g if record.net_carbs_g is not none else '—' }}</td>
+              <td>{{ record.fiber_g if record.fiber_g is not none else '—' }}</td>
+            </tr>
+          {% else %}<tr><td colspan="6">No hay registros de nutrición.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

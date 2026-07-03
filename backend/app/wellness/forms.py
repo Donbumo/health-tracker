@@ -12,3 +12,14 @@ class DailyEnergyImportForm(FlaskForm):
         ],
     )
     submit = SubmitField("Importar energía")
+
+
+class DailyNutritionImportForm(FlaskForm):
+    file = FileField(
+        "Nutrición diaria JSON",
+        validators=[
+            FileRequired(),
+            FileAllowed(["json"], "Selecciona un archivo JSON."),
+        ],
+    )
+    submit = SubmitField("Importar nutrición")

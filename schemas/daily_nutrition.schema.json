@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://health-tracker.local/schemas/daily_nutrition.schema.json",
-  "title": "Daily nutrition (minimum)",
+  "title": "Daily nutrition",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "record_type", "user_id", "source_type", "data"],
@@ -16,13 +16,70 @@
     "data": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["date", "calories_kcal", "protein_g", "carbohydrate_g", "fat_g"],
+      "required": ["date"],
       "properties": {
         "date": {"type": "string", "format": "date"},
-        "calories_kcal": {"type": "number", "minimum": 0},
-        "protein_g": {"type": "number", "minimum": 0},
-        "carbohydrate_g": {"type": "number", "minimum": 0},
-        "fat_g": {"type": "number", "minimum": 0},
+        "source": {"type": "string", "minLength": 1, "maxLength": 32},
+        "notes": {"type": "string", "maxLength": 2000},
+        "calories_kcal": {"$ref": "#/$defs/nonNegativeNumber"},
+        "protein_g": {"$ref": "#/$defs/nonNegativeNumber"},
+        "fat_g": {"$ref": "#/$defs/nonNegativeNumber"},
+        "net_carbs_g": {"$ref": "#/$defs/nonNegativeNumber"},
+        "total_carbs_g": {"$ref": "#/$defs/nonNegativeNumber"},
+        "carbohydrate_g": {"$ref": "#/$defs/nonNegativeNumber"},
+        "fiber_g": {"$ref": "#/$defs/nonNegativeNumber"},
+        "sugar_g": {"$ref": "#/$defs/nonNegativeNumber"},
+        "sodium_mg": {"$ref": "#/$defs/nonNegativeNumber"},
+        "meals": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {"$ref": "#/$defs/meal"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "nonNegativeNumber": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "meal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["meal_type", "items"],
+      "properties": {
+        "meal_type": {
+          "type": "string",
+          "enum": ["breakfast", "lunch", "dinner", "snack", "extra", "other"]
+        },
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "sort_order": {"type": "integer", "minimum": 1},
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 200,
+          "items": {"$ref": "#/$defs/item"}
+        }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "quantity": {"$ref": "#/$defs/nonNegativeNumber"},
+        "unit": {"type": "string", "minLength": 1, "maxLength": 32},
+        "sort_order": {"type": "integer", "minimum": 1},
+        "calories_kcal": {"$ref": "#/$defs/nonNegativeNumber"},
+        "protein_g": {"$ref": "#/$defs/nonNegativeNumber"},
+        "fat_g": {"$ref": "#/$defs/nonNegativeNumber"},
+        "net_carbs_g": {"$ref": "#/$defs/nonNegativeNumber"},
+        "total_carbs_g": {"$ref": "#/$defs/nonNegativeNumber"},
+        "fiber_g": {"$ref": "#/$defs/nonNegativeNumber"},
+        "sugar_g": {"$ref": "#/$defs/nonNegativeNumber"},
+        "sodium_mg": {"$ref": "#/$defs/nonNegativeNumber"},
         "notes": {"type": "string", "maxLength": 2000}
       }
     }

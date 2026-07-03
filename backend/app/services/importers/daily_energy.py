@@ -44,6 +44,9 @@ def import_daily_energy_file(
 
     data = document["data"]
     record_date = date.fromisoformat(data["date"])
+    source = data.get("source", document["source_type"]).strip()
+    if not source:
+        raise DailyEnergyImportError("Daily energy source must not be blank")
     same_date = db.session.execute(
         db.select(DailyEnergy).where(
             DailyEnergy.user_id == user_id,
@@ -65,7 +68,7 @@ def import_daily_energy_file(
         resting_calories=decimal_value("resting_expenditure_kcal"),
         steps=data.get("steps"),
         distance_meters=decimal_value("distance_meters"),
-        source=data.get("source", document["source_type"]),
+        source=source,
         source_file_id=source_file.id,
         notes=data.get("notes"),
         raw_payload_json=document,

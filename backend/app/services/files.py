@@ -15,6 +15,37 @@ class UploadError(ValueError):
     pass
 
 
+IMPORT_STATUSES = {"pending", "imported", "duplicate", "error"}
+
+
+def mark_import_status(
+    record: UploadedFile,
+    user_id: int,
+    *,
+    status: str,
+    detected_type: str | None = None,
+    error_message: str | None = None,
+) -> UploadedFile:
+    if record.user_id != user_id:
+        raise UploadError("File does not belong to this user")
+    if status not in IMPORT_STATUSES:
+        raise UploadError("Unsupported import status")
+
+    if detected_type is not None:
+        normalized_type = detected_type.strip().casefold()
+        if not normalized_type or len(normalized_type) > 32:
+            raise UploadError("Unsupported detected file type")
+        record.detected_type = normalized_type
+    record.import_status = status
+    record.error_message = (
+        str(error_message).strip()[:5000]
+        if status == "error" and error_message
+        else None
+    )
+    db.session.commit()
+    return record
+
+
 def _original_filename(filename: str | None) -> str:
     name = (filename or "").replace("\\", "/").rsplit("/", 1)[-1]
     name = "".join(character for character in name if character.isprintable())
@@ -51,6 +82,7 @@ def store_uploaded_file(file: FileStorage, user_id: int) -> tuple[UploadedFile, 
         ).scalar_one_or_none()
         if existing:
             temporary_path.unlink(missing_ok=True)
+            mark_import_status(existing, user_id, status="duplicate")
             return existing, True
 
         stored_filename = sha256
@@ -66,6 +98,8 @@ def store_uploaded_file(file: FileStorage, user_id: int) -> tuple[UploadedFile, 
             stored_filename=stored_filename,
             storage_path=storage_path,
             source_type="uploaded",
+            detected_type="unknown",
+            import_status="pending",
             sha256=sha256,
             size_bytes=size_bytes,
             mime_type=(file.mimetype or None),
@@ -83,6 +117,7 @@ def store_uploaded_file(file: FileStorage, user_id: int) -> tuple[UploadedFile, 
             )
         ).scalar_one_or_none()
         if existing:
+            mark_import_status(existing, user_id, status="duplicate")
             return existing, True
         raise
     except Exception:

@@ -119,6 +119,8 @@ def generate_standard_json(
             stored_filename=stored_filename,
             storage_path=storage_path,
             source_type="manual_generated",
+            detected_type=schema_name,
+            import_status="imported",
             sha256=sha256,
             size_bytes=len(serialized),
             mime_type="application/json",

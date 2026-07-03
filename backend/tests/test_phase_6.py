@@ -187,6 +187,8 @@ def test_completed_workout_json_import_preserves_source_and_deduplicates(
         assert imported.training_plan_id == sessions[0].training_plan_id
         source = db.session.get(UploadedFile, imported.source_file_id)
         assert source.source_type == "uploaded"
+        assert source.detected_type == "completed_workout"
+        assert source.import_status == "imported"
         assert source.sha256 == expected_sha
         assert (app.config["DATA_ROOT"] / source.storage_path).read_bytes() == payload
 
@@ -199,6 +201,10 @@ def test_completed_workout_json_import_preserves_source_and_deduplicates(
     assert "ya había sido importada".encode() in duplicate.data
     with app.app_context():
         assert len(db.session.execute(db.select(TrainingSession)).scalars().all()) == 2
+        source = db.session.execute(
+            db.select(UploadedFile).where(UploadedFile.sha256 == expected_sha)
+        ).scalar_one()
+        assert source.import_status == "duplicate"
 
         second = User(username="import-second-user", role="user")
         second.set_password("second-password")

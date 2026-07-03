@@ -4,6 +4,12 @@ from flask.cli import with_appcontext
 
 from app.extensions import db
 from app.models import User
+from app.services.demo_seed import (
+    DEMO_EMAIL,
+    DEMO_PASSWORD,
+    DemoSeedError,
+    seed_demo_data,
+)
 
 
 @click.command("seed-admin")
@@ -38,5 +44,27 @@ def seed_admin_command() -> None:
     click.echo(f"Admin user '{username}' created.")
 
 
+@click.group("seed")
+def seed_group() -> None:
+    """Populate explicit development and QA fixtures."""
+
+
+@seed_group.command("demo")
+@with_appcontext
+def seed_demo_command() -> None:
+    """Create idempotent fictional data for manual browser QA."""
+    try:
+        _user, created = seed_demo_data()
+    except DemoSeedError as error:
+        raise click.ClickException(str(error)) from error
+
+    total_created = sum(created.values())
+    click.echo("Demo QA listo; todos los registros son ficticios.")
+    click.echo(f"Email: {DEMO_EMAIL}")
+    click.echo(f"Password: {DEMO_PASSWORD}")
+    click.echo(f"Registros creados en esta ejecución: {total_created}")
+
+
 def register_commands(app) -> None:
     app.cli.add_command(seed_admin_command)
+    app.cli.add_command(seed_group)

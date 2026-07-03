@@ -16,6 +16,7 @@
           <a href="{{ url_for('training.list_plans') }}">Rutinas</a>
           <a href="{{ url_for('sessions.list_sessions') }}">Sesiones</a>
           <a href="{{ url_for('main.uploads') }}">Archivos</a>
+          {% if current_user.is_admin %}<a href="{{ url_for('admin.users') }}">Usuarios</a>{% endif %}
           <span>{{ current_user.username }}</span>
           <form action="{{ url_for('auth.logout') }}" method="post">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

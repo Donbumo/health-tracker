@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Nueva versión · {{ plan.name }} · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Nueva versión de {{ plan.name }}</h1>
+      <p>La nueva versión se validará y conservará sin modificar versiones anteriores.</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('training.version_history', plan_id=plan.id) }}">Volver al historial</a>
+  </section>
+
+  <section class="card narrow-card">
+    <form method="post" enctype="multipart/form-data">
+      {{ form.hidden_tag() }}
+      <div class="form-group">
+        {{ form.file.label }}
+        {{ form.file(accept="application/json,.json") }}
+        {% for error in form.file.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="form-group">
+        {{ form.change_reason.label }}
+        {{ form.change_reason(rows=4, placeholder="Describe el ajuste realizado") }}
+        {% for error in form.change_reason.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      </div>
+      {{ form.submit(class="button") }}
+    </form>
+  </section>
+
+  <section class="notice warning">
+    Crear una versión no la activa automáticamente. El JSON debe usar tu <code>user_id</code>; el archivo original quedará conservado con su SHA256.
+  </section>
+{% endblock %}

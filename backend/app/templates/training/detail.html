@@ -8,6 +8,8 @@
     </div>
     <div class="page-actions">
       <a class="button" href="{{ url_for('sessions.new_session', plan_id=plan.id) }}">Registrar sesión</a>
+      <a class="button" href="{{ url_for('training.new_version', plan_id=plan.id) }}">Nueva versión</a>
+      <a class="button button-secondary" href="{{ url_for('training.version_history', plan_id=plan.id) }}">Historial</a>
       <a class="button" href="{{ url_for('training.export_format', plan_id=plan.id, format_name='json') }}">Rutina JSON</a>
       <a class="button button-secondary" href="{{ url_for('training.export_format', plan_id=plan.id, format_name='csv') }}">Rutina CSV</a>
       <a class="button button-secondary" href="{{ url_for('training.list_plans') }}">Volver</a>
@@ -24,6 +26,8 @@
       <dt>Schema</dt><dd>{{ active_version.schema_version }}</dd>
       <dt>SHA256</dt><dd><code>{{ active_version.sha256 }}</code></dd>
       <dt>Archivo origen</dt><dd>{{ active_version.source_file_id }}</dd>
+      <dt>Autor</dt><dd>{{ active_version.created_by.username if active_version.created_by else 'No registrado' }}</dd>
+      <dt>Motivo</dt><dd>{{ active_version.change_reason or 'No registrado' }}</dd>
       <dt>Creada</dt><dd>{{ active_version.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
     </dl>
   </section>

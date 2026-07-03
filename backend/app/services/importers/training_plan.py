@@ -23,13 +23,10 @@ def _existing_plan(source_file_id: int, user_id: int) -> TrainingPlan | None:
     return version.training_plan if version else None
 
 
-def import_training_plan_file(
+def load_training_plan_document(
     source_file: UploadedFile,
     user_id: int,
-) -> tuple[TrainingPlan, bool]:
-    existing = _existing_plan(source_file.id, user_id)
-    if existing:
-        return existing, True
+) -> dict:
     if source_file.user_id != user_id:
         raise TrainingPlanImportError("Source file does not belong to this user")
     if source_file.source_type != "uploaded":
@@ -50,6 +47,19 @@ def import_training_plan_file(
     name = document["data"]["name"].strip()
     if not name:
         raise TrainingPlanImportError("Training plan name must not be blank")
+    return document
+
+
+def import_training_plan_file(
+    source_file: UploadedFile,
+    user_id: int,
+) -> tuple[TrainingPlan, bool]:
+    existing = _existing_plan(source_file.id, user_id)
+    if existing:
+        return existing, True
+
+    document = load_training_plan_document(source_file, user_id)
+    name = document["data"]["name"].strip()
     description = document["data"].get("description")
     if description is not None:
         description = description.strip() or None
@@ -71,6 +81,8 @@ def import_training_plan_file(
             training_plan_id=plan.id,
             version_number=1,
             source_file_id=source_file.id,
+            created_by_user_id=user_id,
+            change_reason="Initial import",
             schema_version=document["schema_version"],
             sha256=content_sha256,
             content=document,

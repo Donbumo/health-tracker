@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Versiones · {{ plan.name }} · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Historial de {{ plan.name }}</h1>
+      <p>La activación cambia la rutina usada para sesiones nuevas, no las sesiones históricas.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button" href="{{ url_for('training.new_version', plan_id=plan.id) }}">Nueva versión</a>
+      <a class="button button-secondary" href="{{ url_for('training.detail', plan_id=plan.id) }}">Volver a la rutina</a>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Versión</th><th>Nombre</th><th>Creada</th><th>Autor</th><th>Motivo</th><th>Sesiones</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          {% for version in versions %}
+            <tr>
+              <td>v{{ version.version_number }}</td>
+              <td>{{ version.content.data.name }}</td>
+              <td>{{ version.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>{{ version.created_by.username if version.created_by else 'No registrado' }}</td>
+              <td>{{ version.change_reason or 'No registrado' }}</td>
+              <td>{{ version.sessions|length }}</td>
+              <td>
+                {% if version.version_number == plan.active_version_number %}
+                  <strong>Activa</strong>
+                {% else %}
+                  <form method="post" action="{{ url_for('training.activate_version', plan_id=plan.id, version_id=version.id) }}">
+                    {{ activate_form.hidden_tag() }}
+                    {{ activate_form.submit(class="button button-secondary") }}
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

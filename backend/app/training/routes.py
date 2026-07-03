@@ -5,7 +5,7 @@ from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import TrainingPlan
+from app.models import TrainingPlan, TrainingPlanVersion
 from app.services.exporters.training_plan import (
     TrainingPlanCsvExporter,
     TrainingPlanJsonExporter,
@@ -14,11 +14,18 @@ from app.services.files import UploadError, store_uploaded_file
 from app.services.importers.training_plan import import_training_plan_file
 from app.services.training_plans import (
     TrainingPlanImportError,
+    activate_training_plan_version,
+    create_training_plan_version,
     get_active_version,
+    list_training_plan_versions,
 )
 from app.services.validation import JsonSchemaValidationError
 from app.training import training_bp
-from app.training.forms import TrainingPlanImportForm
+from app.training.forms import (
+    ActivateTrainingPlanVersionForm,
+    TrainingPlanImportForm,
+    TrainingPlanVersionForm,
+)
 
 
 PLAN_EXPORTERS = {
@@ -37,6 +44,22 @@ def _user_plan_or_404(plan_id: int) -> TrainingPlan:
     if plan is None:
         abort(404)
     return plan
+
+
+def _user_version_or_404(
+    plan: TrainingPlan,
+    version_id: int,
+) -> TrainingPlanVersion:
+    version = db.session.execute(
+        db.select(TrainingPlanVersion).where(
+            TrainingPlanVersion.id == version_id,
+            TrainingPlanVersion.training_plan_id == plan.id,
+            TrainingPlanVersion.user_id == current_user.id,
+        )
+    ).scalar_one_or_none()
+    if version is None:
+        abort(404)
+    return version
 
 
 @training_bp.get("")
@@ -86,6 +109,70 @@ def detail(plan_id: int):
         plan=plan,
         active_version=active_version,
     )
+
+
+@training_bp.get("/<int:plan_id>/versions")
+@login_required
+def version_history(plan_id: int):
+    plan = _user_plan_or_404(plan_id)
+    versions = list_training_plan_versions(plan, current_user.id)
+    return render_template(
+        "training/versions.html",
+        plan=plan,
+        versions=versions,
+        activate_form=ActivateTrainingPlanVersionForm(),
+    )
+
+
+@training_bp.route("/<int:plan_id>/versions/new", methods=["GET", "POST"])
+@login_required
+def new_version(plan_id: int):
+    plan = _user_plan_or_404(plan_id)
+    form = TrainingPlanVersionForm()
+    if form.validate_on_submit():
+        try:
+            source_file, _file_duplicate = store_uploaded_file(
+                form.file.data,
+                current_user.id,
+            )
+            version, duplicate = create_training_plan_version(
+                plan=plan,
+                source_file=source_file,
+                user_id=current_user.id,
+                change_reason=form.change_reason.data,
+            )
+        except (UploadError, TrainingPlanImportError, JsonSchemaValidationError) as error:
+            flash(f"No fue posible crear la versión: {error}", "danger")
+        else:
+            if duplicate:
+                flash(
+                    f"Ese contenido ya existe como versión {version.version_number}.",
+                    "warning",
+                )
+            else:
+                flash(
+                    f"Versión {version.version_number} creada; la versión activa no cambió.",
+                    "success",
+                )
+            return redirect(url_for("training.version_history", plan_id=plan.id))
+    return render_template("training/new_version.html", plan=plan, form=form)
+
+
+@training_bp.post("/<int:plan_id>/versions/<int:version_id>/activate")
+@login_required
+def activate_version(plan_id: int, version_id: int):
+    plan = _user_plan_or_404(plan_id)
+    version = _user_version_or_404(plan, version_id)
+    form = ActivateTrainingPlanVersionForm()
+    if not form.validate_on_submit():
+        abort(400)
+    activate_training_plan_version(
+        plan=plan,
+        version_id=version.id,
+        user_id=current_user.id,
+    )
+    flash(f"Versión {version.version_number} activada.", "success")
+    return redirect(url_for("training.version_history", plan_id=plan.id))
 
 
 @training_bp.get("/<int:plan_id>/export")

@@ -101,6 +101,12 @@ class TrainingPlanVersion(db.Model):
         db.ForeignKey("uploaded_files.id", ondelete="SET NULL"),
         nullable=True,
     )
+    created_by_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    change_reason = db.Column(db.Text, nullable=True)
     schema_version = db.Column(db.String(20), nullable=False)
     sha256 = db.Column(db.String(64), nullable=False)
     content = db.Column(db.JSON, nullable=False)
@@ -113,6 +119,7 @@ class TrainingPlanVersion(db.Model):
 
     training_plan = db.relationship("TrainingPlan", back_populates="versions")
     source_file = db.relationship("UploadedFile")
+    created_by = db.relationship("User", foreign_keys=[created_by_user_id])
     sessions = db.relationship(
         "TrainingSession",
         back_populates="training_plan_version",

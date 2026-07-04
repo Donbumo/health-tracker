@@ -22,7 +22,12 @@
           <a href="{{ url_for('progress.overview') }}">Progreso</a>
           <a href="{{ url_for('medical.list_reports') }}">Laboratorios</a>
           <a href="{{ url_for('main.uploads') }}">Uploads</a>
-          {% if current_user.is_admin %}<a href="{{ url_for('admin.users') }}">Admin</a>{% endif %}
+          <a href="{{ url_for('main.export_account_data') }}">Exportar datos</a>
+          <a href="{{ url_for('main.preview_account_import') }}">Validar export</a>
+          {% if current_user.is_admin %}
+            <a href="{{ url_for('admin.users') }}">Admin</a>
+            <a href="{{ url_for('admin.system') }}">Sistema</a>
+          {% endif %}
           <span>{{ current_user.username }}</span>
           <form action="{{ url_for('auth.logout') }}" method="post">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

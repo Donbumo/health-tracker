@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/user_data_export.schema.json",
+  "title": "Health Tracker user data export",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "type", "exported_at", "user", "data"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "type": {"const": "user_data_export"},
+    "exported_at": {"type": "string", "format": "date-time"},
+    "user": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "email", "role"],
+      "properties": {
+        "id": {"type": "integer", "minimum": 1},
+        "email": {
+          "oneOf": [
+            {"type": "string", "format": "email", "maxLength": 254},
+            {"type": "null"}
+          ]
+        },
+        "role": {"type": "string", "enum": ["admin", "user"]}
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": true,
+      "propertyNames": {
+        "not": {
+          "enum": ["password_hash", "password", "secret", "token"]
+        }
+      },
+      "properties": {
+        "uploads": {"$ref": "#/$defs/exportSection"},
+        "weigh_ins": {"$ref": "#/$defs/exportSection"},
+        "daily_nutrition": {"$ref": "#/$defs/exportSection"},
+        "daily_energy": {"$ref": "#/$defs/exportSection"},
+        "daily_balances": {"$ref": "#/$defs/exportSection"},
+        "training_plans": {"$ref": "#/$defs/exportSection"},
+        "training_sessions": {"$ref": "#/$defs/exportSection"},
+        "medical_lab_reports": {"$ref": "#/$defs/exportSection"}
+      }
+    }
+  },
+  "$defs": {
+    "exportSection": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "propertyNames": {
+          "not": {
+            "enum": [
+              "password_hash",
+              "password",
+              "secret",
+              "token",
+              "storage_path",
+              "stored_filename"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

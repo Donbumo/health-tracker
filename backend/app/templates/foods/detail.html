@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Producto · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>{{ product.name }}</h1>
+      {% if product.brand %}<p>{{ product.brand }}</p>{% endif %}
+    </div>
+    <div class="page-actions">
+      <a class="button" href="{{ url_for('foods.edit_food', id=product.id) }}">Editar</a>
+      <a class="button button-secondary" href="{{ url_for('foods.list_foods') }}">Volver</a>
+    </div>
+  </section>
+  <section class="card detail-wrap">
+    <dl>
+      <dt>Estado</dt>
+      <dd>{{ 'Activo' if product.is_active else 'Inactivo' }}</dd>
+      
+      <dt>Porción</dt>
+      <dd>
+        {% if product.serving_size_g %}
+          {{ product.serving_size_g }} g
+          {% if product.serving_label %}({{ product.serving_label }}){% endif %}
+        {% else %}
+          —
+        {% endif %}
+      </dd>
+    </dl>
+  </section>
+  <section class="card">
+    <h2>Macronutrientes (por 100g)</h2>
+    <div class="table-wrap">
+      <table>
+        <tbody>
+          <tr>
+            <th>Calorías</th>
+            <td>{{ product.calories_per_100g if product.calories_per_100g is not none else '—' }} kcal</td>
+          </tr>
+          <tr>
+            <th>Proteína</th>
+            <td>{{ product.protein_g_per_100g if product.protein_g_per_100g is not none else '—' }} g</td>
+          </tr>
+          <tr>
+            <th>Grasa</th>
+            <td>{{ product.fat_g_per_100g if product.fat_g_per_100g is not none else '—' }} g</td>
+          </tr>
+          <tr>
+            <th>Carbohidratos totales</th>
+            <td>{{ product.carbs_g_per_100g if product.carbs_g_per_100g is not none else '—' }} g</td>
+          </tr>
+          <tr>
+            <th>Carbohidratos netos</th>
+            <td>{{ product.net_carbs_g_per_100g if product.net_carbs_g_per_100g is not none else '—' }} g</td>
+          </tr>
+          <tr>
+            <th>Fibra</th>
+            <td>{{ product.fiber_g_per_100g if product.fiber_g_per_100g is not none else '—' }} g</td>
+          </tr>
+          <tr>
+            <th>Sodio</th>
+            <td>{{ product.sodium_mg_per_100g if product.sodium_mg_per_100g is not none else '—' }} mg</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% if product.notes %}
+  <section class="card">
+    <h2>Notas</h2>
+    <p>{{ product.notes }}</p>
+  </section>
+  {% endif %}
+{% endblock %}

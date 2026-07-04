@@ -5,9 +5,76 @@
   <section class="notice warning">Para varios items usa la importación JSON. El editor dinámico queda pendiente.</section>
   <section class="card"><form method="post" novalidate>
     {{ form.hidden_tag() }}
-    {% for field in [form.date, form.meal_type, form.meal_name, form.item_name, form.quantity, form.unit, form.calories, form.protein_g, form.fat_g, form.net_carbs_g, form.total_carbs_g, form.fiber_g, form.sugar_g, form.sodium_mg, form.notes] %}
+    {% for field in [form.date, form.meal_type, form.meal_name, form.item_name] %}
       <div class="field">{{ field.label }}{{ field() }}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+    {% endfor %}
+
+    <fieldset>
+      <legend>Alacena (Opcional)</legend>
+      <div class="field">
+        {{ form.food_product_id.label }}{{ form.food_product_id(id="food_product_select") }}
+        {% for error in form.food_product_id.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="field">
+        {{ form.grams_from_product.label }}{{ form.grams_from_product(id="grams_input") }}
+        {% for error in form.grams_from_product.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <button type="button" class="button button-secondary" id="apply_macros_btn">Autocompletar macros</button>
+    </fieldset>
+
+    {% for field in [form.quantity, form.unit, form.calories, form.protein_g, form.fat_g, form.net_carbs_g, form.total_carbs_g, form.fiber_g, form.sugar_g, form.sodium_mg, form.notes] %}
+      <div class="field">{{ field.label }}{{ field(id="field_" + field.name) }}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
     {% endfor %}
     {{ form.submit(class_='button') }}
   </form></section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const products = {{ products_json | tojson }};
+    const productMap = {};
+    products.forEach(p => productMap[p.id] = p);
+
+    const applyBtn = document.getElementById('apply_macros_btn');
+    const select = document.getElementById('food_product_select');
+    const gramsInput = document.getElementById('grams_input');
+
+    applyBtn.addEventListener('click', function() {
+      const productId = parseInt(select.value, 10);
+      const grams = parseFloat(gramsInput.value);
+
+      if (!productId || isNaN(grams) || grams <= 0) {
+        alert("Selecciona un producto e ingresa una cantidad de gramos válida mayor a 0.");
+        return;
+      }
+
+      const p = productMap[productId];
+      if (!p) return;
+
+      const factor = grams / 100.0;
+
+      const fillField = (fieldName, productProp) => {
+        const input = document.getElementById('field_' + fieldName);
+        if (input && p[productProp] !== null) {
+          input.value = (p[productProp] * factor).toFixed(3);
+        } else if (input) {
+          input.value = "";
+        }
+      };
+
+      fillField('calories', 'calories_per_100g');
+      fillField('protein_g', 'protein_g_per_100g');
+      fillField('fat_g', 'fat_g_per_100g');
+      fillField('total_carbs_g', 'carbs_g_per_100g');
+      fillField('net_carbs_g', 'net_carbs_g_per_100g');
+      fillField('fiber_g', 'fiber_g_per_100g');
+      fillField('sodium_mg', 'sodium_mg_per_100g');
+      const qty = document.getElementById('field_quantity');
+      const unit = document.getElementById('field_unit');
+      if (qty) qty.value = grams;
+      if (unit) unit.value = "g";
+    });
+  });
+</script>
 {% endblock %}

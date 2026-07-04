@@ -95,6 +95,11 @@ class DailyNutritionManualForm(FlaskForm):
     )
     meal_name = StringField("Nombre de comida", validators=[Optional(), Length(max=200)])
     item_name = StringField("Item", validators=[DataRequired(), Length(max=200)])
+    food_product_id = SelectField("Producto de alacena (Opcional)", coerce=int, validators=[Optional()])
+    grams_from_product = DecimalField(
+        "Gramos del producto",
+        validators=[Optional(), finite_decimal, NumberRange(min=0, max=1000000)],
+    )
     quantity = DecimalField(
         "Cantidad",
         validators=[Optional(), finite_decimal, NumberRange(min=0, max=1000000)],

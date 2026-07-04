@@ -159,8 +159,10 @@ def import_daily_nutrition_file(
                     name=item_data["name"].strip(),
                     quantity=_decimal(item_data.get("quantity")),
                     unit=item_data.get("unit"),
+                    food_product_id=item_data.get("food_product_id"),
                     sort_order=item_data.get("sort_order", item_index),
                     notes=item_data.get("notes"),
+                    calories=item_values.pop("calories", None),
                     **item_values,
                 )
             )

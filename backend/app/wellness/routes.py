@@ -322,7 +322,29 @@ def manual_energy():
 @wellness_bp.route("/manual/nutrition", methods=["GET", "POST"])
 @login_required
 def manual_nutrition():
+    from app.models import FoodProduct
     form = DailyNutritionManualForm()
+    # Populate products choice
+    products = db.session.execute(
+        db.select(FoodProduct)
+        .where(FoodProduct.user_id == current_user.id, FoodProduct.is_active.is_(True))
+        .order_by(FoodProduct.name.asc())
+    ).scalars().all()
+    form.food_product_id.choices = [(0, "— Ninguno —")] + [(p.id, p.name) for p in products]
+
+    products_json = []
+    for p in products:
+        products_json.append({
+            "id": p.id,
+            "calories_per_100g": float(p.calories_per_100g) if p.calories_per_100g is not None else None,
+            "protein_g_per_100g": float(p.protein_g_per_100g) if p.protein_g_per_100g is not None else None,
+            "fat_g_per_100g": float(p.fat_g_per_100g) if p.fat_g_per_100g is not None else None,
+            "carbs_g_per_100g": float(p.carbs_g_per_100g) if p.carbs_g_per_100g is not None else None,
+            "net_carbs_g_per_100g": float(p.net_carbs_g_per_100g) if p.net_carbs_g_per_100g is not None else None,
+            "fiber_g_per_100g": float(p.fiber_g_per_100g) if p.fiber_g_per_100g is not None else None,
+            "sodium_mg_per_100g": float(p.sodium_mg_per_100g) if p.sodium_mg_per_100g is not None else None,
+        })
+
     if not form.is_submitted():
         form.date.data = datetime.now(
             ZoneInfo(current_app.config["APP_TIMEZONE"])
@@ -334,6 +356,7 @@ def manual_nutrition():
             meal_type=form.meal_type.data,
             meal_name=form.meal_name.data,
             item_name=form.item_name.data,
+            food_product_id=form.food_product_id.data if form.food_product_id.data else None,
             quantity=form.quantity.data,
             unit=form.unit.data,
             calories=form.calories.data,
@@ -389,4 +412,4 @@ def manual_nutrition():
             return redirect(
                 url_for("wellness.nutrition_detail", record_id=record.id)
             )
-    return render_template("wellness/manual_nutrition.html", form=form)
+    return render_template("wellness/manual_nutrition.html", form=form, products_json=products_json)

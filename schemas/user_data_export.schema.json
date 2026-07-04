@@ -33,6 +33,7 @@
         }
       },
       "properties": {
+        "food_products": {"$ref": "#/$defs/exportSection"},
         "uploads": {"$ref": "#/$defs/exportSection"},
         "weigh_ins": {"$ref": "#/$defs/exportSection"},
         "daily_nutrition": {"$ref": "#/$defs/exportSection"},

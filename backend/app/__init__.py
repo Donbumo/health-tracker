@@ -45,16 +45,18 @@ def create_app(test_config: dict | None = None) -> Flask:
     from app.sessions import sessions_bp
     from app.training import training_bp
     from app.wellness import wellness_bp
+    from app.foods import foods_bp
 
+    app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(body_bp)
-    app.register_blueprint(main_bp)
     app.register_blueprint(medical_bp)
     app.register_blueprint(progress_bp)
     app.register_blueprint(sessions_bp)
     app.register_blueprint(training_bp)
     app.register_blueprint(wellness_bp)
+    app.register_blueprint(foods_bp)
     register_commands(app)
 
     @app.errorhandler(403)

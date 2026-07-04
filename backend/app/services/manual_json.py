@@ -173,8 +173,9 @@ def build_daily_nutrition_document(
     user_id: int,
     record_date: date,
     meal_type: str,
-    meal_name: str | None,
-    item_name: str,
+    meal_name: str | None = None,
+    item_name: str = "Manual Entry",
+    food_product_id: int | None = None,
     quantity: Decimal | float | int | None = None,
     unit: str | None = None,
     calories: Decimal | float | int | None = None,
@@ -194,6 +195,8 @@ def build_daily_nutrition_document(
         item["quantity"] = _finite_number(quantity)
     if unit and unit.strip():
         item["unit"] = unit.strip()
+    if food_product_id is not None:
+        item["food_product_id"] = food_product_id
     for field, value in {
         "calories_kcal": calories,
         "protein_g": protein_g,

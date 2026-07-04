@@ -21,14 +21,13 @@ def test_primary_navigation_exposes_health_modules(app, client, user):
         ("Wellness", "/daily-balance"),
         ("Peso", "/weigh-ins"),
         ("Nutrici", "/daily-nutrition"),
+        ("Alacena", "/foods"),
         ("Energ", "/daily-energy"),
         ("Entrenamiento", "/training-plans"),
         ("Sesiones", "/training-sessions"),
         ("Progreso", "/progress"),
         ("Laboratorios", "/medical/labs"),
         ("Uploads", "/uploads"),
-        ("Exportar datos", "/account/export.json"),
-        ("Validar export", "/account/import-preview"),
     ):
         assert label.encode() in response.data
         assert f'href="{path}"'.encode() in response.data

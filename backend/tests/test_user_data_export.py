@@ -9,6 +9,7 @@ from app.models import DailyEnergy, User
 from app.services.demo_seed import DEMO_EMAIL, DEMO_PASSWORD
 from app.services.exporters import ExportError
 from app.services.exporters.user_data import UserDataJsonExporter
+from app.services.validation import validate_json_document
 from tests.conftest import login
 
 
@@ -50,6 +51,8 @@ def test_account_export_contains_all_demo_sections_without_sensitive_fields(app,
     assert len(document["data"]["training_plans"][0]["versions"]) == 1
     assert len(document["data"]["training_sessions"]) == 1
     assert len(document["data"]["medical_lab_reports"]) == 1
+    with app.app_context():
+        validate_json_document(document, "user_data_export")
 
     serialized = json.dumps(document)
     for forbidden in (

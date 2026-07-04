@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Preview de importación · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Preview de importación</h1>
+      <p>Dry-run de un <code>user_data_export</code>. Valida y resume; no escribe en la base de datos ni guarda el archivo.</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('main.export_account_data') }}">Exportar mis datos</a>
+  </section>
+
+  <section class="card narrow-form">
+    <h2>Seleccionar export JSON</h2>
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="field">
+        {{ form.file.label }}
+        {{ form.file(accept="application/json,.json") }}
+        {% for error in form.file.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <p class="help">Límite del preview: 10 MB. El contenido solo se procesa en memoria.</p>
+      {{ form.submit(class_="button") }}
+    </form>
+  </section>
+
+  {% if parse_error %}
+    <div class="alert alert-danger">{{ parse_error }}</div>
+  {% endif %}
+
+  {% if preview %}
+    <section class="card">
+      <h2>Resultado del dry-run</h2>
+      <p><strong>{{ 'Válido' if preview.valid else 'Inválido' }}</strong> · No se realizaron escrituras.</p>
+      {% if preview.exported_user %}
+        <p>Usuario exportado: ID {{ preview.exported_user.id }}, rol {{ preview.exported_user.role or 'desconocido' }}.</p>
+      {% endif %}
+      {% if preview.errors %}
+        <h3>Errores</h3>
+        <ul>{% for error in preview.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if preview.warnings %}
+        <h3>Advertencias</h3>
+        <ul>{% for warning in preview.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>
+      {% endif %}
+      <h3>Conteos por sección</h3>
+      {% if preview.counts %}
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Sección</th><th>Registros</th></tr></thead>
+            <tbody>
+              {% for section, count in preview.counts.items() %}
+                <tr><td>{{ section }}</td><td>{{ count }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p>No se encontraron secciones contables.</p>
+      {% endif %}
+    </section>
+  {% endif %}
+{% endblock %}

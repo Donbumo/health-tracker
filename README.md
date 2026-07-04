@@ -377,6 +377,29 @@ Un administrador puede abrir `/admin/system` para consultar estado de DB, versi�
 
 Cada usuario autenticado puede descargar `/account/export.json`. El JSON incluye pesajes, nutrición, energía, balances, rutinas y sus versiones, sesiones, laboratorios y metadata segura de uploads. No incluye `password_hash`, secretos, rutas internas ni archivos binarios. La restauración/importación completa y el respaldo ZIP quedan para una fase futura.
 
+## Handoff y portabilidad
+
+[`docs/ACTIVE_HANDOFF.md`](docs/ACTIVE_HANDOFF.md) es el documento vivo para cambiar de agente sin depender de memoria previa. Debe leerse después de `AGENTS.md` y `docs/PROJECT_CONTEXT.md`.
+
+Un usuario autenticado puede:
+
+- Descargar su respaldo validado desde `/account/export.json`.
+- Abrir `/account/import-preview` y seleccionar ese JSON para un dry-run.
+
+El preview valida `schemas/user_data_export.schema.json`, muestra errores, advertencias y conteos por sección. Procesa el archivo únicamente en memoria: no crea `UploadedFile`, no guarda bytes en `/data`, no modifica registros y no hace restore. La restauración real, el remapeo de IDs y un posible respaldo ZIP pertenecen a una fase futura separada.
+
+Para entregar el proyecto a otro agente, compartir:
+
+```text
+AGENTS.md
+docs/PROJECT_CONTEXT.md
+docs/ACTIVE_HANDOFF.md
+git status
+git log --oneline -20
+```
+
+Pedir cambios por fases pequeñas y exigir `compileall`, pytest, `flask db check` y Compose válido antes de aceptar el handoff.
+
 ## Comandos habituales
 
 ```powershell

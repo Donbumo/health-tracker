@@ -25,6 +25,7 @@ from app.services.exporters.wellness import (
     build_daily_energy_document,
     build_daily_nutrition_document,
 )
+from app.services.validation import validate_json_document
 
 
 def _iso(value) -> str | None:
@@ -178,6 +179,7 @@ class UserDataJsonExporter(BaseExporter):
 
     def export(self, resource: User, user_id: int) -> ExportArtifact:
         document = build_user_data_document(resource, user_id)
+        validate_json_document(document, "user_data_export")
         return ExportArtifact(
             content=serialize_json(document),
             mimetype="application/json",

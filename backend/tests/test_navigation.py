@@ -28,6 +28,7 @@ def test_primary_navigation_exposes_health_modules(app, client, user):
         ("Laboratorios", "/medical/labs"),
         ("Uploads", "/uploads"),
         ("Exportar datos", "/account/export.json"),
+        ("Validar export", "/account/import-preview"),
     ):
         assert label.encode() in response.data
         assert f'href="{path}"'.encode() in response.data

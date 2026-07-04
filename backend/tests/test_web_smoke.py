@@ -35,6 +35,7 @@ def test_authenticated_primary_web_routes_and_admin_permissions(app, client, use
         "/manual/nutrition",
         "/manual/weigh-in",
         "/account/export.json",
+        "/account/import-preview",
     ):
         response = client.get(path)
         assert response.status_code == 200, path

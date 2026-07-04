@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileRequired
+from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import DateTimeLocalField, DecimalField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
 
@@ -12,6 +12,17 @@ def finite_decimal(_form, field) -> None:
 class UploadForm(FlaskForm):
     file = FileField("Archivo", validators=[FileRequired()])
     submit = SubmitField("Subir archivo")
+
+
+class UserDataPreviewForm(FlaskForm):
+    file = FileField(
+        "Export JSON",
+        validators=[
+            FileRequired(),
+            FileAllowed(["json"], "Selecciona un archivo con extensión .json."),
+        ],
+    )
+    submit = SubmitField("Validar sin importar")
 
 
 class WeighInForm(FlaskForm):

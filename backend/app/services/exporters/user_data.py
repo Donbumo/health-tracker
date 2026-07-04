@@ -5,6 +5,7 @@ from app.extensions import db
 from app.models import (
     DailyEnergy,
     DailyNutrition,
+    FoodProduct,
     MedicalLabReport,
     TrainingPlan,
     TrainingSession,
@@ -119,6 +120,39 @@ def _upload_metadata(upload: UploadedFile, user_id: int) -> dict[str, Any]:
     }
 
 
+def _food_product_document(product: FoodProduct, user_id: int) -> dict[str, Any]:
+    if product.user_id != user_id:
+        raise ExportError("Food product does not belong to this user")
+    data = {
+        "id": product.id,
+        "name": product.name,
+        "source": product.source,
+        "is_active": product.is_active,
+    }
+    for field in (
+        "brand",
+        "serving_label",
+        "notes",
+    ):
+        value = getattr(product, field)
+        if value is not None:
+            data[field] = value
+    for number_field in (
+        "serving_size_g",
+        "calories_per_100g",
+        "protein_g_per_100g",
+        "fat_g_per_100g",
+        "carbs_g_per_100g",
+        "net_carbs_g_per_100g",
+        "fiber_g_per_100g",
+        "sodium_mg_per_100g",
+    ):
+        value = getattr(product, number_field)
+        if value is not None:
+            data[number_field] = float(value)
+    return data
+
+
 def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
     if user.id != user_id:
         raise ExportError("User export does not belong to this user")
@@ -126,6 +160,7 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
     weigh_ins = _records(WeighIn, user_id, WeighIn.recorded_at, WeighIn.id)
     nutrition = _records(DailyNutrition, user_id, DailyNutrition.date, DailyNutrition.id)
     energy = _records(DailyEnergy, user_id, DailyEnergy.date, DailyEnergy.id)
+    food_products = _records(FoodProduct, user_id, FoodProduct.id)
     plans = _records(TrainingPlan, user_id, TrainingPlan.created_at, TrainingPlan.id)
     sessions = _records(
         TrainingSession,
@@ -147,6 +182,9 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
         "exported_at": datetime.now(timezone.utc).isoformat(),
         "user": {"id": user.id, "email": user.email, "role": user.role},
         "data": {
+            "food_products": [
+                _food_product_document(product, user_id) for product in food_products
+            ],
             "weigh_ins": [
                 build_weigh_in_document(record, user_id) for record in weigh_ins
             ],

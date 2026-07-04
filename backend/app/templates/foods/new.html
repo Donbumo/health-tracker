@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Nuevo producto · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div><h1>Nuevo producto</h1><p>Agrega un alimento a tu alacena.</p></div>
+    <div class="page-actions"><a class="button button-secondary" href="{{ url_for('foods.list_foods') }}">Cancelar</a></div>
+  </section>
+  <section class="card form-wrap">
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+      
+      <div class="form-group">
+        {{ form.name.label }}
+        {{ form.name() }}
+        {% for error in form.name.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="form-group">
+        {{ form.brand.label }}
+        {{ form.brand() }}
+        {% for error in form.brand.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+      </div>
+
+      <fieldset>
+        <legend>Información de porción</legend>
+        <div class="form-group">
+          {{ form.serving_size_g.label }}
+          {{ form.serving_size_g(type="number", step="0.001", min="0") }}
+          {% for error in form.serving_size_g.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+        </div>
+        <div class="form-group">
+          {{ form.serving_label.label }}
+          {{ form.serving_label() }}
+          {% for error in form.serving_label.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Macronutrientes por 100g</legend>
+        <div class="form-row">
+          <div class="form-group">
+            {{ form.calories_per_100g.label }}
+            {{ form.calories_per_100g(type="number", step="0.001", min="0") }}
+            {% for error in form.calories_per_100g.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
+            {{ form.protein_g_per_100g.label }}
+            {{ form.protein_g_per_100g(type="number", step="0.001", min="0") }}
+            {% for error in form.protein_g_per_100g.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            {{ form.fat_g_per_100g.label }}
+            {{ form.fat_g_per_100g(type="number", step="0.001", min="0") }}
+            {% for error in form.fat_g_per_100g.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
+            {{ form.carbs_g_per_100g.label }}
+            {{ form.carbs_g_per_100g(type="number", step="0.001", min="0") }}
+            {% for error in form.carbs_g_per_100g.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            {{ form.net_carbs_g_per_100g.label }}
+            {{ form.net_carbs_g_per_100g(type="number", step="0.001", min="0") }}
+            {% for error in form.net_carbs_g_per_100g.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
+            {{ form.fiber_g_per_100g.label }}
+            {{ form.fiber_g_per_100g(type="number", step="0.001", min="0") }}
+            {% for error in form.fiber_g_per_100g.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            {{ form.sodium_mg_per_100g.label }}
+            {{ form.sodium_mg_per_100g(type="number", step="0.001", min="0") }}
+            {% for error in form.sodium_mg_per_100g.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-group">
+        {{ form.notes.label }}
+        {{ form.notes(rows=3) }}
+        {% for error in form.notes.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="form-group inline-checkbox">
+        {{ form.is_active() }}
+        {{ form.is_active.label }}
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="button">Guardar producto</button>
+      </div>
+    </form>
+  </section>
+{% endblock %}

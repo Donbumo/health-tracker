@@ -70,7 +70,15 @@
       "properties": {
         "name": {"type": "string", "minLength": 1, "maxLength": 200},
         "quantity": {"$ref": "#/$defs/nonNegativeNumber"},
-        "unit": {"type": "string", "minLength": 1, "maxLength": 32},
+        "unit": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Unidad de medida (ej. g, ml, pieza, scoop)"
+        },
+        "food_product_id": {
+          "type": "integer",
+          "description": "ID del producto de la alacena, si aplica."
+        },
         "sort_order": {"type": "integer", "minimum": 1},
         "calories_kcal": {"$ref": "#/$defs/nonNegativeNumber"},
         "protein_g": {"$ref": "#/$defs/nonNegativeNumber"},

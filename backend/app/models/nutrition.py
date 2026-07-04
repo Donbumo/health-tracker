@@ -177,3 +177,79 @@ class NutritionItem(db.Model):
     notes = db.Column(db.Text, nullable=True)
 
     meal = db.relationship("NutritionMeal", back_populates="items")
+    food_product_id = db.Column(
+        db.Integer,
+        db.ForeignKey("food_products.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    food_product = db.relationship("FoodProduct")
+
+
+FOOD_PRODUCT_METRICS = (
+    "calories_per_100g",
+    "protein_g_per_100g",
+    "fat_g_per_100g",
+    "carbs_g_per_100g",
+    "net_carbs_g_per_100g",
+    "fiber_g_per_100g",
+    "sodium_mg_per_100g",
+)
+
+
+class FoodProduct(db.Model):
+    """User-owned reusable food/product record with macros per 100 g."""
+
+    __tablename__ = "food_products"
+    __table_args__ = (
+        *tuple(
+            db.CheckConstraint(
+                f"{field} IS NULL OR {field} >= 0",
+                name=f"ck_food_products_{field}",
+            )
+            for field in FOOD_PRODUCT_METRICS
+        ),
+        db.UniqueConstraint(
+            "user_id",
+            "name",
+            "brand",
+            name="uq_food_product_user_name_brand",
+        ),
+        db.Index("ix_food_products_user_active", "user_id", "is_active"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name = db.Column(db.String(200), nullable=False)
+    brand = db.Column(db.String(200), nullable=True)
+    serving_size_g = db.Column(db.Numeric(10, 3), nullable=True)
+    serving_label = db.Column(db.String(64), nullable=True)
+    calories_per_100g = db.Column(db.Numeric(10, 3), nullable=True)
+    protein_g_per_100g = db.Column(db.Numeric(10, 3), nullable=True)
+    fat_g_per_100g = db.Column(db.Numeric(10, 3), nullable=True)
+    carbs_g_per_100g = db.Column(db.Numeric(10, 3), nullable=True)
+    net_carbs_g_per_100g = db.Column(db.Numeric(10, 3), nullable=True)
+    fiber_g_per_100g = db.Column(db.Numeric(10, 3), nullable=True)
+    sodium_mg_per_100g = db.Column(db.Numeric(10, 3), nullable=True)
+    source = db.Column(db.String(32), nullable=False)
+    notes = db.Column(db.Text, nullable=True)
+    is_active = db.Column(db.Boolean, nullable=False, default=True, server_default="1")
+    raw_payload_json = db.Column(db.JSON, nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        server_default=db.func.current_timestamp(),
+    )
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        server_default=db.func.current_timestamp(),
+    )
+
+    user = db.relationship("User", back_populates="food_products")

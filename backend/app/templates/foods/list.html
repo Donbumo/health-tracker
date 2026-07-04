@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Alacena · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div><h1>Alacena</h1><p>Catálogo de alimentos y productos frecuentes.</p></div>
+    <div class="page-actions">
+      <a class="button" href="{{ url_for('foods.new_food') }}">Crear producto</a>
+      <a class="button button-secondary" href="{{ url_for('foods.import_food') }}">Importar JSON</a>
+    </div>
+  </section>
+  <section class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Marca</th>
+            <th>Calorías (100g)</th>
+            <th>Proteína (100g)</th>
+            <th>Activo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in records %}
+            <tr>
+              <td><a href="{{ url_for('foods.detail_food', id=record.id) }}">{{ record.name }}</a></td>
+              <td>{{ record.brand if record.brand else '—' }}</td>
+              <td>{{ record.calories_per_100g if record.calories_per_100g is not none else '—' }}</td>
+              <td>{{ record.protein_g_per_100g if record.protein_g_per_100g is not none else '—' }}</td>
+              <td>{{ 'Sí' if record.is_active else 'No' }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="5">
+                <p>No tienes productos registrados en tu alacena.</p>
+                <a class="button" href="{{ url_for('foods.new_food') }}">Crear nuevo</a> 
+                <a class="button button-secondary" href="{{ url_for('foods.import_food') }}">Importar JSON</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

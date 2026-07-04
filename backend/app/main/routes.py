@@ -1,8 +1,20 @@
 from datetime import datetime
+from io import BytesIO
 from zoneinfo import ZoneInfo
 
-from flask import current_app, flash, redirect, render_template, request, url_for
+from flask import (
+    current_app,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for,
+)
 from flask_login import current_user, login_required
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions import db
 from app.main import main_bp
@@ -11,6 +23,7 @@ from app.models import UploadedFile
 from app.services.files import UploadError, store_uploaded_file
 from app.services.files import mark_import_status
 from app.services.daily_dashboard import daily_health_dashboard
+from app.services.exporters.user_data import UserDataJsonExporter
 from app.services.importers.weigh_in import WeighInImportError, import_weigh_in_file
 from app.services.manual_json import (
     ManualJsonGenerationError,
@@ -18,6 +31,32 @@ from app.services.manual_json import (
     generate_standard_json,
 )
 from app.services.validation import JsonSchemaValidationError
+
+
+@main_bp.get("/healthz")
+def healthcheck():
+    try:
+        db.session.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.exception("Healthcheck database query failed")
+        return jsonify(status="error", app="health-tracker"), 503
+    return jsonify(status="ok", app="health-tracker")
+
+
+@main_bp.get("/account/export.json")
+@login_required
+def export_account_data():
+    artifact = UserDataJsonExporter().export(
+        current_user._get_current_object(),
+        current_user.id,
+    )
+    return send_file(
+        BytesIO(artifact.content),
+        mimetype=artifact.mimetype,
+        as_attachment=True,
+        download_name=f"health_tracker_user_{current_user.id}_export.json",
+    )
 
 
 def _current_user_files():

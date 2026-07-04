@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Sistema · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Diagnóstico del sistema</h1>
+      <p>Estado operativo agregado para QA. No muestra datos personales.</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('admin.users') }}">Usuarios</a>
+  </section>
+
+  <section class="card">
+    <h2>Aplicación</h2>
+    <dl>
+      <dt>Base de datos</dt><dd>{{ database_status|upper }}</dd>
+      <dt>Versión</dt><dd>{{ app_version or 'unknown' }}</dd>
+      <dt>Hora del servidor</dt><dd>{{ server_time.isoformat() }}</dd>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>Conteos</h2>
+    {% if counts is none %}
+      <p>No fue posible consultar los conteos.</p>
+    {% else %}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Recurso</th><th>Total</th></tr></thead>
+          <tbody>
+            <tr><td>Usuarios</td><td>{{ counts.users }}</td></tr>
+            <tr><td>Uploads</td><td>{{ counts.uploads }}</td></tr>
+            <tr><td>Rutinas</td><td>{{ counts.training_plans }}</td></tr>
+            <tr><td>Sesiones</td><td>{{ counts.training_sessions }}</td></tr>
+            <tr><td>Nutrición diaria</td><td>{{ counts.nutrition_days }}</td></tr>
+            <tr><td>Energía diaria</td><td>{{ counts.energy_days }}</td></tr>
+            <tr><td>Pesajes</td><td>{{ counts.weigh_ins }}</td></tr>
+            <tr><td>Reportes médicos</td><td>{{ counts.medical_reports }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

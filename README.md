@@ -344,6 +344,39 @@ Checklist médico para QA:
 
 No se admiten OCR, PDF médico, FHIR ni interpretación clínica en esta fase.
 
+## Operación y QA
+
+Levanta la aplicación, aplica migraciones y crea los datos demo ficticios de forma explícita:
+
+```powershell
+docker compose up --build -d
+docker compose exec web flask db upgrade
+docker compose exec web flask seed demo
+```
+
+Abre [http://localhost:8000](http://localhost:8000) e inicia sesión con `demo@example.com` / `demo12345`.
+
+Healthcheck público:
+
+```text
+GET http://localhost:8000/healthz
+```
+
+Responde `200` con `{"app":"health-tracker","status":"ok"}` cuando la aplicación y la consulta ligera `SELECT 1` funcionan. Si la base no responde, devuelve `503` sin exponer detalles de conexión.
+
+Logs de Gunicorn:
+
+```powershell
+docker compose logs -f web
+docker compose logs web --tail=120
+```
+
+Para QA, Gunicorn usa valores conservadores y configurables: timeout de 60 segundos, cierre gradual de 30 segundos y keep-alive de 5 segundos. Los logs de acceso, errores y salida capturada permanecen en stdout/stderr de Docker. Se pueden ajustar con `GUNICORN_TIMEOUT`, `GUNICORN_GRACEFUL_TIMEOUT`, `GUNICORN_KEEP_ALIVE` y `GUNICORN_LOG_LEVEL`.
+
+Un administrador puede abrir `/admin/system` para consultar estado de DB, versión operativa, hora UTC y conteos agregados. La pantalla no muestra datos personales ni secretos. `APP_VERSION` puede contener una versión o commit desplegado; si no se configura muestra `unknown`.
+
+Cada usuario autenticado puede descargar `/account/export.json`. El JSON incluye pesajes, nutrición, energía, balances, rutinas y sus versiones, sesiones, laboratorios y metadata segura de uploads. No incluye `password_hash`, secretos, rutas internas ni archivos binarios. La restauración/importación completa y el respaldo ZIP quedan para una fase futura.
+
 ## Comandos habituales
 
 ```powershell

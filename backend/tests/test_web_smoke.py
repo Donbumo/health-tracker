@@ -14,6 +14,10 @@ from tests.conftest import login
 
 
 def test_authenticated_primary_web_routes_and_admin_permissions(app, client, user):
+    health = client.get("/healthz")
+    assert health.status_code == 200
+    assert health.is_json
+
     login(client)
     for path in (
         "/dashboard",
@@ -30,16 +34,19 @@ def test_authenticated_primary_web_routes_and_admin_permissions(app, client, use
         "/manual/energy",
         "/manual/nutrition",
         "/manual/weigh-in",
+        "/account/export.json",
     ):
         response = client.get(path)
         assert response.status_code == 200, path
     assert client.get("/admin/users").status_code == 403
+    assert client.get("/admin/system").status_code == 403
 
     client.post("/logout")
     seeded = app.test_cli_runner().invoke(args=["seed-admin"])
     assert seeded.exit_code == 0
     login(client, "initial-admin", "a-secure-test-password")
     assert client.get("/admin/users").status_code == 200
+    assert client.get("/admin/system").status_code == 200
 
 
 def test_demo_smoke_exports_content_types_and_user_isolation(app, client, user):

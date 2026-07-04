@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Receta · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>{{ recipe.name }}</h1>
+      {% if recipe.description %}<p>{{ recipe.description }}</p>{% endif %}
+    </div>
+    <div class="page-actions">
+      <a class="button button-secondary" href="{{ url_for('recipes.list_recipes') }}">Volver</a>
+    </div>
+  </section>
+
+  <section class="card detail-wrap">
+    <dl>
+      <dt>Porciones</dt>
+      <dd>{{ recipe.servings }}</dd>
+
+      <dt>Rendimiento final</dt>
+      <dd>{{ recipe.yield_weight_g if recipe.yield_weight_g is not none else '—' }}{% if recipe.yield_weight_g %} g{% endif %}</dd>
+
+      <dt>Estado</dt>
+      <dd>{{ 'Activa' if recipe.is_active else 'Inactiva' }}</dd>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>Macros</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Métrica</th>
+            <th>Total receta</th>
+            <th>Por porción</th>
+            <th>Por 100 g</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>Calorías</th>
+            <td>{{ totals.calories if totals.calories is not none else '—' }}</td>
+            <td>{{ per_serving.calories if per_serving.calories is not none else '—' }}</td>
+            <td>{{ per_100g.calories if per_100g.calories is not none else '—' }}</td>
+          </tr>
+          <tr>
+            <th>Proteína</th>
+            <td>{{ totals.protein_g if totals.protein_g is not none else '—' }} g</td>
+            <td>{{ per_serving.protein_g if per_serving.protein_g is not none else '—' }} g</td>
+            <td>{{ per_100g.protein_g if per_100g.protein_g is not none else '—' }} g</td>
+          </tr>
+          <tr>
+            <th>Grasa</th>
+            <td>{{ totals.fat_g if totals.fat_g is not none else '—' }} g</td>
+            <td>{{ per_serving.fat_g if per_serving.fat_g is not none else '—' }} g</td>
+            <td>{{ per_100g.fat_g if per_100g.fat_g is not none else '—' }} g</td>
+          </tr>
+          <tr>
+            <th>Carbos totales</th>
+            <td>{{ totals.total_carbs_g if totals.total_carbs_g is not none else '—' }} g</td>
+            <td>{{ per_serving.total_carbs_g if per_serving.total_carbs_g is not none else '—' }} g</td>
+            <td>{{ per_100g.total_carbs_g if per_100g.total_carbs_g is not none else '—' }} g</td>
+          </tr>
+          <tr>
+            <th>Carbos netos</th>
+            <td>{{ totals.net_carbs_g if totals.net_carbs_g is not none else '—' }} g</td>
+            <td>{{ per_serving.net_carbs_g if per_serving.net_carbs_g is not none else '—' }} g</td>
+            <td>{{ per_100g.net_carbs_g if per_100g.net_carbs_g is not none else '—' }} g</td>
+          </tr>
+          <tr>
+            <th>Fibra</th>
+            <td>{{ totals.fiber_g if totals.fiber_g is not none else '—' }} g</td>
+            <td>{{ per_serving.fiber_g if per_serving.fiber_g is not none else '—' }} g</td>
+            <td>{{ per_100g.fiber_g if per_100g.fiber_g is not none else '—' }} g</td>
+          </tr>
+          <tr>
+            <th>Sodio</th>
+            <td>{{ totals.sodium_mg if totals.sodium_mg is not none else '—' }} mg</td>
+            <td>{{ per_serving.sodium_mg if per_serving.sodium_mg is not none else '—' }} mg</td>
+            <td>{{ per_100g.sodium_mg if per_100g.sodium_mg is not none else '—' }} mg</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Ingredientes</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Ingrediente</th>
+            <th>Cantidad</th>
+            <th>kcal / 100 g</th>
+            <th>Proteína / 100 g</th>
+            <th>Netos / 100 g</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ingredient in recipe.ingredients %}
+            <tr>
+              <td>{{ ingredient.sort_order }}</td>
+              <td>
+                {{ ingredient.name_snapshot }}
+                {% if ingredient.brand_snapshot %}<br><small>{{ ingredient.brand_snapshot }}</small>{% endif %}
+              </td>
+              <td>{{ ingredient.quantity_g }} g</td>
+              <td>{{ ingredient.calories_per_100g if ingredient.calories_per_100g is not none else '—' }}</td>
+              <td>{{ ingredient.protein_g_per_100g if ingredient.protein_g_per_100g is not none else '—' }} g</td>
+              <td>{{ ingredient.net_carbs_g_per_100g if ingredient.net_carbs_g_per_100g is not none else '—' }} g</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {% if recipe.notes %}
+    <section class="card">
+      <h2>Notas</h2>
+      <p>{{ recipe.notes }}</p>
+    </section>
+  {% endif %}
+{% endblock %}

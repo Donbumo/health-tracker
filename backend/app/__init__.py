@@ -46,6 +46,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     from app.training import training_bp
     from app.wellness import wellness_bp
     from app.foods import foods_bp
+    from app.recipes import recipes_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -57,6 +58,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(training_bp)
     app.register_blueprint(wellness_bp)
     app.register_blueprint(foods_bp)
+    app.register_blueprint(recipes_bp)
     register_commands(app)
 
     @app.errorhandler(403)

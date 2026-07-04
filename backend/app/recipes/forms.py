@@ -1,5 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import DecimalField, StringField, TextAreaField
+from flask_wtf.file import FileAllowed, FileRequired
+from wtforms import DecimalField, FileField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional
 
 
@@ -26,4 +27,13 @@ class RecipeForm(FlaskForm):
     notes = TextAreaField(
         "Notas",
         validators=[Optional()],
+    )
+
+class RecipeImportForm(FlaskForm):
+    file = FileField(
+        "Archivo JSON",
+        validators=[
+            FileRequired(message="Seleccione un archivo JSON."),
+            FileAllowed(["json"], message="Solo se permiten archivos JSON."),
+        ],
     )

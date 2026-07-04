@@ -7,9 +7,12 @@ from sqlalchemy.orm import selectinload
 from app.extensions import db
 from app.models import FoodProduct, Recipe
 from app.recipes import recipes_bp
-from app.recipes.forms import RecipeForm
+from app.recipes.forms import RecipeForm, RecipeImportForm
 from app.services.recipes import RecipeServiceError, create_recipe_from_products
 
+from app.services.files import store_uploaded_file
+from app.services.importers.recipe import RecipeImportError, import_recipe_file
+from app.services.validation import JsonSchemaValidationError
 
 def _active_food_products():
     return db.session.execute(
@@ -131,7 +134,39 @@ def new_recipe():
 
     return render_template("recipes/new.html", form=form, products=products)
 
+@recipes_bp.route("/import", methods=["GET", "POST"])
+@login_required
+def import_recipe():
+    form = RecipeImportForm()
+    if form.validate_on_submit():
+        source_file = None
+        try:
+            source_file, file_duplicate = store_uploaded_file(
+                form.file.data,
+                current_user.id,
+            )
+            source_file.detected_type = "recipe"
 
+            recipe, duplicate = import_recipe_file(source_file, current_user.id)
+            if duplicate:
+                source_file.import_status = "duplicate"
+                db.session.commit()
+                flash("La receta ya existe.", "info")
+            else:
+                source_file.import_status = "imported"
+                db.session.commit()
+                flash("Receta importada correctamente.", "success")
+
+            return redirect(url_for("recipes.detail_recipe", id=recipe.id))
+        except (RecipeImportError, JsonSchemaValidationError) as error:
+            db.session.rollback()
+            if source_file is not None:
+                source_file.import_status = "error"
+                source_file.error_message = str(error)
+                db.session.commit()
+            flash(f"Error al importar: {error}", "error")
+
+    return render_template("recipes/import.html", form=form)
 @recipes_bp.route("/<int:id>")
 @login_required
 def detail_recipe(id: int):

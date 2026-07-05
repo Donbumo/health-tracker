@@ -8,10 +8,11 @@ from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.models import FoodProduct, Recipe
 from app.recipes import recipes_bp
-from app.recipes.forms import RecipeDuplicateForm, RecipeForm, RecipeImportForm
-from app.services.exporters.recipe import recipe_export_bytes
+from app.recipes.forms import RecipeBundleImportForm, RecipeDuplicateForm, RecipeForm, RecipeImportForm
+from app.services.exporters.recipe import recipe_bundle_export_bytes, recipe_export_bytes
 from app.services.files import store_uploaded_file
 from app.services.importers.recipe import RecipeImportError, import_recipe_file
+from app.services.importers.recipe_bundle import RecipeBundleImportError, import_recipe_bundle_file
 from app.services.recipes import (
     RecipeServiceError,
     create_recipe_from_products,
@@ -123,7 +124,6 @@ def _recipe_export_filename(recipe: Recipe) -> str:
         safe_name = f"recipe_{recipe.id}"
     return f"{safe_name[:180]}.json"
 
-
 @recipes_bp.route("")
 @login_required
 def list_recipes():
@@ -136,7 +136,6 @@ def list_recipes():
 
     records = [_recipe_summary(recipe) for recipe in recipes]
     return render_template("recipes/list.html", records=records)
-
 
 @recipes_bp.route("/new", methods=["GET", "POST"])
 @login_required
@@ -163,7 +162,6 @@ def new_recipe():
             flash(f"Error al guardar receta: {error}", "error")
 
     return render_template("recipes/new.html", form=form, products=products)
-
 
 @recipes_bp.route("/import", methods=["GET", "POST"])
 @login_required
@@ -199,6 +197,60 @@ def import_recipe():
 
     return render_template("recipes/import.html", form=form)
 
+@recipes_bp.route("/export-all")
+@login_required
+def export_all_recipes():
+    recipes = db.session.execute(
+        db.select(Recipe)
+        .options(selectinload(Recipe.ingredients))
+        .where(Recipe.user_id == current_user.id)
+        .order_by(Recipe.name.asc())
+    ).scalars().all()
+
+    payload = recipe_bundle_export_bytes(recipes)
+    return Response(
+        payload,
+        mimetype="application/json",
+        headers={
+            "Content-Disposition": 'attachment; filename="recipes_bundle.json"',
+            "Content-Length": str(len(payload)),
+        },
+    )
+
+@recipes_bp.route("/import-bundle", methods=["GET", "POST"])
+@login_required
+def import_recipe_bundle():
+    form = RecipeBundleImportForm()
+    if form.validate_on_submit():
+        source_file = None
+        try:
+            source_file, file_duplicate = store_uploaded_file(
+                form.file.data,
+                current_user.id,
+            )
+            source_file.detected_type = "recipe_bundle"
+
+            result = import_recipe_bundle_file(source_file, current_user.id)
+            source_file.import_status = (
+                "duplicate" if file_duplicate and not result.created else "imported"
+            )
+            db.session.commit()
+
+            flash(
+                f"Bundle de recetas importado: {len(result.created)} nuevas, "
+                f"{len(result.duplicates)} existentes.",
+                "success" if result.created else "info",
+            )
+            return redirect(url_for("recipes.list_recipes"))
+        except (RecipeBundleImportError, JsonSchemaValidationError) as error:
+            db.session.rollback()
+            if source_file is not None:
+                source_file.import_status = "error"
+                source_file.error_message = str(error)
+                db.session.commit()
+            flash(f"Error al importar bundle: {error}", "error")
+
+    return render_template("recipes/import_bundle.html", form=form)
 
 @recipes_bp.route("/<int:id>/duplicate", methods=["POST"])
 @login_required
@@ -221,7 +273,6 @@ def duplicate_recipe(id: int):
         flash(f"No fue posible duplicar receta: {error}", "error")
         return redirect(url_for("recipes.detail_recipe", id=recipe.id))
 
-
 @recipes_bp.route("/<int:id>/export")
 @login_required
 def export_recipe(id: int):
@@ -237,7 +288,6 @@ def export_recipe(id: int):
             "Content-Length": str(len(payload)),
         },
     )
-
 
 @recipes_bp.route("/<int:id>/edit", methods=["GET", "POST"])
 @login_required
@@ -275,7 +325,6 @@ def edit_recipe(id: int):
         products=products,
         row_count=row_count,
     )
-
 
 @recipes_bp.route("/<int:id>")
 @login_required

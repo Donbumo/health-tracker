@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Importar bundle de recetas · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Importar bundle de recetas</h1>
+      <p>Agrega varias recetas desde un solo archivo JSON estructurado.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button button-secondary" href="{{ url_for('recipes.list_recipes') }}">Volver a recetas</a>
+    </div>
+  </section>
+
+  <section class="card form-wrap">
+    <form method="POST" enctype="multipart/form-data" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="form-group">
+        {{ form.file.label }}
+        {{ form.file() }}
+        {% for error in form.file.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="button">Importar bundle</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Formato recomendado</h2>
+    <pre>{
+  "schema_version": "1.0",
+  "type": "recipe_bundle",
+  "name": "Mi recetario",
+  "recipes": [
+    {
+      "schema_version": "1.0",
+      "type": "recipe",
+      "name": "Licuado de proteína",
+      "servings": 2,
+      "yield_weight_g": 500,
+      "source": "manual",
+      "ingredients": [
+        {
+          "food_product_name": "Proteína Demo",
+          "food_product_brand": "Marca Demo",
+          "quantity_g": 40
+        }
+      ]
+    }
+  ]
+}</pre>
+  </section>
+{% endblock %}

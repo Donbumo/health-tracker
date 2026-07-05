@@ -2,7 +2,7 @@
 
 import json
 from decimal import Decimal
-from typing import Any
+from typing import Any, Iterable
 
 from app.models import Recipe, RecipeIngredient
 from app.services.validation import validate_json_document
@@ -39,12 +39,6 @@ def _ingredient_document(ingredient: RecipeIngredient) -> dict[str, Any]:
 
 
 def build_recipe_export_document(recipe: Recipe) -> dict[str, Any]:
-    """Build a portable recipe JSON document.
-
-    Ingredients are exported by product name/brand snapshots instead of local
-    database IDs so the file can be reimported in another environment if the
-    matching pantry products exist.
-    """
     document: dict[str, Any] = {
         "schema_version": "1.0",
         "type": "recipe",
@@ -74,6 +68,36 @@ def build_recipe_export_document(recipe: Recipe) -> dict[str, Any]:
 
 def recipe_export_bytes(recipe: Recipe) -> bytes:
     document = build_recipe_export_document(recipe)
+    return _json_bytes(document)
+
+
+def build_recipe_bundle_export_document(
+    recipes: Iterable[Recipe],
+    *,
+    name: str | None = None,
+) -> dict[str, Any]:
+    recipe_documents = [
+        build_recipe_export_document(recipe)
+        for recipe in sorted(recipes, key=lambda item: item.name.casefold())
+    ]
+
+    document: dict[str, Any] = {
+        "schema_version": "1.0",
+        "type": "recipe_bundle",
+        "name": name or "Recipe bundle export",
+        "recipes": recipe_documents,
+    }
+
+    validate_json_document(document, "recipe_bundle")
+    return document
+
+
+def recipe_bundle_export_bytes(recipes: Iterable[Recipe]) -> bytes:
+    document = build_recipe_bundle_export_document(recipes)
+    return _json_bytes(document)
+
+
+def _json_bytes(document: dict[str, Any]) -> bytes:
     return (
         json.dumps(
             document,

@@ -8,6 +8,10 @@
     </div>
     <div class="page-actions">
       <a class="button" href="{{ url_for('recipes.edit_recipe', id=recipe.id) }}">Editar</a>
+      <form method="post" action="{{ url_for('recipes.duplicate_recipe', id=recipe.id) }}" style="display:inline;">
+        {{ duplicate_form.hidden_tag() }}
+        <button type="submit" class="button button-secondary">Duplicar</button>
+      </form>
       <a class="button button-secondary" href="{{ url_for('recipes.list_recipes') }}">Volver</a>
     </div>
   </section>

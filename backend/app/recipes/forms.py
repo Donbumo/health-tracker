@@ -29,6 +29,7 @@ class RecipeForm(FlaskForm):
         validators=[Optional()],
     )
 
+
 class RecipeImportForm(FlaskForm):
     file = FileField(
         "Archivo JSON",
@@ -37,3 +38,7 @@ class RecipeImportForm(FlaskForm):
             FileAllowed(["json"], message="Solo se permiten archivos JSON."),
         ],
     )
+
+
+class RecipeDuplicateForm(FlaskForm):
+    pass

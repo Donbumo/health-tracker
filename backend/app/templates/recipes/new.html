@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Nueva receta · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Nueva receta</h1>
+      <p>Construye una receta usando productos activos de tu alacena.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button button-secondary" href="{{ url_for('recipes.list_recipes') }}">Cancelar</a>
+    </div>
+  </section>
+
+  <section class="card form-wrap">
+    {% if not products %}
+      <p>Primero necesitas agregar productos a tu alacena.</p>
+      <p><a class="button" href="{{ url_for('foods.new_food') }}">Agregar producto</a></p>
+    {% else %}
+      <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+          {{ form.name.label }}
+          {{ form.name() }}
+          {% for error in form.name.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="form-group">
+          {{ form.description.label }}
+          {{ form.description(rows=2) }}
+          {% for error in form.description.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            {{ form.servings.label }}
+            {{ form.servings(type="number", step="0.001", min="0.001") }}
+            {% for error in form.servings.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+          </div>
+          <div class="form-group">
+            {{ form.yield_weight_g.label }}
+            {{ form.yield_weight_g(type="number", step="0.001", min="0.001") }}
+            {% for error in form.yield_weight_g.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+          </div>
+        </div>
+
+        <fieldset>
+          <legend>Ingredientes</legend>
+          <p>Selecciona productos de tu alacena y escribe la cantidad usada en gramos.</p>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Producto</th>
+                  <th>Cantidad g</th>
+                  <th>Notas</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in range(1, 11) %}
+                  <tr>
+                    <td>{{ row }}</td>
+                    <td>
+                      <select name="food_product_id[]">
+                        <option value="">—</option>
+                        {% for product in products %}
+                          <option value="{{ product.id }}">
+                            {{ product.name }}{% if product.brand %} · {{ product.brand }}{% endif %}
+                          </option>
+                        {% endfor %}
+                      </select>
+                    </td>
+                    <td>
+                      <input type="number" name="quantity_g[]" step="0.001" min="0.001">
+                    </td>
+                    <td>
+                      <input type="text" name="ingredient_notes[]" maxlength="200">
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </fieldset>
+
+        <div class="form-group">
+          {{ form.notes.label }}
+          {{ form.notes(rows=3) }}
+          {% for error in form.notes.errors %}<span class="form-error">{{ error }}</span>{% endfor %}
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="button">Guardar receta</button>
+        </div>
+      </form>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -1,44 +1,120 @@
 {% extends "base.html" %}
 {% block title %}Capturar nutrición · Health Tracker{% endblock %}
 {% block content %}
-  <section class="page-heading"><div><h1>Captura manual de nutrición</h1><p>MVP: una comida y un item por registro diario.</p></div></section>
-  <section class="notice warning">Para varios items usa la importación JSON. El editor dinámico queda pendiente.</section>
-  <section class="card"><form method="post" novalidate>
-    {{ form.hidden_tag() }}
-    {% for field in [form.date, form.meal_type, form.meal_name, form.item_name] %}
-      <div class="field">{{ field.label }}{{ field() }}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
-    {% endfor %}
+  <section class="page-heading">
+    <div>
+      <h1>Captura manual de nutrición</h1>
+      <p>MVP: una comida y un item por registro diario.</p>
+    </div>
+  </section>
 
-    <fieldset>
-      <legend>Alacena (Opcional)</legend>
-      <div class="field">
-        {{ form.food_product_id.label }}{{ form.food_product_id(id="food_product_select") }}
-        {% for error in form.food_product_id.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
-      </div>
-      <div class="field">
-        {{ form.grams_from_product.label }}{{ form.grams_from_product(id="grams_input") }}
-        {% for error in form.grams_from_product.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
-      </div>
-      <button type="button" class="button button-secondary" id="apply_macros_btn">Autocompletar macros</button>
-    </fieldset>
+  <section class="notice warning">
+    Para varios items usa la importación JSON. El editor dinámico queda pendiente.
+  </section>
 
-    {% for field in [form.quantity, form.unit, form.calories, form.protein_g, form.fat_g, form.net_carbs_g, form.total_carbs_g, form.fiber_g, form.sugar_g, form.sodium_mg, form.notes] %}
-      <div class="field">{{ field.label }}{{ field(id="field_" + field.name) }}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
-    {% endfor %}
-    {{ form.submit(class_='button') }}
-  </form></section>
+  <section class="card">
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+
+      {% for field in [form.date, form.meal_type, form.meal_name, form.item_name] %}
+        <div class="field">
+          {{ field.label }}
+          {{ field() }}
+          {% for error in field.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+      {% endfor %}
+
+      <fieldset>
+        <legend>Alacena (Opcional)</legend>
+        <div class="field">
+          {{ form.food_product_id.label }}
+          {{ form.food_product_id(id="food_product_select") }}
+          {% for error in form.food_product_id.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="field">
+          {{ form.grams_from_product.label }}
+          {{ form.grams_from_product(id="grams_input") }}
+          {% for error in form.grams_from_product.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <button type="button" class="button button-secondary" id="apply_macros_btn">
+          Autocompletar macros
+        </button>
+      </fieldset>
+
+      <fieldset>
+        <legend>Receta (Opcional)</legend>
+        <div class="field">
+          {{ form.recipe_id.label }}
+          {{ form.recipe_id(id="recipe_select") }}
+          {% for error in form.recipe_id.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="field">
+          {{ form.recipe_amount.label }}
+          {{ form.recipe_amount(id="recipe_amount_input") }}
+          {% for error in form.recipe_amount.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="field">
+          {{ form.recipe_unit.label }}
+          {{ form.recipe_unit(id="recipe_unit_select") }}
+          {% for error in form.recipe_unit.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <button type="button" class="button button-secondary" id="apply_recipe_macros_btn">
+          Autocompletar desde receta
+        </button>
+      </fieldset>
+
+      {% for field in [form.quantity, form.unit, form.calories, form.protein_g, form.fat_g, form.net_carbs_g, form.total_carbs_g, form.fiber_g, form.sugar_g, form.sodium_mg, form.notes] %}
+        <div class="field">
+          {{ field.label }}
+          {{ field(id="field_" + field.name) }}
+          {% for error in field.errors %}
+            <span class="field-error">{{ error }}</span>
+          {% endfor %}
+        </div>
+      {% endfor %}
+
+      {{ form.submit(class_='button') }}
+    </form>
+  </section>
 {% endblock %}
 
 {% block scripts %}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const products = {{ products_json | tojson }};
+    const recipes = {{ recipes_json | tojson }};
+
     const productMap = {};
     products.forEach(p => productMap[p.id] = p);
+
+    const recipeMap = {};
+    recipes.forEach(r => recipeMap[r.id] = r);
 
     const applyBtn = document.getElementById('apply_macros_btn');
     const select = document.getElementById('food_product_select');
     const gramsInput = document.getElementById('grams_input');
+
+    const applyRecipeBtn = document.getElementById('apply_recipe_macros_btn');
+    const recipeSelect = document.getElementById('recipe_select');
+    const recipeAmountInput = document.getElementById('recipe_amount_input');
+    const recipeUnitSelect = document.getElementById('recipe_unit_select');
 
     applyBtn.addEventListener('click', function() {
       const productId = parseInt(select.value, 10);
@@ -70,10 +146,55 @@
       fillField('net_carbs_g', 'net_carbs_g_per_100g');
       fillField('fiber_g', 'fiber_g_per_100g');
       fillField('sodium_mg', 'sodium_mg_per_100g');
+
       const qty = document.getElementById('field_quantity');
       const unit = document.getElementById('field_unit');
       if (qty) qty.value = grams;
       if (unit) unit.value = "g";
+    });
+
+    applyRecipeBtn.addEventListener('click', function() {
+      const recipeId = parseInt(recipeSelect.value, 10);
+      const amount = parseFloat(recipeAmountInput.value);
+      const mode = recipeUnitSelect.value;
+
+      if (!recipeId || isNaN(amount) || amount <= 0) {
+        alert("Selecciona una receta e ingresa una cantidad válida mayor a 0.");
+        return;
+      }
+
+      const recipe = recipeMap[recipeId];
+      if (!recipe) return;
+
+      const source = mode === "g" ? recipe.per_100g : recipe.per_serving;
+      const factor = mode === "g" ? amount / 100.0 : amount;
+
+      if (!source || Object.values(source).every(value => value === null)) {
+        alert("La receta no tiene macros suficientes para calcular esta unidad.");
+        return;
+      }
+
+      const fillRecipeField = (fieldName, sourceProp) => {
+        const input = document.getElementById('field_' + fieldName);
+        if (input && source[sourceProp] !== null) {
+          input.value = (source[sourceProp] * factor).toFixed(3);
+        } else if (input) {
+          input.value = "";
+        }
+      };
+
+      fillRecipeField('calories', 'calories');
+      fillRecipeField('protein_g', 'protein_g');
+      fillRecipeField('fat_g', 'fat_g');
+      fillRecipeField('total_carbs_g', 'total_carbs_g');
+      fillRecipeField('net_carbs_g', 'net_carbs_g');
+      fillRecipeField('fiber_g', 'fiber_g');
+      fillRecipeField('sodium_mg', 'sodium_mg');
+
+      const qty = document.getElementById('field_quantity');
+      const unit = document.getElementById('field_unit');
+      if (qty) qty.value = amount;
+      if (unit) unit.value = mode === "g" ? "g" : "serving";
     });
   });
 </script>

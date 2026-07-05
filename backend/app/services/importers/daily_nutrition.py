@@ -6,6 +6,7 @@ from app.models import (
     DailyNutrition,
     NutritionItem,
     NutritionMeal,
+    Recipe,
     UploadedFile,
 )
 from app.services.importers.base import ImporterError, load_json_source
@@ -81,6 +82,29 @@ def _validate_ordering(data: dict) -> None:
         if any(not item["name"].strip() for item in meal["items"]):
             raise DailyNutritionImportError("Nutrition item names must not be blank")
 
+def _validate_recipe_references(data: dict, user_id: int) -> None:
+    recipe_ids = {
+        item["recipe_id"]
+        for meal in data.get("meals", [])
+        for item in meal.get("items", [])
+        if item.get("recipe_id") is not None
+    }
+    if not recipe_ids:
+        return
+
+    owned_ids = set(
+        db.session.execute(
+            db.select(Recipe.id).where(
+                Recipe.user_id == user_id,
+                Recipe.id.in_(recipe_ids),
+            )
+        ).scalars()
+    )
+    missing_ids = recipe_ids - owned_ids
+    if missing_ids:
+        raise DailyNutritionImportError(
+            "Nutrition item recipe_id does not belong to this user"
+        )
 
 def import_daily_nutrition_file(
     source_file: UploadedFile,
@@ -112,6 +136,7 @@ def import_daily_nutrition_file(
 
     data = document["data"]
     _validate_ordering(data)
+    _validate_recipe_references(data, user_id)
     record_date = date.fromisoformat(data["date"])
     source = data.get("source", document["source_type"]).strip()
     if not source:
@@ -160,6 +185,7 @@ def import_daily_nutrition_file(
                     quantity=_decimal(item_data.get("quantity")),
                     unit=item_data.get("unit"),
                     food_product_id=item_data.get("food_product_id"),
+                    recipe_id=item_data.get("recipe_id"),
                     sort_order=item_data.get("sort_order", item_index),
                     notes=item_data.get("notes"),
                     calories=item_values.pop("calories", None),

@@ -79,6 +79,10 @@
           "type": "integer",
           "description": "ID del producto de la alacena, si aplica."
         },
+        "recipe_id": {
+          "type": "integer",
+          "description": "ID de la receta, si aplica."
+        },
         "sort_order": {"type": "integer", "minimum": 1},
         "calories_kcal": {"$ref": "#/$defs/nonNegativeNumber"},
         "protein_g": {"$ref": "#/$defs/nonNegativeNumber"},

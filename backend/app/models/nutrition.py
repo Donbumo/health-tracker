@@ -182,8 +182,13 @@ class NutritionItem(db.Model):
         db.ForeignKey("food_products.id", ondelete="SET NULL"),
         nullable=True,
     )
+    recipe_id = db.Column(
+        db.Integer,
+        db.ForeignKey("recipes.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     food_product = db.relationship("FoodProduct")
-
+    recipe = db.relationship("Recipe")
 
 FOOD_PRODUCT_METRICS = (
     "calories_per_100g",

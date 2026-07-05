@@ -7,12 +7,13 @@ from sqlalchemy.orm import selectinload
 from app.extensions import db
 from app.models import FoodProduct, Recipe
 from app.recipes import recipes_bp
-from app.recipes.forms import RecipeForm, RecipeImportForm
+from app.recipes.forms import RecipeDuplicateForm, RecipeForm, RecipeImportForm
 from app.services.files import store_uploaded_file
 from app.services.importers.recipe import RecipeImportError, import_recipe_file
 from app.services.recipes import (
     RecipeServiceError,
     create_recipe_from_products,
+    duplicate_recipe_from_existing,
     update_recipe_from_products,
 )
 from app.services.validation import JsonSchemaValidationError
@@ -190,6 +191,28 @@ def import_recipe():
     return render_template("recipes/import.html", form=form)
 
 
+@recipes_bp.route("/<int:id>/duplicate", methods=["POST"])
+@login_required
+def duplicate_recipe(id: int):
+    recipe = _recipe_for_user(id)
+    form = RecipeDuplicateForm()
+
+    if not form.validate_on_submit():
+        abort(400)
+
+    try:
+        duplicated_recipe = duplicate_recipe_from_existing(
+            user_id=current_user.id,
+            recipe=recipe,
+        )
+        flash("Variante de receta creada correctamente.", "success")
+        return redirect(url_for("recipes.edit_recipe", id=duplicated_recipe.id))
+    except RecipeServiceError as error:
+        db.session.rollback()
+        flash(f"No fue posible duplicar receta: {error}", "error")
+        return redirect(url_for("recipes.detail_recipe", id=recipe.id))
+
+
 @recipes_bp.route("/<int:id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_recipe(id: int):
@@ -238,4 +261,5 @@ def detail_recipe(id: int):
         totals=recipe.totals(),
         per_serving=recipe.per_serving(),
         per_100g=recipe.per_100g(),
+        duplicate_form=RecipeDuplicateForm(),
     )

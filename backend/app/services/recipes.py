@@ -92,6 +92,26 @@ def _validate_recipe_name_available(
         raise RecipeServiceError("Recipe name already exists for this user")
 
 
+def _next_copy_recipe_name(user_id: int, recipe_name: str) -> str:
+    base_name = _required_text(recipe_name, "name")
+
+    for copy_number in range(1, 1000):
+        suffix = " (copia)" if copy_number == 1 else f" (copia {copy_number})"
+        max_base_length = 200 - len(suffix)
+        candidate = f"{base_name[:max_base_length]}{suffix}"
+
+        existing = db.session.execute(
+            db.select(Recipe.id).where(
+                Recipe.user_id == user_id,
+                Recipe.name == candidate,
+            )
+        ).scalar_one_or_none()
+        if existing is None:
+            return candidate
+
+    raise RecipeServiceError("Could not generate a unique recipe copy name")
+
+
 def _validated_ingredient_specs(
     *,
     user_id: int,
@@ -289,3 +309,55 @@ def update_recipe_from_products(
         db.session.flush()
 
     return recipe
+
+
+def duplicate_recipe_from_existing(
+    *,
+    user_id: int,
+    recipe: Recipe,
+    name: str | None = None,
+    commit: bool = True,
+) -> Recipe:
+    """Create a recipe variant from an existing recipe.
+
+    The duplicated recipe keeps metadata and quantities, but ingredient snapshots
+    are refreshed from the currently linked active FoodProduct records.
+    """
+    if recipe.user_id != user_id:
+        raise RecipeServiceError("Recipe does not belong to this user")
+
+    duplicate_name = _optional_text(name)
+    if duplicate_name is None:
+        duplicate_name = _next_copy_recipe_name(user_id, recipe.name)
+    else:
+        _validate_recipe_name_available(
+            user_id=user_id,
+            recipe_name=duplicate_name,
+        )
+
+    ingredient_specs = []
+    for ingredient in sorted(recipe.ingredients, key=lambda item: item.sort_order):
+        if ingredient.food_product_id is None:
+            raise RecipeServiceError(
+                "Recipe cannot be duplicated because an ingredient is not linked to a food product"
+            )
+        ingredient_specs.append(
+            {
+                "food_product_id": ingredient.food_product_id,
+                "quantity_g": ingredient.quantity_g,
+                "sort_order": ingredient.sort_order,
+                "notes": ingredient.notes,
+            }
+        )
+
+    return create_recipe_from_products(
+        user_id=user_id,
+        name=duplicate_name,
+        description=recipe.description,
+        servings=recipe.servings,
+        yield_weight_g=recipe.yield_weight_g,
+        notes=recipe.notes,
+        source="manual",
+        ingredients=ingredient_specs,
+        commit=commit,
+    )

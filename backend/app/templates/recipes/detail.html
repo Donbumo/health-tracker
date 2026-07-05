@@ -7,6 +7,7 @@
       {% if recipe.description %}<p>{{ recipe.description }}</p>{% endif %}
     </div>
     <div class="page-actions">
+      <a class="button" href="{{ url_for('recipes.edit_recipe', id=recipe.id) }}">Editar</a>
       <a class="button button-secondary" href="{{ url_for('recipes.list_recipes') }}">Volver</a>
     </div>
   </section>
@@ -99,7 +100,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for ingredient in recipe.ingredients %}
+          {% for ingredient in recipe.ingredients|sort(attribute='sort_order') %}
             <tr>
               <td>{{ ingredient.sort_order }}</td>
               <td>

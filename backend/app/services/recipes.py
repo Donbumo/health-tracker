@@ -74,6 +74,58 @@ def _get_product_for_user(user_id: int, product_id: int) -> FoodProduct:
     return product
 
 
+def _validate_recipe_name_available(
+    *,
+    user_id: int,
+    recipe_name: str,
+    current_recipe_id: int | None = None,
+) -> None:
+    query = db.select(Recipe).where(
+        Recipe.user_id == user_id,
+        Recipe.name == recipe_name,
+    )
+    if current_recipe_id is not None:
+        query = query.where(Recipe.id != current_recipe_id)
+
+    existing = db.session.execute(query).scalar_one_or_none()
+    if existing is not None:
+        raise RecipeServiceError("Recipe name already exists for this user")
+
+
+def _validated_ingredient_specs(
+    *,
+    user_id: int,
+    ingredients: Iterable[dict[str, Any]],
+) -> list[tuple[FoodProduct, Decimal, int, str | None]]:
+    ingredient_specs = list(ingredients)
+    if not ingredient_specs:
+        raise RecipeServiceError("Recipe must have at least one ingredient")
+
+    validated_ingredients: list[tuple[FoodProduct, Decimal, int, str | None]] = []
+    seen_sort_orders: set[int] = set()
+
+    for index, spec in enumerate(ingredient_specs, start=1):
+        product_id = _food_product_id(spec.get("food_product_id"))
+        product = _get_product_for_user(user_id, product_id)
+        quantity_g = _positive_decimal(spec.get("quantity_g"), "quantity_g")
+        sort_order = _sort_order(spec.get("sort_order"), index)
+
+        if sort_order in seen_sort_orders:
+            raise RecipeServiceError("Recipe ingredient sort_order values must be unique")
+        seen_sort_orders.add(sort_order)
+
+        validated_ingredients.append(
+            (
+                product,
+                quantity_g,
+                sort_order,
+                _optional_text(spec.get("notes")),
+            )
+        )
+
+    return validated_ingredients
+
+
 def recipe_ingredient_from_product(
     *,
     user_id: int,
@@ -131,40 +183,12 @@ def create_recipe_from_products(
         else None
     )
 
-    existing = db.session.execute(
-        db.select(Recipe).where(
-            Recipe.user_id == user_id,
-            Recipe.name == recipe_name,
-        )
-    ).scalar_one_or_none()
-    if existing is not None:
-        raise RecipeServiceError("Recipe name already exists for this user")
+    _validate_recipe_name_available(user_id=user_id, recipe_name=recipe_name)
 
-    ingredient_specs = list(ingredients)
-    if not ingredient_specs:
-        raise RecipeServiceError("Recipe must have at least one ingredient")
-
-    validated_ingredients: list[tuple[FoodProduct, Decimal, int, str | None]] = []
-    seen_sort_orders: set[int] = set()
-
-    for index, spec in enumerate(ingredient_specs, start=1):
-        product_id = _food_product_id(spec.get("food_product_id"))
-        product = _get_product_for_user(user_id, product_id)
-        quantity_g = _positive_decimal(spec.get("quantity_g"), "quantity_g")
-        sort_order = _sort_order(spec.get("sort_order"), index)
-
-        if sort_order in seen_sort_orders:
-            raise RecipeServiceError("Recipe ingredient sort_order values must be unique")
-        seen_sort_orders.add(sort_order)
-
-        validated_ingredients.append(
-            (
-                product,
-                quantity_g,
-                sort_order,
-                _optional_text(spec.get("notes")),
-            )
-        )
+    validated_ingredients = _validated_ingredient_specs(
+        user_id=user_id,
+        ingredients=ingredients,
+    )
 
     recipe = Recipe(
         user_id=user_id,
@@ -177,6 +201,75 @@ def create_recipe_from_products(
         raw_payload_json=raw_payload_json,
     )
     db.session.add(recipe)
+
+    for product, quantity_g, sort_order, ingredient_notes in validated_ingredients:
+        db.session.add(
+            recipe_ingredient_from_product(
+                user_id=user_id,
+                recipe=recipe,
+                product=product,
+                quantity_g=quantity_g,
+                sort_order=sort_order,
+                notes=ingredient_notes,
+            )
+        )
+
+    if commit:
+        db.session.commit()
+    else:
+        db.session.flush()
+
+    return recipe
+
+
+def update_recipe_from_products(
+    *,
+    user_id: int,
+    recipe: Recipe,
+    name: str,
+    ingredients: Iterable[dict[str, Any]],
+    servings: Any = Decimal("1"),
+    yield_weight_g: Any = None,
+    description: str | None = None,
+    notes: str | None = None,
+    commit: bool = True,
+) -> Recipe:
+    """Update recipe metadata and replace ingredient snapshots.
+
+    Historical daily nutrition items keep their own macro snapshots and are not
+    recalculated when a recipe changes.
+    """
+    if recipe.user_id != user_id:
+        raise RecipeServiceError("Recipe does not belong to this user")
+
+    recipe_name = _required_text(name, "name")
+    recipe_servings = _positive_decimal(servings, "servings")
+    recipe_yield_weight_g = (
+        _positive_decimal(yield_weight_g, "yield_weight_g")
+        if yield_weight_g is not None
+        else None
+    )
+
+    _validate_recipe_name_available(
+        user_id=user_id,
+        recipe_name=recipe_name,
+        current_recipe_id=recipe.id,
+    )
+
+    validated_ingredients = _validated_ingredient_specs(
+        user_id=user_id,
+        ingredients=ingredients,
+    )
+
+    recipe.name = recipe_name
+    recipe.description = _optional_text(description)
+    recipe.servings = recipe_servings
+    recipe.yield_weight_g = recipe_yield_weight_g
+    recipe.notes = _optional_text(notes)
+
+    for ingredient in list(recipe.ingredients):
+        db.session.delete(ingredient)
+    db.session.flush()
 
     for product, quantity_g, sort_order, ingredient_notes in validated_ingredients:
         db.session.add(

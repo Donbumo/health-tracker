@@ -8,11 +8,15 @@ from app.extensions import db
 from app.models import FoodProduct, Recipe
 from app.recipes import recipes_bp
 from app.recipes.forms import RecipeForm, RecipeImportForm
-from app.services.recipes import RecipeServiceError, create_recipe_from_products
-
 from app.services.files import store_uploaded_file
 from app.services.importers.recipe import RecipeImportError, import_recipe_file
+from app.services.recipes import (
+    RecipeServiceError,
+    create_recipe_from_products,
+    update_recipe_from_products,
+)
 from app.services.validation import JsonSchemaValidationError
+
 
 def _active_food_products():
     return db.session.execute(
@@ -23,6 +27,14 @@ def _active_food_products():
         )
         .order_by(FoodProduct.name.asc())
     ).scalars().all()
+
+
+def _products_for_recipe_edit(recipe: Recipe):
+    products_by_id = {product.id: product for product in _active_food_products()}
+    for ingredient in recipe.ingredients:
+        if ingredient.food_product is not None and ingredient.food_product.user_id == current_user.id:
+            products_by_id.setdefault(ingredient.food_product.id, ingredient.food_product)
+    return sorted(products_by_id.values(), key=lambda product: product.name.casefold())
 
 
 def _recipe_for_user(recipe_id: int) -> Recipe:
@@ -94,6 +106,14 @@ def _recipe_summary(recipe: Recipe) -> dict:
     }
 
 
+def _populate_recipe_form(form: RecipeForm, recipe: Recipe) -> None:
+    form.name.data = recipe.name
+    form.description.data = recipe.description
+    form.servings.data = recipe.servings
+    form.yield_weight_g.data = recipe.yield_weight_g
+    form.notes.data = recipe.notes
+
+
 @recipes_bp.route("")
 @login_required
 def list_recipes():
@@ -134,6 +154,7 @@ def new_recipe():
 
     return render_template("recipes/new.html", form=form, products=products)
 
+
 @recipes_bp.route("/import", methods=["GET", "POST"])
 @login_required
 def import_recipe():
@@ -167,6 +188,46 @@ def import_recipe():
             flash(f"Error al importar: {error}", "error")
 
     return render_template("recipes/import.html", form=form)
+
+
+@recipes_bp.route("/<int:id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_recipe(id: int):
+    recipe = _recipe_for_user(id)
+    form = RecipeForm()
+    products = _products_for_recipe_edit(recipe)
+
+    if not form.is_submitted():
+        _populate_recipe_form(form, recipe)
+
+    if form.validate_on_submit():
+        try:
+            recipe = update_recipe_from_products(
+                user_id=current_user.id,
+                recipe=recipe,
+                name=form.name.data,
+                description=form.description.data,
+                servings=form.servings.data,
+                yield_weight_g=form.yield_weight_g.data,
+                notes=form.notes.data,
+                ingredients=_ingredient_specs_from_form(),
+            )
+            flash("Receta actualizada correctamente.", "success")
+            return redirect(url_for("recipes.detail_recipe", id=recipe.id))
+        except (RecipeServiceError, ValueError) as error:
+            db.session.rollback()
+            flash(f"Error al actualizar receta: {error}", "error")
+
+    row_count = max(10, len(recipe.ingredients) + 5)
+    return render_template(
+        "recipes/edit.html",
+        form=form,
+        recipe=recipe,
+        products=products,
+        row_count=row_count,
+    )
+
+
 @recipes_bp.route("/<int:id>")
 @login_required
 def detail_recipe(id: int):

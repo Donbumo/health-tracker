@@ -322,7 +322,7 @@ def manual_energy():
 @wellness_bp.route("/manual/nutrition", methods=["GET", "POST"])
 @login_required
 def manual_nutrition():
-    from app.models import FoodProduct
+    from app.models import FoodProduct, Recipe
     form = DailyNutritionManualForm()
     # Populate products choice
     products = db.session.execute(
@@ -330,7 +330,13 @@ def manual_nutrition():
         .where(FoodProduct.user_id == current_user.id, FoodProduct.is_active.is_(True))
         .order_by(FoodProduct.name.asc())
     ).scalars().all()
+    recipes = db.session.execute(
+        db.select(Recipe)
+        .where(Recipe.user_id == current_user.id, Recipe.is_active.is_(True))
+        .order_by(Recipe.name.asc())
+    ).scalars().all()
     form.food_product_id.choices = [(0, "— Ninguno —")] + [(p.id, p.name) for p in products]
+    form.recipe_id.choices = [(0, "— Ninguna —")] + [(r.id, r.name) for r in recipes]
 
     products_json = []
     for p in products:
@@ -344,7 +350,31 @@ def manual_nutrition():
             "fiber_g_per_100g": float(p.fiber_g_per_100g) if p.fiber_g_per_100g is not None else None,
             "sodium_mg_per_100g": float(p.sodium_mg_per_100g) if p.sodium_mg_per_100g is not None else None,
         })
-
+    recipes_json = []
+    for recipe in recipes:
+        per_serving = recipe.per_serving()
+        per_100g = recipe.per_100g()
+        recipes_json.append({
+            "id": recipe.id,
+            "per_serving": {
+                "calories": float(per_serving["calories"]) if per_serving["calories"] is not None else None,
+                "protein_g": float(per_serving["protein_g"]) if per_serving["protein_g"] is not None else None,
+                "fat_g": float(per_serving["fat_g"]) if per_serving["fat_g"] is not None else None,
+                "total_carbs_g": float(per_serving["total_carbs_g"]) if per_serving["total_carbs_g"] is not None else None,
+                "net_carbs_g": float(per_serving["net_carbs_g"]) if per_serving["net_carbs_g"] is not None else None,
+                "fiber_g": float(per_serving["fiber_g"]) if per_serving["fiber_g"] is not None else None,
+                "sodium_mg": float(per_serving["sodium_mg"]) if per_serving["sodium_mg"] is not None else None,
+            },
+            "per_100g": {
+                "calories": float(per_100g["calories"]) if per_100g["calories"] is not None else None,
+                "protein_g": float(per_100g["protein_g"]) if per_100g["protein_g"] is not None else None,
+                "fat_g": float(per_100g["fat_g"]) if per_100g["fat_g"] is not None else None,
+                "total_carbs_g": float(per_100g["total_carbs_g"]) if per_100g["total_carbs_g"] is not None else None,
+                "net_carbs_g": float(per_100g["net_carbs_g"]) if per_100g["net_carbs_g"] is not None else None,
+                "fiber_g": float(per_100g["fiber_g"]) if per_100g["fiber_g"] is not None else None,
+                "sodium_mg": float(per_100g["sodium_mg"]) if per_100g["sodium_mg"] is not None else None,
+            },
+        })
     if not form.is_submitted():
         form.date.data = datetime.now(
             ZoneInfo(current_app.config["APP_TIMEZONE"])
@@ -357,6 +387,7 @@ def manual_nutrition():
             meal_name=form.meal_name.data,
             item_name=form.item_name.data,
             food_product_id=form.food_product_id.data if form.food_product_id.data else None,
+            recipe_id=form.recipe_id.data if form.recipe_id.data else None,
             quantity=form.quantity.data,
             unit=form.unit.data,
             calories=form.calories.data,
@@ -412,4 +443,9 @@ def manual_nutrition():
             return redirect(
                 url_for("wellness.nutrition_detail", record_id=record.id)
             )
-    return render_template("wellness/manual_nutrition.html", form=form, products_json=products_json)
+    return render_template(
+        "wellness/manual_nutrition.html",
+        form=form,
+        products_json=products_json,
+        recipes_json=recipes_json,
+    )

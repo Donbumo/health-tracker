@@ -100,6 +100,19 @@ class DailyNutritionManualForm(FlaskForm):
         "Gramos del producto",
         validators=[Optional(), finite_decimal, NumberRange(min=0, max=1000000)],
     )
+    recipe_id = SelectField("Receta (Opcional)", coerce=int, validators=[Optional()])
+    recipe_amount = DecimalField(
+        "Cantidad de receta",
+        validators=[Optional(), finite_decimal, NumberRange(min=0, max=1000000)],
+    )
+    recipe_unit = SelectField(
+        "Unidad de receta",
+        choices=(
+            ("serving", "Porción"),
+            ("g", "Gramos"),
+        ),
+        validators=[Optional()],
+    )
     quantity = DecimalField(
         "Cantidad",
         validators=[Optional(), finite_decimal, NumberRange(min=0, max=1000000)],

@@ -1,13 +1,15 @@
 from decimal import Decimal, InvalidOperation
 
-from flask import abort, flash, redirect, render_template, request, url_for
+from flask import Response, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.orm import selectinload
+from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.models import FoodProduct, Recipe
 from app.recipes import recipes_bp
 from app.recipes.forms import RecipeDuplicateForm, RecipeForm, RecipeImportForm
+from app.services.exporters.recipe import recipe_export_bytes
 from app.services.files import store_uploaded_file
 from app.services.importers.recipe import RecipeImportError, import_recipe_file
 from app.services.recipes import (
@@ -115,6 +117,13 @@ def _populate_recipe_form(form: RecipeForm, recipe: Recipe) -> None:
     form.notes.data = recipe.notes
 
 
+def _recipe_export_filename(recipe: Recipe) -> str:
+    safe_name = secure_filename(recipe.name).strip("._")
+    if not safe_name:
+        safe_name = f"recipe_{recipe.id}"
+    return f"{safe_name[:180]}.json"
+
+
 @recipes_bp.route("")
 @login_required
 def list_recipes():
@@ -211,6 +220,23 @@ def duplicate_recipe(id: int):
         db.session.rollback()
         flash(f"No fue posible duplicar receta: {error}", "error")
         return redirect(url_for("recipes.detail_recipe", id=recipe.id))
+
+
+@recipes_bp.route("/<int:id>/export")
+@login_required
+def export_recipe(id: int):
+    recipe = _recipe_for_user(id)
+    payload = recipe_export_bytes(recipe)
+    filename = _recipe_export_filename(recipe)
+
+    return Response(
+        payload,
+        mimetype="application/json",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Length": str(len(payload)),
+        },
+    )
 
 
 @recipes_bp.route("/<int:id>/edit", methods=["GET", "POST"])

@@ -39,6 +39,14 @@ class RecipeImportForm(FlaskForm):
         ],
     )
 
-
 class RecipeDuplicateForm(FlaskForm):
     pass
+
+class RecipeBundleImportForm(FlaskForm):
+    file = FileField(
+        "Archivo JSON bundle",
+        validators=[
+            FileRequired(message="Seleccione un archivo JSON."),
+            FileAllowed(["json"], message="Solo se permiten archivos JSON."),
+        ],
+    )

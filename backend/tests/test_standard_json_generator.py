@@ -482,3 +482,95 @@ def test_generate_completed_workout_documents_missing_required_fields_fails_vali
     assert any("training_plan_version_id" in error for error in errors)
     assert any("planned_week_number" in error for error in errors)
     assert any("planned_day_number" in error for error in errors)
+
+
+# ---------------------------------------------------------------------------
+# medical_lab generation tests
+# ---------------------------------------------------------------------------
+
+def test_generate_medical_lab_documents_with_nested_markers(app):
+    """Generator extracts nested markers properly."""
+    payload = {
+        "labs": [
+            {
+                "laboratorio": "Laboratorio Demo A",
+                "fecha": "2026-07-06",
+                "marcadores": [
+                    {"nombre": "Glucosa", "valor": "90", "unidad": "mg/dL", "estado": "normal", "rango_referencia": "70 - 100"},
+                    {"marcador": "Insulina", "value": "12", "unit": "uU/mL"}
+                ]
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="medical_lab")
+        result = StandardJsonGenerator().generate(
+            payload,
+            candidate,
+            user_id=7,
+            source_type="uploaded",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    assert result["target_type"] == "medical_lab"
+    assert result["validated_documents"][0]["valid"] is True
+
+    document = result["generated_documents"][0]
+    assert document["date"] == "2026-07-06"
+    assert document["laboratory_name"] == "Laboratorio Demo A"
+
+    markers = document["markers"]
+    assert len(markers) == 2
+    assert markers[0]["name"] == "Glucosa"
+    assert markers[0]["value"] == 90.0
+    assert markers[0]["unit"] == "mg/dL"
+    assert markers[0]["status"] == "normal"
+    assert markers[0]["reference_text"] == "70 - 100"
+
+    assert markers[1]["name"] == "Insulina"
+    assert markers[1]["value"] == 12.0
+    assert markers[1]["unit"] == "uU/mL"
+
+
+def test_generate_medical_lab_documents_with_flat_markers(app):
+    """Generator converts flat marker aliases into a markers array."""
+    payload = {
+        "labs": [
+            {
+                "lab_name": "Laboratorio Demo B",
+                "lab_date": "2026-07-10",
+                "glucosa": "95",
+                "colesterol": {"valor": "180", "unidad": "mg/dL"}
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="medical_lab")
+        result = StandardJsonGenerator().generate(
+            payload,
+            candidate,
+            user_id=8,
+            source_type="uploaded",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    # Even if valid, note that flat markers missing units might fail schema validation.
+    # The requirement is NOT to invent them. So if unit is missing for glucosa, it will fail validation.
+    assert result["validated_documents"][0]["valid"] is False
+
+    document = result["generated_documents"][0]
+    assert document["laboratory_name"] == "Laboratorio Demo B"
+
+    markers = document["markers"]
+    assert len(markers) == 2
+
+    # Glucosa is missing unit, so it's structurally incomplete but generated exactly as provided.
+    glucosa_marker = next(m for m in markers if m["name"] == "glucose")
+    assert glucosa_marker["value"] == 95.0
+    assert "unit" not in glucosa_marker
+
+    cholesterol_marker = next(m for m in markers if m["name"] == "total_cholesterol")
+    assert cholesterol_marker["value"] == 180.0
+    assert cholesterol_marker["unit"] == "mg/dL"

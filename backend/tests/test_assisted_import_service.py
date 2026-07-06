@@ -253,3 +253,60 @@ def test_service_returns_no_candidate_when_requested_target_does_not_match(app):
         "No candidate matched" in warning
         for warning in result["summary"]["warnings"]
     )
+
+
+def test_service_generates_standard_daily_energy_json_from_assisted_payload(app):
+    """Service orchestrates detection -> mapping -> generation for daily_energy."""
+    payload = {
+        "energia": [
+            {
+                "fecha": "2026-07-10",
+                "calorias_totales": "2400",
+                "calorias_activas": "700",
+                "calorias_reposo": "1700",
+                "pasos": "11000",
+                "distancia": "8.5",
+            },
+        ]
+    }
+
+    with app.app_context():
+        result = AssistedImportService().preview(
+            payload,
+            user_id=5,
+            requested_type="daily_energy",
+            source_type="uploaded",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    assert result["read_only"] is True
+    assert result["target_type"] == "daily_energy"
+    assert result["selected_candidate"] is not None
+    assert result["selected_candidate"]["target_type"] == "daily_energy"
+
+    generation = result["standard_generation"]
+    assert generation is not None
+    assert generation["schema_name"] == "daily_energy"
+    assert generation["records_detected"] == 1
+    assert generation["validated_documents"][0]["valid"] is True
+
+    document = generation["generated_documents"][0]
+    assert document["schema_version"] == "1.0"
+    assert document["record_type"] == "daily_energy"
+    assert document["user_id"] == 5
+    assert document["source_type"] == "uploaded"
+
+    data = document["data"]
+    assert data["date"] == "2026-07-10"
+    assert data["total_expenditure_kcal"] == 2400
+    assert data["active_expenditure_kcal"] == 700
+    assert data["resting_expenditure_kcal"] == 1700
+    assert data["steps"] == 11000
+    assert data["distance_meters"] == 8500.0
+
+    summary = result["summary"]
+    assert summary["valid_count"] == 1
+    assert summary["invalid_count"] == 0
+    assert "import_with_standard_importer_later" in summary["actions_available"]
+
+    validate_json_document(document, "daily_energy")

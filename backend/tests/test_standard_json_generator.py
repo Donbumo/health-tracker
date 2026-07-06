@@ -231,3 +231,123 @@ def test_generator_returns_unsupported_for_non_implemented_target(app):
     assert result["target_type"] == "recipe_bundle"
     assert result["generated_documents"] == []
     assert result["validated_documents"] == []
+
+
+# ---------------------------------------------------------------------------
+# daily_energy generation tests
+# ---------------------------------------------------------------------------
+
+def test_generate_daily_energy_documents_from_assisted_candidate(app):
+    """Generator maps Spanish aliases to canonical daily_energy schema fields."""
+    payload = {
+        "energia": [
+            {
+                "fecha": "2026-07-05",
+                "calorias_totales": "2500",
+                "calorias_activas": "600",
+                "calorias_reposo": "1900",
+                "pasos": "9800",
+                "distancia": "7.2",
+            },
+            {
+                "fecha": "2026-07-06",
+                "calorias_totales": "2100",
+                "pasos": "5000",
+            },
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="daily_energy")
+        result = StandardJsonGenerator().generate(
+            payload,
+            candidate,
+            user_id=3,
+            source_type="uploaded",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    assert result["target_type"] == "daily_energy"
+    assert result["schema_name"] == "daily_energy"
+    assert result["records_detected"] == 2
+    assert all(item["valid"] for item in result["validated_documents"])
+
+    first = result["generated_documents"][0]
+    assert first["schema_version"] == "1.0"
+    assert first["record_type"] == "daily_energy"
+    assert first["user_id"] == 3
+    assert first["source_type"] == "uploaded"
+
+    data = first["data"]
+    assert data["date"] == "2026-07-05"
+    assert data["total_expenditure_kcal"] == 2500
+    assert data["active_expenditure_kcal"] == 600
+    assert data["resting_expenditure_kcal"] == 1900
+    assert data["steps"] == 9800
+    # distance_km 7.2 -> 7200.0 meters
+    assert data["distance_meters"] == 7200.0
+
+    validate_json_document(first, "daily_energy")
+
+    second = result["generated_documents"][1]
+    assert second["data"]["date"] == "2026-07-06"
+    assert second["data"]["total_expenditure_kcal"] == 2100
+    assert second["data"]["steps"] == 5000
+
+
+def test_generate_daily_energy_documents_with_english_aliases(app):
+    """Generator accepts English aliases like total_calories, active_energy."""
+    payload = {
+        "watch": [
+            {
+                "date": "2026-07-07",
+                "total_calories": 2300,
+                "active_energy": 550,
+                "resting_energy": 1750,
+                "steps": 8000,
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="daily_energy")
+        result = StandardJsonGenerator().generate(
+            payload,
+            candidate,
+            user_id=3,
+            source_type="device_sync",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    assert result["validated_documents"][0]["valid"] is True
+
+    data = result["generated_documents"][0]["data"]
+    assert data["date"] == "2026-07-07"
+    assert data["total_expenditure_kcal"] == 2300
+    assert data["active_expenditure_kcal"] == 550
+    assert data["resting_expenditure_kcal"] == 1750
+    assert data["steps"] == 8000
+
+
+def test_generate_daily_energy_document_missing_date_fails_validation(app):
+    """A record missing the required date field produces an invalid document."""
+    payload = {
+        "energia": [
+            {
+                "calorias_totales": 2000,
+                "pasos": 5000,
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="daily_energy")
+        result = StandardJsonGenerator().generate(
+            payload,
+            candidate,
+            user_id=3,
+        )
+
+    # Document is generated but schema validation fails (date is required)
+    assert result["validated_documents"][0]["valid"] is False
+    assert any("date" in e for e in result["validated_documents"][0]["errors"])

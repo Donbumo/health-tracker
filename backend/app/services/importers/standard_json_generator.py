@@ -11,6 +11,7 @@ Current supported preview targets:
 
 - weigh_in_batch -> generated weigh_in documents
 - food_products  -> generated food_product documents
+- daily_energy   -> generated daily_energy documents
 """
 
 from __future__ import annotations
@@ -27,10 +28,12 @@ from app.services.validation import JsonSchemaValidationError, validate_json_doc
 SUPPORTED_TARGETS = {
     "weigh_in_batch",
     "food_products",
+    "daily_energy",
 }
 
 WEIGH_IN_SCHEMA_NAME = "weigh_in"
 FOOD_PRODUCT_SCHEMA_NAME = "food_product"
+DAILY_ENERGY_SCHEMA_NAME = "daily_energy"
 
 WEIGH_IN_DATA_FIELDS = {
     "recorded_at",
@@ -82,6 +85,44 @@ FOOD_PRODUCT_NUMERIC_FIELDS = {
     "sodium_mg_per_100g",
 }
 
+# Canonical schema fields for daily_energy.schema.json
+DAILY_ENERGY_DATA_FIELDS = {
+    "date",
+    "total_expenditure_kcal",
+    "resting_expenditure_kcal",
+    "active_expenditure_kcal",
+    "steps",
+    "distance_meters",
+    "source",
+    "notes",
+}
+
+# Mapping from DAILY_ENERGY_ALIASES canonical values -> schema field names.
+# The assistant uses internal aliases like total_calories/active_calories;
+# the schema uses total_expenditure_kcal/active_expenditure_kcal.
+_ENERGY_ALIAS_TO_SCHEMA = {
+    "total_calories": "total_expenditure_kcal",
+    "resting_calories": "resting_expenditure_kcal",
+    "active_calories": "active_expenditure_kcal",
+    "distance_km": None,  # needs unit conversion, handled separately
+    "steps": "steps",
+    "date": "date",
+    "source": "source",
+    "notes": "notes",
+    # passthrough: schema field names map to themselves
+    "total_expenditure_kcal": "total_expenditure_kcal",
+    "resting_expenditure_kcal": "resting_expenditure_kcal",
+    "active_expenditure_kcal": "active_expenditure_kcal",
+    "distance_meters": "distance_meters",
+}
+
+DAILY_ENERGY_NUMERIC_FIELDS = {
+    "total_expenditure_kcal",
+    "resting_expenditure_kcal",
+    "active_expenditure_kcal",
+    "distance_meters",
+}
+
 
 class StandardJsonGenerationError(ValueError):
     pass
@@ -125,7 +166,7 @@ class StandardJsonGenerator:
                 default_timezone=default_timezone,
             )
             schema_name = WEIGH_IN_SCHEMA_NAME
-        else:
+        elif target_type == "food_products":
             generated_documents, warnings = self._generate_food_products(
                 records=records,
                 mapping=mapping,
@@ -133,6 +174,14 @@ class StandardJsonGenerator:
                 source_type=source_type,
             )
             schema_name = FOOD_PRODUCT_SCHEMA_NAME
+        else:
+            generated_documents, warnings = self._generate_daily_energy(
+                records=records,
+                mapping=mapping,
+                user_id=user_id,
+                source_type=self._weigh_in_source_type(source_type),
+            )
+            schema_name = DAILY_ENERGY_SCHEMA_NAME
 
         validated_documents = [
             self._validate_document(index, document, schema_name)
@@ -254,6 +303,75 @@ class StandardJsonGenerator:
                 document["name"] = None
 
             documents.append(document)
+
+        return documents, warnings
+
+    def _generate_daily_energy(
+        self,
+        *,
+        records: list[dict[str, Any]],
+        mapping: dict[str, str],
+        user_id: int,
+        source_type: str,
+    ) -> tuple[list[dict[str, Any]], list[str]]:
+        """Generate daily_energy documents from an assisted candidate mapping.
+
+        The assistant canonical values (e.g. total_calories, active_calories)
+        are translated to schema field names (e.g. total_expenditure_kcal,
+        active_expenditure_kcal). distance_km is converted to distance_meters.
+        """
+        documents: list[dict[str, Any]] = []
+        warnings: list[str] = []
+
+        for index, record in enumerate(records):
+            data: dict[str, Any] = {
+                "source": "assisted_import",
+            }
+
+            for source_field, canonical in mapping.items():
+                if source_field not in record:
+                    continue
+
+                value = record[source_field]
+
+                # Handle distance_km -> distance_meters conversion
+                if canonical == "distance_km":
+                    num = self._coerce_number(value)
+                    if num is not None:
+                        data["distance_meters"] = round(num * 1000, 3)
+                    continue
+
+                schema_field = _ENERGY_ALIAS_TO_SCHEMA.get(canonical)
+                if schema_field is None:
+                    warnings.append(
+                        f"record {index}: unsupported daily_energy field "
+                        f"ignored: {canonical} (from source: {source_field})"
+                    )
+                    continue
+
+                if schema_field not in DAILY_ENERGY_DATA_FIELDS:
+                    warnings.append(
+                        f"record {index}: unknown daily_energy schema field ignored: {schema_field}"
+                    )
+                    continue
+
+                if schema_field == "steps":
+                    num = self._coerce_number(value)
+                    data["steps"] = int(num) if num is not None else None
+                elif schema_field in DAILY_ENERGY_NUMERIC_FIELDS:
+                    data[schema_field] = self._coerce_number(value)
+                else:
+                    data[schema_field] = value
+
+            documents.append(
+                {
+                    "schema_version": "1.0",
+                    "record_type": "daily_energy",
+                    "user_id": user_id,
+                    "source_type": source_type,
+                    "data": self._drop_none(data),
+                }
+            )
 
         return documents, warnings
 

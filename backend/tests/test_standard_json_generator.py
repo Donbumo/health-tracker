@@ -348,6 +348,137 @@ def test_generate_daily_energy_document_missing_date_fails_validation(app):
             user_id=3,
         )
 
-    # Document is generated but schema validation fails (date is required)
     assert result["validated_documents"][0]["valid"] is False
     assert any("date" in e for e in result["validated_documents"][0]["errors"])
+
+
+# ---------------------------------------------------------------------------
+# completed_workout generation tests
+# ---------------------------------------------------------------------------
+
+
+def test_generate_completed_workout_documents_from_assisted_candidate(app):
+    payload = {
+        "entrenamientos": [
+            {
+                "fecha": "2026-07-12",
+                "hora": "18:30",
+                "training_plan_id": 10,
+                "training_plan_version_id": 11,
+                "planned_week_number": 3,
+                "planned_day_number": 2,
+                "rutina": "Full body demo",
+                "duracion": "3600",
+                "frecuencia_cardiaca": "120",
+                "calorias": "450",
+                "ejercicios": [
+                    {
+                        "nombre": "Sentadilla demo",
+                        "series": [
+                            {
+                                "peso": "100",
+                                "reps": "5",
+                                "rir": "2",
+                                "rpe": "8",
+                                "descanso": "120",
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="completed_workout")
+        result = StandardJsonGenerator().generate(
+            payload,
+            candidate,
+            user_id=2,
+            source_type="uploaded",
+            default_timezone="-06:00",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    assert result["target_type"] == "completed_workout"
+    assert result["schema_name"] == "completed_workout"
+    assert result["records_detected"] == 1
+    assert result["validated_documents"][0]["valid"] is True
+
+    document = result["generated_documents"][0]
+    assert document["record_type"] == "completed_workout"
+    assert document["user_id"] == 2
+    assert document["source_type"] == "uploaded"
+
+    data = document["data"]
+    assert data["training_plan_id"] == 10
+    assert data["training_plan_version_id"] == 11
+    assert data["planned_week_number"] == 3
+    assert data["planned_day_number"] == 2
+    assert data["performed_at"] == "2026-07-12T18:30:00-06:00"
+    assert data["duration_seconds"] == 3600
+    assert data["average_heart_rate_bpm"] == 120
+    assert data["calories_burned"] == 450.0
+    assert data["notes"] == "Session: Full body demo"
+
+    exercise = data["exercises"][0]
+    assert exercise["exercise_order"] == 1
+    assert exercise["planned_exercise_order"] == 1
+    assert exercise["name"] == "Sentadilla demo"
+
+    workout_set = exercise["sets"][0]
+    assert workout_set["set_number"] == 1
+    assert workout_set["planned_set_number"] == 1
+    assert workout_set["weight_kg"] == 100.0
+    assert workout_set["reps"] == 5
+    assert workout_set["rir"] == 2.0
+    assert workout_set["rpe"] == 8.0
+    assert workout_set["rest_seconds"] == 120
+
+    validate_json_document(document, "completed_workout")
+
+
+def test_generate_completed_workout_documents_missing_required_fields_fails_validation(app):
+    payload = {
+        "entrenamientos": [
+            {
+                "fecha": "2026-07-12",
+                "rutina": "Full body demo",
+                "ejercicios": [
+                    {
+                        "nombre": "Sentadilla demo",
+                        "series": [
+                            {
+                                "peso": "100",
+                                "reps": "5",
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="completed_workout")
+        result = StandardJsonGenerator().generate(
+            payload,
+            candidate,
+            user_id=2,
+            default_timezone="-06:00",
+        )
+
+    document = result["generated_documents"][0]
+    data = document["data"]
+
+    assert "training_plan_id" not in data
+    assert "training_plan_version_id" not in data
+    assert "planned_week_number" not in data
+    assert "planned_day_number" not in data
+    assert result["validated_documents"][0]["valid"] is False
+
+    errors = result["validated_documents"][0]["errors"]
+    assert any("training_plan_id" in error for error in errors)
+    assert any("training_plan_version_id" in error for error in errors)
+    assert any("planned_week_number" in error for error in errors)
+    assert any("planned_day_number" in error for error in errors)

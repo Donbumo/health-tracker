@@ -310,3 +310,62 @@ def test_service_generates_standard_daily_energy_json_from_assisted_payload(app)
     assert "import_with_standard_importer_later" in summary["actions_available"]
 
     validate_json_document(document, "daily_energy")
+
+
+def test_service_generates_standard_completed_workout_json_from_assisted_payload(app):
+    payload = {
+        "entrenamientos": [
+            {
+                "fecha": "2026-07-13",
+                "hora": "07:15",
+                "training_plan_id": 20,
+                "training_plan_version_id": 21,
+                "planned_week_number": 4,
+                "planned_day_number": 3,
+                "rutina": "Upper demo",
+                "ejercicios": [
+                    {
+                        "nombre": "Press demo",
+                        "series": [
+                            {
+                                "peso": "80",
+                                "reps": "8",
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    with app.app_context():
+        result = AssistedImportService().preview(
+            payload,
+            user_id=5,
+            requested_type="completed_workout",
+            source_type="uploaded",
+            default_timezone="-06:00",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    assert result["read_only"] is True
+    assert result["target_type"] == "completed_workout"
+    assert result["summary"]["generated_count"] == 1
+    assert result["summary"]["valid_count"] == 1
+    assert result["summary"]["invalid_count"] == 0
+
+    document = result["standard_generation"]["generated_documents"][0]
+    assert document["record_type"] == "completed_workout"
+    assert document["user_id"] == 5
+
+    data = document["data"]
+    assert data["training_plan_id"] == 20
+    assert data["training_plan_version_id"] == 21
+    assert data["planned_week_number"] == 4
+    assert data["planned_day_number"] == 3
+    assert data["performed_at"] == "2026-07-13T07:15:00-06:00"
+    assert data["exercises"][0]["name"] == "Press demo"
+    assert data["exercises"][0]["sets"][0]["weight_kg"] == 80.0
+    assert data["exercises"][0]["sets"][0]["reps"] == 8
+
+    validate_json_document(document, "completed_workout")

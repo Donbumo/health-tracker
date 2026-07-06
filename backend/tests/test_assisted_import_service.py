@@ -369,3 +369,48 @@ def test_service_generates_standard_completed_workout_json_from_assisted_payload
     assert data["exercises"][0]["sets"][0]["reps"] == 8
 
     validate_json_document(document, "completed_workout")
+
+
+def test_service_generates_standard_medical_lab_json_from_assisted_payload(app):
+    """Service orchestrates detection -> mapping -> generation for medical_lab."""
+    payload = {
+        "labs": [
+            {
+                "laboratorio": "Laboratorio Demo C",
+                "fecha": "2026-07-20",
+                "marcadores": [
+                    {"nombre": "Glucosa", "valor": "85", "unidad": "mg/dL"}
+                ]
+            }
+        ]
+    }
+
+    with app.app_context():
+        result = AssistedImportService().preview(
+            payload,
+            user_id=7,
+            requested_type="medical_lab",
+            source_type="uploaded",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    assert result["target_type"] == "medical_lab"
+
+    generation = result["standard_generation"]
+    assert generation is not None
+    assert generation["schema_name"] == "medical_lab"
+    assert generation["validated_documents"][0]["valid"] is True
+
+    document = generation["generated_documents"][0]
+    assert document["type"] == "medical_lab"
+    assert document["user_id"] == 7
+    assert document["laboratory_name"] == "Laboratorio Demo C"
+    assert document["date"] == "2026-07-20"
+
+    markers = document["markers"]
+    assert len(markers) == 1
+    assert markers[0]["name"] == "Glucosa"
+    assert markers[0]["value"] == 85.0
+    assert markers[0]["unit"] == "mg/dL"
+
+    validate_json_document(document, "medical_lab")

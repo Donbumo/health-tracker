@@ -13,6 +13,7 @@ Current supported preview targets:
 - food_products  -> generated food_product documents
 - daily_energy   -> generated daily_energy documents
 - completed_workout -> generated completed_workout documents
+- medical_lab    -> generated medical_lab documents
 """
 
 from __future__ import annotations
@@ -31,12 +32,14 @@ SUPPORTED_TARGETS = {
     "food_products",
     "daily_energy",
     "completed_workout",
+    "medical_lab",
 }
 
 WEIGH_IN_SCHEMA_NAME = "weigh_in"
 FOOD_PRODUCT_SCHEMA_NAME = "food_product"
 DAILY_ENERGY_SCHEMA_NAME = "daily_energy"
 COMPLETED_WORKOUT_SCHEMA_NAME = "completed_workout"
+MEDICAL_LAB_SCHEMA_NAME = "medical_lab"
 
 
 WEIGH_IN_DATA_FIELDS = {
@@ -156,7 +159,13 @@ class StandardJsonGenerator:
                 "warnings": [f"Unsupported target_type for standard generation: {target_type}"],
             }
 
-        records = self._records_at_path(payload, str(candidate.get("path", "$")))
+        source_path = str(candidate.get("path", "$"))
+        if target_type == "medical_lab":
+            medical_parent_path = self._medical_lab_parent_path(source_path)
+            if medical_parent_path is not None:
+                source_path = medical_parent_path
+
+        records = self._records_at_path(payload, source_path)
         mapping = candidate.get("suggested_mapping") or {}
         if not isinstance(mapping, dict):
             raise StandardJsonGenerationError("candidate.suggested_mapping must be an object")
@@ -186,7 +195,7 @@ class StandardJsonGenerator:
                 source_type=self._weigh_in_source_type(source_type),
             )
             schema_name = DAILY_ENERGY_SCHEMA_NAME
-        else:
+        elif target_type == "completed_workout":
             generated_documents, warnings = self._generate_completed_workouts(
                 records=records,
                 mapping=mapping,
@@ -195,6 +204,14 @@ class StandardJsonGenerator:
                 default_timezone=default_timezone,
             )
             schema_name = COMPLETED_WORKOUT_SCHEMA_NAME
+        else:
+            generated_documents, warnings = self._generate_medical_labs(
+                records=records,
+                mapping=mapping,
+                user_id=user_id,
+                source_type=self._medical_lab_source_type(source_type),
+            )
+            schema_name = MEDICAL_LAB_SCHEMA_NAME
 
         validated_documents = [
             self._validate_document(index, document, schema_name)
@@ -597,6 +614,178 @@ class StandardJsonGenerator:
 
         return documents, warnings
 
+    def _generate_medical_labs(
+        self,
+        *,
+        records: list[dict[str, Any]],
+        mapping: dict[str, str],
+        user_id: int,
+        source_type: str,
+    ) -> tuple[list[dict[str, Any]], list[str]]:
+        """Generate medical_lab documents from an assisted candidate mapping.
+
+        This method must not invent required lab or marker values.
+        If required fields are missing, validation reports the missing fields.
+        """
+        from app.services.importers.universal_json_import_assistant import (
+            MEDICAL_LAB_ALIASES,
+            _normalize_key,
+        )
+
+        local_aliases = {
+            "laboratorio": "lab_name",
+            "lab_name": "lab_name",
+            "laboratory_name": "lab_name",
+            "fecha": "lab_date",
+            "lab_date": "lab_date",
+            "date": "lab_date",
+            "marcadores": "markers",
+            "analitos": "markers",
+            "markers": "markers",
+            "marker": "name",
+            "marcador": "name",
+            "nombre": "name",
+            "name": "name",
+            "valor": "value",
+            "value": "value",
+            "unidad": "unit",
+            "unit": "unit",
+            "rango_referencia": "reference_range",
+            "reference_range": "reference_range",
+            "reference_text": "reference_range",
+            "estado": "status",
+            "status": "status",
+            "notas": "notes",
+            "notes": "notes",
+            "codigo": "code",
+            "code": "code",
+            "glucosa": "glucose",
+            "glucose": "glucose",
+            "insulina": "insulin",
+            "insulin": "insulin",
+            "hba1c": "hba1c",
+            "colesterol": "total_cholesterol",
+            "colesterol_total": "total_cholesterol",
+            "total_cholesterol": "total_cholesterol",
+            "hdl": "hdl",
+            "ldl": "ldl",
+            "trigliceridos": "triglycerides",
+            "triglycerides": "triglycerides",
+            "tsh": "tsh",
+            "vitamina_d": "vitamin_d",
+            "vitamin_d": "vitamin_d",
+            "b12": "b12",
+            "ferritina": "ferritin",
+            "ferritin": "ferritin",
+        }
+
+        marker_aliases = {
+            "glucose",
+            "insulin",
+            "hba1c",
+            "total_cholesterol",
+            "hdl",
+            "ldl",
+            "triglycerides",
+            "tsh",
+            "vitamin_d",
+            "b12",
+            "ferritin",
+        }
+
+        def _get_canonical(key: str) -> str | None:
+            if key in mapping:
+                return mapping[key]
+            normalized = _normalize_key(key)
+            if normalized in local_aliases:
+                return local_aliases[normalized]
+            return MEDICAL_LAB_ALIASES.get(normalized)
+
+        def _number_or_raw(value: Any) -> Any:
+            number = self._coerce_number(value)
+            if number is None:
+                return value
+            return float(number)
+
+        def _apply_marker_field(
+            marker: dict[str, Any],
+            canonical: str | None,
+            value: Any,
+        ) -> None:
+            if not canonical:
+                return
+            if canonical == "name":
+                marker["name"] = str(value)
+            elif canonical == "value":
+                marker["value"] = _number_or_raw(value)
+            elif canonical == "unit":
+                marker["unit"] = str(value)
+            elif canonical == "reference_range":
+                marker["reference_text"] = str(value)
+            elif canonical == "status":
+                marker["status"] = str(value).lower()
+            elif canonical == "notes":
+                marker["notes"] = str(value)
+            elif canonical == "code":
+                marker["code"] = str(value)
+
+        documents: list[dict[str, Any]] = []
+        warnings: list[str] = []
+
+        for index, record in enumerate(records):
+            document: dict[str, Any] = {
+                "schema_version": "1.0",
+                "type": "medical_lab",
+                "user_id": user_id,
+                "source_type": source_type,
+                "markers": [],
+            }
+            markers_source: Any = None
+
+            for source_field, value in record.items():
+                canonical = _get_canonical(source_field)
+
+                if canonical in marker_aliases:
+                    marker: dict[str, Any] = {"name": canonical}
+                    if isinstance(value, dict):
+                        for marker_field, marker_value in value.items():
+                            _apply_marker_field(
+                                marker,
+                                _get_canonical(marker_field),
+                                marker_value,
+                            )
+                    else:
+                        marker["value"] = _number_or_raw(value)
+                    document["markers"].append(self._drop_none(marker))
+                    continue
+
+                if canonical == "lab_date":
+                    document["date"] = str(value)
+                elif canonical == "lab_name":
+                    document["laboratory_name"] = str(value)
+                elif canonical == "markers":
+                    markers_source = value
+                elif canonical == "notes":
+                    document["notes"] = str(value)
+
+            if isinstance(markers_source, list):
+                for marker_item in markers_source:
+                    if not isinstance(marker_item, dict):
+                        continue
+
+                    marker: dict[str, Any] = {}
+                    for source_field, value in marker_item.items():
+                        canonical = _get_canonical(source_field)
+                        _apply_marker_field(marker, canonical, value)
+
+                    if marker:
+                        document["markers"].append(self._drop_none(marker))
+
+            document = self._drop_none(document)
+            documents.append(document)
+
+        return documents, warnings
+
 
     @staticmethod
     def _validate_document(
@@ -746,6 +935,27 @@ class StandardJsonGenerator:
         if value.endswith("Z"):
             return True
         return bool(re.search(r"[+-]\d{2}:\d{2}$", value))
+
+    @staticmethod
+    def _medical_lab_parent_path(path: str) -> str | None:
+        marker_roots = {"marcadores", "markers", "analitos"}
+        marker_suffixes = (".marcadores", ".markers", ".analitos")
+
+        if path in marker_roots:
+            return "$"
+
+        for suffix in marker_suffixes:
+            if path.endswith(suffix):
+                parent_path = path[: -len(suffix)]
+                return parent_path or "$"
+
+        return None
+
+    @staticmethod
+    def _medical_lab_source_type(source_type: str) -> str:
+        if source_type in {"manual_generated", "uploaded"}:
+            return source_type
+        return "uploaded"
 
     @staticmethod
     def _weigh_in_source_type(source_type: str) -> str:

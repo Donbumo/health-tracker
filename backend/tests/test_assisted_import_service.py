@@ -1,0 +1,255 @@
+"""Tests for read-only assisted import orchestration."""
+
+from app.services.importers.assisted_import_service import AssistedImportService
+from app.services.validation import validate_json_document
+
+
+def _standard_recipe_document():
+    return {
+        "schema_version": "1.0",
+        "type": "recipe",
+        "name": "Receta demo",
+        "servings": 1,
+        "source": "manual",
+        "ingredients": [
+            {
+                "food_product_name": "Producto demo",
+                "quantity_g": 40,
+            }
+        ],
+    }
+
+
+def test_service_returns_standard_ready_for_official_schema(app):
+    payload = _standard_recipe_document()
+
+    with app.app_context():
+        result = AssistedImportService().preview(payload, user_id=2)
+
+    assert result["mode"] == "standard_ready"
+    assert result["read_only"] is True
+    assert result["schema_detection"]["mode"] == "standard"
+    assert result["schema_detection"]["detected_type"] == "recipe"
+    assert result["assistant_result"] is None
+    assert result["selected_candidate"] is None
+    assert result["standard_generation"] is None
+    assert result["summary"]["generated_count"] == 0
+    assert "import_with_standard_importer" in result["summary"]["actions_available"]
+
+
+def test_service_generates_standard_weigh_in_json_from_assisted_payload(app):
+    payload = {
+        "metadata": {"source": "demo"},
+        "registros": [
+            {
+                "fecha": "2026-07-05",
+                "hora": "09:28",
+                "peso_kg": "87.25",
+                "grasa_corporal_pct": "27.3",
+                "body_water_percent": "49.8",
+                "musculo_kg": "60.19",
+                "metabolismo_basal_kcal": "1788",
+            }
+        ],
+    }
+
+    with app.app_context():
+        result = AssistedImportService().preview(
+            payload,
+            user_id=2,
+            requested_type="weigh_in",
+            source_type="uploaded",
+            default_timezone="-06:00",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    assert result["read_only"] is True
+    assert result["selected_candidate"]["target_type"] == "weigh_in_batch"
+    assert result["summary"]["generated_count"] == 1
+    assert result["summary"]["valid_count"] == 1
+    assert result["summary"]["invalid_count"] == 0
+
+    generated = result["standard_generation"]["generated_documents"][0]
+    assert generated["record_type"] == "weigh_in"
+    assert generated["user_id"] == 2
+    assert generated["source_type"] == "uploaded"
+
+    data = generated["data"]
+    assert data["recorded_at"] == "2026-07-05T09:28:00-06:00"
+    assert data["weight_kg"] == 87.25
+    assert data["body_fat_percent"] == 27.3
+    assert data["water_percent"] == 49.8
+    assert "body_water_percent" not in data
+
+    validate_json_document(generated, "weigh_in")
+
+
+def test_service_generates_standard_food_product_json(app):
+    payload = {
+        "alacena": [
+            {
+                "nombre": "Producto demo",
+                "marca": "Marca demo",
+                "kcal": "380",
+                "proteina_g": "85",
+                "grasa_g": "2",
+                "carbohidratos": "0",
+                "carbos_netos_g": "0",
+                "fibra_g": "0",
+                "sodio_mg": "100",
+            }
+        ]
+    }
+
+    with app.app_context():
+        result = AssistedImportService().preview(
+            payload,
+            user_id=2,
+            target_type="food_products",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    assert result["selected_candidate"]["target_type"] == "food_products"
+    assert result["summary"]["generated_count"] == 1
+    assert result["summary"]["valid_count"] == 1
+
+    generated = result["standard_generation"]["generated_documents"][0]
+    assert generated["type"] == "food_product"
+    assert generated["user_id"] == 2
+    assert generated["name"] == "Producto demo"
+    assert generated["brand"] == "Marca demo"
+    assert generated["protein_g_per_100g"] == 85
+    assert generated["source"] == "assisted_import"
+
+    validate_json_document(generated, "food_product")
+
+
+def test_service_returns_without_candidates_for_unknown_payload(app):
+    payload = {
+        "random": {
+            "foo": "bar",
+            "baz": 123,
+        }
+    }
+
+    with app.app_context():
+        result = AssistedImportService().preview(payload, user_id=2)
+
+    assert result["mode"] == "assistant_required_without_candidates"
+    assert result["read_only"] is True
+    assert result["selected_candidate"] is None
+    assert result["standard_generation"] is None
+    assert result["summary"]["candidate_count"] == 0
+    assert result["summary"]["generated_count"] == 0
+
+
+def test_service_returns_preview_only_for_unsupported_generation_target(app):
+    payload = {
+        "recetas": [
+            {
+                "nombre": "Receta demo",
+                "porciones": 1,
+                "ingredientes": [
+                    {
+                        "nombre": "Producto demo",
+                        "cantidad_g": 40,
+                    }
+                ],
+            }
+        ]
+    }
+
+    with app.app_context():
+        result = AssistedImportService().preview(
+            payload,
+            user_id=2,
+            target_type="recipe_bundle",
+        )
+
+    assert result["mode"] == "assistant_preview_ready"
+    assert result["read_only"] is True
+    assert result["selected_candidate"]["target_type"] == "recipe_bundle"
+    assert result["standard_generation"]["mode"] == "unsupported_target"
+    assert result["standard_generation"]["generated_documents"] == []
+    assert result["summary"]["generated_count"] == 0
+    assert any(
+        "not implemented" in warning
+        for warning in result["summary"]["warnings"]
+    )
+
+
+def test_service_can_skip_standard_generation(app):
+    payload = {
+        "registros": [
+            {
+                "fecha": "2026-07-05",
+                "peso_kg": 87.25,
+                "body_water_percent": 49.8,
+            }
+        ]
+    }
+
+    with app.app_context():
+        result = AssistedImportService().preview(
+            payload,
+            user_id=2,
+            requested_type="weigh_in",
+            generate_standard_json=False,
+        )
+
+    assert result["mode"] == "assistant_preview_ready"
+    assert result["selected_candidate"]["target_type"] == "weigh_in_batch"
+    assert result["standard_generation"] is None
+    assert result["summary"]["generated_count"] == 0
+
+
+def test_service_reports_validation_errors_from_generated_documents(app):
+    payload = {
+        "registros": [
+            {
+                "fecha": "2026-07-05",
+                "body_water_percent": 49.8,
+            }
+        ]
+    }
+
+    with app.app_context():
+        result = AssistedImportService().preview(
+            payload,
+            user_id=2,
+            requested_type="weigh_in",
+        )
+
+    assert result["mode"] == "standard_json_generated_with_errors"
+    assert result["summary"]["generated_count"] == 1
+    assert result["summary"]["valid_count"] == 0
+    assert result["summary"]["invalid_count"] == 1
+
+    errors = result["standard_generation"]["validated_documents"][0]["errors"]
+    assert any("weight_kg" in error for error in errors)
+
+
+def test_service_returns_no_candidate_when_requested_target_does_not_match(app):
+    payload = {
+        "registros": [
+            {
+                "fecha": "2026-07-05",
+                "peso_kg": 87.25,
+            }
+        ]
+    }
+
+    with app.app_context():
+        result = AssistedImportService().preview(
+            payload,
+            user_id=2,
+            target_type="food_products",
+        )
+
+    assert result["mode"] == "assistant_required_without_candidates"
+    assert result["selected_candidate"] is None
+    assert result["standard_generation"] is None
+    assert any(
+        "No candidate matched" in warning
+        for warning in result["summary"]["warnings"]
+    )

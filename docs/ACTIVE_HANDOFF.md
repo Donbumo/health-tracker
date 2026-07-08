@@ -1,130 +1,219 @@
 # Handoff activo de Health Tracker
 
-Documento vivo para retomar el proyecto sin memoria previa. Antes de cambiar código, leer en este orden:
+Documento temporal para retomar el bloque inmediato sin memoria previa.
 
-1. `AGENTS.md`
-2. `docs/PROJECT_CONTEXT.md`
-3. `docs/ACTIVE_HANDOFF.md`
-4. `git status` y `git log --oneline -20`
+Última actualización: 2026-07-08.
 
-## Estado actual
+Este handoff no reemplaza:
 
-Health Tracker es una aplicación Flask privada, self-hosted y multiusuario. Usa SQLAlchemy, Flask-Migrate, MariaDB y Docker Compose. El MVP web funciona en `http://localhost:8000` y mantiene aislamiento por `user_id`.
+- `../AGENTS.md`
+- `AI_WORK_CONTEXT.md`
+- `PROJECT_CONTEXT.md`
+- `project-rules/canonical-data-contract-import-update.md`
+- `project-rules/phase-5b-universal-json-import-assistant.md`
+- `project-rules/standard-json-generator-development.md`
 
-El último commit que debe incorporarse a `master` antes de esta fase es:
+Si contradice a schemas, tests, código o reglas canónicas, este archivo pierde prioridad.
 
-```text
-a4d387c feat: harden qa operations and user exports
-```
+## Estado verificado
 
-La rama activa para portabilidad es `feature/handoff-data-portability`. Si el hash o la rama difieren, revisar primero el historial; no reescribir ni descartar cambios automáticamente.
+- Rama base: `master`.
+- Rama documental actual: `docs/refresh-ai-context`.
+- Rama de trabajo prevista para el siguiente bloque: `refactor/standard-json-generators`.
+- Commit base verificado con `git rev-parse --short HEAD`: `0356d33`.
+- Último merge conocido: `Merge branch 'feature/standard-json-generator-medical-lab'`.
+- Estado del árbol antes del trabajo documental: limpio.
+- Línea base verificada: `240 passed`.
 
-## Módulos implementados
-
-- Auth y admin: login por email/username, logout POST con CSRF, roles `admin/user`, creación básica de usuarios y diagnóstico `/admin/system`.
-- Uploads: originales por usuario, SHA256, deduplicación, tipo detectado, estado y error de importación.
-- Entrenamiento: rutinas JSON, versiones inmutables, activación, historial y exports JSON/CSV.
-- Sesiones: captura/importación, versión exacta del plan, series, peso, reps, RIR, RPE, descanso, duración, FC y calorías.
-- Progreso: volumen, reps, peso máximo, Epley, comparación, fatiga, estancamiento e identidades/aliases privados.
-- Nutrición y energía: persistencia diaria, comidas/items, captura/importación, balance y exports.
-- Peso y composición: captura/importación, historial, tendencia y exports.
-- Dashboard: resumen diario consolidado de nutrición, energía, peso, entrenamiento y último laboratorio.
-- Laboratorios: schema, importación/captura, reportes, marcadores, historial y exports JSON/CSV.
-- QA/ops: seed demo, `/healthz`, logs Gunicorn configurables, smoke tests y estados vacíos.
-- Portabilidad: `/account/export.json` genera un respaldo JSON del usuario sin hashes de contraseña, secretos, rutas internas ni binarios.
-
-## Ramas recientes
-
-- `feature/web-qa-mvp`: navegación, dashboard QA, seed demo y smoke tests.
-- `feature/medical-lab-core`: reportes y marcadores de laboratorio.
-- `feature/qa-ops-hardening`: logout preventivo, healthcheck, diagnóstico admin y export completo.
-- `feature/handoff-data-portability`: schema del export y preview dry-run; no debe restaurar datos.
-
-## Reglas fuertes
-
-- Leer los tres documentos de contexto antes de modificar.
-- No tocar `/data`, volúmenes ni datos reales.
-- No crear ejemplos con información personal, médica o de salud real.
-- No incluir secretos, tokens, `.env` ni hashes de contraseña.
-- Filtrar toda consulta sensible por `user_id`.
-- No hacer refactors grandes ni cambiar arquitectura sin autorización.
-- Crear migración solo al cambiar tablas o columnas.
-- No usar `git reset --hard`, `git clean` ni `docker compose down -v`.
-- Agregar pruebas y detener la siguiente fase si fallan.
-
-## Comandos habituales
-
-Desde `backend/` para pruebas locales:
+Comando usado para verificar pruebas:
 
 ```powershell
-python -m compileall -q .
-python -m pytest -q
-flask db check
+cd backend
+& '..\.venv\Scripts\python.exe' -m pytest -q
 ```
 
-Desde la raíz:
-
-```powershell
-docker compose config --quiet
-docker compose up --build -d
-docker compose exec web flask db upgrade
-docker compose exec web flask seed demo
-docker compose exec -T web flask db check
-```
-
-`pytest` no forma parte de la imagen de producción. Si se necesita dentro del contenedor, instalar temporalmente `requirements-dev.txt` y documentarlo.
-
-## QA web
-
-- URL: `http://localhost:8000`
-- Cuenta ficticia: `demo@example.com` / `demo12345`
-- Healthcheck: `/healthz`
-- Diagnóstico admin: `/admin/system`
-- Export del usuario: `/account/export.json`
-
-Flujos recomendados:
-
-1. Login y logout repetido.
-2. Dashboard vacío, parcial y demo.
-3. Captura/importación de peso, energía, nutrición y laboratorio.
-4. Importación/versionado de rutina y registro de sesión.
-5. Progreso por ejercicio y aislamiento con una segunda cuenta.
-6. Exports JSON/CSV y export completo de cuenta.
-7. Preview dry-run del export cuando esté disponible; verificar que no altera conteos.
-
-## Mapa de módulos y rutas
+Resultado:
 
 ```text
-backend/app/auth/        /login, POST /logout
-backend/app/admin/       /admin/users, /admin/system
-backend/app/main/        /, /dashboard, /uploads, /healthz,
-                         /account/export.json
-backend/app/body/        /weigh-ins, historial, import/export
-backend/app/wellness/    /daily-nutrition, /daily-energy, /daily-balance
-backend/app/training/    /training-plans, versiones e import/export
-backend/app/sessions/    /training-sessions e import/export
-backend/app/progress/    /progress y análisis
-backend/app/medical/     /medical/labs y /medical/markers
-backend/app/services/    validación, importadores, exportadores y análisis
-schemas/                 contratos JSON Draft 2020-12
+240 passed
 ```
 
-## Próximas fases recomendadas
+## Objetivo inmediato
 
-1. Formalizar `user_data_export.schema.json` y validar el export al generarlo.
-2. Preview dry-run autenticado con resumen, advertencias y cero escrituras.
-3. Diseñar restore real en una fase separada, con mapeo de IDs, transacción y rollback explícitos.
-4. Añadir streaming o export por lotes antes de usar cuentas con historiales grandes.
-5. Mantener fuera de alcance API REST, ZIP, FIT/GPX reales, móvil, reloj, OCR y FHIR hasta autorización.
+Separar `StandardJsonGenerator` por dominio sin cambios funcionales.
 
-## Cómo preparar un nuevo agente
+La meta es reducir riesgo del archivo monolítico actual, manteniendo:
 
-Entregarle `AGENTS.md`, `docs/PROJECT_CONTEXT.md`, este archivo, `git status` y `git log --oneline -20`. Pedir cambios por fases pequeñas, exigir pruebas después de cada fase y prohibir restore/escrituras si la tarea solo habla de preview.
+- mismas entradas;
+- mismas salidas;
+- mismos `target_type`;
+- mismos `schema_name`;
+- mismas reglas de validación;
+- mismos warnings;
+- mismos tests pasando.
+
+No agregar dominios nuevos durante el refactor salvo instrucción explícita.
+
+## Estado real de importación asistida
+
+Archivos clave:
+
+- `backend/app/services/importers/schema_detector.py`
+- `backend/app/services/importers/universal_json_import_assistant.py`
+- `backend/app/services/importers/standard_json_generator.py`
+- `backend/app/services/importers/assisted_import_service.py`
+
+Servicios verificados:
+
+- `SchemaDetector` detecta schemas oficiales internos estrictamente.
+- `UniversalJsonImportAssistant` detecta candidatos, aliases y mappings sugeridos.
+- `StandardJsonGenerator` genera documentos estándar en memoria y valida contra schema.
+- `AssistedImportService` orquesta preview read-only.
+
+Todos estos servicios deben permanecer read-only en este bloque:
+
+- no DB writes;
+- no archivos;
+- no `UploadedFile`;
+- no importación real;
+- no cambios en `/data`.
+
+## Dominios actuales soportados
+
+`StandardJsonGenerator.SUPPORTED_TARGETS`:
+
+| `target_type` | `schema_name` | Nota |
+| --- | --- | --- |
+| `weigh_in_batch` | `weigh_in` | batch externo a documentos individuales `weigh_in` |
+| `food_products` | `food_product` | productos individuales |
+| `daily_energy` | `daily_energy` | documentos individuales |
+| `completed_workout` | `completed_workout` | sesiones realizadas |
+| `medical_lab` | `medical_lab` | reportes con marcadores |
+
+Targets detectados por `UniversalJsonImportAssistant` pero sin generación estándar implementada todavía:
+
+- `daily_nutrition`
+- `training_plan`
+- `recipe_bundle`
+
+`recipe` existe como schema/importador/exportador de dominio, pero no es `target_type` directo en `SUPPORTED_TARGETS`.
+
+## Archivos que probablemente se tocarán
+
+Para el refactor por dominio:
+
+- `backend/app/services/importers/standard_json_generator.py`
+- nuevos módulos bajo `backend/app/services/importers/standard_generators/` o ruta equivalente simple;
+- `backend/tests/test_standard_json_generator.py`
+- `backend/tests/test_assisted_import_service.py`
+
+Si solo se mueve código sin cambiar comportamiento, preferir pruebas existentes y pequeños tests de regresión donde el dispatch central pueda romperse.
+
+## Archivos que no deben tocarse en ese bloque
+
+Salvo necesidad demostrada:
+
+- `schemas/*.schema.json`
+- migraciones;
+- modelos;
+- routes;
+- templates;
+- Docker;
+- `.env`;
+- `/data`;
+- importadores oficiales de escritura;
+- exports no relacionados;
+- tests de dominios no afectados.
+
+## Restricciones
+
+- No inventar campos requeridos.
+- No usar placeholders para pasar validaciones.
+- No cambiar contratos JSON públicos.
+- No cambiar aliases canónicos salvo bug demostrado.
+- No convertir preview en importación real.
+- No hacer refactor grande fuera del generador.
+- No hacer commit salvo pedido explícito del usuario.
 
 ## Riesgos conocidos
 
-- El export completo se construye en memoria; historiales grandes pueden consumir RAM.
-- Restore/import real aún no existe y no debe inferirse desde el preview.
-- `pytest` no está en la imagen de producción y su instalación en Docker es temporal.
-- Un timeout previo de Gunicorn durante logout no fue reproducible; las regresiones de logout pasan y los logs operativos quedaron reforzados.
-- El contexto histórico en `PROJECT_CONTEXT.md` está desactualizado frente al código; para estado ejecutable mandan pruebas, Git y este handoff.
+- `standard_json_generator.py` es monolítico.
+- La resolución de paths padre/hijo puede cambiar resultados si se mueve sin tests.
+- Los aliases deben mapear a campos canónicos, no filtrarse al JSON generado.
+- `source_type` depende del schema de cada dominio.
+- Existe riesgo de inventar requeridos accidentalmente al “arreglar” documentos inválidos.
+- Si varios agentes modifican el dispatch central, pueden aparecer conflictos.
+- Medical lab tiene lógica especial para subir desde paths de marcadores al reporte padre.
+
+## Criterios de aceptación
+
+El refactor se acepta si:
+
+1. `SUPPORTED_TARGETS` conserva los mismos valores.
+2. Cada dominio genera el mismo documento que antes.
+3. La validación contra schema conserva los mismos resultados.
+4. Los documentos incompletos siguen marcándose inválidos sin inventar campos.
+5. `AssistedImportService` conserva sus modos actuales.
+6. Las pruebas existentes de Fase 5B pasan.
+7. La suite completa pasa.
+8. `flask db check` queda limpio si se ejecuta.
+9. `git diff --check` queda limpio.
+
+## Comandos exactos de validación
+
+Para cambios de backend:
+
+```powershell
+cd backend
+python -m compileall -q .
+python -m pytest -q tests/test_standard_json_generator.py tests/test_assisted_import_service.py tests/test_universal_json_import_assistant.py
+python -m pytest -q
+flask db check
+cd ..
+docker compose config --quiet
+git diff --check
+git status --short --branch
+git diff --stat
+git diff --name-only
+```
+
+Si Docker está disponible y el cambio toca comportamiento ejecutable:
+
+```powershell
+docker compose up --build -d
+docker compose exec -T web flask db check
+docker compose exec -T web python -m pytest -q
+```
+
+## Siguiente acción concreta
+
+Crear o usar la rama:
+
+```powershell
+git switch -c refactor/standard-json-generators
+```
+
+Si la rama ya existe:
+
+```powershell
+git switch refactor/standard-json-generators
+git status --short --branch
+```
+
+Después:
+
+1. Extraer un generador por dominio empezando por `weigh_in_batch`.
+2. Mantener dispatch central mínimo en `StandardJsonGenerator`.
+3. Ejecutar pruebas específicas.
+4. Repetir dominio por dominio.
+5. No agregar `daily_nutrition`, `training_plan`, `recipe` ni `recipe_bundle` hasta que el refactor mecánico esté estable.
+
+## Protocolo para cerrar el bloque
+
+Al terminar:
+
+1. Actualizar este handoff con rama, commit, pruebas y riesgos restantes.
+2. Registrar dominios refactorizados.
+3. Registrar si hubo cambios funcionales; idealmente debe decir “no”.
+4. Registrar comandos ejecutados.
+5. Confirmar que no se tocaron schemas, migraciones, `.env`, Docker ni `/data`.

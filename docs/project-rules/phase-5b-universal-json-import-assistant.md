@@ -2,9 +2,11 @@
 
 ## Estado
 
-Planeado como bloque transversal del proyecto.
+Bloque transversal del proyecto, parcialmente implementado en modo read-only.
 
 Este bloque no reemplaza los importadores estándar. Su función es actuar cuando el sistema recibe un JSON bien estructurado, pero que no coincide exactamente con los schemas internos del sistema.
+
+Estado verificado al 2026-07-08: ya existen `SchemaDetector`, `UniversalJsonImportAssistant`, `StandardJsonGenerator` y `AssistedImportService` para preview/generación en memoria. La escritura real, jobs persistidos y restore/importación final asistida siguen fuera de este bloque salvo implementación posterior explícita.
 
 ## Objetivo
 

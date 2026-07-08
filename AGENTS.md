@@ -4,9 +4,11 @@
 
 Antes de modificar el proyecto, lee primero:
 
+- `docs/AI_WORK_CONTEXT.md`
 - `docs/PROJECT_CONTEXT.md`
 - `docs/project-rules/canonical-data-contract-import-update.md`
 - `docs/project-rules/phase-5b-universal-json-import-assistant.md`
+- `docs/project-rules/standard-json-generator-development.md` cuando la tarea toque Fase 5B, detección, aliases, `StandardJsonGenerator`, `UniversalJsonImportAssistant` o `AssistedImportService`
 
 `docs/PROJECT_CONTEXT.md` contiene la visión completa del producto, arquitectura, módulos, fases, schemas, importadores, exportadores, reglas de privacidad y estado actual del desarrollo.
 
@@ -14,12 +16,18 @@ Antes de modificar el proyecto, lee primero:
 
 `docs/project-rules/phase-5b-universal-json-import-assistant.md` contiene las reglas para el importador asistido universal de JSON no estándar.
 
+`docs/AI_WORK_CONTEXT.md` ordena el contexto operativo actual, precedencia entre documentos y reglas de handoff para agentes.
+
+`docs/project-rules/standard-json-generator-development.md` contiene reglas específicas para desarrollo del generador estándar: schemas como contrato, aliases fuera del JSON generado, no inventar requeridos y preview read-only.
+
 ## Reglas de trabajo
 
 - No inventes datos reales de salud, nutrición, entrenamiento, médicos o personales.
 - No agregues datos reales al repositorio.
 - No subas ni generes archivos reales dentro de Git que pertenezcan a usuarios.
 - Todo dato real debe vivir en `/data` o en volúmenes Docker ignorados por Git.
+- No toques `/data`.
+- No leas, muestres, copies ni resumas `.env`.
 - Mantén aislamiento por `user_id`.
 - Antes de cambiar modelos o migraciones, revisa si realmente se necesita una migración.
 - Si agregas tablas o columnas, crea migración Alembic/Flask-Migrate.
@@ -29,7 +37,12 @@ Antes de modificar el proyecto, lee primero:
 - Cuando agregues funcionalidades, agrega o actualiza pruebas.
 - Usa fixtures ficticias en tests.
 - No uses datos médicos, corporales, alimentarios o personales reales en ejemplos.
+- No uses datos personales reales en tests.
+- No inventes campos requeridos para satisfacer schemas. Si falta un requerido, genera o procesa solo lo disponible y deja que la validación marque el documento como inválido.
+- No uses placeholders como `Unknown`, `N/A`, `dummy`, `fallback`, `1` o `0` para completar datos requeridos.
 - No agregues carpetas o archivos por error; si aparece un untracked sospechoso como `chemas`, no lo agregues sin confirmar.
+- No reescribas archivos completos sin necesidad. Preserva reglas únicas y parchea solo lo obsoleto, contradictorio o incompleto.
+- No hagas commit salvo que el usuario lo solicite explícitamente.
 
 ## Pipeline obligatorio de datos
 
@@ -177,10 +190,10 @@ El asistente universal solo debe preparar datos, sugerir mapping, generar previe
 Cuando sea posible, ejecutar:
 
 ```bash
-python -m compileall .
-pytest
+python -m compileall -q .
+pytest -q
 flask db check
-docker compose config
+docker compose config --quiet
 ```
 
 Si el entorno Docker está disponible:
@@ -196,6 +209,15 @@ Para cambios de documentación solamente, al menos ejecutar:
 
 ```bash
 git diff --check
+```
+
+Para cambios de backend, ejecutar además pruebas específicas del área modificada y la suite completa cuando sea razonable. Antes de entregar, revisar:
+
+```bash
+git diff --check
+git status --short --branch
+git diff --stat
+git diff --name-only
 ```
 
 ## Estado actual importante
@@ -221,12 +243,17 @@ El proyecto ya tiene implementados módulos relevantes para:
 
 ## Prioridad de referencia
 
-Si hay conflicto entre documentos, comentarios antiguos o código viejo, tomar como referencia:
+Si hay conflicto entre documentos, comentarios antiguos o c?digo viejo, tomar como referencia:
 
-1. `docs/PROJECT_CONTEXT.md`
-2. `docs/project-rules/canonical-data-contract-import-update.md`
-3. `docs/project-rules/phase-5b-universal-json-import-assistant.md`
-4. Pruebas existentes
-5. Estado real del código
-6. README
-7. Comentarios antiguos
+1. JSON Schemas en `schemas/`
+2. Pruebas existentes que codifiquen el contrato esperado
+3. `docs/project-rules/canonical-data-contract-import-update.md`
+4. `docs/project-rules/phase-5b-universal-json-import-assistant.md`
+5. `docs/project-rules/standard-json-generator-development.md`
+6. `AGENTS.md`
+7. `docs/AI_WORK_CONTEXT.md`
+8. `docs/PROJECT_CONTEXT.md`
+9. `docs/ACTIVE_HANDOFF.md`
+10. Estado real del c?digo para detalles de implementaci?n que no contradigan lo anterior
+11. README
+12. Comentarios antiguos

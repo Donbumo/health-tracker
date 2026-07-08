@@ -33,7 +33,8 @@ El estado ejecutable actual es bastante posterior a la Fase 6 inicial descrita e
 
 Estado verificado en `master` / `docs/refresh-ai-context`:
 
-- Commit corto base: `0356d33`.
+- Commit documental integrado en `master`: `9a5d474`.
+- Las tareas posteriores deben obtener su base real desde el `master` vigente.
 - Último merge conocido: `Merge branch 'feature/standard-json-generator-medical-lab'`.
 - Línea base local verificada: `240 passed`.
 - El proyecto conserva Flask, Flask-SQLAlchemy, Flask-Migrate, MariaDB y Docker Compose.

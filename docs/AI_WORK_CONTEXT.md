@@ -23,22 +23,25 @@ Antes de modificar el repositorio, leer en este orden:
 
 Si hay conflicto:
 
-1. JSON Schemas versionados en `schemas/` para contratos públicos de import/export.
-2. Tests existentes para comportamiento ejecutable.
-3. Código actual del repositorio.
-4. Reglas canónicas en `docs/project-rules/`.
-5. `AGENTS.md`.
-6. `docs/AI_WORK_CONTEXT.md`.
-7. `docs/PROJECT_CONTEXT.md`.
-8. `docs/ACTIVE_HANDOFF.md`.
+1. JSON Schemas versionados en `schemas/` para contratos publicos de import/export.
+2. Tests existentes que codifiquen el contrato esperado.
+3. Reglas canonicas en `docs/project-rules/`.
+4. `AGENTS.md`.
+5. `docs/AI_WORK_CONTEXT.md`.
+6. `docs/PROJECT_CONTEXT.md`.
+7. `docs/ACTIVE_HANDOFF.md`.
+8. Codigo actual para detalles de implementacion que no contradigan lo anterior.
 9. README.
 10. Comentarios antiguos.
 
-`docs/ACTIVE_HANDOFF.md` es temporal. Puede orientar el siguiente bloque, pero no puede contradecir schemas, tests, reglas canónicas ni el código real.
+`docs/ACTIVE_HANDOFF.md` es temporal. Puede orientar el siguiente bloque, pero no puede contradecir schemas, tests ni reglas canonicas.
 
 ## Estado técnico actual verificado
 
-Verificado sobre la rama `docs/refresh-ai-context` desde base `master`, commit corto `0356d33`.
+Esta actualizacion documental se integro en `master` mediante el merge `9a5d474`.
+
+`0356d33` queda solo como commit historico inspeccionado antes de la actualizacion.
+Cada bloque posterior debe registrar su base efectiva con `git rev-parse --short master`.
 
 Línea base verificada durante esta actualización:
 

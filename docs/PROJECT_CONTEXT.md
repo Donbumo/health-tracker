@@ -27,9 +27,69 @@ La aplicación debe permitir que varios usuarios, por ejemplo miembros de una fa
 
 ## Estado actual del proyecto
 
-El proyecto ya avanzó hasta una Fase 6 inicial.
+Actualización verificada: 2026-07-08.
 
-### Fase 6 completada
+El estado ejecutable actual es bastante posterior a la Fase 6 inicial descrita en secciones históricas de este documento. Para cualquier tarea nueva, usar también `docs/AI_WORK_CONTEXT.md`, las reglas en `docs/project-rules/` y el estado real del código.
+
+Estado verificado en `master` / `docs/refresh-ai-context`:
+
+- Commit corto base: `0356d33`.
+- Último merge conocido: `Merge branch 'feature/standard-json-generator-medical-lab'`.
+- Línea base local verificada: `240 passed`.
+- El proyecto conserva Flask, Flask-SQLAlchemy, Flask-Migrate, MariaDB y Docker Compose.
+- Los datos reales siguen fuera de Git y deben vivir en `/data` o volúmenes ignorados.
+
+Módulos actualmente implementados o con núcleo funcional:
+
+- Auth, login/logout y admin básico.
+- Uploads con SHA256, estado, tipo detectado y aislamiento por `user_id`.
+- Dashboard diario y QA web.
+- Healthcheck, diagnóstico admin y export completo de usuario.
+- Import-preview dry-run del export completo.
+- Entrenamiento: rutinas versionables, sesiones, progreso, sobrecarga, aliases de ejercicios e imports/exports base.
+- Nutrición diaria, energía diaria y balance.
+- Peso y composición corporal.
+- Productos de alimento, recetas y bundles de recetas.
+- Laboratorios médicos con reportes, marcadores, historial, importación y exportación.
+- Fase 5B parcial: detección estricta de schemas, asistente universal read-only, generación estándar read-only para algunos dominios y orquestación de preview.
+
+Estado real de Fase 5B verificado:
+
+- `SchemaDetector` reconoce schemas oficiales internos.
+- `UniversalJsonImportAssistant` detecta candidatos y aliases.
+- `AssistedImportService` orquesta preview read-only.
+- `StandardJsonGenerator` genera y valida JSON estándar en memoria.
+- Estos servicios no escriben DB, no guardan archivos y no ejecutan importación real.
+
+Dominios actualmente soportados por `StandardJsonGenerator.SUPPORTED_TARGETS`:
+
+| `target_type` | `schema_name` |
+| --- | --- |
+| `weigh_in_batch` | `weigh_in` |
+| `food_products` | `food_product` |
+| `daily_energy` | `daily_energy` |
+| `completed_workout` | `completed_workout` |
+| `medical_lab` | `medical_lab` |
+
+Targets detectables por el asistente, pero todavía sin generación estándar implementada en `StandardJsonGenerator`:
+
+- `daily_nutrition`
+- `training_plan`
+- `recipe_bundle`
+
+Bloques próximos previstos:
+
+1. Refactor de `StandardJsonGenerator` por dominio sin cambios funcionales.
+2. Generación estándar para `daily_nutrition`.
+3. Generación estándar para `training_plan`.
+4. Generación estándar para `recipe`.
+5. Generación estándar para `recipe_bundle`.
+
+No presentar APK, app de reloj, FIT real, GPX real, Magene real, OCR, FHIR o API REST pública como implementados. Siguen siendo planes, stubs o estructura futura salvo que el código de una rama posterior demuestre lo contrario.
+
+Las subsecciones siguientes contienen contexto histórico útil. Si contradicen el estado verificado anterior, manda el estado verificado, los schemas y las pruebas actuales.
+
+### Estado histórico anterior: Fase 6 inicial completada
 
 Se implementó:
 
@@ -47,7 +107,7 @@ Se implementó:
 
 No se añadieron tablas ni migraciones durante esa fase.
 
-### Verificaciones conocidas
+### Verificaciones históricas de la Fase 6 inicial
 
 - Pruebas locales: 29 passed.
 - Pruebas en Docker: 29 passed.
@@ -1471,13 +1531,16 @@ La app debe funcionar como una especie de hub privado entre el usuario, su famil
 
 Antes de implementar:
 
-1. Leer este archivo completo.
-2. Revisar README.
-3. Revisar pruebas existentes.
-4. Revisar modelos actuales antes de crear migraciones.
-5. No modificar datos reales.
-6. No subir `/data`.
-7. No romper aislamiento por usuario.
+1. Leer `AGENTS.md`.
+2. Leer `docs/AI_WORK_CONTEXT.md`.
+3. Leer este archivo completo.
+4. Leer las reglas canónicas aplicables en `docs/project-rules/`.
+5. Revisar README.
+6. Revisar pruebas existentes.
+7. Revisar modelos actuales antes de crear migraciones.
+8. No modificar datos reales.
+9. No subir ni tocar `/data`.
+10. No romper aislamiento por usuario.
 
 Al terminar una tarea:
 

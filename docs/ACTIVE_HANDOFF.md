@@ -20,7 +20,8 @@ Si contradice a schemas, tests, código o reglas canónicas, este archivo pierde
 - Rama base: `master`.
 - Rama documental actual: `docs/refresh-ai-context`.
 - Rama de trabajo prevista para el siguiente bloque: `refactor/standard-json-generators`.
-- Commit base verificado con `git rev-parse --short HEAD`: `0356d33`.
+- Commit documental integrado en `master`: `9a5d474`.
+- La base efectiva de `refactor/standard-json-generators` debe obtenerse al crear o recrear la rama con `git rev-parse --short master`.
 - Último merge conocido: `Merge branch 'feature/standard-json-generator-medical-lab'`.
 - Estado del árbol antes del trabajo documental: limpio.
 - Línea base verificada: `240 passed`.

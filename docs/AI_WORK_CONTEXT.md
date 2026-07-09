@@ -53,7 +53,7 @@ cd backend
 Resultado real:
 
 ```text
-240 passed
+250 passed
 ```
 
 Nota: el comando anterior se ejecutó como `& '..\.venv\Scripts\python.exe' -m pytest -q` desde `backend/`.
@@ -121,7 +121,7 @@ Estos servicios no deben escribir en DB, no deben guardar archivos y no deben ej
 | `completed_workout` | `completed_workout` |
 | `medical_lab` | `medical_lab` |
 
-`UniversalJsonImportAssistant` también detecta candidatos para `daily_nutrition`, `recipe_bundle` y `training_plan`, pero esos targets no tienen generación estándar implementada en `StandardJsonGenerator` al momento de esta actualización.
+`UniversalJsonImportAssistant` también detecta candidatos para `recipe_bundle` y `training_plan`, pero esos targets todavía no tienen generación estándar implementada en `StandardJsonGenerator`.
 
 `SchemaDetector.DEFAULT_SCHEMA_CANDIDATES` actual:
 

@@ -110,13 +110,14 @@ Estos servicios no deben escribir en DB, no deben guardar archivos y no deben ej
 
 ### Targets y schemas verificados
 
-`StandardJsonGenerator.SUPPORTED_TARGETS` actual:
+`SUPPORTED_TARGETS` del modulo `standard_json_generator.py` actual:
 
 | `target_type` | `schema_name` generado |
 | --- | --- |
 | `weigh_in_batch` | `weigh_in` |
 | `food_products` | `food_product` |
 | `daily_energy` | `daily_energy` |
+| `daily_nutrition` | `daily_nutrition` |
 | `completed_workout` | `completed_workout` |
 | `medical_lab` | `medical_lab` |
 

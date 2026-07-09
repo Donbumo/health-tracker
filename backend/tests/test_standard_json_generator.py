@@ -1,6 +1,7 @@
 """Tests for read-only standard JSON generation from assisted mappings."""
 
 from app.services.importers.standard_json_generator import StandardJsonGenerator
+from app.services.importers.schema_detector import SchemaDetector
 from app.services.importers.universal_json_import_assistant import (
     UniversalJsonImportAssistant,
 )
@@ -350,6 +351,260 @@ def test_generate_daily_energy_document_missing_date_fails_validation(app):
 
     assert result["validated_documents"][0]["valid"] is False
     assert any("date" in e for e in result["validated_documents"][0]["errors"])
+
+
+# ---------------------------------------------------------------------------
+# daily_nutrition generation tests
+# ---------------------------------------------------------------------------
+
+
+def test_generate_daily_nutrition_flat_document_from_assisted_candidate(app):
+    payload = {
+        "nutrition": [
+            {
+                "fecha": "2026-07-05",
+                "calorias": "2100",
+                "proteina_g": "140",
+                "grasa_g": "70",
+                "carbohidratos": "180",
+                "carbos_netos_g": "150",
+                "fibra_g": "30",
+                "azucares_g": "20",
+                "sodio_mg": "1800",
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="daily_nutrition")
+        result = StandardJsonGenerator().generate(
+            payload,
+            candidate,
+            user_id=9,
+            source_type="device_sync",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    assert result["target_type"] == "daily_nutrition"
+    assert result["schema_name"] == "daily_nutrition"
+    assert result["records_detected"] == 1
+    assert result["validated_documents"][0]["valid"] is True
+
+    document = result["generated_documents"][0]
+    assert document["schema_version"] == "1.0"
+    assert document["record_type"] == "daily_nutrition"
+    assert document["user_id"] == 9
+    assert document["source_type"] == "device_sync"
+
+    data = document["data"]
+    assert data["date"] == "2026-07-05"
+    assert data["calories_kcal"] == 2100
+    assert data["protein_g"] == 140
+    assert data["fat_g"] == 70
+    assert data["total_carbs_g"] == 180
+    assert data["net_carbs_g"] == 150
+    assert data["fiber_g"] == 30
+    assert data["sugar_g"] == 20
+    assert data["sodium_mg"] == 1800
+    assert "calories" not in data
+    assert "carbs_g" not in data
+    assert "sugars_g" not in data
+
+    validate_json_document(document, "daily_nutrition")
+
+
+def test_generate_daily_nutrition_nested_meals_from_assisted_candidate(app):
+    payload = {
+        "nutrition": [
+            {
+                "date": "2026-07-06",
+                "meals": [
+                    {
+                        "meal_type": "breakfast",
+                        "name": "Fictional breakfast",
+                        "items": [
+                            {
+                                "name": "Fictional oats",
+                                "quantity": "80",
+                                "unit": "g",
+                                "calories": "300",
+                                "protein_g": "18",
+                                "sugars_g": "6",
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="daily_nutrition")
+        result = StandardJsonGenerator().generate(
+            payload,
+            candidate,
+            user_id=9,
+            source_type="uploaded",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    assert result["validated_documents"][0]["valid"] is True
+
+    document = result["generated_documents"][0]
+    meal = document["data"]["meals"][0]
+    assert meal["meal_type"] == "breakfast"
+    assert meal["name"] == "Fictional breakfast"
+
+    item = meal["items"][0]
+    assert item["name"] == "Fictional oats"
+    assert item["quantity"] == 80
+    assert item["unit"] == "g"
+    assert item["calories_kcal"] == 300
+    assert item["protein_g"] == 18
+    assert item["sugar_g"] == 6
+
+    validate_json_document(document, "daily_nutrition")
+
+
+def test_generate_daily_nutrition_batch_documents(app):
+    payload = {
+        "nutrition": [
+            {"fecha": "2026-07-07", "calorias": "2000"},
+            {"fecha": "2026-07-08", "calorias": "2200", "proteina_g": "150"},
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="daily_nutrition")
+        result = StandardJsonGenerator().generate(payload, candidate, user_id=9)
+
+    assert result["records_detected"] == 2
+    assert len(result["generated_documents"]) == 2
+    assert all(item["valid"] for item in result["validated_documents"])
+    assert result["generated_documents"][0]["data"]["date"] == "2026-07-07"
+    assert result["generated_documents"][1]["data"]["protein_g"] == 150
+
+
+def test_generate_daily_nutrition_spanish_meal_sections(app):
+    payload = {
+        "nutrition": [
+            {
+                "fecha": "2026-07-09",
+                "desayuno": [
+                    {
+                        "nombre": "Yogurt ficticio",
+                        "cantidad": "1",
+                        "unidad": "serving",
+                        "kcal": "180",
+                    }
+                ],
+                "comida": [
+                    {
+                        "alimento": "Pollo ficticio",
+                        "proteina_g": "45",
+                    }
+                ],
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="daily_nutrition")
+        result = StandardJsonGenerator().generate(payload, candidate, user_id=9)
+
+    assert result["validated_documents"][0]["valid"] is True
+    meals = result["generated_documents"][0]["data"]["meals"]
+    assert meals[0]["meal_type"] == "breakfast"
+    assert meals[0]["items"][0]["name"] == "Yogurt ficticio"
+    assert meals[0]["items"][0]["calories_kcal"] == 180
+    assert meals[1]["meal_type"] == "lunch"
+    assert meals[1]["items"][0]["name"] == "Pollo ficticio"
+    assert meals[1]["items"][0]["protein_g"] == 45
+
+
+def test_generate_daily_nutrition_missing_date_fails_validation(app):
+    payload = {
+        "nutrition": [
+            {
+                "calorias": 2100,
+                "proteina_g": 140,
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="daily_nutrition")
+        result = StandardJsonGenerator().generate(payload, candidate, user_id=9)
+
+    assert result["validated_documents"][0]["valid"] is False
+    assert any("date" in error for error in result["validated_documents"][0]["errors"])
+
+
+def test_generate_daily_nutrition_missing_item_name_fails_validation(app):
+    payload = {
+        "nutrition": [
+            {
+                "fecha": "2026-07-10",
+                "desayuno": [
+                    {
+                        "calorias": 200,
+                        "proteina_g": 20,
+                    }
+                ],
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="daily_nutrition")
+        result = StandardJsonGenerator().generate(payload, candidate, user_id=9)
+
+    document = result["generated_documents"][0]
+    item = document["data"]["meals"][0]["items"][0]
+    assert "name" not in item
+    assert result["validated_documents"][0]["valid"] is False
+    assert any("name" in error for error in result["validated_documents"][0]["errors"])
+
+
+def test_generate_daily_nutrition_warns_for_unknown_fields(app):
+    payload = {
+        "nutrition": [
+            {
+                "fecha": "2026-07-11",
+                "calorias": 2100,
+                "campo_desconocido": "ignored",
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="daily_nutrition")
+        result = StandardJsonGenerator().generate(payload, candidate, user_id=9)
+
+    assert result["validated_documents"][0]["valid"] is True
+    assert any("campo_desconocido" in warning for warning in result["warnings"])
+
+
+def test_generate_daily_nutrition_round_trips_through_schema_detection(app):
+    payload = {
+        "nutrition": [
+            {
+                "fecha": "2026-07-12",
+                "calorias": 2100,
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="daily_nutrition")
+        result = StandardJsonGenerator().generate(payload, candidate, user_id=9)
+        document = result["generated_documents"][0]
+        validate_json_document(document, "daily_nutrition")
+        detection = SchemaDetector().detect(document, requested_type="daily_nutrition")
+
+    assert detection["mode"] == "standard"
+    assert detection["detected_type"] == "daily_nutrition"
+    assert detection["schema_name"] == "daily_nutrition"
 
 
 # ---------------------------------------------------------------------------

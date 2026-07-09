@@ -144,6 +144,36 @@ def test_assistant_detects_food_products_from_pantry_payload(app):
     assert primary["suggested_mapping"]["proteina_g"] == "protein_g_per_100g"
 
 
+def test_assistant_detects_daily_nutrition_payload(app):
+    payload = {
+        "nutrition": [
+            {
+                "fecha": "2026-07-05",
+                "calorias": 2100,
+                "proteina_g": 140,
+                "carbos_netos_g": 120,
+                "desayuno": [
+                    {"nombre": "Fictional item", "kcal": 300}
+                ],
+            }
+        ]
+    }
+
+    with app.app_context():
+        result = UniversalJsonImportAssistant().analyze(
+            payload,
+            requested_type="daily_nutrition",
+        )
+
+    assert result["mode"] == "assistant_required"
+    primary = result["preview"]["primary_candidate"]
+    assert primary["target_type"] == "daily_nutrition"
+    assert primary["path"] == "nutrition"
+    assert primary["suggested_mapping"]["fecha"] == "date"
+    assert primary["suggested_mapping"]["calorias"] == "calories"
+    assert primary["suggested_mapping"]["desayuno"] == "breakfast"
+
+
 def test_assistant_detects_multiple_candidate_domains(app):
     payload = {
         "registros": [

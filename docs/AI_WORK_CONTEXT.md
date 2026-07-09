@@ -4,7 +4,7 @@ Este documento es el punto de entrada para Codex y otros agentes que retomen el 
 
 No reemplaza a las reglas canónicas ni a los schemas. Su función es ordenar qué leer, qué manda en caso de conflicto y cuál es el estado técnico verificado al actualizar este contexto.
 
-Última actualización documental: 2026-07-08.
+Última actualización documental: 2026-07-09.
 
 ## Orden obligatorio de lectura
 
@@ -16,8 +16,9 @@ Antes de modificar el repositorio, leer en este orden:
 4. `docs/project-rules/canonical-data-contract-import-update.md`.
 5. `docs/project-rules/phase-5b-universal-json-import-assistant.md`.
 6. `docs/project-rules/standard-json-generator-development.md` si la tarea toca Fase 5B, detección, aliases, `StandardJsonGenerator`, `UniversalJsonImportAssistant` o `AssistedImportService`.
-7. `docs/ACTIVE_HANDOFF.md`, solo como handoff temporal del bloque activo.
-8. README, código, tests y `git status`.
+7. `docs/project-rules/confirmed-standard-import.md` si la tarea toca confirmación o escritura real desde JSON estándar.
+8. `docs/ACTIVE_HANDOFF.md`, solo como handoff temporal del bloque activo.
+9. README, código, tests y `git status`.
 
 ## Precedencia
 
@@ -50,7 +51,7 @@ cd backend
 ..\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Resultado real:
+Resultado real histórico:
 
 ```text
 250 passed
@@ -97,9 +98,15 @@ El proyecto actual incluye, según código, tests y README:
 
 No tratar APK, app de reloj, FIT real, GPX real, Magene real, OCR, FHIR, API REST pública, restore completo o PDF/Excel avanzado como implementados si el código no lo confirma.
 
+La verificación local posterior al cierre de Fase 5B e importación confirmada reportó:
+
+```text
+289 passed
+```
+
 ## Estado real de Fase 5B
 
-La Fase 5B existe parcialmente como infraestructura read-only:
+La Fase 5B existe como infraestructura read-only cerrada para los targets listados abajo:
 
 - `SchemaDetector` detecta schemas internos oficiales de forma estricta.
 - `UniversalJsonImportAssistant` analiza JSON no estándar y sugiere dominios/mappings.
@@ -110,7 +117,7 @@ Estos servicios no deben escribir en DB, no deben guardar archivos y no deben ej
 
 ### Targets y schemas verificados
 
-`SUPPORTED_TARGETS` del modulo `standard_json_generator.py` actual:
+`SUPPORTED_TARGETS` del módulo `standard_json_generator.py` actual:
 
 | `target_type` | `schema_name` generado |
 | --- | --- |
@@ -120,8 +127,22 @@ Estos servicios no deben escribir en DB, no deben guardar archivos y no deben ej
 | `daily_nutrition` | `daily_nutrition` |
 | `completed_workout` | `completed_workout` |
 | `medical_lab` | `medical_lab` |
+| `training_plan` | `training_plan` |
+| `recipe` | `recipe` |
+| `recipe_bundle` | `recipe_bundle` |
 
-`UniversalJsonImportAssistant` también detecta candidatos para `recipe_bundle` y `training_plan`, pero esos targets todavía no tienen generación estándar implementada en `StandardJsonGenerator`.
+La Fase 5B queda cerrada para esos targets: detección, mapping asistido, generación estándar read-only y validación contra schema.
+
+La importación confirmada posterior a Fase 5B existe mediante `StandardImportExecutor`:
+
+- preview y generación siguen siendo read-only;
+- el commit exige confirmación explícita;
+- la confirmación web se firma contra usuario, target, payload y plan;
+- los tokens vencidos, reutilizados o de otro usuario se rechazan;
+- el `user_id` efectivo viene del usuario autenticado/argumento del servidor;
+- el plan usa operaciones `insert`, `update`, `skip`, `conflict`, `invalid`;
+- el lote se ejecuta de forma atómica en la sesión de DB y debe hacer rollback ante errores de escritura;
+- la ruta web mínima es `GET/POST /imports/standard`.
 
 `SchemaDetector.DEFAULT_SCHEMA_CANDIDATES` actual:
 
@@ -219,4 +240,5 @@ Al cerrar un bloque:
 - Contrato canónico: `project-rules/canonical-data-contract-import-update.md`.
 - Fase 5B: `project-rules/phase-5b-universal-json-import-assistant.md`.
 - Reglas de `StandardJsonGenerator`: `project-rules/standard-json-generator-development.md`.
+- Importación estándar confirmada: `project-rules/confirmed-standard-import.md`.
 - Handoff temporal: `ACTIVE_HANDOFF.md`.

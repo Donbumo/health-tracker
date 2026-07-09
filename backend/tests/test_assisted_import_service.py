@@ -143,7 +143,7 @@ def test_service_returns_without_candidates_for_unknown_payload(app):
     assert result["summary"]["generated_count"] == 0
 
 
-def test_service_returns_preview_only_for_unsupported_generation_target(app):
+def test_service_generates_standard_recipe_bundle_from_assisted_payload(app):
     payload = {
         "recetas": [
             {
@@ -166,16 +166,21 @@ def test_service_returns_preview_only_for_unsupported_generation_target(app):
             target_type="recipe_bundle",
         )
 
-    assert result["mode"] == "assistant_preview_ready"
+    assert result["mode"] == "standard_json_generated"
     assert result["read_only"] is True
     assert result["selected_candidate"]["target_type"] == "recipe_bundle"
-    assert result["standard_generation"]["mode"] == "unsupported_target"
-    assert result["standard_generation"]["generated_documents"] == []
-    assert result["summary"]["generated_count"] == 0
-    assert any(
-        "not implemented" in warning
-        for warning in result["summary"]["warnings"]
-    )
+    assert result["standard_generation"]["schema_name"] == "recipe_bundle"
+    assert result["summary"]["generated_count"] == 1
+    assert result["summary"]["valid_count"] == 1
+
+    document = result["standard_generation"]["generated_documents"][0]
+    assert document["type"] == "recipe_bundle"
+    assert document["user_id"] == 2
+    assert document["recipes"][0]["name"] == "Receta demo"
+    assert document["recipes"][0]["ingredients"][0]["food_product_name"] == "Producto demo"
+    assert document["recipes"][0]["ingredients"][0]["quantity_g"] == 40
+
+    validate_json_document(document, "recipe_bundle")
 
 
 def test_service_can_skip_standard_generation(app):
@@ -473,3 +478,83 @@ def test_service_generates_standard_medical_lab_json_from_assisted_payload(app):
     assert markers[0]["unit"] == "mg/dL"
 
     validate_json_document(document, "medical_lab")
+
+
+def test_service_generates_standard_training_plan_json_from_assisted_payload(app):
+    payload = {
+        "rutinas": [
+            {
+                "nombre": "Rutina demo QA",
+                "semanas": [
+                    {
+                        "semana": 1,
+                        "dias": [
+                            {
+                                "dia": 1,
+                                "nombre": "Día demo",
+                                "ejercicios": [
+                                    {
+                                        "orden": 1,
+                                        "nombre": "Press demo",
+                                        "series": [{"serie": 1, "reps": 8}],
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    with app.app_context():
+        result = AssistedImportService().preview(
+            payload,
+            user_id=7,
+            requested_type="training_plan",
+            source_type="uploaded",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    assert result["target_type"] == "training_plan"
+    assert result["summary"]["valid_count"] == 1
+
+    document = result["standard_generation"]["generated_documents"][0]
+    assert document["record_type"] == "training_plan"
+    assert document["user_id"] == 7
+    assert document["data"]["weeks"][0]["days"][0]["exercises"][0]["name"] == "Press demo"
+
+    validate_json_document(document, "training_plan")
+
+
+def test_service_generates_standard_recipe_json_from_assisted_payload(app):
+    payload = {
+        "receta": {
+            "nombre": "Receta demo QA",
+            "ingredientes": [
+                {
+                    "producto": "Producto demo QA",
+                    "cantidad_g": 25,
+                }
+            ],
+        }
+    }
+
+    with app.app_context():
+        result = AssistedImportService().preview(
+            payload,
+            user_id=7,
+            requested_type="recipe",
+            source_type="uploaded",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    assert result["target_type"] == "recipe"
+    assert result["summary"]["valid_count"] == 1
+
+    document = result["standard_generation"]["generated_documents"][0]
+    assert document["type"] == "recipe"
+    assert document["user_id"] == 7
+    assert document["ingredients"][0]["food_product_name"] == "Producto demo QA"
+
+    validate_json_document(document, "recipe")

@@ -6,6 +6,9 @@ from app.services.importers.standard_generators import (
     daily_nutrition,
     food_product,
     medical_lab,
+    recipe,
+    recipe_bundle,
+    training_plan,
     weigh_in,
 )
 
@@ -15,5 +18,8 @@ __all__ = [
     "daily_nutrition",
     "food_product",
     "medical_lab",
+    "recipe",
+    "recipe_bundle",
+    "training_plan",
     "weigh_in",
 ]

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}ImportaciÃ³n asistida Â· Health Tracker{% endblock %}
+{% block content %}
+  <section class="card">
+    <h1>ImportaciÃ³n asistida</h1>
+    <p>Preview primero, escritura solo despuÃ©s de confirmar. No se ejecuta cÃ³digo del archivo.</p>
+
+    {% if parse_error %}
+      <div class="alert alert-danger">{{ parse_error }}</div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+      {{ preview_form.hidden_tag() }}
+      <div>
+        {{ preview_form.file.label }}<br>
+        {{ preview_form.file() }}
+      </div>
+      <div>
+        {{ preview_form.target_type.label }}<br>
+        {{ preview_form.target_type() }}
+      </div>
+      {{ preview_form.submit(class_="button") }}
+    </form>
+  </section>
+
+  {% if preview_result %}
+    <section class="card">
+      <h2>Preview y plan</h2>
+      <p><strong>Target:</strong> {{ preview_result.target_type }}</p>
+      <p><strong>Documentos estÃ¡ndar:</strong> {{ preview_result.documents|length }}</p>
+
+      <table>
+        <tbody>
+          <tr><th>Total</th><td>{{ preview_result.plan.total }}</td></tr>
+          <tr><th>VÃ¡lidos</th><td>{{ preview_result.plan.valid }}</td></tr>
+          <tr><th>InvÃ¡lidos</th><td>{{ preview_result.plan.invalid }}</td></tr>
+          <tr><th>Inserts</th><td>{{ preview_result.plan.inserts }}</td></tr>
+          <tr><th>Updates</th><td>{{ preview_result.plan.updates }}</td></tr>
+          <tr><th>Skips</th><td>{{ preview_result.plan.skips }}</td></tr>
+          <tr><th>Conflictos</th><td>{{ preview_result.plan.conflicts }}</td></tr>
+        </tbody>
+      </table>
+
+      {% if preview_result.plan.errors %}
+        <h3>Errores</h3>
+        <ul>
+          {% for error in preview_result.plan.errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <h3>Operaciones</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>OperaciÃ³n</th>
+            <th>Modelo</th>
+            <th>Detalle</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for operation in preview_result.plan.operations %}
+            <tr>
+              <td>{{ operation.document_index }}</td>
+              <td>{{ operation.operation }}</td>
+              <td>{{ operation.model or "-" }}</td>
+              <td>{{ operation.label }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% if preview_result.plan.total > 0 and preview_result.plan.invalid == 0 and preview_result.plan.conflicts == 0 and not commit_result %}
+        <form method="post">
+          {{ confirm_form.hidden_tag() }}
+          {{ confirm_form.payload_json() }}
+          {{ confirm_form.target_type() }}
+          {{ confirm_form.confirmation_token() }}
+          <p class="muted">Al confirmar se guardarÃ¡n los datos en tu cuenta. El import es atÃ³mico para el lote.</p>
+          {{ confirm_form.submit(class_="button") }}
+        </form>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  {% if commit_result %}
+    <section class="card">
+      <h2>Resumen final</h2>
+      <table>
+        <tbody>
+          <tr><th>Guardado</th><td>{{ 'sí' if commit_result.committed else 'no' }}</td></tr>
+          <tr><th>Rollback</th><td>{{ 'sí' if commit_result.rollback else 'no' }}</td></tr>
+          <tr><th>Inserts</th><td>{{ commit_result.inserts }}</td></tr>
+          <tr><th>Updates</th><td>{{ commit_result.updates }}</td></tr>
+          <tr><th>Skips</th><td>{{ commit_result.skips }}</td></tr>
+          <tr><th>Conflictos</th><td>{{ commit_result.conflicts }}</td></tr>
+          <tr><th>InvÃ¡lidos</th><td>{{ commit_result.invalid }}</td></tr>
+        </tbody>
+      </table>
+    </section>
+  {% endif %}
+{% endblock %}

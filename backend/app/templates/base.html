@@ -24,6 +24,7 @@
           <a href="{{ url_for('progress.overview') }}">Progreso</a>
           <a href="{{ url_for('medical.list_reports') }}">Laboratorios</a>
           <a href="{{ url_for('main.uploads') }}">Uploads</a>
+          <a href="{{ url_for('main.standard_import') }}">Importar</a>
           {% if current_user.is_admin %}
             <a href="{{ url_for('admin.users') }}">Admin</a>
             <a href="{{ url_for('admin.system') }}">Sistema</a>

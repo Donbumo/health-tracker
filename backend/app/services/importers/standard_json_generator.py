@@ -15,6 +15,9 @@ Current supported preview targets:
 - daily_nutrition -> generated daily_nutrition documents
 - completed_workout -> generated completed_workout documents
 - medical_lab    -> generated medical_lab documents
+- training_plan  -> generated training_plan documents
+- recipe         -> generated recipe documents
+- recipe_bundle  -> generated recipe_bundle documents
 """
 
 from __future__ import annotations
@@ -27,6 +30,9 @@ from app.services.importers.standard_generators import (
     daily_nutrition,
     food_product,
     medical_lab,
+    recipe,
+    recipe_bundle,
+    training_plan,
     weigh_in,
 )
 from app.services.importers.standard_generators import common
@@ -40,6 +46,9 @@ SUPPORTED_TARGETS = {
     "daily_nutrition",
     "completed_workout",
     "medical_lab",
+    "training_plan",
+    "recipe",
+    "recipe_bundle",
 }
 
 WEIGH_IN_SCHEMA_NAME = weigh_in.SCHEMA_NAME
@@ -48,6 +57,9 @@ DAILY_ENERGY_SCHEMA_NAME = daily_energy.SCHEMA_NAME
 DAILY_NUTRITION_SCHEMA_NAME = daily_nutrition.SCHEMA_NAME
 COMPLETED_WORKOUT_SCHEMA_NAME = completed_workout.SCHEMA_NAME
 MEDICAL_LAB_SCHEMA_NAME = medical_lab.SCHEMA_NAME
+TRAINING_PLAN_SCHEMA_NAME = training_plan.SCHEMA_NAME
+RECIPE_SCHEMA_NAME = recipe.SCHEMA_NAME
+RECIPE_BUNDLE_SCHEMA_NAME = recipe_bundle.SCHEMA_NAME
 
 
 class StandardJsonGenerationError(ValueError):
@@ -87,6 +99,18 @@ class StandardJsonGenerator:
             daily_nutrition_parent_path = self._daily_nutrition_parent_path(source_path)
             if daily_nutrition_parent_path is not None:
                 source_path = daily_nutrition_parent_path
+        elif target_type == "training_plan":
+            training_plan_parent_path = self._training_plan_parent_path(source_path)
+            if training_plan_parent_path is not None:
+                source_path = training_plan_parent_path
+        elif target_type == "recipe":
+            recipe_parent_path = self._recipe_parent_path(source_path)
+            if recipe_parent_path is not None:
+                source_path = recipe_parent_path
+        elif target_type == "recipe_bundle":
+            recipe_bundle_parent_path = self._recipe_bundle_parent_path(source_path)
+            if recipe_bundle_parent_path is not None:
+                source_path = recipe_bundle_parent_path
 
         records = self._records_at_path(payload, source_path)
         mapping = candidate.get("suggested_mapping") or {}
@@ -174,6 +198,33 @@ class StandardJsonGenerator:
                 default_timezone=default_timezone,
             )
             return generated_documents, warnings, COMPLETED_WORKOUT_SCHEMA_NAME
+
+        if target_type == "training_plan":
+            generated_documents, warnings = self._generate_training_plans(
+                records=records,
+                mapping=mapping,
+                user_id=user_id,
+                source_type=training_plan.normalize_source_type(source_type),
+            )
+            return generated_documents, warnings, TRAINING_PLAN_SCHEMA_NAME
+
+        if target_type == "recipe":
+            generated_documents, warnings = self._generate_recipes(
+                records=records,
+                mapping=mapping,
+                user_id=user_id,
+                source_type=recipe.normalize_source_type(source_type),
+            )
+            return generated_documents, warnings, RECIPE_SCHEMA_NAME
+
+        if target_type == "recipe_bundle":
+            generated_documents, warnings = self._generate_recipe_bundles(
+                records=records,
+                mapping=mapping,
+                user_id=user_id,
+                source_type=recipe.normalize_source_type(source_type),
+            )
+            return generated_documents, warnings, RECIPE_BUNDLE_SCHEMA_NAME
 
         generated_documents, warnings = self._generate_medical_labs(
             records=records,
@@ -277,6 +328,51 @@ class StandardJsonGenerator:
             source_type=source_type,
         )
 
+    def _generate_training_plans(
+        self,
+        *,
+        records: list[dict[str, Any]],
+        mapping: dict[str, str],
+        user_id: int,
+        source_type: str,
+    ) -> tuple[list[dict[str, Any]], list[str]]:
+        return training_plan.generate(
+            records=records,
+            mapping=mapping,
+            user_id=user_id,
+            source_type=source_type,
+        )
+
+    def _generate_recipes(
+        self,
+        *,
+        records: list[dict[str, Any]],
+        mapping: dict[str, str],
+        user_id: int,
+        source_type: str,
+    ) -> tuple[list[dict[str, Any]], list[str]]:
+        return recipe.generate(
+            records=records,
+            mapping=mapping,
+            user_id=user_id,
+            source_type=source_type,
+        )
+
+    def _generate_recipe_bundles(
+        self,
+        *,
+        records: list[dict[str, Any]],
+        mapping: dict[str, str],
+        user_id: int,
+        source_type: str,
+    ) -> tuple[list[dict[str, Any]], list[str]]:
+        return recipe_bundle.generate(
+            records=records,
+            mapping=mapping,
+            user_id=user_id,
+            source_type=source_type,
+        )
+
     @staticmethod
     def _validate_document(
         index: int,
@@ -346,6 +442,18 @@ class StandardJsonGenerator:
     @staticmethod
     def _daily_nutrition_parent_path(path: str) -> str | None:
         return daily_nutrition.parent_path(path)
+
+    @staticmethod
+    def _training_plan_parent_path(path: str) -> str | None:
+        return training_plan.parent_path(path)
+
+    @staticmethod
+    def _recipe_parent_path(path: str) -> str | None:
+        return recipe.parent_path(path)
+
+    @staticmethod
+    def _recipe_bundle_parent_path(path: str) -> str | None:
+        return recipe_bundle.parent_path(path)
 
     @staticmethod
     def _weigh_in_source_type(source_type: str) -> str:

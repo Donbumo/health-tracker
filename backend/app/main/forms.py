@@ -1,6 +1,13 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
-from wtforms import DateTimeLocalField, DecimalField, SubmitField, TextAreaField
+from wtforms import (
+    DateTimeLocalField,
+    DecimalField,
+    HiddenField,
+    SelectField,
+    SubmitField,
+    TextAreaField,
+)
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
 
 
@@ -23,6 +30,40 @@ class UserDataPreviewForm(FlaskForm):
         ],
     )
     submit = SubmitField("Validar sin importar")
+
+
+class StandardImportPreviewForm(FlaskForm):
+    file = FileField(
+        "JSON",
+        validators=[
+            FileRequired(),
+            FileAllowed(["json"], "Selecciona un archivo con extensiÃ³n .json."),
+        ],
+    )
+    target_type = SelectField(
+        "Target",
+        choices=[
+            ("", "Detectar automÃ¡ticamente"),
+            ("weigh_in_batch", "Pesajes"),
+            ('daily_energy', 'Energía diaria'),
+            ("daily_nutrition", "NutriciÃ³n diaria"),
+            ("food_products", "Alimentos/productos"),
+            ("recipe", "Receta"),
+            ("recipe_bundle", "Bundle de recetas"),
+            ("training_plan", "Rutina"),
+            ("completed_workout", "SesiÃ³n completada"),
+            ("medical_lab", "Laboratorio mÃ©dico"),
+        ],
+        validators=[Optional()],
+    )
+    submit = SubmitField("Analizar sin guardar")
+
+
+class StandardImportConfirmForm(FlaskForm):
+    payload_json = HiddenField(validators=[DataRequired()])
+    target_type = HiddenField(validators=[DataRequired()])
+    confirmation_token = HiddenField(validators=[DataRequired()])
+    submit = SubmitField("Confirmar e importar")
 
 
 class WeighInForm(FlaskForm):

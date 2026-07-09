@@ -27,7 +27,7 @@ La aplicación debe permitir que varios usuarios, por ejemplo miembros de una fa
 
 ## Estado actual del proyecto
 
-Actualización verificada: 2026-07-08.
+Actualización verificada: 2026-07-09.
 
 El estado ejecutable actual es bastante posterior a la Fase 6 inicial descrita en secciones históricas de este documento. Para cualquier tarea nueva, usar también `docs/AI_WORK_CONTEXT.md`, las reglas en `docs/project-rules/` y el estado real del código.
 
@@ -36,7 +36,8 @@ Estado verificado en `master` / `docs/refresh-ai-context`:
 - Commit documental integrado en `master`: `9a5d474`.
 - Las tareas posteriores deben obtener su base real desde el `master` vigente.
 - Último merge conocido: `Merge branch 'feature/standard-json-generator-medical-lab'`.
-- Línea base local verificada: `250 passed`.
+- Línea base local verificada anterior: `250 passed`.
+- Línea base local posterior al cierre de Fase 5B e importación confirmada: `289 passed`.
 - El proyecto conserva Flask, Flask-SQLAlchemy, Flask-Migrate, MariaDB y Docker Compose.
 - Los datos reales siguen fuera de Git y deben vivir en `/data` o volúmenes ignorados.
 
@@ -52,7 +53,8 @@ Módulos actualmente implementados o con núcleo funcional:
 - Peso y composición corporal.
 - Productos de alimento, recetas y bundles de recetas.
 - Laboratorios médicos con reportes, marcadores, historial, importación y exportación.
-- Fase 5B parcial: detección estricta de schemas, asistente universal read-only, generación estándar read-only para algunos dominios y orquestación de preview.
+- Fase 5B cerrada para los targets finales: detección estricta de schemas, asistente universal read-only, generación estándar read-only y orquestación de preview.
+- Fase posterior a 5B: importación estándar confirmada para QA desde web con plan `insert/update/skip/conflict/invalid` y confirmación explícita.
 
 Estado real de Fase 5B verificado:
 
@@ -61,6 +63,10 @@ Estado real de Fase 5B verificado:
 - `AssistedImportService` orquesta preview read-only.
 - `StandardJsonGenerator` genera y valida JSON estándar en memoria.
 - Estos servicios no escriben DB, no guardan archivos y no ejecutan importación real.
+- La escritura real posterior se hace mediante `StandardImportExecutor`, separado del preview.
+- La confirmación web se firma contra usuario, target, payload y plan; tokens reutilizados, vencidos o de otro usuario deben rechazarse.
+- El commit confirmado debe ser atómico y hacer rollback si falla un elemento durante la escritura.
+- `recipe_bundle` se planea por receta embebida y conserva `recipe_index` para trazabilidad.
 
 Dominios actualmente soportados por `SUPPORTED_TARGETS` del módulo `standard_json_generator.py`:
 
@@ -72,18 +78,15 @@ Dominios actualmente soportados por `SUPPORTED_TARGETS` del módulo `standard_js
 | `daily_nutrition` | `daily_nutrition` |
 | `completed_workout` | `completed_workout` |
 | `medical_lab` | `medical_lab` |
-
-Targets detectables por el asistente, pero todavía sin generación estándar implementada en `StandardJsonGenerator`:
-
-- `daily_nutrition`
-- `training_plan`
-- `recipe_bundle`
+| `training_plan` | `training_plan` |
+| `recipe` | `recipe` |
+| `recipe_bundle` | `recipe_bundle` |
 
 Bloques próximos previstos:
 
-1. Generación estándar para `training_plan`.
-2. Generación estándar para `recipe`.
-3. Generación estándar para `recipe_bundle`.
+1. Endurecer la importación confirmada con auditoría persistente más rica si se aprueba modelo/migración futura.
+2. Ampliar cobertura de updates seguros por dominio cuando existan claves naturales o IDs explícitos.
+3. Restauración real desde export completo de usuario, todavía no implementada.
 
 No presentar APK, app de reloj, FIT real, GPX real, Magene real, OCR, FHIR o API REST pública como implementados. Siguen siendo planes, stubs o estructura futura salvo que el código de una rama posterior demuestre lo contrario.
 

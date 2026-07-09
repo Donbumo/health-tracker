@@ -267,6 +267,30 @@ CSV aplana la jerarquía y puede perder estructura o metadatos; usa JSON para re
 
 La página **Archivos** muestra el tipo detectado, estado de importación (`pending`, `imported`, `duplicate` o `error`) y el mensaje de error cuando corresponde.
 
+## Importación asistida confirmada
+
+La ruta `/imports/standard` permite probar el flujo nuevo de QA:
+
+1. Inicia sesión.
+2. Sube un JSON interno o un JSON no estándar compatible con el asistente.
+3. Revisa el preview, el mapping sugerido, la validación y el plan.
+4. Confirma explícitamente.
+5. La app guarda el lote de forma transaccional en tu cuenta.
+
+El plan usa operaciones:
+
+- `insert`
+- `update`
+- `skip`
+- `conflict`
+- `invalid`
+
+El `user_id` efectivo siempre sale de la sesión autenticada; un `user_id` dentro del archivo no puede importar datos hacia otra cuenta. Si hay documentos inválidos o conflictos, el commit se bloquea. Este flujo no implementa restore completo de `/account/export.json`; ese respaldo sigue teniendo solo preview dry-run en `/account/import-preview`.
+
+La confirmación web se firma contra usuario, target, payload y plan revisado. Si el plan cambia entre preview y confirmación, o el token vence, se reutiliza o pertenece a otro usuario, la app exige revisar un nuevo preview. El lote es atómico: si falla un elemento durante la escritura, se hace rollback y no queda éxito parcial silencioso.
+
+Para conservar esa atomicidad, el flujo confirmado usa adaptadores internos de persistencia en `StandardImportExecutor` y no llama importadores que hacen commit propio. `completed_workout` permite insert pero devuelve conflicto ante repetición/update hasta tener una clave segura de actualización; `recipe_bundle` se importa por recetas embebidas y no crea un modelo Bundle persistente.
+
 ## Administración básica de usuarios
 
 Los usuarios con rol `admin` pueden abrir **Usuarios** o visitar [http://localhost:8000/admin/users](http://localhost:8000/admin/users). Desde ahí pueden listar cuentas y crear usuarios con email, contraseña temporal y rol `admin` o `user`. Los usuarios normales reciben HTTP 403. Las cuentas creadas desde este panel pueden iniciar sesión con su email; los usernames existentes siguen siendo compatibles.

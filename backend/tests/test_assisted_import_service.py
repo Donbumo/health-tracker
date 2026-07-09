@@ -312,6 +312,65 @@ def test_service_generates_standard_daily_energy_json_from_assisted_payload(app)
     validate_json_document(document, "daily_energy")
 
 
+def test_service_generates_standard_daily_nutrition_json_from_assisted_payload(app):
+    payload = {
+        "nutrition": [
+            {
+                "fecha": "2026-07-10",
+                "calorias": "2100",
+                "proteina_g": "140",
+                "desayuno": [
+                    {
+                        "nombre": "Fictional breakfast item",
+                        "kcal": "350",
+                    }
+                ],
+            },
+        ]
+    }
+
+    with app.app_context():
+        result = AssistedImportService().preview(
+            payload,
+            user_id=5,
+            requested_type="daily_nutrition",
+            source_type="manual_generated",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    assert result["read_only"] is True
+    assert result["target_type"] == "daily_nutrition"
+    assert result["selected_candidate"] is not None
+    assert result["selected_candidate"]["target_type"] == "daily_nutrition"
+
+    generation = result["standard_generation"]
+    assert generation is not None
+    assert generation["schema_name"] == "daily_nutrition"
+    assert generation["records_detected"] == 1
+    assert generation["validated_documents"][0]["valid"] is True
+
+    document = generation["generated_documents"][0]
+    assert document["schema_version"] == "1.0"
+    assert document["record_type"] == "daily_nutrition"
+    assert document["user_id"] == 5
+    assert document["source_type"] == "manual_generated"
+
+    data = document["data"]
+    assert data["date"] == "2026-07-10"
+    assert data["calories_kcal"] == 2100
+    assert data["protein_g"] == 140
+    assert data["meals"][0]["meal_type"] == "breakfast"
+    assert data["meals"][0]["items"][0]["name"] == "Fictional breakfast item"
+    assert data["meals"][0]["items"][0]["calories_kcal"] == 350
+
+    summary = result["summary"]
+    assert summary["valid_count"] == 1
+    assert summary["invalid_count"] == 0
+    assert "import_with_standard_importer_later" in summary["actions_available"]
+
+    validate_json_document(document, "daily_nutrition")
+
+
 def test_service_generates_standard_completed_workout_json_from_assisted_payload(app):
     payload = {
         "entrenamientos": [

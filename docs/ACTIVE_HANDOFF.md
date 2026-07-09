@@ -18,11 +18,12 @@ Si contradice a schemas, tests, código o reglas canónicas, este archivo pierde
 ## Estado verificado
 
 - Rama base: `master`.
-- Rama de trabajo: `refactor/standard-json-generators`.
-- Base efectiva verificada: `597e703`.
+- Rama de trabajo: `feature/standard-json-generator-daily-nutrition`.
+- Base efectiva verificada: `4727eb2`.
 - Estado del árbol antes del trabajo: limpio.
 - Línea base previa conocida: `240 passed`.
 - Resultado posterior al refactor: `240 passed`.
+- Resultado posterior a `daily_nutrition`: `250 passed`.
 
 ## Resumen del bloque
 
@@ -37,7 +38,19 @@ Se refactorizó `StandardJsonGenerator` para separar la generación estándar po
 - estructura de respuesta;
 - wrappers privados compatibles para helpers usados antes del refactor.
 
-No se agregaron nuevos dominios.
+Sobre esa base se agregÃ³ generaciÃ³n estÃ¡ndar read-only para `daily_nutrition`.
+
+El nuevo dominio:
+
+- genera documentos con nombres canÃ³nicos del schema;
+- soporta totales planos;
+- soporta `meals`/`items` anidados;
+- soporta secciones tipo `desayuno`, `comida`, `cena`, `snacks` y `extras`;
+- traduce aliases como `calorias`/`calories` a `calories_kcal`, `carbohidratos`/`carbs_g` a `total_carbs_g` y `azucares_g`/`sugars_g` a `sugar_g`;
+- mantiene `user_id` desde el argumento;
+- respeta `source_type` permitido por schema: `manual_generated`, `uploaded`, `device_sync`;
+- no inventa `date`, nombres de items, comidas, calorÃ­as, macros ni unidades;
+- valida todos los documentos generados y puede devolver previews invÃ¡lidos si faltan requeridos.
 
 ## Dominios extraídos
 
@@ -48,6 +61,7 @@ Targets soportados actuales:
 | `weigh_in_batch` | `weigh_in` | `standard_generators/weigh_in.py` |
 | `food_products` | `food_product` | `standard_generators/food_product.py` |
 | `daily_energy` | `daily_energy` | `standard_generators/daily_energy.py` |
+| `daily_nutrition` | `daily_nutrition` | `standard_generators/daily_nutrition.py` |
 | `completed_workout` | `completed_workout` | `standard_generators/completed_workout.py` |
 | `medical_lab` | `medical_lab` | `standard_generators/medical_lab.py` |
 
@@ -57,7 +71,6 @@ Utilidades compartidas:
 
 Targets detectados por `UniversalJsonImportAssistant` pero todavía no soportados por `StandardJsonGenerator`:
 
-- `daily_nutrition`
 - `training_plan`
 - `recipe_bundle`
 
@@ -73,14 +86,18 @@ Código:
 - `backend/app/services/importers/standard_generators/weigh_in.py`
 - `backend/app/services/importers/standard_generators/food_product.py`
 - `backend/app/services/importers/standard_generators/daily_energy.py`
+- `backend/app/services/importers/standard_generators/daily_nutrition.py`
 - `backend/app/services/importers/standard_generators/completed_workout.py`
 - `backend/app/services/importers/standard_generators/medical_lab.py`
+- `backend/tests/test_standard_json_generator.py`
+- `backend/tests/test_assisted_import_service.py`
+- `backend/tests/test_universal_json_import_assistant.py`
 
 Documentación temporal:
 
 - `docs/ACTIVE_HANDOFF.md`
 
-No se modificaron tests en este bloque.
+En este bloque se agregaron pruebas para `daily_nutrition`.
 
 ## Restricciones vigentes
 
@@ -131,9 +148,43 @@ Resultado:
 240 passed
 ```
 
+ValidaciÃ³n posterior a `daily_nutrition` desde la raÃ­z del repo:
+
+```powershell
+& '.\.venv\Scripts\python.exe' -m pytest backend/tests/test_standard_json_generator.py backend/tests/test_assisted_import_service.py backend/tests/test_universal_json_import_assistant.py -q
+```
+
+Resultado:
+
+```text
+41 passed
+```
+
+```powershell
+& '.\.venv\Scripts\python.exe' -m pytest backend/tests/test_daily_nutrition.py backend/tests/test_manual_wellness.py backend/tests/test_wellness_exports.py backend/tests/test_recipe_nutrition_integration.py backend/tests/test_food_catalog_nutrition_integration.py -q
+```
+
+Resultado:
+
+```text
+12 passed
+```
+
+```powershell
+& '.\.venv\Scripts\python.exe' -m compileall -q backend
+& '.\.venv\Scripts\python.exe' -m pytest backend/tests/ -q
+```
+
+Resultado:
+
+```text
+250 passed
+```
+
 ## Riesgos o deuda restante
 
 - `standard_json_generator.py` sigue siendo el dispatch central; coordinar cambios si varios agentes trabajan en paralelo.
+- `daily_nutrition` ajusta paths hijo como `meals`, `items`, `desayuno` o `comida` hacia el padre diario; mantener pruebas si se modifica.
 - La resolución de paths padre/hijo sigue siendo sensible, especialmente en `medical_lab`.
 - Los aliases deben seguir viviendo en detección/normalización, no en el JSON generado.
 - `source_type` depende del schema de cada dominio.
@@ -143,5 +194,5 @@ Resultado:
 
 1. Revisar el diff.
 2. Ejecutar `git diff --check`.
-3. Si el usuario lo pide, hacer commit del refactor.
-4. Próximo bloque recomendado: generación estándar de `daily_nutrition` en una rama separada.
+3. Si el usuario lo pide, hacer commit de `daily_nutrition`.
+4. Próximo bloque recomendado: generación estándar de `training_plan` en una rama separada.

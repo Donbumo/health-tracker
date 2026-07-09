@@ -12,6 +12,7 @@ Current supported preview targets:
 - weigh_in_batch -> generated weigh_in documents
 - food_products  -> generated food_product documents
 - daily_energy   -> generated daily_energy documents
+- daily_nutrition -> generated daily_nutrition documents
 - completed_workout -> generated completed_workout documents
 - medical_lab    -> generated medical_lab documents
 """
@@ -23,6 +24,7 @@ from typing import Any
 from app.services.importers.standard_generators import (
     completed_workout,
     daily_energy,
+    daily_nutrition,
     food_product,
     medical_lab,
     weigh_in,
@@ -35,6 +37,7 @@ SUPPORTED_TARGETS = {
     "weigh_in_batch",
     "food_products",
     "daily_energy",
+    "daily_nutrition",
     "completed_workout",
     "medical_lab",
 }
@@ -42,6 +45,7 @@ SUPPORTED_TARGETS = {
 WEIGH_IN_SCHEMA_NAME = weigh_in.SCHEMA_NAME
 FOOD_PRODUCT_SCHEMA_NAME = food_product.SCHEMA_NAME
 DAILY_ENERGY_SCHEMA_NAME = daily_energy.SCHEMA_NAME
+DAILY_NUTRITION_SCHEMA_NAME = daily_nutrition.SCHEMA_NAME
 COMPLETED_WORKOUT_SCHEMA_NAME = completed_workout.SCHEMA_NAME
 MEDICAL_LAB_SCHEMA_NAME = medical_lab.SCHEMA_NAME
 
@@ -79,6 +83,10 @@ class StandardJsonGenerator:
             medical_parent_path = self._medical_lab_parent_path(source_path)
             if medical_parent_path is not None:
                 source_path = medical_parent_path
+        elif target_type == "daily_nutrition":
+            daily_nutrition_parent_path = self._daily_nutrition_parent_path(source_path)
+            if daily_nutrition_parent_path is not None:
+                source_path = daily_nutrition_parent_path
 
         records = self._records_at_path(payload, source_path)
         mapping = candidate.get("suggested_mapping") or {}
@@ -148,6 +156,15 @@ class StandardJsonGenerator:
             )
             return generated_documents, warnings, DAILY_ENERGY_SCHEMA_NAME
 
+        if target_type == "daily_nutrition":
+            generated_documents, warnings = self._generate_daily_nutrition(
+                records=records,
+                mapping=mapping,
+                user_id=user_id,
+                source_type=self._weigh_in_source_type(source_type),
+            )
+            return generated_documents, warnings, DAILY_NUTRITION_SCHEMA_NAME
+
         if target_type == "completed_workout":
             generated_documents, warnings = self._generate_completed_workouts(
                 records=records,
@@ -207,6 +224,21 @@ class StandardJsonGenerator:
         source_type: str,
     ) -> tuple[list[dict[str, Any]], list[str]]:
         return daily_energy.generate(
+            records=records,
+            mapping=mapping,
+            user_id=user_id,
+            source_type=source_type,
+        )
+
+    def _generate_daily_nutrition(
+        self,
+        *,
+        records: list[dict[str, Any]],
+        mapping: dict[str, str],
+        user_id: int,
+        source_type: str,
+    ) -> tuple[list[dict[str, Any]], list[str]]:
+        return daily_nutrition.generate(
             records=records,
             mapping=mapping,
             user_id=user_id,
@@ -310,6 +342,10 @@ class StandardJsonGenerator:
     @staticmethod
     def _medical_lab_source_type(source_type: str) -> str:
         return medical_lab.normalize_source_type(source_type)
+
+    @staticmethod
+    def _daily_nutrition_parent_path(path: str) -> str | None:
+        return daily_nutrition.parent_path(path)
 
     @staticmethod
     def _weigh_in_source_type(source_type: str) -> str:

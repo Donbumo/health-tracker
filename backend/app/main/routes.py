@@ -1,4 +1,5 @@
 import json
+import hashlib
 from datetime import datetime
 from io import BytesIO
 from zoneinfo import ZoneInfo
@@ -11,6 +12,7 @@ from flask import (
     render_template,
     request,
     send_file,
+    session,
     url_for,
 )
 from flask_login import current_user, login_required
@@ -19,7 +21,13 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions import db
 from app.main import main_bp
-from app.main.forms import UploadForm, UserDataPreviewForm, WeighInForm
+from app.main.forms import (
+    StandardImportConfirmForm,
+    StandardImportPreviewForm,
+    UploadForm,
+    UserDataPreviewForm,
+    WeighInForm,
+)
 from app.models import UploadedFile
 from app.services.files import UploadError, store_uploaded_file
 from app.services.files import mark_import_status
@@ -27,6 +35,11 @@ from app.services.daily_dashboard import daily_health_dashboard
 from app.services.exporters.user_data import UserDataJsonExporter
 from app.services.importers.weigh_in import WeighInImportError, import_weigh_in_file
 from app.services.importers.user_data_preview import preview_user_data_import
+from app.services.importers.standard_import_executor import (
+    StandardImportError,
+    StandardImportTokenError,
+    StandardImportExecutor,
+)
 from app.services.manual_json import (
     ManualJsonGenerationError,
     build_weigh_in_document,
@@ -91,6 +104,138 @@ def preview_account_import():
         parse_error=parse_error,
     )
 
+
+@main_bp.route("/imports/standard", methods=["GET", "POST"])
+@login_required
+def standard_import():
+    preview_form = StandardImportPreviewForm()
+    confirm_form = StandardImportConfirmForm()
+    preview_result = None
+    parse_error = None
+    commit_result = None
+    executor = StandardImportExecutor()
+
+    if request.method == "POST" and "payload_json" in request.form:
+        if confirm_form.validate_on_submit():
+            try:
+                payload = json.loads(confirm_form.payload_json.data)
+                target_type = confirm_form.target_type.data
+                preview_result = executor.preview_payload(
+                    payload,
+                    user_id=current_user.id,
+                    target_type=target_type,
+                )
+                executor.verify_confirmation_token(
+                    confirm_form.confirmation_token.data,
+                    user_id=current_user.id,
+                    target_type=preview_result["target_type"],
+                    payload=payload,
+                    plan=preview_result["plan"],
+                )
+                token_digest = _standard_import_token_digest(
+                    confirm_form.confirmation_token.data
+                )
+                used_tokens = session.setdefault("used_standard_import_tokens", [])
+                if token_digest in used_tokens:
+                    raise StandardImportTokenError(
+                        "El token de confirmación ya fue usado."
+                    )
+                commit_result = executor.commit_documents(
+                    preview_result["documents"],
+                    user_id=current_user.id,
+                    target_type=preview_result["target_type"],
+                    confirmed=True,
+                )
+                if commit_result["committed"]:
+                    used_tokens.append(token_digest)
+                    session["used_standard_import_tokens"] = used_tokens[-20:]
+                    session.modified = True
+            except (json.JSONDecodeError, StandardImportTokenError) as error:
+                parse_error = f"No fue posible confirmar la importación: {error}"
+                if preview_result is not None and preview_result["plan"]["total"] > 0:
+                    _prepare_standard_import_confirmation(
+                        confirm_form,
+                        executor,
+                        payload,
+                        preview_result,
+                    )
+            except (StandardImportError, ValueError) as error:
+                parse_error = f"No fue posible confirmar la importación: {error}"
+            else:
+                if commit_result["committed"]:
+                    flash("Importación confirmada guardada correctamente.", "success")
+                else:
+                    flash(
+                        "La importación no se guardó; revisa errores/conflictos.",
+                        "warning",
+                    )
+        else:
+            parse_error = "La confirmación no es válida."
+
+    elif preview_form.validate_on_submit():
+        maximum_bytes = 10 * 1024 * 1024
+        raw = preview_form.file.data.stream.read(maximum_bytes + 1)
+        if len(raw) > maximum_bytes:
+            parse_error = "El archivo supera el límite de 10 MB para importación."
+        else:
+            try:
+                payload = json.loads(raw.decode("utf-8-sig"))
+                target_type = preview_form.target_type.data or None
+                preview_result = executor.preview_payload(
+                    payload,
+                    user_id=current_user.id,
+                    requested_type=target_type,
+                    target_type=target_type,
+                )
+                _prepare_standard_import_confirmation(
+                    confirm_form,
+                    executor,
+                    payload,
+                    preview_result,
+                )
+            except UnicodeDecodeError:
+                parse_error = "El archivo debe usar codificación UTF-8."
+            except json.JSONDecodeError as error:
+                parse_error = (
+                    "El archivo no contiene JSON válido "
+                    f"(línea {error.lineno}, columna {error.colno})."
+                )
+            except (StandardImportError, ValueError) as error:
+                parse_error = f"No fue posible preparar la importación: {error}"
+
+    return render_template(
+        "imports/standard.html",
+        preview_form=preview_form,
+        confirm_form=confirm_form,
+        preview_result=preview_result,
+        commit_result=commit_result,
+        parse_error=parse_error,
+    )
+
+
+def _prepare_standard_import_confirmation(
+    form: StandardImportConfirmForm,
+    executor: StandardImportExecutor,
+    payload: dict,
+    preview_result: dict,
+) -> None:
+    form.payload_json.data = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        allow_nan=False,
+    )
+    form.target_type.data = preview_result["target_type"]
+    form.confirmation_token.data = executor.build_confirmation_token(
+        user_id=current_user.id,
+        target_type=preview_result["target_type"],
+        payload=payload,
+        plan=preview_result["plan"],
+    )
+
+
+def _standard_import_token_digest(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 def _current_user_files():
     return db.session.execute(

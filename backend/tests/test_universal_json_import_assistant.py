@@ -174,6 +174,86 @@ def test_assistant_detects_daily_nutrition_payload(app):
     assert primary["suggested_mapping"]["desayuno"] == "breakfast"
 
 
+def test_assistant_detects_training_plan_payload(app):
+    payload = {
+        "rutinas": [
+            {
+                "nombre": "Rutina demo",
+                "semanas": [
+                    {
+                        "semana": 1,
+                        "dias": [
+                            {
+                                "dia": 1,
+                                "nombre": "Día demo",
+                                "ejercicios": [
+                                    {
+                                        "orden": 1,
+                                        "nombre": "Press demo",
+                                        "series": [{"serie": 1, "reps": 8}],
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    with app.app_context():
+        result = UniversalJsonImportAssistant().analyze(
+            payload,
+            requested_type="training_plan",
+        )
+
+    detected_types = {candidate["target_type"] for candidate in result["candidate_domains"]}
+    assert result["mode"] == "assistant_required"
+    assert "training_plan" in detected_types
+
+    training_candidate = next(
+        candidate
+        for candidate in result["candidate_domains"]
+        if candidate["target_type"] == "training_plan"
+        and "semanas" in candidate["suggested_mapping"]
+    )
+    assert training_candidate["suggested_mapping"]["nombre"] == "name"
+    assert training_candidate["suggested_mapping"]["semanas"] == "weeks"
+
+
+def test_assistant_detects_recipe_and_recipe_bundle_payloads(app):
+    recipe_payload = {
+        "receta": {
+            "nombre": "Receta demo",
+            "ingredientes": [{"producto": "Producto demo", "cantidad_g": 40}],
+        }
+    }
+    bundle_payload = {
+        "recetas": [
+            {
+                "nombre": "Receta demo",
+                "ingredientes": [{"producto": "Producto demo", "cantidad_g": 40}],
+            }
+        ]
+    }
+
+    with app.app_context():
+        recipe_result = UniversalJsonImportAssistant().analyze(
+            recipe_payload,
+            requested_type="recipe",
+        )
+        bundle_result = UniversalJsonImportAssistant().analyze(
+            bundle_payload,
+            requested_type="recipe_bundle",
+        )
+
+    recipe_types = {candidate["target_type"] for candidate in recipe_result["candidate_domains"]}
+    bundle_types = {candidate["target_type"] for candidate in bundle_result["candidate_domains"]}
+
+    assert "recipe" in recipe_types
+    assert "recipe_bundle" in bundle_types
+
+
 def test_assistant_detects_multiple_candidate_domains(app):
     payload = {
         "registros": [

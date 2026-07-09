@@ -1,6 +1,9 @@
 """Tests for read-only standard JSON generation from assisted mappings."""
 
-from app.services.importers.standard_json_generator import StandardJsonGenerator
+from app.services.importers.standard_json_generator import (
+    SUPPORTED_TARGETS,
+    StandardJsonGenerator,
+)
 from app.services.importers.schema_detector import SchemaDetector
 from app.services.importers.universal_json_import_assistant import (
     UniversalJsonImportAssistant,
@@ -206,7 +209,7 @@ def test_generate_food_product_documents_reports_missing_name(app):
     )
 
 
-def test_generator_returns_unsupported_for_non_implemented_target(app):
+def test_generator_returns_unsupported_for_unknown_target(app):
     payload = {
         "recetas": [
             {
@@ -216,7 +219,7 @@ def test_generator_returns_unsupported_for_non_implemented_target(app):
         ]
     }
     candidate = {
-        "target_type": "recipe_bundle",
+        "target_type": "future_target",
         "path": "recetas",
         "suggested_mapping": {"nombre": "name"},
     }
@@ -229,7 +232,7 @@ def test_generator_returns_unsupported_for_non_implemented_target(app):
         )
 
     assert result["mode"] == "unsupported_target"
-    assert result["target_type"] == "recipe_bundle"
+    assert result["target_type"] == "future_target"
     assert result["generated_documents"] == []
     assert result["validated_documents"] == []
 
@@ -829,3 +832,483 @@ def test_generate_medical_lab_documents_with_flat_markers(app):
     cholesterol_marker = next(m for m in markers if m["name"] == "total_cholesterol")
     assert cholesterol_marker["value"] == 180.0
     assert cholesterol_marker["unit"] == "mg/dL"
+
+
+# ---------------------------------------------------------------------------
+# phase 5B final target coverage tests
+# ---------------------------------------------------------------------------
+
+
+def test_supported_targets_include_final_phase_5b_set():
+    assert SUPPORTED_TARGETS == {
+        "weigh_in_batch",
+        "food_products",
+        "daily_energy",
+        "daily_nutrition",
+        "completed_workout",
+        "medical_lab",
+        "training_plan",
+        "recipe",
+        "recipe_bundle",
+    }
+
+
+def test_generate_training_plan_document_from_assisted_candidate(app):
+    payload = {
+        "rutinas": [
+            {
+                "nombre": "Rutina demo fuerza",
+                "descripcion": "Plan ficticio para QA",
+                "semanas": [
+                    {
+                        "semana": 1,
+                        "dias": [
+                            {
+                                "dia": 1,
+                                "nombre": "Día A",
+                                "ejercicios": [
+                                    {
+                                        "orden": 1,
+                                        "nombre": "Sentadilla demo",
+                                        "series": [
+                                            {
+                                                "serie": 1,
+                                                "reps": 5,
+                                                "descanso": 120,
+                                            }
+                                        ],
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="training_plan")
+        result = StandardJsonGenerator().generate(
+            payload,
+            candidate,
+            user_id=4,
+            source_type="manual_generated",
+        )
+
+    assert result["mode"] == "standard_json_generated"
+    assert result["target_type"] == "training_plan"
+    assert result["schema_name"] == "training_plan"
+    assert result["validated_documents"][0]["valid"] is True
+
+    document = result["generated_documents"][0]
+    assert document["record_type"] == "training_plan"
+    assert document["user_id"] == 4
+    assert document["source_type"] == "manual_generated"
+
+    data = document["data"]
+    assert data["name"] == "Rutina demo fuerza"
+    assert data["weeks"][0]["week_number"] == 1
+    assert data["weeks"][0]["days"][0]["day_number"] == 1
+    exercise = data["weeks"][0]["days"][0]["exercises"][0]
+    assert exercise["exercise_order"] == 1
+    assert exercise["name"] == "Sentadilla demo"
+    assert exercise["sets"][0]["set_number"] == 1
+    assert exercise["sets"][0]["reps"] == 5
+    assert exercise["sets"][0]["rest_seconds"] == 120
+
+    validate_json_document(document, "training_plan")
+
+
+def test_generate_training_plan_missing_required_set_number_fails_validation(app):
+    payload = {
+        "rutinas": [
+            {
+                "nombre": "Rutina demo incompleta",
+                "semanas": [
+                    {
+                        "semana": 1,
+                        "dias": [
+                            {
+                                "dia": 1,
+                                "nombre": "Día A",
+                                "ejercicios": [
+                                    {
+                                        "orden": 1,
+                                        "nombre": "Sentadilla demo",
+                                        "series": [{"reps": 5}],
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="training_plan")
+        result = StandardJsonGenerator().generate(payload, candidate, user_id=4)
+
+    set_data = (
+        result["generated_documents"][0]["data"]["weeks"][0]["days"][0]
+        ["exercises"][0]["sets"][0]
+    )
+    assert "set_number" not in set_data
+    assert result["validated_documents"][0]["valid"] is False
+    assert any("set_number" in error for error in result["validated_documents"][0]["errors"])
+
+
+def test_generate_training_plan_preserves_historical_aliases_without_inventing_fields(app):
+    payload = {
+        "rutinas": [
+            {
+                "nombre": "Rutina alias demo",
+                "version": "v1",
+                "bloques": [{"nombre": "Bloque ignorado"}],
+                "semanas": [
+                    {
+                        "semana": 1,
+                        "dias": [
+                            {
+                                "dia": 1,
+                                "nombre": "Día A",
+                                "ejercicios": [
+                                    {
+                                        "orden": 1,
+                                        "nombre": "Press demo",
+                                        "series_objetivo": [
+                                            {
+                                                "serie": 1,
+                                                "reps_objetivo": 8,
+                                                "descanso_objetivo": 90,
+                                                "rir_objetivo": 2,
+                                                "rpe_objetivo": 8,
+                                            }
+                                        ],
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="training_plan")
+        result = StandardJsonGenerator().generate(payload, candidate, user_id=4)
+
+    document = result["generated_documents"][0]
+    set_data = document["data"]["weeks"][0]["days"][0]["exercises"][0]["sets"][0]
+
+    assert result["validated_documents"][0]["valid"] is True
+    assert set_data["reps"] == 8
+    assert set_data["rest_seconds"] == 90
+    assert "rir" not in set_data
+    assert "rpe" not in set_data
+    assert any("version" in warning for warning in result["warnings"])
+    assert any("blocks" in warning for warning in result["warnings"])
+    assert any("rir" in warning for warning in result["warnings"])
+    assert any("rpe" in warning for warning in result["warnings"])
+
+
+def test_generate_recipe_document_from_assisted_candidate(app):
+    payload = {
+        "receta": {
+            "nombre": "Receta demo",
+            "porciones": "2",
+            "ingredientes": [
+                {
+                    "producto": "Producto demo",
+                    "marca": "Marca demo",
+                    "cantidad_g": "40",
+                    "orden": 1,
+                }
+            ],
+        }
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="recipe")
+        result = StandardJsonGenerator().generate(
+            payload,
+            candidate,
+            user_id=6,
+            source_type="converted",
+        )
+
+    assert result["target_type"] == "recipe"
+    assert result["schema_name"] == "recipe"
+    assert result["validated_documents"][0]["valid"] is True
+
+    document = result["generated_documents"][0]
+    assert document["type"] == "recipe"
+    assert document["user_id"] == 6
+    assert document["source_type"] == "converted"
+    assert document["name"] == "Receta demo"
+    assert document["servings"] == 2
+    assert document["ingredients"][0]["food_product_name"] == "Producto demo"
+    assert document["ingredients"][0]["food_product_brand"] == "Marca demo"
+    assert document["ingredients"][0]["quantity_g"] == 40
+
+    validate_json_document(document, "recipe")
+
+
+def test_generate_recipe_missing_quantity_fails_validation(app):
+    payload = {
+        "receta": {
+            "nombre": "Receta demo",
+            "ingredientes": [{"producto": "Producto demo"}],
+        }
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="recipe")
+        result = StandardJsonGenerator().generate(payload, candidate, user_id=6)
+
+    ingredient = result["generated_documents"][0]["ingredients"][0]
+    assert "quantity_g" not in ingredient
+    assert result["validated_documents"][0]["valid"] is False
+    assert any("quantity_g" in error for error in result["validated_documents"][0]["errors"])
+
+
+def test_generate_recipe_bundle_document_from_recipe_list(app):
+    payload = {
+        "recetas": [
+            {
+                "nombre": "Receta demo A",
+                "ingredientes": [{"producto": "Producto demo A", "cantidad_g": 40}],
+            },
+            {
+                "nombre": "Receta demo B",
+                "ingredientes": [{"producto": "Producto demo B", "cantidad_g": 50}],
+            },
+        ]
+    }
+
+    with app.app_context():
+        candidate = _primary_candidate(payload, requested_type="recipe_bundle")
+        result = StandardJsonGenerator().generate(payload, candidate, user_id=6)
+
+    assert result["target_type"] == "recipe_bundle"
+    assert result["schema_name"] == "recipe_bundle"
+    assert result["records_detected"] == 2
+    assert len(result["generated_documents"]) == 1
+    assert result["validated_documents"][0]["valid"] is True
+
+    document = result["generated_documents"][0]
+    assert document["type"] == "recipe_bundle"
+    assert document["user_id"] == 6
+    assert [recipe["name"] for recipe in document["recipes"]] == [
+        "Receta demo A",
+        "Receta demo B",
+    ]
+
+    validate_json_document(document, "recipe_bundle")
+
+
+def test_training_plan_parent_path_with_indices_keeps_plan_metadata(app):
+    payload = {
+        "rutinas": [
+            {
+                "nombre": "Rutina con metadata",
+                "descripcion": "Debe conservarse desde el padre",
+                "semanas": [
+                    {
+                        "semana": 1,
+                        "dias": [
+                            {
+                                "dia": 1,
+                                "nombre": "Día índice",
+                                "ejercicios": [
+                                    {
+                                        "orden": 1,
+                                        "nombre": "Press índice",
+                                        "series": [{"serie": 1, "reps": 8}],
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+    candidate = {
+        "target_type": "training_plan",
+        "path": "rutinas[0].semanas[0].dias[0].ejercicios[0].series",
+        "suggested_mapping": {
+            "nombre": "name",
+            "descripcion": "description",
+            "semanas": "weeks",
+            "semana": "week_number",
+            "dias": "days",
+            "dia": "day_number",
+            "ejercicios": "exercises",
+            "orden": "exercise_order",
+            "series": "sets",
+            "serie": "set_number",
+            "reps": "reps",
+        },
+    }
+
+    with app.app_context():
+        result = StandardJsonGenerator().generate(payload, candidate, user_id=4)
+
+    document = result["generated_documents"][0]
+    assert result["validated_documents"][0]["valid"] is True
+    assert document["data"]["name"] == "Rutina con metadata"
+    assert document["data"]["description"] == "Debe conservarse desde el padre"
+    validate_json_document(document, "training_plan")
+
+
+def test_recipe_parent_path_with_indices_keeps_recipe_metadata(app):
+    payload = {
+        "paquetes": [
+            {
+                "recetas": [
+                    {
+                        "nombre": "Receta con metadata",
+                        "porciones": 3,
+                        "ingredientes": [
+                            {"producto": "Producto índice", "cantidad_g": 40}
+                        ],
+                    }
+                ]
+            }
+        ]
+    }
+    candidate = {
+        "target_type": "recipe",
+        "path": "paquetes[0].recetas[0].ingredientes",
+        "suggested_mapping": {
+            "nombre": "name",
+            "porciones": "servings",
+            "ingredientes": "ingredients",
+            "producto": "food_product_name",
+            "cantidad_g": "quantity_g",
+        },
+    }
+
+    with app.app_context():
+        result = StandardJsonGenerator().generate(payload, candidate, user_id=6)
+
+    document = result["generated_documents"][0]
+    assert result["validated_documents"][0]["valid"] is True
+    assert document["name"] == "Receta con metadata"
+    assert document["servings"] == 3
+    assert document["ingredients"][0]["food_product_name"] == "Producto índice"
+    validate_json_document(document, "recipe")
+
+
+def test_recipe_bundle_parent_path_with_indices_keeps_bundle_metadata_and_siblings(app):
+    payload = {
+        "paquetes": [
+            {
+                "nombre": "Bundle con metadata",
+                "recetas": [
+                    {
+                        "nombre": "Receta índice A",
+                        "ingredientes": [{"producto": "Producto A", "cantidad_g": 40}],
+                    },
+                    {
+                        "nombre": "Receta índice B",
+                        "ingredientes": [{"producto": "Producto B", "cantidad_g": 50}],
+                    },
+                ],
+            }
+        ]
+    }
+    candidate = {
+        "target_type": "recipe_bundle",
+        "path": "paquetes[0].recetas[0].ingredientes",
+        "suggested_mapping": {
+            "nombre": "name",
+            "recetas": "recipes",
+            "ingredientes": "ingredients",
+            "producto": "food_product_name",
+            "cantidad_g": "quantity_g",
+        },
+    }
+
+    with app.app_context():
+        result = StandardJsonGenerator().generate(payload, candidate, user_id=6)
+
+    document = result["generated_documents"][0]
+    assert result["validated_documents"][0]["valid"] is True
+    assert document["name"] == "Bundle con metadata"
+    assert [recipe["name"] for recipe in document["recipes"]] == [
+        "Receta índice A",
+        "Receta índice B",
+    ]
+    validate_json_document(document, "recipe_bundle")
+
+
+def test_autodetects_recipe_recipe_bundle_and_nested_training_plan_without_requested_type(app):
+    assistant = UniversalJsonImportAssistant()
+    recipe_payload = {
+        "receta": {
+            "nombre": "Receta auto",
+            "ingredientes": [{"producto": "Producto auto", "cantidad_g": 40}],
+        }
+    }
+    recipe_list_payload = {
+        "recetas": [
+            {
+                "nombre": "Receta lista",
+                "ingredientes": [{"producto": "Producto lista", "cantidad_g": 40}],
+            }
+        ]
+    }
+    bundle_payload = {
+        "bundle": {
+            "nombre": "Bundle auto",
+            "recetas": [
+                {
+                    "nombre": "Receta bundle",
+                    "ingredientes": [{"producto": "Producto bundle", "cantidad_g": 40}],
+                }
+            ],
+        }
+    }
+    training_payload = {
+        "contenedor": {
+            "rutinas": [
+                {
+                    "nombre": "Rutina auto",
+                    "semanas": [
+                        {
+                            "semana": 1,
+                            "dias": [
+                                {
+                                    "dia": 1,
+                                    "nombre": "Día auto",
+                                    "ejercicios": [
+                                        {
+                                            "orden": 1,
+                                            "nombre": "Press auto",
+                                            "series": [{"serie": 1, "reps": 8}],
+                                        }
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ]
+        }
+    }
+
+    with app.app_context():
+        recipe_result = assistant.analyze(recipe_payload)
+        recipe_list_result = assistant.analyze(recipe_list_payload)
+        bundle_result = assistant.analyze(bundle_payload)
+        training_result = assistant.analyze(training_payload)
+
+    assert recipe_result["preview"]["primary_candidate"]["target_type"] == "recipe"
+    assert recipe_list_result["preview"]["primary_candidate"]["target_type"] == "recipe_bundle"
+    assert bundle_result["preview"]["primary_candidate"]["target_type"] == "recipe_bundle"
+    assert training_result["preview"]["primary_candidate"]["target_type"] == "training_plan"

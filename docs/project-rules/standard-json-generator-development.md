@@ -97,6 +97,8 @@ Los aliases externos viven en:
 
 No deben filtrarse al documento estándar generado si el schema tiene un nombre canónico distinto.
 
+Si se conservan aliases históricos para compatibilidad, y el schema actual no tiene campo equivalente, el generador debe advertir/ignorar el campo en lugar de crear propiedades no canónicas. Ejemplo actual: algunos aliases antiguos de `training_plan` como `rir_objetivo`, `rpe_objetivo`, `version` o `bloques` son detectables, pero no se escriben al JSON estándar porque `training_plan.schema.json` no define esos campos.
+
 ## Validación obligatoria
 
 Todo documento generado debe validarse contra su schema.
@@ -125,6 +127,9 @@ Estado verificado actual:
 | `completed_workout` | `manual_generated`, `uploaded`, `device_sync` |
 | `medical_lab` | `manual_generated`, `uploaded` |
 | `food_product` | `uploaded`, `manual_generated`, `converted`, `system_generated`, `synced_from_device` |
+| `training_plan` | `uploaded`, `manual_generated` |
+| `recipe` | `uploaded`, `manual_generated`, `converted`, `system_generated`, `synced_from_device` |
+| `recipe_bundle` | `uploaded`, `manual_generated`, `converted`, `system_generated`, `synced_from_device` |
 
 Si una fuente externa no encaja, no ampliar el schema sin autorización. Normalizar a una fuente permitida solo si el código y tests del dominio ya lo hacen explícitamente.
 
@@ -219,16 +224,14 @@ Un agente no debe modificar módulos de otros dominios salvo necesidad demostrad
 - `weigh_in_batch`
 - `food_products`
 - `daily_energy`
+- `daily_nutrition`
 - `completed_workout`
 - `medical_lab`
-
-Targets detectados por el asistente pero no generados todavía por `StandardJsonGenerator`:
-
-- `daily_nutrition`
 - `training_plan`
+- `recipe`
 - `recipe_bundle`
 
-`recipe` existe como schema/importador/exportador de dominio, pero no aparece como target directo en `SUPPORTED_TARGETS` del generador estándar al momento de esta regla.
+La importación real posterior al preview no pertenece a `StandardJsonGenerator`; debe mantenerse en servicios separados como `StandardImportExecutor` o equivalentes.
 
 ## Criterios de aceptación
 

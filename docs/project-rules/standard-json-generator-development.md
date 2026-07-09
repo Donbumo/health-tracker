@@ -121,6 +121,7 @@ Estado verificado actual:
 | --- | --- |
 | `weigh_in` | `manual_generated`, `uploaded`, `device_sync` |
 | `daily_energy` | `manual_generated`, `uploaded`, `device_sync` |
+| `daily_nutrition` | `manual_generated`, `uploaded`, `device_sync` |
 | `completed_workout` | `manual_generated`, `uploaded`, `device_sync` |
 | `medical_lab` | `manual_generated`, `uploaded` |
 | `food_product` | `uploaded`, `manual_generated`, `converted`, `system_generated`, `synced_from_device` |
@@ -213,7 +214,7 @@ Un agente no debe modificar módulos de otros dominios salvo necesidad demostrad
 
 ## Dominios actuales del generador
 
-`StandardJsonGenerator.SUPPORTED_TARGETS` verificado:
+`SUPPORTED_TARGETS` del módulo `standard_json_generator.py` verificado:
 
 - `weigh_in_batch`
 - `food_products`

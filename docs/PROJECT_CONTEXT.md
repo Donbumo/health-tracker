@@ -36,7 +36,7 @@ Estado verificado en `master` / `docs/refresh-ai-context`:
 - Commit documental integrado en `master`: `9a5d474`.
 - Las tareas posteriores deben obtener su base real desde el `master` vigente.
 - Último merge conocido: `Merge branch 'feature/standard-json-generator-medical-lab'`.
-- Línea base local verificada: `240 passed`.
+- Línea base local verificada: `250 passed`.
 - El proyecto conserva Flask, Flask-SQLAlchemy, Flask-Migrate, MariaDB y Docker Compose.
 - Los datos reales siguen fuera de Git y deben vivir en `/data` o volúmenes ignorados.
 
@@ -62,13 +62,14 @@ Estado real de Fase 5B verificado:
 - `StandardJsonGenerator` genera y valida JSON estándar en memoria.
 - Estos servicios no escriben DB, no guardan archivos y no ejecutan importación real.
 
-Dominios actualmente soportados por `StandardJsonGenerator.SUPPORTED_TARGETS`:
+Dominios actualmente soportados por `SUPPORTED_TARGETS` del módulo `standard_json_generator.py`:
 
 | `target_type` | `schema_name` |
 | --- | --- |
 | `weigh_in_batch` | `weigh_in` |
 | `food_products` | `food_product` |
 | `daily_energy` | `daily_energy` |
+| `daily_nutrition` | `daily_nutrition` |
 | `completed_workout` | `completed_workout` |
 | `medical_lab` | `medical_lab` |
 
@@ -80,11 +81,9 @@ Targets detectables por el asistente, pero todavía sin generación estándar im
 
 Bloques próximos previstos:
 
-1. Refactor de `StandardJsonGenerator` por dominio sin cambios funcionales.
-2. Generación estándar para `daily_nutrition`.
-3. Generación estándar para `training_plan`.
-4. Generación estándar para `recipe`.
-5. Generación estándar para `recipe_bundle`.
+1. Generación estándar para `training_plan`.
+2. Generación estándar para `recipe`.
+3. Generación estándar para `recipe_bundle`.
 
 No presentar APK, app de reloj, FIT real, GPX real, Magene real, OCR, FHIR o API REST pública como implementados. Siguen siendo planes, stubs o estructura futura salvo que el código de una rama posterior demuestre lo contrario.
 

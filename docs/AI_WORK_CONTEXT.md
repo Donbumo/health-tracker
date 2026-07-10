@@ -98,11 +98,13 @@ El proyecto actual incluye, según código, tests y README:
 
 No tratar APK, app de reloj, FIT real, GPX real, Magene real, OCR, FHIR, API REST pública, restore completo o PDF/Excel avanzado como implementados si el código no lo confirma.
 
-La verificación local posterior al cierre de Fase 5B e importación confirmada reportó:
+La verificación local posterior al cierre de Fase 5B e importación confirmada reportó inicialmente:
 
 ```text
-289 passed
+304 passed
 ```
+
+La rama `feature/overnight-backend-qa-closure` agrega QA automatizado de mayor profundidad para `daily_energy`, `training_plan`, `completed_workout` y `medical_lab`, más fixtures ficticias en `examples/qa/standard-import/`.
 
 ## Estado real de Fase 5B
 
@@ -143,6 +145,13 @@ La importación confirmada posterior a Fase 5B existe mediante `StandardImportEx
 - el plan usa operaciones `insert`, `update`, `skip`, `conflict`, `invalid`;
 - el lote se ejecuta de forma atómica en la sesión de DB y debe hacer rollback ante errores de escritura;
 - la ruta web mínima es `GET/POST /imports/standard`.
+
+Cobertura automatizada adicional agregada en la rama `feature/overnight-backend-qa-closure`:
+
+- `daily_energy`: preview autodetectado, alias `distancia_km`, insert, skip, update parcial, batch inválido y `user_id` ajeno.
+- `training_plan`: preview con paths padre, versionado insert/skip/update, SHA de versión, orden inválido y aislamiento.
+- `completed_workout`: ownership de plan/version, referencias ajenas, mismatch plan/version, campos ampliados, conflict explícito y rollback tras flush.
+- `medical_lab`: preview autodetectado, insert/skip/update, reemplazo de markers, valores numéricos/texto, inválidos y aislamiento.
 
 `SchemaDetector.DEFAULT_SCHEMA_CANDIDATES` actual:
 

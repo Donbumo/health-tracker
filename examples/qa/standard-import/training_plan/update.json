@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "record_type": "training_plan",
+  "user_id": 1,
+  "source_type": "uploaded",
+  "data": {
+    "name": "QA Plan Fictional",
+    "weeks": [
+      {
+        "week_number": 1,
+        "days": [
+          {
+            "day_number": 1,
+            "name": "QA Push",
+            "exercises": [
+              {
+                "exercise_order": 1,
+                "name": "QA Press",
+                "sets": [
+                  {"set_number": 1, "reps_min": 10, "reps_max": 12, "rest_seconds": 90}
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+

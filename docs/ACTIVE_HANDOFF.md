@@ -2,7 +2,7 @@
 
 Documento temporal para retomar el proyecto sin memoria previa.
 
-Última actualización: 2026-07-09.
+Ultima actualizacion: 2026-07-10.
 
 Este handoff no reemplaza:
 
@@ -14,33 +14,56 @@ Este handoff no reemplaza:
 - `project-rules/standard-json-generator-development.md`
 - `project-rules/confirmed-standard-import.md`
 
-Si contradice schemas, tests, código o reglas canónicas, este archivo pierde prioridad.
+Si contradice schemas, tests, codigo o reglas canonicas, este archivo pierde prioridad.
 
 ## Estado verificado del bloque activo
 
-- Rama de trabajo: `feature/complete-phase-5b-and-qa-imports`.
-- Base efectiva verificada: `a2c7664`.
-- Árbol antes del trabajo: limpio.
-- Suite base verificada antes de modificar: `250 passed`.
-- Suite local posterior al cambio: `289 passed`.
-- Suite Docker posterior al cambio: `288 passed, 1 skipped` (`tests/test_active_handoff.py`, documentación no copiada a imagen de producción).
+- Rama de trabajo: `feature/overnight-backend-qa-closure`.
+- Base efectiva verificada: `e356001`.
+- Arbol antes del trabajo: limpio.
+- Suite base local antes de modificar: `304 passed`.
+- Baseline Docker conocido antes de esta rama: `303 passed, 1 skipped`.
+- Skip Docker esperado: `tests/test_active_handoff.py`, porque `docs/` no se copia a la imagen de produccion.
 - No hubo migraciones.
 - No se tocaron schemas, modelos, Docker, `.env` ni `/data`.
 
-## Objetivo implementado
+## Objetivo de esta rama
 
-### Milestone A: cierre de Fase 5B
+Cerrar trabajo backend seguro y verificable alrededor de la importacion estandar confirmada, sin cambiar schemas publicos ni implementar restore completo.
 
-Fase 5B sigue siendo read-only:
+### Milestone A: QA automatizado de targets restantes
 
-- detección;
-- mapping asistido;
-- generación estándar;
-- validación.
+Targets priorizados en esta rama:
 
-Targets finales soportados por `StandardJsonGenerator`:
+| Target | Cobertura agregada |
+| --- | --- |
+| `daily_energy` | Preview autodetectado, alias `distancia_km`, insert, repeat/skip, update parcial, batch invalido, `user_id` ajeno. |
+| `training_plan` | Preview con parent paths, versionado insert/skip/update, SHA estable, orden invalido, aislamiento. |
+| `completed_workout` | Plan/version del usuario, referencias ajenas, mismatch plan/version, campos ampliados, conflict en repeat/update inseguro, rollback tras flush. |
+| `medical_lab` | Preview autodetectado, insert/skip/update, reemplazo de markers, valores numericos/texto, invalidos, batch invalido, aislamiento. |
 
-| `target_type` | `schema_name` | módulo |
+Tambien se endurecio el resumen de commit invalido/conflictivo para conservar el mensaje generico compatible y agregar detalles de las operaciones bloqueadas.
+
+### Milestone B: fixtures manuales de QA
+
+Se agrego paquete ficticio bajo:
+
+```text
+examples/qa/standard-import/
+```
+
+Incluye README raiz y README por dominio para:
+
+- `daily_energy`
+- `training_plan`
+- `completed_workout`
+- `medical_lab`
+
+Cada dominio contiene fixtures de insert, repeat/update/conflict cuando aplica, invalidos, batch valido y batch mixto. Los fixtures son ficticios y no deben copiarse a `/data`.
+
+## Targets finales del flujo estandar
+
+| `target_type` | `schema_name` | modulo |
 | --- | --- | --- |
 | `weigh_in_batch` | `weigh_in` | `standard_generators/weigh_in.py` |
 | `food_products` | `food_product` | `standard_generators/food_product.py` |
@@ -52,23 +75,22 @@ Targets finales soportados por `StandardJsonGenerator`:
 | `recipe` | `recipe` | `standard_generators/recipe.py` |
 | `recipe_bundle` | `recipe_bundle` | `standard_generators/recipe_bundle.py` |
 
-### Milestone B: importación estándar confirmada
+## Contrato actual de importacion confirmada
 
-Se agregó `StandardImportExecutor` como fase posterior a 5B:
+`StandardImportExecutor` es la fase posterior a 5B:
 
-- recibe documentos estándar;
+- preview, deteccion, mapping y generacion siguen siendo read-only;
+- recibe documentos estandar ya generados;
 - vuelve a validar schema y `user_id`;
 - construye plan `insert/update/skip/conflict/invalid`;
-- exige confirmación explícita;
-- firma la confirmación contra usuario, target, payload y plan;
+- exige confirmacion explicita;
+- firma confirmacion contra usuario, target, payload y plan;
 - rechaza tokens reutilizados, vencidos o de otro usuario;
-- ejecuta lote atómico;
-- hace rollback si falla un elemento durante la escritura;
-- devuelve resumen estructurado;
-- no cambia el `user_id` destino desde el archivo.
-- usa adaptadores internos de persistencia, no importadores oficiales que hacen commit propio, para conservar atomicidad de lote.
+- ejecuta lote atomico;
+- hace rollback si falla un elemento durante escritura;
+- no cambia el destino desde `user_id` incluido en archivo.
 
-Ruta web mínima:
+Ruta web minima:
 
 ```text
 GET/POST /imports/standard
@@ -80,23 +102,6 @@ Flujo:
 login -> subir JSON -> preview -> plan -> confirmar -> commit -> resumen
 ```
 
-## Archivos principales tocados
-
-- `backend/app/services/importers/standard_json_generator.py`
-- `backend/app/services/importers/universal_json_import_assistant.py`
-- `backend/app/services/importers/standard_generators/`
-- `backend/app/services/importers/standard_import_executor.py`
-- `backend/app/main/forms.py`
-- `backend/app/main/routes.py`
-- `backend/app/templates/imports/standard.html`
-- `backend/app/templates/base.html`
-- `backend/tests/test_standard_json_generator.py`
-- `backend/tests/test_assisted_import_service.py`
-- `backend/tests/test_universal_json_import_assistant.py`
-- `backend/tests/test_standard_import_executor.py`
-- `backend/tests/test_standard_import_web.py`
-- `docs/project-rules/confirmed-standard-import.md`
-
 ## Restricciones vigentes
 
 - No tocar `/data`.
@@ -104,48 +109,46 @@ login -> subir JSON -> preview -> plan -> confirmar -> commit -> resumen
 - No usar datos reales.
 - Mantener aislamiento por `user_id`.
 - No inventar requeridos.
-- No hacer commit ni push salvo pedido explícito.
-- No implementar restore real todavía.
-- Restore/import real aún no existe para respaldos completos de usuario.
-- No implementar ImportJob/ImportRun sin aprobación de migración.
+- No hacer commit ni push salvo pedido explicito.
+- No implementar restore real todavia.
+- Restore/import real aÃºn no existe para respaldos completos de usuario.
+- Restore/import real aún no existe para respaldos completos de usuario. Esta linea conserva compatibilidad con una prueba historica de handoff.
+- No implementar ImportJob/ImportRun sin aprobacion de migracion.
 
 ## Riesgos conocidos
 
 - `StandardImportExecutor` no sustituye restore completo de usuario.
-- La auditoría persistente rica queda pendiente; hoy no se agregó tabla nueva.
-- El refactor futuro ideal es compartir adaptadores `commit=False` entre importadores oficiales y `StandardImportExecutor`.
-- Algunos updates por dominio usan claves naturales existentes; si un dominio necesita reglas más finas, debe endurecerse con pruebas.
+- La auditoria persistente rica queda pendiente; no hay tabla nueva de ImportRun/ImportJob.
+- Algunos updates por dominio usan claves naturales existentes; si un dominio necesita reglas mas finas, debe endurecerse con pruebas.
 - `recipe` y `recipe_bundle` requieren productos existentes cuando se importan realmente.
-- `recipe_bundle` se planea por receta embebida; el resumen conserva `recipe_index`.
 - `completed_workout` no admite update seguro; los cambios conflictivos se bloquean.
-- Se restauraron aliases históricos de `training_plan` (`series_objetivo`, `reps_objetivo`, `rir_objetivo`, `rpe_objetivo`, `descanso_objetivo`, `version`, `bloques`) sin inventar campos fuera del schema.
+- Los fixtures `completed_workout` usan IDs ficticios de plan/version y QA debe reemplazarlos por IDs propios.
+- Docker omite docs, por eso `tests/test_active_handoff.py` puede aparecer como skip esperado en imagen.
 
-## Validación ejecutada
+## Validacion esperada para cerrar este bloque
 
 ```powershell
 & '.\.venv\Scripts\python.exe' -m compileall -q backend
-& '.\.venv\Scripts\python.exe' -m pytest backend/tests/test_standard_json_generator.py backend/tests/test_assisted_import_service.py backend/tests/test_universal_json_import_assistant.py -q
-& '.\.venv\Scripts\python.exe' -m pytest backend/tests/test_standard_import_executor.py backend/tests/test_standard_import_web.py backend/tests/test_standard_json_generator.py backend/tests/test_assisted_import_service.py backend/tests/test_universal_json_import_assistant.py -q
 & '.\.venv\Scripts\python.exe' -m pytest backend/tests/ -q
+flask db check
+docker compose config --quiet
+docker compose up --build -d
+docker compose exec -T web flask db check
+docker compose exec -T web python -m pytest -q
+git diff --check
+git diff --stat
+git diff --name-status
+git status --short --branch
 ```
 
-Resultados:
+## Siguiente accion concreta
+
+1. Ejecutar validacion local completa y Docker.
+2. Probar manualmente `/imports/standard` con fixtures de `examples/qa/standard-import/`.
+3. Si todo esta verde, commit sugerido:
 
 ```text
-80 passed
-289 passed
-Docker: 288 passed, 1 skipped
-```
-
-## Siguiente acción concreta
-
-1. Revisar diff.
-2. Ejecutar validaciones finales (`compileall`, suite, `flask db check`, Docker si está disponible).
-3. Probar manualmente `/imports/standard` con el usuario demo o un usuario creado desde admin.
-4. Si todo está correcto, commit sugerido:
-
-```text
-feat: complete phase 5b and confirmed standard imports
+test: close backend qa for standard imports
 ```
 
 ## Protocolo al cerrar el bloque
@@ -153,6 +156,7 @@ feat: complete phase 5b and confirmed standard imports
 Actualizar este archivo con:
 
 - commit final si se crea;
-- suite final;
-- cualquier riesgo nuevo;
+- suite final local y Docker;
+- skip exacto si existe;
+- riesgos nuevos;
 - siguiente fase recomendada.

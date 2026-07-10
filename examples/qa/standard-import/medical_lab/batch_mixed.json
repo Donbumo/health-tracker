@@ -1,0 +1,24 @@
+[
+  {
+    "schema_version": "1.0",
+    "type": "medical_lab",
+    "user_id": 1,
+    "source_type": "uploaded",
+    "date": "2026-08-23",
+    "laboratory_name": "QA Lab Fictional",
+    "markers": [
+      {"name": "Glucosa", "value": 92, "unit": "mg/dL", "status": "normal"}
+    ]
+  },
+  {
+    "schema_version": "1.0",
+    "type": "medical_lab",
+    "user_id": 1,
+    "source_type": "uploaded",
+    "date": "2026-08-24",
+    "laboratory_name": "QA Lab Fictional",
+    "markers": [
+      {"name": "Marker incompleto", "value": 1}
+    ]
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "type": "medical_lab",
+  "user_id": 1,
+  "source_type": "uploaded",
+  "laboratory_name": "QA Lab Fictional",
+  "markers": [
+    {"name": "Glucosa", "value": 91, "unit": "mg/dL"}
+  ]
+}
+

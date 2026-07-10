@@ -1,0 +1,25 @@
+[
+  {
+    "schema_version": "1.0",
+    "type": "medical_lab",
+    "user_id": 1,
+    "source_type": "uploaded",
+    "date": "2026-08-21",
+    "laboratory_name": "QA Lab Fictional",
+    "markers": [
+      {"name": "Glucosa", "value": 90, "unit": "mg/dL", "status": "normal"}
+    ]
+  },
+  {
+    "schema_version": "1.0",
+    "type": "medical_lab",
+    "user_id": 1,
+    "source_type": "uploaded",
+    "date": "2026-08-22",
+    "laboratory_name": "QA Lab Fictional",
+    "markers": [
+      {"name": "HbA1c", "value": 5.4, "unit": "%", "status": "normal"}
+    ]
+  }
+]
+

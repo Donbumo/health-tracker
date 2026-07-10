@@ -412,6 +412,18 @@ Un usuario autenticado puede:
 
 El preview valida `schemas/user_data_export.schema.json`, muestra errores, advertencias y conteos por sección. Procesa el archivo únicamente en memoria: no crea `UploadedFile`, no guarda bytes en `/data`, no modifica registros y no hace restore. La restauración real, el remapeo de IDs y un posible respaldo ZIP pertenecen a una fase futura separada.
 
+## QA de importación estándar confirmada
+
+El flujo `/imports/standard` permite a un usuario autenticado subir JSON, revisar preview/plan y confirmar una importación transaccional. La fase de preview sigue siendo read-only; la escritura ocurre solo tras confirmación.
+
+Hay fixtures ficticias para QA manual en:
+
+```text
+examples/qa/standard-import/
+```
+
+Incluyen `daily_energy`, `training_plan`, `completed_workout` y `medical_lab` con casos de insert, repetición/update/conflict, inválidos y batches. Antes de probar `completed_workout`, crea/importa una rutina para el usuario de QA y reemplaza los IDs ficticios de plan/version por IDs propios de ese usuario. No copies estas fixtures a `/data` ni uses datos reales.
+
 Para entregar el proyecto a otro agente, compartir:
 
 ```text

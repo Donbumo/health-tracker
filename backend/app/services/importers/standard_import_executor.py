@@ -236,11 +236,19 @@ class StandardImportExecutor:
             if item["operation"] in {"invalid", "conflict"}
         ]
         if blocking:
+            blocking_errors = [
+                error
+                for item in blocking
+                for error in item.get("errors", [])
+            ]
             return {
                 **plan,
                 "committed": False,
                 "rollback": False,
-                "errors": ["Import contains invalid or conflicting documents."],
+                "errors": [
+                    "Import contains invalid or conflicting documents.",
+                    *blocking_errors,
+                ],
             }
 
         committed_operations: list[PlannedOperation] = []

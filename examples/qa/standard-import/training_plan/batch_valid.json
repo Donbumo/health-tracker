@@ -1,0 +1,49 @@
+[
+  {
+    "schema_version": "1.0",
+    "record_type": "training_plan",
+    "user_id": 1,
+    "source_type": "uploaded",
+    "data": {
+      "name": "QA Plan Batch A",
+      "weeks": [
+        {
+          "week_number": 1,
+          "days": [
+            {
+              "day_number": 1,
+              "name": "QA Day",
+              "exercises": [
+                {"exercise_order": 1, "name": "QA Row", "sets": [{"set_number": 1, "reps": 8}]}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": "1.0",
+    "record_type": "training_plan",
+    "user_id": 1,
+    "source_type": "uploaded",
+    "data": {
+      "name": "QA Plan Batch B",
+      "weeks": [
+        {
+          "week_number": 1,
+          "days": [
+            {
+              "day_number": 1,
+              "name": "QA Day",
+              "exercises": [
+                {"exercise_order": 1, "name": "QA Squat", "sets": [{"set_number": 1, "reps_min": 6, "reps_max": 8}]}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+]
+

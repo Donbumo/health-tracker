@@ -107,6 +107,29 @@ Notas actuales de dominio:
 | `recipe` | Sí | `skip` | Sí, parcial por `user_id + name` | Sí | Reemplaza ingredientes porque `ingredients` es requerido. |
 | `recipe_bundle` | Sí, por receta | `skip` por receta | Sí, por receta | Sí | No existe modelo Bundle persistente; el resumen usa `recipe_index`. |
 
+## QA automatizado y fixtures manuales
+
+La rama `feature/overnight-backend-qa-closure` agrega cobertura enfocada para los targets que quedaban pendientes de QA profundo:
+
+- `daily_energy`
+- `training_plan`
+- `completed_workout`
+- `medical_lab`
+
+Las fixtures ficticias viven en:
+
+```text
+examples/qa/standard-import/
+```
+
+Reglas para mantenerlas:
+
+- Deben ser datos ficticios.
+- No deben moverse a `/data`.
+- Los JSON marcados como válidos deben validar contra su schema.
+- Los JSON inválidos deben fallar por razones esperadas.
+- Los IDs de usuario, rutina o versión en fixtures son placeholders para QA manual y no autorizan seleccionar `user_id` desde UI.
+
 ## Web QA
 
 La ruta web mínima actual es:

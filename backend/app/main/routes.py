@@ -61,6 +61,11 @@ def healthcheck():
     return jsonify(status="ok", app="health-tracker")
 
 
+@main_bp.get("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+
 @main_bp.get("/account/export.json")
 @login_required
 def export_account_data():

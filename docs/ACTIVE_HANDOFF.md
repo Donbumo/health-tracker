@@ -16,6 +16,16 @@ Este handoff no reemplaza:
 
 Si contradice schemas, tests, codigo o reglas canonicas, este archivo pierde prioridad.
 
+## Nota actual para `release/alpha-teammate-ready`
+
+- Base efectiva verificada: `f46af45`.
+- Arbol antes del trabajo: limpio.
+- Suite base local antes de modificar: `337 passed`.
+- Objetivo: preparar alpha privada usable por un companero real en LAN/VPN.
+- Alcance: onboarding web sin tabla nueva, `/privacy`, textos de admin, version visible `Alpha 0.1`, docs de despliegue/checklist y pruebas Flask client.
+- No implementar restore, API publica, dispositivos, FIT/GPX, APK, reloj ni nuevos dominios.
+- No tocar `.env`, `/data`, schemas publicos ni migraciones salvo bug demostrado.
+
 ## Estado verificado del bloque activo
 
 - Rama de trabajo: `feature/import-audit-persistence`.

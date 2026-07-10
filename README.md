@@ -531,3 +531,23 @@ docker-compose.yml
 - No se ofrecen rutas para descargar archivos originales en esta fase.
 - El código no contiene datos personales reales; `.env`, `data/`, exports y formatos sensibles están ignorados.
 - Cada consulta y cada upload de esta fase se filtran por el `user_id` autenticado.
+
+## Alpha privada 0.1
+
+Health Tracker est? preparado para evaluaci?n privada por usuarios invitados mediante una red local o VPN privada.
+
+La Alpha 0.1 permite:
+
+- crear cuentas desde la administraci?n;
+- registrar peso, nutrici?n, energ?a y entrenamiento;
+- consultar el dashboard y el historial de importaciones;
+- exportar los datos personales;
+- usar la interfaz desde computadora o tel?fono;
+- mantener los datos aislados entre usuarios.
+
+Esta aplicaci?n no sustituye atenci?n m?dica y no debe exponerse directamente a Internet.
+
+Consulta:
+
+- `docs/ALPHA_DEPLOYMENT.md` para desplegarla y compartir acceso;
+- `docs/ALPHA_RELEASE_CHECKLIST.md` para validar una entrega.

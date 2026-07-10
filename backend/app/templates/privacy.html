@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Privacidad y alcance · Health Tracker{% endblock %}
+{% block content %}
+  <section class="card">
+    <h1>Privacidad y alcance de {{ alpha_release_label }}</h1>
+    <p>Health Tracker es una app privada y self-hosted para organizar datos personales de salud, nutrición y entrenamiento en una red de confianza.</p>
+    <p><strong>No sustituye evaluación médica, diagnóstico ni tratamiento profesional.</strong></p>
+  </section>
+
+  <section class="card">
+    <h2>Qué se almacena</h2>
+    <ul>
+      <li>Cuenta local: email/usuario, rol y hash de contraseña.</li>
+      <li>Registros que captures o importes: peso, energía, nutrición, entrenamientos, rutinas, productos, recetas y laboratorios.</li>
+      <li>Metadata técnica de uploads/importaciones, como SHA256, estado y conteos agregados.</li>
+    </ul>
+    <p>No se debe subir información real al repositorio Git. Los datos de uso real viven en la base de datos local, `/data` o volúmenes Docker ignorados por Git.</p>
+  </section>
+
+  <section class="card">
+    <h2>Qué no hace esta alpha</h2>
+    <ul>
+      <li>No comparte datos con terceros desde la aplicación.</li>
+      <li>No envía correos ni invitaciones automáticas.</li>
+      <li>No implementa restore automático todavía.</li>
+      <li>No afirma cumplimiento HIPAA, GDPR u otro marco regulatorio.</li>
+      <li>No debe exponerse directamente a Internet; úsala por LAN o VPN.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Exportar o eliminar datos</h2>
+    {% if current_user.is_authenticated %}
+      <p>Puedes descargar un respaldo JSON desde <a href="{{ url_for('main.export_account_data') }}">Exportar mis datos</a>. El export no incluye password hash ni archivos binarios.</p>
+    {% else %}
+      <p>Inicia sesión para descargar tu respaldo JSON desde la opción de exportación de cuenta.</p>
+    {% endif %}
+    <p>Para pedir eliminación de datos, contacta al administrador de esta instalación privada. La eliminación operativa completa depende del administrador y del respaldo local.</p>
+  </section>
+{% endblock %}

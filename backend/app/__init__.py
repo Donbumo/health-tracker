@@ -61,6 +61,12 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(recipes_bp)
     register_commands(app)
 
+    @app.context_processor
+    def inject_release_context():
+        return {
+            "alpha_release_label": "Alpha 0.1",
+        }
+
     @app.errorhandler(403)
     def forbidden(_error):
         return render_template("403.html"), 403

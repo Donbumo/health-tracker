@@ -11,6 +11,34 @@
   </section>
 
   <section class="card">
+    <h2>Bienvenida a {{ alpha_release_label }}</h2>
+    <p>Esta es una alpha privada para uso personal o de un grupo de confianza en LAN/VPN. Organiza tus datos de salud, nutrición y entrenamiento, pero no sustituye atención médica.</p>
+    <p class="help">Tus registros se guardan en tu cuenta y las pantallas de usuario normal filtran por tu usuario autenticado.</p>
+    <p><a href="{{ url_for('main.privacy') }}">Leer privacidad y alcance de la alpha</a></p>
+  </section>
+
+  <section class="card">
+    <h2>Primeros pasos</h2>
+    <p>{{ summary.onboarding.completed_count }}/{{ summary.onboarding.total_count }} pasos listos.</p>
+    <ul class="checklist">
+      {% for item in summary.onboarding["items"] %}
+        <li class="{{ 'complete' if item.complete else 'pending' }}">
+          <span>{{ '✓' if item.complete else '○' }}</span>
+          <div>
+            <strong>{{ item.label }}</strong>
+            <p class="help">{{ item.help }}</p>
+            {% if not item.complete and item.url_endpoint %}
+              <a href="{{ url_for(item.url_endpoint) }}">Ir ahora</a>
+            {% elif item.label == 'Exportar respaldo' and item.url_endpoint %}
+              <a href="{{ url_for(item.url_endpoint) }}">Descargar respaldo JSON</a>
+            {% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card">
     <h2>Acciones rápidas de QA</h2>
     <div class="quick-actions">
       <a class="button" href="{{ url_for('wellness.manual_nutrition') }}">Capturar nutrición</a>
@@ -82,7 +110,10 @@
         <dt>Net carbs</dt><dd>{% if summary.net_carbs_g is not none %}{{ summary.net_carbs_g }} g{% else %}—{% endif %}</dd>
         <dt>Fibra</dt><dd>{% if summary.fiber_g is not none %}{{ summary.fiber_g }} g{% else %}—{% endif %}</dd>
       </dl>
-    {% else %}<p>Nutrición pendiente para esta fecha.</p>{% endif %}
+    {% else %}
+      <p>Nutrición pendiente para esta fecha.</p>
+      <a class="button" href="{{ url_for('wellness.manual_nutrition') }}">Capturar nutrición</a>
+    {% endif %}
   </section>
 
   <section class="card">
@@ -93,7 +124,10 @@
         <dt>Calorías activas</dt><dd>{{ summary.active_calories if summary.active_calories is not none else '—' }}</dd>
         <dt>Pasos</dt><dd>{{ summary.energy.steps if summary.energy.steps is not none else '—' }}</dd>
       </dl>
-    {% else %}<p>Energía pendiente para esta fecha.</p>{% endif %}
+    {% else %}
+      <p>Energía pendiente para esta fecha.</p>
+      <a class="button" href="{{ url_for('wellness.manual_energy') }}">Capturar energía</a>
+    {% endif %}
     {% if not summary.complete %}<p class="help">El balance queda incompleto hasta contar con calorías ingeridas y gastadas.</p>{% endif %}
   </section>
 
@@ -106,7 +140,10 @@
         <dt>Masa muscular</dt><dd>{% if summary.weigh_in.muscle_mass_kg is not none %}{{ summary.weigh_in.muscle_mass_kg }} kg{% else %}—{% endif %}</dd>
         <dt>Cambio contra pesaje anterior</dt><dd>{% if summary.weight_change is not none %}{{ '%+.3f'|format(summary.weight_change) }} kg{% else %}—{% endif %}</dd>
       </dl>
-    {% else %}<p>No hay un pesaje en esta fecha ni en fechas anteriores.</p>{% endif %}
+    {% else %}
+      <p>No hay un pesaje en esta fecha ni en fechas anteriores.</p>
+      <a class="button" href="{{ url_for('main.manual_weigh_in') }}">Capturar peso</a>
+    {% endif %}
   </section>
 
   <section class="card">
@@ -131,7 +168,10 @@
           <dt>Calorías</dt><dd>{{ item.calories_burned if item.calories_burned is not none else '—' }}</dd>
         </dl>
       </article>
-    {% else %}<p>No hay sesión registrada para esta fecha.</p>{% endfor %}
+    {% else %}
+      <p>No hay sesión registrada para esta fecha.</p>
+      <a class="button button-secondary" href="{{ url_for('sessions.new_session') }}">Registrar sesión</a>
+    {% endfor %}
   </section>
 
   <section class="card">

@@ -37,7 +37,8 @@ Estado verificado en `master` / `docs/refresh-ai-context`:
 - Las tareas posteriores deben obtener su base real desde el `master` vigente.
 - Último merge conocido: `Merge branch 'feature/standard-json-generator-medical-lab'`.
 - Línea base local verificada anterior: `250 passed`.
-- Línea base local posterior al cierre de Fase 5B e importación confirmada: `289 passed`.
+- Línea base local posterior al cierre de Fase 5B e importación confirmada: `304 passed`.
+- Rama de cierre QA backend `feature/overnight-backend-qa-closure`: agrega cobertura automatizada para `daily_energy`, `training_plan`, `completed_workout` y `medical_lab`, más fixtures ficticias en `examples/qa/standard-import/`.
 - El proyecto conserva Flask, Flask-SQLAlchemy, Flask-Migrate, MariaDB y Docker Compose.
 - Los datos reales siguen fuera de Git y deben vivir en `/data` o volúmenes ignorados.
 
@@ -67,6 +68,7 @@ Estado real de Fase 5B verificado:
 - La confirmación web se firma contra usuario, target, payload y plan; tokens reutilizados, vencidos o de otro usuario deben rechazarse.
 - El commit confirmado debe ser atómico y hacer rollback si falla un elemento durante la escritura.
 - `recipe_bundle` se planea por receta embebida y conserva `recipe_index` para trazabilidad.
+- La rama `feature/overnight-backend-qa-closure` endurece QA de targets pendientes y conserva errores detallados en commits bloqueados por documentos inválidos/conflictivos.
 
 Dominios actualmente soportados por `SUPPORTED_TARGETS` del módulo `standard_json_generator.py`:
 
@@ -85,7 +87,7 @@ Dominios actualmente soportados por `SUPPORTED_TARGETS` del módulo `standard_js
 Bloques próximos previstos:
 
 1. Endurecer la importación confirmada con auditoría persistente más rica si se aprueba modelo/migración futura.
-2. Ampliar cobertura de updates seguros por dominio cuando existan claves naturales o IDs explícitos.
+2. Ampliar contratos de update seguro solo donde existan claves naturales o IDs explícitos verificables.
 3. Restauración real desde export completo de usuario, todavía no implementada.
 
 No presentar APK, app de reloj, FIT real, GPX real, Magene real, OCR, FHIR o API REST pública como implementados. Siguen siendo planes, stubs o estructura futura salvo que el código de una rama posterior demuestre lo contrario.

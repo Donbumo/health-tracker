@@ -1,0 +1,35 @@
+[
+  {
+    "schema_version": "1.0",
+    "record_type": "training_plan",
+    "user_id": 1,
+    "source_type": "uploaded",
+    "data": {
+      "name": "QA Plan Batch Mixed",
+      "weeks": [
+        {
+          "week_number": 1,
+          "days": [
+            {
+              "day_number": 1,
+              "name": "QA Day",
+              "exercises": [
+                {"exercise_order": 1, "name": "QA Curl", "sets": [{"set_number": 1, "reps": 10}]}
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "schema_version": "1.0",
+    "record_type": "training_plan",
+    "user_id": 1,
+    "source_type": "uploaded",
+    "data": {
+      "name": "QA Plan Missing Weeks"
+    }
+  }
+]
+

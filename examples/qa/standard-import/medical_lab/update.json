@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "type": "medical_lab",
+  "user_id": 1,
+  "source_type": "uploaded",
+  "date": "2026-08-20",
+  "laboratory_name": "QA Lab Fictional",
+  "markers": [
+    {"name": "Glucosa", "code": "GLU", "value": 96, "unit": "mg/dL", "reference_min": 70, "reference_max": 99, "status": "normal"}
+  ]
+}
+

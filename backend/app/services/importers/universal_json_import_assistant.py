@@ -184,6 +184,7 @@ DAILY_ENERGY_ALIASES = {
     "pasos": "steps",
     "steps": "steps",
     "distancia": "distance_km",
+    "distancia_km": "distance_km",
     "distance": "distance_km",
     "distance_km": "distance_km",
     "reloj": "source",

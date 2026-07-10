@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "record_type": "completed_workout",
+  "user_id": 1,
+  "source_type": "uploaded",
+  "data": {
+    "training_plan_id": 101,
+    "training_plan_version_id": 201,
+    "performed_at": "2026-08-20T18:00:00+00:00",
+    "planned_week_number": 1,
+    "planned_day_number": 1,
+    "duration_seconds": 3600,
+    "average_heart_rate_bpm": 132,
+    "calories_burned": 420,
+    "notes": "Fictional QA workout",
+    "exercises": [
+      {
+        "exercise_order": 1,
+        "planned_exercise_order": 1,
+        "name": "QA Press",
+        "sets": [
+          {"set_number": 1, "planned_set_number": 1, "weight_kg": 60, "reps": 8, "rir": 2, "rpe": 8, "rest_seconds": 120}
+        ]
+      }
+    ]
+  }
+}
+

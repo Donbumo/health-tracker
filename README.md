@@ -534,18 +534,18 @@ docker-compose.yml
 
 ## Alpha privada 0.1
 
-Health Tracker est? preparado para evaluaci?n privada por usuarios invitados mediante una red local o VPN privada.
+Health Tracker está preparado para evaluación privada por usuarios invitados mediante una red local o VPN privada.
 
 La Alpha 0.1 permite:
 
-- crear cuentas desde la administraci?n;
-- registrar peso, nutrici?n, energ?a y entrenamiento;
+- crear cuentas desde la administración;
+- registrar peso, nutrición, energía y entrenamiento;
 - consultar el dashboard y el historial de importaciones;
 - exportar los datos personales;
-- usar la interfaz desde computadora o tel?fono;
+- usar la interfaz desde computadora o teléfono;
 - mantener los datos aislados entre usuarios.
 
-Esta aplicaci?n no sustituye atenci?n m?dica y no debe exponerse directamente a Internet.
+Esta aplicación no sustituye atención médica y no debe exponerse directamente a Internet.
 
 Consulta:
 

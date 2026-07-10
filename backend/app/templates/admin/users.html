@@ -10,6 +10,8 @@
 
   <section class="card">
     <h2>Crear usuario</h2>
+    <p>Crea una cuenta local para la alpha privada. El rol recomendado para un compañero es <strong>Usuario</strong>.</p>
+    <p class="help">Entrega por un canal seguro: URL privada de la app, email de acceso y contraseña temporal. La app no envía correos y nunca muestra contraseñas almacenadas.</p>
     <form method="post" action="{{ url_for('admin.create_user') }}" novalidate>
       {{ form.hidden_tag() }}
       <div class="field">
@@ -25,6 +27,7 @@
       <div class="field">
         {{ form.role.label }}
         {{ form.role() }}
+        <span class="help">Usa Administrador solo para quien deba crear cuentas o ver diagnóstico del sistema.</span>
         {% for error in form.role.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
       </div>
       {{ form.submit(class_="button") }}

@@ -3,7 +3,7 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from app.extensions import db
-from app.models import MedicalLabReport, TrainingSession, WeighIn
+from app.models import DailyEnergy, DailyNutrition, MedicalLabReport, TrainingSession, User, WeighIn
 from app.services.daily_balance import daily_balance
 from app.services.overload import session_metrics
 
@@ -158,6 +158,63 @@ def _completion_summary(balance: dict, weight: dict, sessions: list[dict]) -> di
     }
 
 
+def _has_record(model, user_id: int) -> bool:
+    return db.session.execute(
+        db.select(model.id).where(model.user_id == user_id).limit(1)
+    ).scalar_one_or_none() is not None
+
+
+def _onboarding_checklist(user_id: int) -> dict:
+    user = db.session.get(User, user_id)
+    has_weight = _has_record(WeighIn, user_id)
+    has_energy = _has_record(DailyEnergy, user_id)
+    has_nutrition = _has_record(DailyNutrition, user_id)
+    has_any_data = has_weight or has_energy or has_nutrition
+    items = [
+        {
+            "label": "Cuenta lista",
+            "complete": user is not None and bool(user.email or user.username),
+            "help": "Tu login ya está activo.",
+            "url_endpoint": None,
+        },
+        {
+            "label": "Registrar primer peso",
+            "complete": has_weight,
+            "help": "Sirve como referencia corporal inicial.",
+            "url_endpoint": "main.manual_weigh_in",
+        },
+        {
+            "label": "Registrar energía",
+            "complete": has_energy,
+            "help": "Agrega gasto, pasos o calorías del día.",
+            "url_endpoint": "wellness.manual_energy",
+        },
+        {
+            "label": "Registrar nutrición",
+            "complete": has_nutrition,
+            "help": "Captura al menos una comida o item.",
+            "url_endpoint": "wellness.manual_nutrition",
+        },
+        {
+            "label": "Revisar dashboard",
+            "complete": has_any_data,
+            "help": "Vuelve aquí para ver tu resumen diario.",
+            "url_endpoint": "main.dashboard",
+        },
+        {
+            "label": "Exportar respaldo",
+            "complete": has_any_data,
+            "help": "Descarga tu JSON cuando tengas datos de prueba.",
+            "url_endpoint": "main.export_account_data",
+        },
+    ]
+    return {
+        "items": items,
+        "completed_count": sum(1 for item in items if item["complete"]),
+        "total_count": len(items),
+    }
+
+
 def daily_health_dashboard(
     user_id: int,
     target_date: date,
@@ -185,4 +242,5 @@ def daily_health_dashboard(
             len(medical_report.results) if medical_report is not None else 0
         ),
         "completion": _completion_summary(balance, weight, sessions),
+        "onboarding": _onboarding_checklist(user_id),
     }

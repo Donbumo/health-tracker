@@ -26,6 +26,7 @@
           <a href="{{ url_for('main.uploads') }}">Uploads</a>
           <a href="{{ url_for('main.standard_import') }}">Importar</a>
           <a href="{{ url_for('main.import_history') }}">Historial imports</a>
+          <a href="{{ url_for('main.export_account_data') }}">Exportar datos</a>
           {% if current_user.is_admin %}
             <a href="{{ url_for('admin.users') }}">Admin</a>
             <a href="{{ url_for('admin.system') }}">Sistema</a>
@@ -53,5 +54,16 @@
 
     {% block content %}{% endblock %}
   </main>
+  <footer class="site-footer">
+    <div class="container footer-actions">
+      <span>{{ alpha_release_label }}</span>
+      <span>Uso privado por LAN/VPN; no sustituye atención médica.</span>
+      <a href="{{ url_for('main.privacy') }}">Privacidad</a>
+      <a href="{{ url_for('main.healthcheck') }}">Estado</a>
+      {% if current_user.is_authenticated %}
+        <a href="{{ url_for('main.export_account_data') }}">Exportar mis datos</a>
+      {% endif %}
+    </div>
+  </footer>
 </body>
 </html>

@@ -70,6 +70,7 @@ Estado real de Fase 5B verificado:
 - `recipe_bundle` se planea por receta embebida y conserva `recipe_index` para trazabilidad.
 - La rama `feature/overnight-backend-qa-closure` endurece QA de targets pendientes y conserva errores detallados en commits bloqueados por documentos inválidos/conflictivos.
 - La rama `feature/import-audit-persistence` agrega `ImportRun` e `ImportAuditService` para auditar intentos confirmados sin guardar payloads crudos ni datos sensibles.
+- La rama `release/alpha-teammate-ready` prepara una alpha privada por LAN/VPN para un companero real: onboarding web sin tabla nueva, pagina de privacidad, version visible `Alpha 0.1`, documentacion operativa y pruebas de flujo web basico.
 
 Dominios actualmente soportados por `SUPPORTED_TARGETS` del módulo `standard_json_generator.py`:
 

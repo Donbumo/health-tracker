@@ -18,18 +18,30 @@ Si contradice schemas, tests, codigo o reglas canonicas, este archivo pierde pri
 
 ## Estado verificado del bloque activo
 
-- Rama de trabajo: `feature/overnight-backend-qa-closure`.
-- Base efectiva verificada: `e356001`.
+- Rama de trabajo: `feature/import-audit-persistence`.
+- Base efectiva verificada: `5b0bee3`.
 - Arbol antes del trabajo: limpio.
-- Suite base local antes de modificar: `304 passed`.
-- Baseline Docker conocido antes de esta rama: `303 passed, 1 skipped`.
+- Suite base local antes de modificar: `323 passed`.
+- Baseline Docker conocido antes de esta rama: `322 passed, 1 skipped`.
 - Skip Docker esperado: `tests/test_active_handoff.py`, porque `docs/` no se copia a la imagen de produccion.
-- No hubo migraciones.
+- Migración aditiva prevista/creada en esta rama: `20260710_0018_import_runs.py`.
 - No se tocaron schemas, modelos, Docker, `.env` ni `/data`.
 
 ## Objetivo de esta rama
 
-Cerrar trabajo backend seguro y verificable alrededor de la importacion estandar confirmada, sin cambiar schemas publicos ni implementar restore completo.
+Implementar auditoría persistente de importaciones estándar confirmadas con `ImportRun`, sin guardar payloads crudos, tokens ni datos sensibles.
+
+## Resultado de diseño
+
+- Modelo nuevo: `ImportRun`.
+- Servicio nuevo: `ImportAuditService`.
+- Rutas nuevas protegidas:
+  - `GET /imports/history`
+  - `GET /imports/history/<id>`
+- La auditoría se crea solo en confirmación validada.
+- Preview y token inválido no crean runs.
+- `failed` se persiste después del rollback de datos de dominio.
+- Retención inicial: conservar agregados indefinidamente; pruning queda para fase futura.
 
 ### Milestone A: QA automatizado de targets restantes
 
@@ -113,12 +125,13 @@ login -> subir JSON -> preview -> plan -> confirmar -> commit -> resumen
 - No implementar restore real todavia.
 - Restore/import real aÃºn no existe para respaldos completos de usuario.
 - Restore/import real aún no existe para respaldos completos de usuario. Esta linea conserva compatibilidad con una prueba historica de handoff.
-- No implementar ImportJob/ImportRun sin aprobacion de migracion.
+- No implementar `ImportJob` ni restore completo sin una fase separada.
 
 ## Riesgos conocidos
 
 - `StandardImportExecutor` no sustituye restore completo de usuario.
-- La auditoria persistente rica queda pendiente; no hay tabla nueva de ImportRun/ImportJob.
+- La auditoría persistente agregada existe mediante `ImportRun`; no guarda payload crudo.
+- No existe pruning automático todavía.
 - Algunos updates por dominio usan claves naturales existentes; si un dominio necesita reglas mas finas, debe endurecerse con pruebas.
 - `recipe` y `recipe_bundle` requieren productos existentes cuando se importan realmente.
 - `completed_workout` no admite update seguro; los cambios conflictivos se bloquean.
@@ -148,7 +161,7 @@ git status --short --branch
 3. Si todo esta verde, commit sugerido:
 
 ```text
-test: close backend qa for standard imports
+feat: add import audit persistence
 ```
 
 ## Protocolo al cerrar el bloque

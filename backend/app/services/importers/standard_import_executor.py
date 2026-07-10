@@ -35,6 +35,7 @@ from app.models import (
     TrainingSet,
     WeighIn,
 )
+from app.services.import_audit import ImportAuditService
 from app.services.importers.assisted_import_service import AssistedImportService
 from app.services.training_plans import serialize_training_plan
 from app.services.validation import JsonSchemaValidationError, validate_json_document
@@ -74,6 +75,16 @@ EXPECTED_SECTIONS = (
     "invalid",
 )
 
+GENERIC_WRITE_FAILURE_MESSAGE = (
+    "Import write failed; all domain changes were rolled back."
+)
+SAFE_WRITE_ERROR_MESSAGES = {
+    "Week numbers must be unique",
+    "Day numbers must be unique",
+    "Exercise order numbers must be unique",
+    "Set numbers must be unique",
+}
+
 
 @dataclass(frozen=True)
 class PlannedOperation:
@@ -102,8 +113,13 @@ class PlannedOperation:
 class StandardImportExecutor:
     """Plan and commit standard JSON documents for the authenticated user."""
 
-    def __init__(self, assisted_import_service: AssistedImportService | None = None) -> None:
+    def __init__(
+        self,
+        assisted_import_service: AssistedImportService | None = None,
+        audit_service: ImportAuditService | None = None,
+    ) -> None:
         self.assisted_import_service = assisted_import_service or AssistedImportService()
+        self.audit_service = audit_service or ImportAuditService()
 
     def preview_payload(
         self,
@@ -226,11 +242,18 @@ class StandardImportExecutor:
         user_id: int,
         target_type: str,
         confirmed: bool,
+        audit_payload: Any | None = None,
+        audit_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         if not confirmed:
             raise StandardImportError("Import confirmation is required")
 
         plan = self.plan_documents(documents, user_id=user_id, target_type=target_type)
+        payload_sha256 = canonical_sha256(
+            audit_payload if audit_payload is not None else documents
+        )
+        plan_sha256 = canonical_sha256(_plan_fingerprint(plan))
+        source_type = _source_type_from_documents(documents)
         blocking = [
             item for item in plan["operations"]
             if item["operation"] in {"invalid", "conflict"}
@@ -241,7 +264,7 @@ class StandardImportExecutor:
                 for item in blocking
                 for error in item.get("errors", [])
             ]
-            return {
+            result = {
                 **plan,
                 "committed": False,
                 "rollback": False,
@@ -250,8 +273,28 @@ class StandardImportExecutor:
                     *blocking_errors,
                 ],
             }
+            run = self.audit_service.record_blocked(
+                user_id=user_id,
+                target_type=target_type,
+                source_type=source_type,
+                payload_sha256=payload_sha256,
+                plan_sha256=plan_sha256,
+                summary=result,
+                error_message=result["errors"][0],
+                metadata=audit_metadata,
+            )
+            return {**result, "audit_run_id": run.id}
 
         committed_operations: list[PlannedOperation] = []
+        audit_run = self.audit_service.record_pending(
+            user_id=user_id,
+            target_type=target_type,
+            source_type=source_type,
+            payload_sha256=payload_sha256,
+            plan_sha256=plan_sha256,
+            summary=plan,
+            metadata=audit_metadata,
+        )
         try:
             for operation in plan["operations"]:
                 planned = PlannedOperation(
@@ -287,15 +330,38 @@ class StandardImportExecutor:
                         recipe_index=planned.recipe_index,
                     )
                 )
+            result = self._summary(committed_operations, committed=True, rollback=False)
+            self.audit_service.finalize_succeeded(audit_run, result)
             db.session.commit()
         except Exception as error:
             db.session.rollback()
-            return {
+            error_message = self._safe_write_error_message(error)
+            result = {
                 **self._summary(plan["operations"], committed=False, rollback=True),
-                "errors": [str(error) or error.__class__.__name__],
+                "errors": [error_message],
             }
+            run = self.audit_service.record_failed_existing(
+                run_id=audit_run.id,
+                summary=result,
+                error_message=error_message,
+                fallback={
+                    "user_id": user_id,
+                    "target_type": target_type,
+                    "source_type": source_type,
+                    "payload_sha256": payload_sha256,
+                    "plan_sha256": plan_sha256,
+                    "metadata": audit_metadata,
+                },
+            )
+            return {**result, "audit_run_id": run.id}
 
-        return self._summary(committed_operations, committed=True, rollback=False)
+        return {**result, "audit_run_id": audit_run.id}
+
+    def _safe_write_error_message(self, error: Exception) -> str:
+        message = str(error)
+        if message in SAFE_WRITE_ERROR_MESSAGES:
+            return message
+        return GENERIC_WRITE_FAILURE_MESSAGE
 
     def _documents_from_preview(
         self,
@@ -1101,6 +1167,14 @@ def _plan_fingerprint(plan: dict[str, Any]) -> dict[str, Any]:
         "conflicts": plan.get("conflicts"),
         "operations": plan.get("operations", []),
     }
+
+
+def _source_type_from_documents(documents: list[dict[str, Any]]) -> str | None:
+    for document in documents:
+        source_type = document.get("source_type")
+        if source_type:
+            return str(source_type)[:32]
+    return None
 
 
 def _serializer() -> URLSafeTimedSerializer:

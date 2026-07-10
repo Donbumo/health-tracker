@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}ImportRun #{{ run.id }} · Health Tracker{% endblock %}
+{% block content %}
+  <section class="card">
+    <h1>ImportRun #{{ run.id }}</h1>
+    <p class="muted">Detalle agregado sin payload crudo, tokens ni datos de salud.</p>
+    <p><a class="button button-secondary" href="{{ url_for('main.import_history') }}">Volver al historial</a></p>
+  </section>
+
+  <section class="card">
+    <table>
+      <tbody>
+        <tr><th>Fecha inicio</th><td>{{ run.started_at.strftime('%Y-%m-%d %H:%M:%S') }}</td></tr>
+        <tr><th>Fecha cierre</th><td>{{ run.completed_at.strftime('%Y-%m-%d %H:%M:%S') if run.completed_at else '-' }}</td></tr>
+        <tr><th>Target</th><td>{{ run.target_type }}</td></tr>
+        <tr><th>Source type</th><td>{{ run.source_type or '-' }}</td></tr>
+        <tr><th>Status</th><td>{{ run.status }}</td></tr>
+        <tr><th>Total</th><td>{{ run.total_count }}</td></tr>
+        <tr><th>Insert / update / skip</th><td>{{ run.insert_count }} / {{ run.update_count }} / {{ run.skip_count }}</td></tr>
+        <tr><th>Conflict / invalid</th><td>{{ run.conflict_count }} / {{ run.invalid_count }}</td></tr>
+        <tr><th>Payload SHA256</th><td><code>{{ run.payload_sha256[:12] }}…</code></td></tr>
+        <tr><th>Plan SHA256</th><td><code>{{ run.plan_sha256[:12] }}…</code></td></tr>
+        <tr><th>Error</th><td>{{ run.error_message or '-' }}</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  {% if run.metadata_json %}
+    <section class="card">
+      <h2>Metadata segura</h2>
+      <table>
+        <tbody>
+          {% for key, value in run.metadata_json.items() %}
+            <tr><th>{{ key }}</th><td>{{ value }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  {% endif %}
+{% endblock %}

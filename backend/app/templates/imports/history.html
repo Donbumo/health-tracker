@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Historial de importaciones · Health Tracker{% endblock %}
+{% block content %}
+  <section class="card">
+    <h1>Historial de importaciones</h1>
+    <p class="muted">Auditoría agregada: no guarda payloads, tokens ni datos de salud crudos.</p>
+    <p><a class="button" href="{{ url_for('main.standard_import') }}">Nueva importación</a></p>
+  </section>
+
+  <section class="card">
+    {% if runs %}
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Target</th>
+            <th>Status</th>
+            <th>Total</th>
+            <th>Insert</th>
+            <th>Update</th>
+            <th>Skip</th>
+            <th>Conflict</th>
+            <th>Invalid</th>
+            <th>Detalle</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for run in runs %}
+            <tr>
+              <td>{{ run.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>{{ run.target_type }}</td>
+              <td>{{ run.status }}</td>
+              <td>{{ run.total_count }}</td>
+              <td>{{ run.insert_count }}</td>
+              <td>{{ run.update_count }}</td>
+              <td>{{ run.skip_count }}</td>
+              <td>{{ run.conflict_count }}</td>
+              <td>{{ run.invalid_count }}</td>
+              <td><a href="{{ url_for('main.import_history_detail', run_id=run.id) }}">Ver</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <nav aria-label="Paginación">
+        {% if has_previous %}
+          <a class="button button-secondary" href="{{ url_for('main.import_history', page=page-1) }}">Anterior</a>
+        {% endif %}
+        {% if has_next %}
+          <a class="button button-secondary" href="{{ url_for('main.import_history', page=page+1) }}">Siguiente</a>
+        {% endif %}
+      </nav>
+    {% else %}
+      <p>No hay importaciones confirmadas auditadas todavía.</p>
+      <a class="button" href="{{ url_for('main.standard_import') }}">Importar JSON</a>
+    {% endif %}
+  </section>
+{% endblock %}

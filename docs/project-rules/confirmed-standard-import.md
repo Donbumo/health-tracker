@@ -73,7 +73,7 @@ El lote debe ser atómico por defecto:
 - si el fallo ocurre después de escribir o hacer `flush` de elementos previos, el rollback debe dejar la DB sin cambios parciales del lote;
 - no aceptar éxito parcial silencioso.
 
-Si se agrega auditoría persistente futura (`ImportJob`, `ImportRun` o similar), requiere migración aprobada explícitamente.
+La auditoría persistente actual usa `ImportRun`. Ver `import-audit-persistence.md`.
 
 ## Deduplicación e idempotencia
 

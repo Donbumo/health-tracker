@@ -5,6 +5,7 @@ from io import BytesIO
 from zoneinfo import ZoneInfo
 
 from flask import (
+    abort,
     current_app,
     flash,
     jsonify,
@@ -33,6 +34,7 @@ from app.services.files import UploadError, store_uploaded_file
 from app.services.files import mark_import_status
 from app.services.daily_dashboard import daily_health_dashboard
 from app.services.exporters.user_data import UserDataJsonExporter
+from app.services.import_audit import ImportAuditService
 from app.services.importers.weigh_in import WeighInImportError, import_weigh_in_file
 from app.services.importers.user_data_preview import preview_user_data_import
 from app.services.importers.standard_import_executor import (
@@ -145,6 +147,15 @@ def standard_import():
                     user_id=current_user.id,
                     target_type=preview_result["target_type"],
                     confirmed=True,
+                    audit_payload=payload,
+                    audit_metadata={
+                        "route": "/imports/standard",
+                        "mode": "web_confirm",
+                        "requested_type": target_type,
+                        "detected_type": preview_result["target_type"],
+                        "document_count": len(preview_result["documents"]),
+                        "contract_version": "confirmed-standard-import-v1",
+                    },
                 )
                 if commit_result["committed"]:
                     used_tokens.append(token_digest)
@@ -213,6 +224,34 @@ def standard_import():
     )
 
 
+@main_bp.get("/imports/history")
+@login_required
+def import_history():
+    page = _positive_int(request.args.get("page"), default=1)
+    per_page = 20
+    runs = ImportAuditService().list_runs(
+        user_id=current_user.id,
+        page=page,
+        per_page=per_page,
+    )
+    return render_template(
+        "imports/history.html",
+        runs=runs,
+        page=page,
+        has_previous=page > 1,
+        has_next=len(runs) == per_page,
+    )
+
+
+@main_bp.get("/imports/history/<int:run_id>")
+@login_required
+def import_history_detail(run_id: int):
+    run = ImportAuditService().get_run(user_id=current_user.id, run_id=run_id)
+    if run is None:
+        abort(404)
+    return render_template("imports/history_detail.html", run=run)
+
+
 def _prepare_standard_import_confirmation(
     form: StandardImportConfirmForm,
     executor: StandardImportExecutor,
@@ -236,6 +275,15 @@ def _prepare_standard_import_confirmation(
 
 def _standard_import_token_digest(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _positive_int(value: str | None, *, default: int) -> int:
+    try:
+        parsed = int(value or default)
+    except (TypeError, ValueError):
+        return default
+    return parsed if parsed > 0 else default
+
 
 def _current_user_files():
     return db.session.execute(

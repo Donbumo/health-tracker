@@ -17,8 +17,9 @@ Antes de modificar el repositorio, leer en este orden:
 5. `docs/project-rules/phase-5b-universal-json-import-assistant.md`.
 6. `docs/project-rules/standard-json-generator-development.md` si la tarea toca Fase 5B, detección, aliases, `StandardJsonGenerator`, `UniversalJsonImportAssistant` o `AssistedImportService`.
 7. `docs/project-rules/confirmed-standard-import.md` si la tarea toca confirmación o escritura real desde JSON estándar.
-8. `docs/ACTIVE_HANDOFF.md`, solo como handoff temporal del bloque activo.
-9. README, código, tests y `git status`.
+8. `docs/project-rules/import-audit-persistence.md` si la tarea toca auditoría persistente de importaciones.
+9. `docs/ACTIVE_HANDOFF.md`, solo como handoff temporal del bloque activo.
+10. README, código, tests y `git status`.
 
 ## Precedencia
 
@@ -145,6 +146,10 @@ La importación confirmada posterior a Fase 5B existe mediante `StandardImportEx
 - el plan usa operaciones `insert`, `update`, `skip`, `conflict`, `invalid`;
 - el lote se ejecuta de forma atómica en la sesión de DB y debe hacer rollback ante errores de escritura;
 - la ruta web mínima es `GET/POST /imports/standard`.
+- la auditoría persistente de intentos confirmados existe mediante `ImportRun`.
+- rutas de consulta: `GET /imports/history` y `GET /imports/history/<id>`.
+- no se auditan previews ni tokens inválidos.
+- no se guardan payloads crudos, tokens, trazas ni datos de salud en `ImportRun`.
 
 Cobertura automatizada adicional agregada en la rama `feature/overnight-backend-qa-closure`:
 
@@ -250,4 +255,5 @@ Al cerrar un bloque:
 - Fase 5B: `project-rules/phase-5b-universal-json-import-assistant.md`.
 - Reglas de `StandardJsonGenerator`: `project-rules/standard-json-generator-development.md`.
 - Importación estándar confirmada: `project-rules/confirmed-standard-import.md`.
+- Auditoría persistente de imports: `project-rules/import-audit-persistence.md`.
 - Handoff temporal: `ACTIVE_HANDOFF.md`.

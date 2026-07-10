@@ -69,6 +69,7 @@ Estado real de Fase 5B verificado:
 - El commit confirmado debe ser atómico y hacer rollback si falla un elemento durante la escritura.
 - `recipe_bundle` se planea por receta embebida y conserva `recipe_index` para trazabilidad.
 - La rama `feature/overnight-backend-qa-closure` endurece QA de targets pendientes y conserva errores detallados en commits bloqueados por documentos inválidos/conflictivos.
+- La rama `feature/import-audit-persistence` agrega `ImportRun` e `ImportAuditService` para auditar intentos confirmados sin guardar payloads crudos ni datos sensibles.
 
 Dominios actualmente soportados por `SUPPORTED_TARGETS` del módulo `standard_json_generator.py`:
 
@@ -86,7 +87,7 @@ Dominios actualmente soportados por `SUPPORTED_TARGETS` del módulo `standard_js
 
 Bloques próximos previstos:
 
-1. Endurecer la importación confirmada con auditoría persistente más rica si se aprueba modelo/migración futura.
+1. Definir pruning operativo de `ImportRun` si se requiere retención limitada.
 2. Ampliar contratos de update seguro solo donde existan claves naturales o IDs explícitos verificables.
 3. Restauración real desde export completo de usuario, todavía no implementada.
 

@@ -788,7 +788,9 @@ def test_confirmed_import_rolls_back_batch_when_write_fails(app, user, monkeypat
 
         assert result["committed"] is False
         assert result["rollback"] is True
-        assert result["errors"] == ["simulated write failure"]
+        assert result["errors"] == [
+            "Import write failed; all domain changes were rolled back."
+        ]
         assert db.session.execute(db.select(DailyEnergy)).scalars().all() == []
 
 

@@ -424,6 +424,22 @@ examples/qa/standard-import/
 
 Incluyen `daily_energy`, `training_plan`, `completed_workout` y `medical_lab` con casos de insert, repetición/update/conflict, inválidos y batches. Antes de probar `completed_workout`, crea/importa una rutina para el usuario de QA y reemplaza los IDs ficticios de plan/version por IDs propios de ese usuario. No copies estas fixtures a `/data` ni uses datos reales.
 
+### Historial de importaciones
+
+Cada confirmación válida crea un `ImportRun` agregado:
+
+- `succeeded` si el lote se guardó;
+- `blocked` si el plan tenía inválidos o conflictos;
+- `failed` si ocurrió un error de escritura y se hizo rollback.
+
+Consulta desde:
+
+```text
+/imports/history
+```
+
+El historial muestra target, estado, conteos y hashes truncados. No guarda ni muestra payloads crudos, tokens, trazas ni datos de salud. La retención inicial conserva estos agregados; pruning automático queda para una fase futura.
+
 Para entregar el proyecto a otro agente, compartir:
 
 ```text

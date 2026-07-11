@@ -11,7 +11,7 @@
     <nav class="container nav" aria-label="Navegación principal">
       <a class="brand" href="{{ url_for('main.index') }}">Health Tracker</a>
       {% if current_user.is_authenticated %}
-        <div class="nav-actions">
+        <div class="nav-actions desktop-nav">
           <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
           <a href="{{ url_for('wellness.balance') }}">Wellness</a>
           <a href="{{ url_for('body.list_weigh_ins') }}">Peso</a>
@@ -37,6 +37,50 @@
             <button class="button button-secondary" type="submit">Cerrar sesión</button>
           </form>
         </div>
+        <details class="mobile-menu">
+          <summary aria-label="Abrir o cerrar menú principal">Menú</summary>
+          <div class="mobile-menu-panel">
+            <p class="mobile-menu-user">{{ current_user.username }}</p>
+
+            <section class="mobile-menu-section" aria-labelledby="mobile-menu-main">
+              <h2 id="mobile-menu-main">Principal</h2>
+              <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+              <a href="{{ url_for('wellness.balance') }}">Wellness</a>
+              <a href="{{ url_for('body.list_weigh_ins') }}">Peso</a>
+              <a href="{{ url_for('wellness.nutrition_list') }}">Nutrición</a>
+              <a href="{{ url_for('wellness.energy_list') }}">Energía</a>
+              <a href="{{ url_for('training.list_plans') }}">Entrenamiento</a>
+              <a href="{{ url_for('sessions.list_sessions') }}">Sesiones</a>
+              <a href="{{ url_for('progress.overview') }}">Progreso</a>
+            </section>
+
+            <section class="mobile-menu-section" aria-labelledby="mobile-menu-data">
+              <h2 id="mobile-menu-data">Datos</h2>
+              <a href="{{ url_for('foods.list_foods') }}">Alacena</a>
+              <a href="{{ url_for('recipes.list_recipes') }}">Recetas</a>
+              <a href="{{ url_for('medical.list_reports') }}">Laboratorios</a>
+              <a href="{{ url_for('main.uploads') }}">Uploads</a>
+              <a href="{{ url_for('main.standard_import') }}">Importar</a>
+              <a href="{{ url_for('main.import_history') }}">Historial imports</a>
+              <a href="{{ url_for('main.export_account_data') }}">Exportar datos</a>
+            </section>
+
+            {% if current_user.is_admin %}
+              <section class="mobile-menu-section" aria-labelledby="mobile-menu-admin">
+                <h2 id="mobile-menu-admin">Administración</h2>
+                <a href="{{ url_for('admin.users') }}">Admin</a>
+                <a href="{{ url_for('admin.system') }}">Sistema</a>
+              </section>
+            {% endif %}
+
+            <div class="mobile-menu-logout">
+              <form action="{{ url_for('auth.logout') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="button button-secondary" type="submit">Cerrar sesión</button>
+              </form>
+            </div>
+          </div>
+        </details>
       {% endif %}
     </nav>
   </header>

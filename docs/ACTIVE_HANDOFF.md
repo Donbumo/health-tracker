@@ -16,6 +16,45 @@ Este handoff no reemplaza:
 
 Si contradice schemas, tests, codigo o reglas canonicas, este archivo pierde prioridad.
 
+## Nota actual para `feature/import-ai-prompt-helpers`
+
+- Base efectiva verificada: `1799441`.
+- Rama de trabajo: `feature/import-ai-prompt-helpers`.
+- Arbol antes del trabajo: limpio.
+- Objetivo: agregar ayudas locales de "prompt base para IA" en `/imports/standard`.
+- Alcance: catalogo read-only de prompts y plantillas para los nueve targets de importacion estandar, UI colapsable, endpoint GET autenticado por target, pruebas y documentacion.
+- No integrar APIs de IA.
+- No enviar datos fuera de la app.
+- No guardar prompts copiados ni contenido del usuario.
+- No tocar schemas, modelos, migraciones, Docker, `.env` ni `/data`.
+
+Targets cubiertos por el catalogo:
+
+- `weigh_in_batch`
+- `food_products`
+- `daily_energy`
+- `daily_nutrition`
+- `completed_workout`
+- `medical_lab`
+- `training_plan`
+- `recipe`
+- `recipe_bundle`
+
+Validacion esperada para cerrar:
+
+```powershell
+& '.\.venv\Scripts\python.exe' -m compileall -q backend
+& '.\.venv\Scripts\python.exe' -m pytest backend/tests/ -q
+docker compose config --quiet
+docker compose up --build -d
+docker compose exec -T web flask db check
+docker compose exec -T --user root web sh -lc "pip install --no-cache-dir -r requirements-dev.txt && python -m pytest -q -rs"
+git diff --check
+git diff --stat
+git diff --name-status
+git status --short --branch
+```
+
 ## Nota actual para `release/alpha-teammate-ready`
 
 - Base efectiva verificada: `f46af45`.

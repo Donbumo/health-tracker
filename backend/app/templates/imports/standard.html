@@ -7,6 +7,57 @@
 
     <p><a href="{{ url_for('main.import_history') }}">Ver historial de importaciones confirmadas</a></p>
 
+    {% set initial_prompt_target = preview_form.target_type.data or "weigh_in_batch" %}
+    {% set initial_prompt = prompt_targets[initial_prompt_target] %}
+    <details class="import-ai-helper">
+      <summary>Preparar archivo con IA</summary>
+      <div class="notice warning">
+        {{ initial_prompt.privacy_notice }}
+      </div>
+      <p class="help">
+        Copia el prompt, pégalo en la IA externa que tú elijas junto con tus datos,
+        revisa el JSON resultante y vuelve aquí para ejecutar el preview antes de confirmar.
+      </p>
+
+      <div class="field">
+        <label for="ai-prompt-target">Tipo para preparar</label>
+        <select id="ai-prompt-target" aria-describedby="ai-prompt-help">
+          {% for target_type, prompt_target in prompt_targets.items() %}
+            <option value="{{ target_type }}" {% if target_type == initial_prompt_target %}selected{% endif %}>
+              {{ prompt_target.friendly_name }}
+            </option>
+          {% endfor %}
+        </select>
+        <span id="ai-prompt-help" class="help">
+          Si usas detección automática arriba, elige aquí el tipo de JSON que quieres preparar.
+        </span>
+      </div>
+
+      <div class="metadata import-ai-metadata">
+        <dt>Target</dt>
+        <dd id="ai-prompt-target-name">{{ initial_prompt.target_type }}</dd>
+        <dt>Schema</dt>
+        <dd id="ai-prompt-schema">{{ initial_prompt.schema_name }}.schema.json</dd>
+        <dt>Required</dt>
+        <dd id="ai-prompt-required">{{ initial_prompt.required|join(", ") }}</dd>
+      </div>
+
+      <div class="field">
+        <label for="ai-prompt-text">Prompt base listo para copiar</label>
+        <textarea id="ai-prompt-text" rows="18" readonly>{{ initial_prompt.prompt }}</textarea>
+      </div>
+      <div class="page-actions">
+        <button class="button" type="button" data-copy-target="ai-prompt-text">Copiar prompt</button>
+        <button class="button button-secondary" type="button" data-copy-target="ai-template-json">Copiar plantilla JSON</button>
+      </div>
+
+      <div class="field">
+        <label for="ai-template-json">Plantilla JSON ficticia</label>
+        <textarea id="ai-template-json" rows="14" readonly>{{ initial_prompt.template_json }}</textarea>
+      </div>
+      <p id="ai-copy-status" class="help" aria-live="polite"></p>
+    </details>
+
     {% if parse_error %}
       <div class="alert alert-danger">{{ parse_error }}</div>
     {% endif %}
@@ -109,4 +160,54 @@
       </table>
     </section>
   {% endif %}
+  <script type="application/json" id="ai-prompt-catalog">{{ prompt_targets|tojson }}</script>
+  <script>
+    (() => {
+      const catalogElement = document.getElementById("ai-prompt-catalog");
+      if (!catalogElement) return;
+      const catalog = JSON.parse(catalogElement.textContent);
+      const selector = document.getElementById("ai-prompt-target");
+      const importTarget = document.getElementById("target_type");
+      const promptText = document.getElementById("ai-prompt-text");
+      const templateText = document.getElementById("ai-template-json");
+      const targetName = document.getElementById("ai-prompt-target-name");
+      const schemaName = document.getElementById("ai-prompt-schema");
+      const required = document.getElementById("ai-prompt-required");
+      const status = document.getElementById("ai-copy-status");
+
+      const renderPrompt = (target) => {
+        const entry = catalog[target];
+        if (!entry) return;
+        targetName.textContent = entry.target_type;
+        schemaName.textContent = `${entry.schema_name}.schema.json`;
+        required.textContent = entry.required.join(", ");
+        promptText.value = entry.prompt;
+        templateText.value = entry.template_json;
+      };
+
+      selector?.addEventListener("change", () => renderPrompt(selector.value));
+      importTarget?.addEventListener("change", () => {
+        if (importTarget.value && catalog[importTarget.value] && selector.value !== importTarget.value) {
+          selector.value = importTarget.value;
+          renderPrompt(selector.value);
+        }
+      });
+
+      document.querySelectorAll("[data-copy-target]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const target = document.getElementById(button.dataset.copyTarget);
+          if (!target) return;
+          target.focus();
+          target.select();
+          try {
+            await navigator.clipboard.writeText(target.value);
+            status.textContent = "Copiado al portapapeles.";
+          } catch (_error) {
+            document.execCommand("copy");
+            status.textContent = "Copiado usando el método compatible del navegador.";
+          }
+        });
+      });
+    })();
+  </script>
 {% endblock %}

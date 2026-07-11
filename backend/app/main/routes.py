@@ -42,6 +42,7 @@ from app.services.importers.standard_import_executor import (
     StandardImportTokenError,
     StandardImportExecutor,
 )
+from app.services.importers.import_prompt_catalog import ImportPromptCatalog
 from app.services.manual_json import (
     ManualJsonGenerationError,
     build_weigh_in_document,
@@ -121,6 +122,13 @@ def standard_import():
     parse_error = None
     commit_result = None
     executor = StandardImportExecutor()
+    prompt_catalog = ImportPromptCatalog()
+    prompt_targets = prompt_catalog.as_dict()
+
+    if request.method == "GET":
+        requested_prompt_target = request.args.get("target")
+        if requested_prompt_target in prompt_targets:
+            preview_form.target_type.data = requested_prompt_target
 
     if request.method == "POST" and "payload_json" in request.form:
         if confirm_form.validate_on_submit():
@@ -226,7 +234,18 @@ def standard_import():
         preview_result=preview_result,
         commit_result=commit_result,
         parse_error=parse_error,
+        prompt_targets=prompt_targets,
     )
+
+
+@main_bp.get("/imports/standard/prompts/<target_type>")
+@login_required
+def standard_import_prompt(target_type: str):
+    try:
+        prompt = ImportPromptCatalog().get(target_type)
+    except KeyError:
+        abort(404)
+    return jsonify(prompt)
 
 
 @main_bp.get("/imports/history")

@@ -56,6 +56,7 @@ Módulos actualmente implementados o con núcleo funcional:
 - Laboratorios médicos con reportes, marcadores, historial, importación y exportación.
 - Fase 5B cerrada para los targets finales: detección estricta de schemas, asistente universal read-only, generación estándar read-only y orquestación de preview.
 - Fase posterior a 5B: importación estándar confirmada para QA desde web con plan `insert/update/skip/conflict/invalid` y confirmación explícita.
+- Ayudas locales de prompt para IA en `/imports/standard`: catálogo read-only para copiar prompts/plantillas JSON de los nueve targets soportados, sin integrar API externa, sin enviar datos fuera de la app y sin almacenar contenido copiado.
 
 Estado real de Fase 5B verificado:
 

@@ -416,6 +416,10 @@ El preview valida `schemas/user_data_export.schema.json`, muestra errores, adver
 
 El flujo `/imports/standard` permite a un usuario autenticado subir JSON, revisar preview/plan y confirmar una importación transaccional. La fase de preview sigue siendo read-only; la escritura ocurre solo tras confirmación.
 
+La misma pantalla incluye **Preparar archivo con IA**, un bloque colapsable con prompts base y plantillas JSON ficticias para los nueve targets soportados. Health Tracker no llama a APIs de IA, no envía datos fuera de la aplicación y no guarda el texto copiado. El usuario puede copiar el prompt, usarlo externamente bajo su responsabilidad, revisar el JSON devuelto y volver a `/imports/standard` para el preview normal.
+
+Guía detallada: [`docs/IMPORT_WITH_AI_PROMPTS.md`](docs/IMPORT_WITH_AI_PROMPTS.md).
+
 Hay fixtures ficticias para QA manual en:
 
 ```text

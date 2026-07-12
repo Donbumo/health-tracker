@@ -23,6 +23,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.extensions import db
 from app.main import main_bp
 from app.main.forms import (
+    AccountRestoreConfirmForm,
+    AccountRestorePreviewForm,
     StandardImportConfirmForm,
     StandardImportPreviewForm,
     UploadForm,
@@ -30,6 +32,12 @@ from app.main.forms import (
     WeighInForm,
 )
 from app.models import UploadedFile
+from app.services.account_restore import (
+    AccountRestoreError,
+    AccountRestoreService,
+    AccountRestoreTokenError,
+    MAX_EXPORT_BYTES,
+)
 from app.services.files import UploadError, store_uploaded_file
 from app.services.files import mark_import_status
 from app.services.daily_dashboard import daily_health_dashboard
@@ -82,6 +90,18 @@ def export_account_data():
     )
 
 
+@main_bp.get("/account/data")
+@login_required
+def account_data():
+    latest_runs = ImportAuditService().list_runs(
+        user_id=current_user.id,
+        page=1,
+        per_page=1,
+    )
+    latest_run = latest_runs[0] if latest_runs else None
+    return render_template("account/data.html", latest_run=latest_run)
+
+
 @main_bp.route("/account/import-preview", methods=["GET", "POST"])
 @login_required
 def preview_account_import():
@@ -109,6 +129,74 @@ def preview_account_import():
         "account/import_preview.html",
         form=form,
         preview=preview,
+        parse_error=parse_error,
+    )
+
+
+@main_bp.route("/account/restore", methods=["GET", "POST"])
+@login_required
+def restore_account_data():
+    form = AccountRestorePreviewForm()
+    confirm_form = AccountRestoreConfirmForm()
+    preview = None
+    parse_error = None
+    service = AccountRestoreService()
+    if form.validate_on_submit():
+        try:
+            payload = _read_json_upload(form.file.data, limit_bytes=MAX_EXPORT_BYTES)
+            preview = service.preview(payload, user_id=current_user.id)
+            confirm_form.confirmation_token.data = preview["confirmation_token"]
+        except (AccountRestoreError, ValueError) as error:
+            parse_error = f"No fue posible preparar el restore: {error}"
+    return render_template(
+        "account/restore.html",
+        form=form,
+        confirm_form=confirm_form,
+        preview=preview,
+        commit_result=None,
+        parse_error=parse_error,
+    )
+
+
+@main_bp.post("/account/restore/confirm")
+@login_required
+def confirm_account_restore():
+    form = AccountRestoreConfirmForm()
+    preview_form = AccountRestorePreviewForm()
+    preview = None
+    commit_result = None
+    parse_error = None
+    service = AccountRestoreService()
+    if form.validate_on_submit():
+        try:
+            payload = _read_json_upload(form.file.data, limit_bytes=MAX_EXPORT_BYTES)
+            preview = service.preview(payload, user_id=current_user.id)
+            token_digest = _account_restore_token_digest(
+                form.confirmation_token.data
+            )
+            used_tokens = session.setdefault("used_account_restore_tokens", [])
+            if token_digest in used_tokens:
+                raise AccountRestoreTokenError(
+                    "El token de confirmaciÃ³n de restore ya fue usado."
+                )
+            commit_result = service.commit(
+                payload,
+                user_id=current_user.id,
+                confirmation_token=form.confirmation_token.data,
+            )
+            used_tokens.append(token_digest)
+            session["used_account_restore_tokens"] = used_tokens[-20:]
+            session.modified = True
+        except (json.JSONDecodeError, AccountRestoreTokenError, AccountRestoreError, ValueError) as error:
+            parse_error = f"No fue posible confirmar el restore: {error}"
+    else:
+        parse_error = "La confirmaciÃ³n no es vÃ¡lida."
+    return render_template(
+        "account/restore.html",
+        form=preview_form,
+        confirm_form=form,
+        preview=preview,
+        commit_result=commit_result,
         parse_error=parse_error,
     )
 
@@ -299,6 +387,28 @@ def _prepare_standard_import_confirmation(
 
 def _standard_import_token_digest(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _account_restore_token_digest(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _read_json_upload(storage, *, limit_bytes: int) -> dict:
+    raw = storage.stream.read(limit_bytes + 1)
+    if len(raw) > limit_bytes:
+        raise ValueError("El archivo supera el lÃ­mite permitido.")
+    try:
+        payload = json.loads(raw.decode("utf-8-sig"))
+    except UnicodeDecodeError as error:
+        raise ValueError("El archivo debe usar codificaciÃ³n UTF-8.") from error
+    except json.JSONDecodeError as error:
+        raise ValueError(
+            "El archivo no contiene JSON vÃ¡lido "
+            f"(lÃ­nea {error.lineno}, columna {error.colno})."
+        ) from error
+    if not isinstance(payload, dict):
+        raise ValueError("El archivo debe contener un objeto JSON.")
+    return payload
 
 
 def _positive_int(value: str | None, *, default: int) -> int:

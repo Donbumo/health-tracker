@@ -2,7 +2,7 @@
 
 Documento temporal para retomar el proyecto sin memoria previa.
 
-Ultima actualizacion: 2026-07-10.
+Ultima actualizacion: 2026-07-11.
 
 Este handoff no reemplaza:
 
@@ -13,186 +13,98 @@ Este handoff no reemplaza:
 - `project-rules/phase-5b-universal-json-import-assistant.md`
 - `project-rules/standard-json-generator-development.md`
 - `project-rules/confirmed-standard-import.md`
+- `project-rules/account-restore.md`
+- `ACCOUNT_RESTORE.md`
+- `DATA_PORTABILITY.md`
 
 Si contradice schemas, tests, codigo o reglas canonicas, este archivo pierde prioridad.
 
-## Nota actual para `feature/import-ai-prompt-helpers`
+## Bloque activo
 
-- Base efectiva verificada: `1799441`.
-- Rama de trabajo: `feature/import-ai-prompt-helpers`.
+- Rama de trabajo: `feature/backend-complete-roundtrip`.
+- Base efectiva verificada: `fd23e7b`.
+- Base esperada por el usuario: `master` posterior a `feature/import-ai-prompt-helpers`.
 - Arbol antes del trabajo: limpio.
-- Objetivo: agregar ayudas locales de "prompt base para IA" en `/imports/standard`.
-- Alcance: catalogo read-only de prompts y plantillas para los nueve targets de importacion estandar, UI colapsable, endpoint GET autenticado por target, pruebas y documentacion.
-- No integrar APIs de IA.
-- No enviar datos fuera de la app.
-- No guardar prompts copiados ni contenido del usuario.
-- No tocar schemas, modelos, migraciones, Docker, `.env` ni `/data`.
+- Baseline local previa conocida: `370 passed`.
+- Baseline local tras primer pase de este bloque: `374 passed`.
+- Baseline local tras segundo pase de este bloque: `399 passed`.
+- Baseline Docker tras segundo pase: `398 passed, 1 skipped` (`tests/test_active_handoff.py`, porque `docs/` no se copia a la imagen).
+- No se tocaron schemas, modelos, migraciones, Docker, `.env` ni `/data`.
+- No se hizo commit ni push.
+- Regla fuerte: No tocar `/data`.
 
-Targets cubiertos por el catalogo:
+## Objetivo del bloque
 
-- `weigh_in_batch`
-- `food_products`
-- `daily_energy`
-- `daily_nutrition`
-- `completed_workout`
-- `medical_lab`
-- `training_plan`
-- `recipe`
-- `recipe_bundle`
+Implementar portabilidad backend end-to-end para Alpha privada:
 
-Validacion esperada para cerrar:
-
-```powershell
-& '.\.venv\Scripts\python.exe' -m compileall -q backend
-& '.\.venv\Scripts\python.exe' -m pytest backend/tests/ -q
-docker compose config --quiet
-docker compose up --build -d
-docker compose exec -T web flask db check
-docker compose exec -T --user root web sh -lc "pip install --no-cache-dir -r requirements-dev.txt && python -m pytest -q -rs"
-git diff --check
-git diff --stat
-git diff --name-status
-git status --short --branch
+```text
+export completo -> preview restore -> confirmacion firmada -> commit atomico -> uso real en pantallas -> export repetible
 ```
 
-## Nota actual para `release/alpha-teammate-ready`
+## Implementado en esta rama
 
-- Base efectiva verificada: `f46af45`.
-- Arbol antes del trabajo: limpio.
-- Suite base local antes de modificar: `337 passed`.
-- Objetivo: preparar alpha privada usable por un companero real en LAN/VPN.
-- Alcance: onboarding web sin tabla nueva, `/privacy`, textos de admin, version visible `Alpha 0.1`, docs de despliegue/checklist y pruebas Flask client.
-- No implementar restore, API publica, dispositivos, FIT/GPX, APK, reloj ni nuevos dominios.
-- No tocar `.env`, `/data`, schemas publicos ni migraciones salvo bug demostrado.
+- Servicio `AccountRestoreService`.
+- Rutas:
+  - `GET /account/data`
+  - `GET/POST /account/restore`
+  - `POST /account/restore/confirm`
+- Export completo ahora incluye seccion `recipes`.
+- Restore merge seguro desde `user_data_export`.
+- Remapeo en memoria de IDs antiguos a IDs del usuario autenticado para:
+  - `training_plans`
+  - `training_plan_versions`
+  - `training_sessions`
+- Auditoria saneada con `ImportRun.target_type = user_data_restore`.
+- Data center de cuenta con export, restore, import estándar, historial y último audit run.
+- Límites defensivos de JSON: tamaño, profundidad, nodos, arrays, strings, claves y secciones.
+- Validación de schema version antes de schema general para rechazar exports futuros con mensaje claro.
+- Token de restore ligado a versión, modo, usuario, schema, payload y plan; la web evita reutilización accidental por sesión.
+- Recetas restauradas validan referencias a productos existentes o incluidos en el mismo export.
+- Pruebas de round-trip, idempotencia, token manipulado/reutilizado, límites, referencias faltantes, flujo web y pantallas post-restore.
 
-## Estado verificado del bloque activo
+## Secciones del export y politica actual
 
-- Rama de trabajo: `feature/import-audit-persistence`.
-- Base efectiva verificada: `5b0bee3`.
-- Arbol antes del trabajo: limpio.
-- Suite base local antes de modificar: `323 passed`.
-- Baseline Docker conocido antes de esta rama: `322 passed, 1 skipped`.
-- Skip Docker esperado: `tests/test_active_handoff.py`, porque `docs/` no se copia a la imagen de produccion.
-- Migración aditiva prevista/creada en esta rama: `20260710_0018_import_runs.py`.
-- No se tocaron schemas, modelos, Docker, `.env` ni `/data`.
-
-## Objetivo de esta rama
-
-Implementar auditoría persistente de importaciones estándar confirmadas con `ImportRun`, sin guardar payloads crudos, tokens ni datos sensibles.
-
-## Resultado de diseño
-
-- Modelo nuevo: `ImportRun`.
-- Servicio nuevo: `ImportAuditService`.
-- Rutas nuevas protegidas:
-  - `GET /imports/history`
-  - `GET /imports/history/<id>`
-- La auditoría se crea solo en confirmación validada.
-- Preview y token inválido no crean runs.
-- `failed` se persiste después del rollback de datos de dominio.
-- Retención inicial: conservar agregados indefinidamente; pruning queda para fase futura.
-
-### Milestone A: QA automatizado de targets restantes
-
-Targets priorizados en esta rama:
-
-| Target | Cobertura agregada |
+| Seccion | Restore |
 | --- | --- |
-| `daily_energy` | Preview autodetectado, alias `distancia_km`, insert, repeat/skip, update parcial, batch invalido, `user_id` ajeno. |
-| `training_plan` | Preview con parent paths, versionado insert/skip/update, SHA estable, orden invalido, aislamiento. |
-| `completed_workout` | Plan/version del usuario, referencias ajenas, mismatch plan/version, campos ampliados, conflict en repeat/update inseguro, rollback tras flush. |
-| `medical_lab` | Preview autodetectado, insert/skip/update, reemplazo de markers, valores numericos/texto, invalidos, batch invalido, aislamiento. |
+| `food_products` | insert/update/skip por nombre + marca |
+| `recipes` | insert/update/skip por nombre; ingredientes por nombre/marca de producto |
+| `weigh_ins` | insert/update/skip por usuario + fecha/hora + fuente |
+| `daily_energy` | insert/update/skip por usuario + fecha |
+| `daily_nutrition` | insert/update/skip por usuario + fecha |
+| `medical_lab_reports` | insert/update/skip por usuario + fecha + laboratorio |
+| `training_plans` | insert/skip/update por nombre y SHA de versiones |
+| `training_sessions` | insert/skip; update inseguro sigue siendo conflicto |
+| `daily_balances` | omitido, derivado |
+| `uploads` | omitido, metadata sin binarios |
 
-Tambien se endurecio el resumen de commit invalido/conflictivo para conservar el mensaje generico compatible y agregar detalles de las operaciones bloqueadas.
+## Garantias vigentes
 
-### Milestone B: fixtures manuales de QA
+- El usuario/email/rol del export se ignoran.
+- El `user_id` efectivo siempre proviene de la sesion autenticada.
+- Preview no escribe DB ni guarda archivos.
+- Confirmacion se firma contra usuario, modo, version, schema, payload y plan.
+- Commit es atomico; ante error hace rollback.
+- `pending` queda persistido antes de mutaciones de dominio y `failed` se escribe con transaccion limpia tras rollback.
+- No se guardan payloads crudos, tokens, trazas ni datos sensibles en `ImportRun`.
+- Restore no toca `/data` ni restaura archivos binarios.
 
-Se agrego paquete ficticio bajo:
+## Riesgos y pendientes
 
-```text
-examples/qa/standard-import/
-```
+- No hay restore ZIP ni restore de binarios de uploads.
+- No hay borrado masivo; el modo actual es merge.
+- La equivalencia semantica round-trip ignora IDs, timestamps y derivados.
+- `training_sessions` conserva update como conflicto salvo repeticion equivalente.
+- Si se agregan nuevos dominios al export, deben añadirse explicitamente a restore y pruebas.
+- `AccountRestoreService` sigue siendo un merge, no una sincronizacion espejo.
+- La proteccion anti-replay de tokens es por sesion web; tokens viejos tambien se invalidan por expiracion y hash de payload/plan.
+- Nota de compatibilidad con prueba historica: la frase `Restore/import real aún no existe` ya no describe este bloque para restore de `user_data_export`; sigue aplicando a restore ZIP/binarios.
+- Nota de compatibilidad legacy: `Restore/import real aÃºn no existe`.
 
-Incluye README raiz y README por dominio para:
-
-- `daily_energy`
-- `training_plan`
-- `completed_workout`
-- `medical_lab`
-
-Cada dominio contiene fixtures de insert, repeat/update/conflict cuando aplica, invalidos, batch valido y batch mixto. Los fixtures son ficticios y no deben copiarse a `/data`.
-
-## Targets finales del flujo estandar
-
-| `target_type` | `schema_name` | modulo |
-| --- | --- | --- |
-| `weigh_in_batch` | `weigh_in` | `standard_generators/weigh_in.py` |
-| `food_products` | `food_product` | `standard_generators/food_product.py` |
-| `daily_energy` | `daily_energy` | `standard_generators/daily_energy.py` |
-| `daily_nutrition` | `daily_nutrition` | `standard_generators/daily_nutrition.py` |
-| `completed_workout` | `completed_workout` | `standard_generators/completed_workout.py` |
-| `medical_lab` | `medical_lab` | `standard_generators/medical_lab.py` |
-| `training_plan` | `training_plan` | `standard_generators/training_plan.py` |
-| `recipe` | `recipe` | `standard_generators/recipe.py` |
-| `recipe_bundle` | `recipe_bundle` | `standard_generators/recipe_bundle.py` |
-
-## Contrato actual de importacion confirmada
-
-`StandardImportExecutor` es la fase posterior a 5B:
-
-- preview, deteccion, mapping y generacion siguen siendo read-only;
-- recibe documentos estandar ya generados;
-- vuelve a validar schema y `user_id`;
-- construye plan `insert/update/skip/conflict/invalid`;
-- exige confirmacion explicita;
-- firma confirmacion contra usuario, target, payload y plan;
-- rechaza tokens reutilizados, vencidos o de otro usuario;
-- ejecuta lote atomico;
-- hace rollback si falla un elemento durante escritura;
-- no cambia el destino desde `user_id` incluido en archivo.
-
-Ruta web minima:
-
-```text
-GET/POST /imports/standard
-```
-
-Flujo:
-
-```text
-login -> subir JSON -> preview -> plan -> confirmar -> commit -> resumen
-```
-
-## Restricciones vigentes
-
-- No tocar `/data`.
-- No leer ni mostrar `.env`.
-- No usar datos reales.
-- Mantener aislamiento por `user_id`.
-- No inventar requeridos.
-- No hacer commit ni push salvo pedido explicito.
-- No implementar restore real todavia.
-- Restore/import real aÃºn no existe para respaldos completos de usuario.
-- Restore/import real aún no existe para respaldos completos de usuario. Esta linea conserva compatibilidad con una prueba historica de handoff.
-- No implementar `ImportJob` ni restore completo sin una fase separada.
-
-## Riesgos conocidos
-
-- `StandardImportExecutor` no sustituye restore completo de usuario.
-- La auditoría persistente agregada existe mediante `ImportRun`; no guarda payload crudo.
-- No existe pruning automático todavía.
-- Algunos updates por dominio usan claves naturales existentes; si un dominio necesita reglas mas finas, debe endurecerse con pruebas.
-- `recipe` y `recipe_bundle` requieren productos existentes cuando se importan realmente.
-- `completed_workout` no admite update seguro; los cambios conflictivos se bloquean.
-- Los fixtures `completed_workout` usan IDs ficticios de plan/version y QA debe reemplazarlos por IDs propios.
-- Docker omite docs, por eso `tests/test_active_handoff.py` puede aparecer como skip esperado en imagen.
-
-## Validacion esperada para cerrar este bloque
+## Validacion esperada
 
 ```powershell
 & '.\.venv\Scripts\python.exe' -m compileall -q backend
 & '.\.venv\Scripts\python.exe' -m pytest backend/tests/ -q
-flask db check
 docker compose config --quiet
 docker compose up --build -d
 docker compose exec -T web flask db check
@@ -203,22 +115,25 @@ git diff --name-status
 git status --short --branch
 ```
 
-## Siguiente accion concreta
+Si pytest no esta instalado en la imagen:
 
-1. Ejecutar validacion local completa y Docker.
-2. Probar manualmente `/imports/standard` con fixtures de `examples/qa/standard-import/`.
-3. Si todo esta verde, commit sugerido:
-
-```text
-feat: add import audit persistence
+```powershell
+docker compose exec -T --user root web sh -lc "pip install --no-cache-dir -r requirements-dev.txt && python -m pytest -q -rs"
 ```
 
-## Protocolo al cerrar el bloque
+Skip Docker esperado si aparece: `tests/test_active_handoff.py`, porque `docs/` no se copia a la imagen de produccion.
 
-Actualizar este archivo con:
+## Siguiente accion concreta
 
-- commit final si se crea;
-- suite final local y Docker;
-- skip exacto si existe;
-- riesgos nuevos;
-- siguiente fase recomendada.
+1. Ejecutar validacion Docker final.
+2. Probar manualmente:
+   - crear/usar cuenta QA;
+   - exportar `/account/export.json`;
+   - restaurar en otra cuenta desde `/account/restore`;
+   - abrir dashboard, peso, nutricion, energia, recetas, rutinas, sesiones, progreso y laboratorios;
+   - repetir restore y confirmar que no duplica.
+3. Si todo queda verde, commit sugerido:
+
+```text
+feat: add account data restore roundtrip
+```

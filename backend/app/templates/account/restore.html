@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Restore de cuenta · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Restore de cuenta</h1>
+      <p>Previsualiza un <code>user_data_export</code> y confirma un restore merge seguro sobre tu cuenta.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button button-secondary" href="{{ url_for('main.account_data') }}">Centro de datos</a>
+      <a class="button button-secondary" href="{{ url_for('main.export_account_data') }}">Exportar mis datos</a>
+    </div>
+  </section>
+
+  <section class="notice warning">
+    <p>El restore ignora usuario, email y rol del archivo. No implementa borrado ni restore de binarios; <code>uploads</code> y balances derivados se omiten.</p>
+  </section>
+
+  <section class="card narrow-form">
+    <h2>Seleccionar export JSON</h2>
+    <form method="post" action="{{ url_for('main.restore_account_data') }}" enctype="multipart/form-data" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="field">
+        {{ form.file.label }}
+        {{ form.file(accept="application/json,.json") }}
+        {% for error in form.file.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <p class="help">Límite: 10 MB. El preview no escribe en base de datos.</p>
+      {{ form.submit(class_="button") }}
+    </form>
+  </section>
+
+  {% if parse_error %}
+    <div class="alert alert-danger">{{ parse_error }}</div>
+  {% endif %}
+
+  {% if preview %}
+    <section class="card">
+      <h2>Plan de restore</h2>
+      <p>
+        <strong>{{ 'Listo para confirmar' if preview.valid else 'Requiere revisión' }}</strong>
+        · {{ preview.plan.total }} operación(es)
+        · {{ preview.plan.inserts }} insert
+        · {{ preview.plan.updates }} update
+        · {{ preview.plan.skips }} skip
+        · {{ preview.plan.conflicts }} conflicto(s)
+        · {{ preview.plan.invalid }} inválido(s)
+        · {{ preview.plan.unsupported }} omitido(s)
+      </p>
+      {% if preview.warnings %}
+        <h3>Advertencias</h3>
+        <ul>{% for warning in preview.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if preview.plan.errors %}
+        <h3>Errores</h3>
+        <ul>{% for error in preview.plan.errors %}<li>{{ error }}</li>{% endfor %}</ul>
+      {% endif %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Operación</th><th>Sección</th><th>Registro</th><th>ID existente</th></tr>
+          </thead>
+          <tbody>
+            {% for operation in preview.plan.operations %}
+              <tr>
+                <td>{{ operation.operation }}</td>
+                <td>{{ operation.section }}</td>
+                <td>{{ operation.label }}</td>
+                <td>{{ operation.existing_id or '—' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if preview.valid %}
+        <form method="post" action="{{ url_for('main.confirm_account_restore') }}" enctype="multipart/form-data" class="form-actions">
+          {{ confirm_form.hidden_tag() }}
+          <div class="field">
+            {{ confirm_form.file.label }}
+            {{ confirm_form.file(accept="application/json,.json") }}
+            {% for error in confirm_form.file.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+          </div>
+          <p class="help">Por privacidad, el payload no se incrusta en esta página. Sube el mismo archivo revisado; el token firmado rechazará cualquier cambio.</p>
+          {{ confirm_form.submit(class_="button") }}
+        </form>
+      {% else %}
+        <p class="help">Corrige el archivo o resuelve los conflictos antes de confirmar.</p>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  {% if commit_result %}
+    <section class="card">
+      <h2>Resultado final</h2>
+      <p>
+        <strong>{{ 'Guardado' if commit_result.committed else 'No guardado' }}</strong>
+        · rollback: {{ 'sí' if commit_result.rollback else 'no' }}
+        · audit run: {{ commit_result.audit_run_id }}
+      </p>
+      <ul>
+        <li>Inserts: {{ commit_result.inserts }}</li>
+        <li>Updates: {{ commit_result.updates }}</li>
+        <li>Skips: {{ commit_result.skips }}</li>
+        <li>Conflictos: {{ commit_result.conflicts }}</li>
+        <li>Inválidos: {{ commit_result.invalid }}</li>
+      </ul>
+      <p><a class="button" href="{{ url_for('main.dashboard') }}">Ir al dashboard</a></p>
+    </section>
+  {% endif %}
+{% endblock %}

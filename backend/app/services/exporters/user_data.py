@@ -7,6 +7,7 @@ from app.models import (
     DailyNutrition,
     FoodProduct,
     MedicalLabReport,
+    Recipe,
     TrainingPlan,
     TrainingSession,
     UploadedFile,
@@ -20,6 +21,7 @@ from app.services.exporters.base import (
     serialize_json,
 )
 from app.services.exporters.medical_lab import build_medical_lab_document
+from app.services.exporters.recipe import build_recipe_export_document
 from app.services.exporters.training_session import build_completed_workout_document
 from app.services.exporters.weigh_in import build_weigh_in_document
 from app.services.exporters.wellness import (
@@ -161,6 +163,7 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
     nutrition = _records(DailyNutrition, user_id, DailyNutrition.date, DailyNutrition.id)
     energy = _records(DailyEnergy, user_id, DailyEnergy.date, DailyEnergy.id)
     food_products = _records(FoodProduct, user_id, FoodProduct.id)
+    recipes = _records(Recipe, user_id, Recipe.id)
     plans = _records(TrainingPlan, user_id, TrainingPlan.created_at, TrainingPlan.id)
     sessions = _records(
         TrainingSession,
@@ -185,6 +188,7 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
             "food_products": [
                 _food_product_document(product, user_id) for product in food_products
             ],
+            "recipes": [build_recipe_export_document(recipe) | {"id": recipe.id} for recipe in recipes],
             "weigh_ins": [
                 build_weigh_in_document(record, user_id) for record in weigh_ins
             ],

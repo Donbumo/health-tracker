@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Datos de cuenta · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Centro de datos</h1>
+      <p>Respaldo, restore e importaciones confirmadas para tu usuario autenticado.</p>
+    </div>
+  </section>
+
+  <section class="quick-actions">
+    <a class="button" href="{{ url_for('main.export_account_data') }}">Exportar respaldo</a>
+    <a class="button" href="{{ url_for('main.restore_account_data') }}">Restore desde export</a>
+    <a class="button button-secondary" href="{{ url_for('main.standard_import') }}">Importar JSON estándar</a>
+    <a class="button button-secondary" href="{{ url_for('main.import_history') }}">Historial imports/restores</a>
+  </section>
+
+  <section class="summary-grid">
+    <article class="card">
+      <h2>Exportar respaldo</h2>
+      <p>Descarga un JSON completo de tus datos. No incluye password hash, secretos ni archivos binarios.</p>
+      <a class="button" href="{{ url_for('main.export_account_data') }}">Exportar JSON</a>
+    </article>
+    <article class="card">
+      <h2>Restore desde export</h2>
+      <p>Previsualiza y confirma un restore tipo merge. El usuario, email y rol del archivo se ignoran.</p>
+      <a class="button" href="{{ url_for('main.restore_account_data') }}">Restaurar JSON</a>
+    </article>
+    <article class="card">
+      <h2>Importar JSON estándar</h2>
+      <p>Importa dominios concretos: peso, energía, nutrición, rutinas, sesiones, alimentos, recetas o laboratorios.</p>
+      <a class="button button-secondary" href="{{ url_for('main.standard_import') }}">Importar estándar</a>
+    </article>
+    <article class="card">
+      <h2>Historial de imports/restores</h2>
+      <p>Consulta auditoría saneada de importaciones confirmadas y restores. No muestra payload crudo.</p>
+      <a class="button button-secondary" href="{{ url_for('main.import_history') }}">Ver historial</a>
+    </article>
+  </section>
+
+  <section class="card">
+    <h2>Estado de portabilidad</h2>
+    <ul>
+      <li>Restaura datos propios del export: peso, energía, nutrición, alimentos, recetas, rutinas, sesiones y laboratorios.</li>
+      <li>No restaura usuario/email/rol del archivo, uploads binarios ni balances derivados.</li>
+      <li>El preview es read-only; la escritura exige confirmación explícita con token firmado.</li>
+      <li>El restore usa merge seguro: insert/update/skip/conflict/invalid, sin borrado destructivo.</li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <h2>Último import/restore</h2>
+    {% if latest_run %}
+      <dl class="detail-list">
+        <dt>Tipo</dt>
+        <dd>{{ latest_run.target_type }}</dd>
+        <dt>Estado</dt>
+        <dd>{{ latest_run.status }}</dd>
+        <dt>Creado</dt>
+        <dd>{{ latest_run.created_at }}</dd>
+        <dt>Hash payload</dt>
+        <dd><code>{{ latest_run.payload_sha256[:12] if latest_run.payload_sha256 else '—' }}</code></dd>
+      </dl>
+      <a class="button button-secondary" href="{{ url_for('main.import_history_detail', run_id=latest_run.id) }}">Ver detalle saneado</a>
+    {% else %}
+      <p>No hay importaciones o restores registrados todavía.</p>
+      <a class="button button-secondary" href="{{ url_for('main.standard_import') }}">Importar JSON estándar</a>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -3,7 +3,7 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from app.extensions import db
-from app.models import DailyEnergy, DailyNutrition, MedicalLabReport, TrainingSession, User, WeighIn
+from app.models import Activity, DailyEnergy, DailyNutrition, MedicalLabReport, TrainingSession, User, WeighIn
 from app.services.daily_balance import daily_balance
 from app.services.overload import session_metrics
 
@@ -130,6 +130,33 @@ def _latest_medical_report(user_id: int, target_date: date):
     ).scalars().first()
 
 
+def _activity_summary(user_id: int, target_date: date, app_timezone: ZoneInfo) -> dict:
+    records = db.session.execute(
+        db.select(Activity)
+        .where(Activity.user_id == user_id)
+        .order_by(Activity.started_at.desc(), Activity.id.desc())
+    ).scalars().all()
+    latest = None
+    weekly = []
+    for activity in records:
+        activity_date = _local_date(activity.started_at, app_timezone)
+        if activity_date <= target_date and latest is None:
+            latest = activity
+        if 0 <= (target_date - activity_date).days <= 6:
+            weekly.append(activity)
+    return {
+        "latest": latest,
+        "weekly_count": len(weekly),
+        "weekly_distance_meters": sum(
+            (activity.distance_meters for activity in weekly if activity.distance_meters is not None),
+            start=Decimal("0"),
+        ),
+        "weekly_duration_seconds": sum(
+            activity.duration_seconds for activity in weekly if activity.duration_seconds is not None
+        ) or None,
+    }
+
+
 def _completion_summary(balance: dict, weight: dict, sessions: list[dict]) -> dict:
     nutrition_state = _domain_state(
         balance["nutrition"],
@@ -229,6 +256,7 @@ def daily_health_dashboard(
     )
     sessions = _session_summaries(user_id, target_date, app_timezone)
     medical_report = _latest_medical_report(user_id, target_date)
+    activity_summary = _activity_summary(user_id, target_date, app_timezone)
     return {
         **balance,
         "balance_state": _balance_state(balance["balance"]),
@@ -238,6 +266,7 @@ def daily_health_dashboard(
         "sessions": sessions,
         "training_totals": _training_totals(sessions),
         "latest_medical_report": medical_report,
+        "activity_summary": activity_summary,
         "medical_marker_count": (
             len(medical_report.results) if medical_report is not None else 0
         ),

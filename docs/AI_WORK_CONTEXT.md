@@ -74,6 +74,7 @@ El proyecto actual incluye, según código, tests y README:
 
 - Auth, login/logout y administración básica.
 - Uploads con SHA256, estado de importación, tipo detectado y aislamiento por usuario.
+- Base de real-file imports en rama `feature/phase-5-real-importers`: GPX/TCX/CSV/FIT hacia JSON estándar, actividades/rutas persistidas, preview/confirmación/auditoría y export/restore; FIT binario vendor-neutral usa `fitdecode==0.10.0`.
 - Dashboard web diario y QA operativo.
 - Export completo de usuario e import-preview dry-run.
 - Entrenamiento:
@@ -99,7 +100,7 @@ El proyecto actual incluye, según código, tests y README:
   - export JSON/CSV.
 - Importación asistida universal, actualmente read-only en la fase de preview/generación.
 
-No tratar APK, app de reloj, FIT real, GPX real, Magene real, OCR, FHIR, API REST pública, restore de binarios/ZIP o PDF/Excel avanzado como implementados si el código no lo confirma.
+No tratar APK, app de reloj, APIs privadas Magene/OnelapFit, OCR, FHIR, API REST pública, restore de binarios/ZIP o PDF/Excel avanzado como implementados si el código no lo confirma. FIT/GPX/TCX se soportan solo como importación de archivos exportados, no como sincronización con dispositivos.
 
 La verificación local posterior al cierre de Fase 5B e importación confirmada reportó inicialmente:
 
@@ -260,6 +261,7 @@ Al cerrar un bloque:
 - Fase 5B: `project-rules/phase-5b-universal-json-import-assistant.md`.
 - Reglas de `StandardJsonGenerator`: `project-rules/standard-json-generator-development.md`.
 - Importación estándar confirmada: `project-rules/confirmed-standard-import.md`.
+- Real-file imports: `project-rules/real-file-imports.md`.
 - Auditoría persistente de imports: `project-rules/import-audit-persistence.md`.
 - Account restore: `project-rules/account-restore.md`.
 - Guía de restore: `ACCOUNT_RESTORE.md`.

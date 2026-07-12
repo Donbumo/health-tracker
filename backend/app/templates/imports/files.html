@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Importar archivos reales Â· Health Tracker{% endblock %}
+{% block content %}
+  <section class="card">
+    <h1>Importar archivos reales</h1>
+    <p>Sube archivos FIT, GPX, TCX, CSV o JSON. Primero se genera un preview; solo se escribe en tu cuenta despuÃ©s de confirmar.</p>
+    <p class="help">No se ejecuta contenido del archivo. El raw queda trazable como upload de tu usuario.</p>
+    <p>
+      <a href="{{ url_for('main.import_history') }}">Ver historial de importaciones</a>
+      Â·
+      <a href="{{ url_for('main.standard_import') }}">Importar JSON estÃ¡ndar/asistido</a>
+    </p>
+
+    {% if parse_error %}
+      <div class="alert alert-danger">{{ parse_error }}</div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+      {{ preview_form.hidden_tag() }}
+      <div class="field">
+        {{ preview_form.file.label }}
+        {{ preview_form.file() }}
+        {% for error in preview_form.file.errors %}
+          <p class="form-error">{{ error }}</p>
+        {% endfor %}
+      </div>
+      <div class="field">
+        {{ preview_form.requested_type.label }}
+        {{ preview_form.requested_type() }}
+        <p class="help">Usa selecciÃ³n manual solo si el CSV no puede detectarse de forma segura.</p>
+      </div>
+      {{ preview_form.submit(class_="button") }}
+    </form>
+  </section>
+
+  {% if preview_result %}
+    <section class="card">
+      <h2>Preview del archivo</h2>
+      {% if source_file %}
+        <dl class="metadata">
+          <dt>Archivo</dt><dd>{{ source_file.original_filename }}</dd>
+          <dt>SHA256</dt><dd><code>{{ source_file.sha256[:12] }}â€¦</code></dd>
+        </dl>
+      {% endif %}
+      <dl class="metadata">
+        <dt>Detectado</dt><dd>{{ preview_result.detected_type }}</dd>
+        <dt>Target</dt><dd>{{ preview_result.target_type }}</dd>
+        <dt>Documentos</dt><dd>{{ preview_result.documents|length }}</dd>
+      </dl>
+
+      {% if preview_result.warnings %}
+        <h3>Warnings</h3>
+        <ul>
+          {% for warning in preview_result.warnings %}
+            <li>{{ warning }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <h3>Plan de importaciÃ³n</h3>
+      <table>
+        <tbody>
+          <tr><th>Total</th><td>{{ preview_result.plan.total }}</td></tr>
+          <tr><th>VÃ¡lidos</th><td>{{ preview_result.plan.valid }}</td></tr>
+          <tr><th>InvÃ¡lidos</th><td>{{ preview_result.plan.invalid }}</td></tr>
+          <tr><th>Inserts</th><td>{{ preview_result.plan.inserts }}</td></tr>
+          <tr><th>Updates</th><td>{{ preview_result.plan.updates }}</td></tr>
+          <tr><th>Skips</th><td>{{ preview_result.plan.skips }}</td></tr>
+          <tr><th>Conflictos</th><td>{{ preview_result.plan.conflicts }}</td></tr>
+        </tbody>
+      </table>
+
+      {% if preview_result.plan.errors %}
+        <h3>Errores</h3>
+        <ul>
+          {% for error in preview_result.plan.errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>OperaciÃ³n</th>
+              <th>Modelo</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for operation in preview_result.plan.operations %}
+              <tr>
+                <td>{{ operation.document_index }}</td>
+                <td>{{ operation.operation }}</td>
+                <td>{{ operation.model or "-" }}</td>
+                <td>{{ operation.label }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if preview_result.plan.total > 0 and preview_result.plan.invalid == 0 and preview_result.plan.conflicts == 0 and not commit_result %}
+        <form method="post">
+          {{ confirm_form.hidden_tag() }}
+          {{ confirm_form.source_file_id() }}
+          {{ confirm_form.requested_type() }}
+          {{ confirm_form.target_type() }}
+          {{ confirm_form.confirmation_token() }}
+          <p class="muted">La confirmaciÃ³n estÃ¡ ligada a tu usuario, archivo, SHA256, target y plan revisado.</p>
+          {{ confirm_form.submit(class_="button") }}
+        </form>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  {% if commit_result %}
+    <section class="card">
+      <h2>Resumen final</h2>
+      <table>
+        <tbody>
+          <tr><th>Guardado</th><td>{{ 'sÃ­' if commit_result.committed else 'no' }}</td></tr>
+          <tr><th>Rollback</th><td>{{ 'sÃ­' if commit_result.rollback else 'no' }}</td></tr>
+          {% if commit_result.audit_run_id %}
+            <tr>
+              <th>AuditorÃ­a</th>
+              <td><a href="{{ url_for('main.import_history_detail', run_id=commit_result.audit_run_id) }}">ImportRun #{{ commit_result.audit_run_id }}</a></td>
+            </tr>
+          {% endif %}
+          <tr><th>Inserts</th><td>{{ commit_result.inserts }}</td></tr>
+          <tr><th>Updates</th><td>{{ commit_result.updates }}</td></tr>
+          <tr><th>Skips</th><td>{{ commit_result.skips }}</td></tr>
+          <tr><th>Conflictos</th><td>{{ commit_result.conflicts }}</td></tr>
+          <tr><th>InvÃ¡lidos</th><td>{{ commit_result.invalid }}</td></tr>
+        </tbody>
+      </table>
+      <p>
+        <a href="{{ url_for('activities.list_activities') }}">Ver actividades</a>
+        Â·
+        <a href="{{ url_for('activities.list_routes') }}">Ver rutas</a>
+      </p>
+    </section>
+  {% endif %}
+{% endblock %}

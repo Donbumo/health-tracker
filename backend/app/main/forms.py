@@ -89,6 +89,37 @@ class StandardImportConfirmForm(FlaskForm):
     submit = SubmitField("Confirmar e importar")
 
 
+class RealFileImportPreviewForm(FlaskForm):
+    file = FileField(
+        "Archivo FIT, GPX, TCX, CSV o JSON",
+        validators=[
+            FileRequired(),
+            FileAllowed(
+                ["fit", "gpx", "tcx", "csv", "tsv", "txt", "json"],
+                "Selecciona un archivo .fit, .gpx, .tcx, .csv, .tsv, .txt o .json.",
+            ),
+        ],
+    )
+    requested_type = SelectField(
+        "Perfil CSV",
+        choices=[
+            ("", "Detectar automÃ¡ticamente"),
+            ("weigh_in_csv", "CSV de pesajes"),
+            ("daily_energy_csv", "CSV de energÃ­a diaria"),
+        ],
+        validators=[Optional()],
+    )
+    submit = SubmitField("Analizar archivo")
+
+
+class RealFileImportConfirmForm(FlaskForm):
+    source_file_id = HiddenField(validators=[DataRequired()])
+    requested_type = HiddenField()
+    target_type = HiddenField(validators=[DataRequired()])
+    confirmation_token = HiddenField(validators=[DataRequired()])
+    submit = SubmitField("Confirmar e importar archivo")
+
+
 class WeighInForm(FlaskForm):
     recorded_at = DateTimeLocalField(
         "Fecha y hora",

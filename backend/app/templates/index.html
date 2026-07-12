@@ -48,6 +48,7 @@
       <a class="button button-secondary" href="{{ url_for('training.import_plan') }}">Importar rutina</a>
       <a class="button button-secondary" href="{{ url_for('progress.overview') }}">Ver progreso</a>
       <a class="button button-secondary" href="{{ url_for('medical.manual_report') }}">Capturar laboratorio</a>
+      <a class="button button-secondary" href="{{ url_for('main.real_file_import') }}">Importar FIT/GPX/TCX/CSV</a>
     </div>
   </section>
 
@@ -172,6 +173,27 @@
       <p>No hay sesión registrada para esta fecha.</p>
       <a class="button button-secondary" href="{{ url_for('sessions.new_session') }}">Registrar sesión</a>
     {% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>Actividad importada</h2>
+    {% if summary.activity_summary.latest %}
+      <p>
+        Ãšltima actividad:
+        <a href="{{ url_for('activities.activity_detail', activity_id=summary.activity_summary.latest.id) }}">
+          {{ summary.activity_summary.latest.activity_type }} Â· {{ summary.activity_summary.latest.started_at.isoformat() }}
+        </a>
+      </p>
+      <dl class="metadata">
+        <dt>Actividades 7 dÃ­as</dt><dd>{{ summary.activity_summary.weekly_count }}</dd>
+        <dt>Distancia 7 dÃ­as</dt><dd>{{ summary.activity_summary.weekly_distance_meters }} m</dd>
+        <dt>DuraciÃ³n 7 dÃ­as</dt><dd>{{ summary.activity_summary.weekly_duration_seconds if summary.activity_summary.weekly_duration_seconds is not none else 'â€”' }} s</dd>
+      </dl>
+      <a class="button button-secondary" href="{{ url_for('activities.list_activities') }}">Ver actividades</a>
+    {% else %}
+      <p>Sin actividades FIT/GPX/TCX importadas.</p>
+      <a class="button" href="{{ url_for('main.real_file_import') }}">Importar actividad o ruta</a>
+    {% endif %}
   </section>
 
   <section class="card">

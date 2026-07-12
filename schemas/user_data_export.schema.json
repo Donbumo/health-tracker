@@ -41,7 +41,9 @@
         "daily_balances": {"$ref": "#/$defs/exportSection"},
         "training_plans": {"$ref": "#/$defs/exportSection"},
         "training_sessions": {"$ref": "#/$defs/exportSection"},
-        "medical_lab_reports": {"$ref": "#/$defs/exportSection"}
+        "medical_lab_reports": {"$ref": "#/$defs/exportSection"},
+        "activities": {"$ref": "#/$defs/exportSection"},
+        "routes": {"$ref": "#/$defs/exportSection"}
       }
     }
   },

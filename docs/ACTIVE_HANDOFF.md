@@ -21,25 +21,32 @@ Si contradice schemas, tests, codigo o reglas canonicas, este archivo pierde pri
 
 ## Bloque activo
 
-- Rama de trabajo: `feature/backend-complete-roundtrip`.
-- Base efectiva verificada: `fd23e7b`.
-- Base esperada por el usuario: `master` posterior a `feature/import-ai-prompt-helpers`.
+- Rama de trabajo: `feature/phase-5-real-importers`.
+- Base efectiva verificada: `dcfdd3e`.
+- Base esperada por el usuario: `dcfdd3e`.
 - Arbol antes del trabajo: limpio.
-- Baseline local previa conocida: `370 passed`.
-- Baseline local tras primer pase de este bloque: `374 passed`.
-- Baseline local tras segundo pase de este bloque: `399 passed`.
-- Baseline Docker tras segundo pase: `398 passed, 1 skipped` (`tests/test_active_handoff.py`, porque `docs/` no se copia a la imagen).
-- No se tocaron schemas, modelos, migraciones, Docker, `.env` ni `/data`.
+- Objetivo: Fase 5 / Alpha 0.3, importadores reales de archivos.
+- Se agregan modelos aditivos `Activity` y `Route`, schemas `activity`/`route`, pipeline `/imports/files`, vistas `/activities` y `/routes`, y export/restore de esas secciones.
+- FIT binario vendor-neutral usa `fitdecode==0.10.0`; valida header/CRC/truncado/límites y cubre session/lap/record/device/sport con fixtures binarias FIT sintéticas.
+- No se tocó `.env` ni `/data`.
 - No se hizo commit ni push.
 - Regla fuerte: No tocar `/data`.
 
 ## Objetivo del bloque
 
-Implementar portabilidad backend end-to-end para Alpha privada:
+Implementar base verificable de importación real de archivos:
 
 ```text
-export completo -> preview restore -> confirmacion firmada -> commit atomico -> uso real en pantallas -> export repetible
+upload raw -> detector/parser -> JSON estándar -> preview -> confirmación firmada -> ImportRun -> consulta/export/restore
 ```
+
+## Estado actual del bloque
+
+- GPX: actividad si hay timestamps; ruta si no hay timestamps.
+- TCX: actividad con laps/trackpoints básicos.
+- CSV: pesajes y energía diaria.
+- JSON: medical_lab, training_plan y completed_workout pasan por pipeline común si cumplen schema.
+- FIT: decoder binario con `fitdecode`, actividad + ruta cuando hay GPS, actividad con warning cuando no hay GPS.
 
 ## Implementado en esta rama
 
@@ -74,6 +81,8 @@ export completo -> preview restore -> confirmacion firmada -> commit atomico -> 
 | `medical_lab_reports` | insert/update/skip por usuario + fecha + laboratorio |
 | `training_plans` | insert/skip/update por nombre y SHA de versiones |
 | `training_sessions` | insert/skip; update inseguro sigue siendo conflicto |
+| `activities` | insert/skip por fingerprint canónico |
+| `routes` | insert/skip por fingerprint canónico |
 | `daily_balances` | omitido, derivado |
 | `uploads` | omitido, metadata sin binarios |
 

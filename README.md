@@ -69,6 +69,36 @@ Para planes de fuerza, cada serie puede usar `reps` como objetivo exacto o el pa
 
 Las descargas se generan en memoria. No se registran como `UploadedFile`, porque ese modelo representa archivos fuente; queda pendiente un modelo específico de auditoría de exports si se necesita en una fase posterior.
 
+## Fase 5 / Alpha 0.3: importadores reales
+
+La rama `feature/phase-5-real-importers` agrega una base funcional para importar archivos desde **Importar archivos** (`/imports/files`):
+
+- GPX como actividad si trae timestamps o ruta si solo trae puntos.
+- TCX de actividad con laps, trackpoints, FC, cadencia, distancia y potencia cuando existen.
+- TCX Course como ruta cuando el archivo contiene cursos sin `Activity`.
+- FIT binario vendor-neutral mediante `fitdecode==0.10.0`, con soporte para `file_id`, `device_info`, `sport`, `session`, `lap` y `record`.
+- CSV de pesajes con conversión lb → kg.
+- CSV de energía diaria con calorías, pasos y distancia.
+- JSON interno de laboratorio, rutina y sesión completada dentro del pipeline común.
+- Actividades y rutas persistidas, listables y exportables como JSON.
+- `activity` y `route` incluidos en export/restore completo de cuenta.
+
+Flujo:
+
+```text
+upload raw -> SHA256 -> detector/parser -> JSON estándar -> preview -> confirmación firmada -> ImportRun
+```
+
+FIT se decodifica con `fitdecode` sobre fixtures binarias FIT sintéticas y archivos FIT estándar que expongan campos compatibles. Se validan header/CRC, truncados, límites de records, semicircles GPS, unidades, laps, records y actividad sin GPS. Si hay GPS se crea actividad + ruta; sin GPS se crea solo actividad con warning. No se usan APIs privadas de Magene/OnelapFit.
+
+Documentación:
+
+- `docs/REAL_FILE_IMPORTS.md`
+- `docs/FIT_IMPORT.md`
+- `docs/GPX_TCX_IMPORT.md`
+- `docs/CSV_IMPORT.md`
+- `docs/project-rules/real-file-imports.md`
+
 ## Requisitos
 
 - Windows 10/11.
@@ -143,11 +173,12 @@ Checklist sugerido:
 5. Abre **Nutrición → Captura manual** y registra un item ficticio.
 6. Revisa el estado completo/parcial/faltante en **Dashboard**.
 7. Prueba imports JSON y exports JSON/CSV desde los detalles correspondientes.
-8. Importa una rutina JSON o usa la rutina demo.
-9. Registra una sesión basada en la rutina y revisa su detalle.
-10. Abre **Progreso** y entra al análisis de la sesión.
-11. Abre **Laboratorios**, revisa el reporte demo, su historial y sus exports JSON/CSV.
-12. Comprueba estados vacíos y mensajes 403/404 con una cuenta sin datos/permisos.
+8. Prueba **Importar archivos** con GPX, TCX o CSV ficticio y revisa `/activities` o `/routes`.
+9. Importa una rutina JSON o usa la rutina demo.
+10. Registra una sesión basada en la rutina y revisa su detalle.
+11. Abre **Progreso** y entra al análisis de la sesión.
+12. Abre **Laboratorios**, revisa el reporte demo, su historial y sus exports JSON/CSV.
+13. Comprueba estados vacíos y mensajes 403/404 con una cuenta sin datos/permisos.
 
 Verificación dentro del contenedor:
 
@@ -192,6 +223,7 @@ Abre **Dashboard** o visita `/dashboard?date=AAAA-MM-DD`. Para la fecha elegida 
 - gasto total/activo, pasos y balance de calorías;
 - pesaje del día o, si falta, el último pesaje anterior;
 - sesiones realizadas con duración, volumen, ejercicios y calorías.
+- última actividad importada y totales de actividad de los últimos siete días.
 - último reporte de laboratorio disponible en la fecha y cantidad de marcadores.
 
 El estado del día considera esenciales una nutrición con calorías y una energía con gasto total. Distingue entre dato completo, registro parcial y dato faltante. Peso y entrenamiento se muestran como contexto opcional: un día de descanso o sin pesaje no se marca como incompleto.

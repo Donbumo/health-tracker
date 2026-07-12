@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Actividades Â· Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Actividades</h1>
+      <p>Actividades importadas desde FIT, GPX o TCX.</p>
+    </div>
+    <a class="button" href="{{ url_for('main.real_file_import') }}">Importar archivo</a>
+  </section>
+
+  <section class="card">
+    {% if activities %}
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Tipo</th>
+              <th>DuraciÃ³n</th>
+              <th>Distancia</th>
+              <th>FC</th>
+              <th>CalorÃ­as</th>
+              <th>Fuente</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for activity in activities %}
+              <tr>
+                <td><a href="{{ url_for('activities.activity_detail', activity_id=activity.id) }}">{{ activity.started_at.isoformat() }}</a></td>
+                <td>{{ activity.activity_type }}</td>
+                <td>{{ activity.duration_seconds if activity.duration_seconds is not none else 'â€”' }} s</td>
+                <td>{% if activity.distance_meters is not none %}{{ activity.distance_meters }} m{% else %}â€”{% endif %}</td>
+                <td>{{ activity.avg_heart_rate_bpm if activity.avg_heart_rate_bpm is not none else 'â€”' }}</td>
+                <td>{{ activity.calories_kcal if activity.calories_kcal is not none else 'â€”' }}</td>
+                <td>{{ activity.source_app or activity.source_type }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p>No hay actividades importadas todavÃ­a.</p>
+      <a class="button" href="{{ url_for('main.real_file_import') }}">Importar FIT/GPX/TCX</a>
+    {% endif %}
+  </section>
+{% endblock %}

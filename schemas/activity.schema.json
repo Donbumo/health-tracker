@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/activity.schema.json",
+  "title": "Activity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "record_type", "user_id", "source_type", "data"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "record_type": {"const": "activity"},
+    "user_id": {"type": "integer", "minimum": 1},
+    "source_type": {"type": "string", "enum": ["uploaded", "device_sync"]},
+    "source_file_id": {"type": "integer", "minimum": 1},
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["activity_type", "started_at"],
+      "properties": {
+        "activity_type": {"type": "string", "minLength": 1, "maxLength": 64},
+        "started_at": {"type": "string", "format": "date-time"},
+        "ended_at": {"type": "string", "format": "date-time"},
+        "duration_seconds": {"type": "integer", "minimum": 0, "maximum": 10000000},
+        "moving_time_seconds": {"type": "integer", "minimum": 0, "maximum": 10000000},
+        "distance_meters": {"type": "number", "minimum": 0},
+        "calories_kcal": {"type": "number", "minimum": 0},
+        "avg_heart_rate_bpm": {"type": "integer", "minimum": 1, "maximum": 255},
+        "max_heart_rate_bpm": {"type": "integer", "minimum": 1, "maximum": 255},
+        "avg_cadence_rpm": {"type": "number", "minimum": 0},
+        "max_cadence_rpm": {"type": "number", "minimum": 0},
+        "avg_speed_mps": {"type": "number", "minimum": 0},
+        "max_speed_mps": {"type": "number", "minimum": 0},
+        "elevation_gain_meters": {"type": "number", "minimum": 0},
+        "elevation_loss_meters": {"type": "number", "minimum": 0},
+        "avg_power_watts": {"type": "integer", "minimum": 0},
+        "max_power_watts": {"type": "integer", "minimum": 0},
+        "sport_profile": {"type": "string", "maxLength": 128},
+        "manufacturer": {"type": "string", "maxLength": 128},
+        "product": {"type": "string", "maxLength": 128},
+        "source_app": {"type": "string", "maxLength": 128},
+        "laps": {"type": "array", "maxItems": 1000, "items": {"type": "object", "additionalProperties": true}},
+        "track": {"type": "array", "maxItems": 10000, "items": {"$ref": "#/$defs/trackpoint"}},
+        "bounds": {"type": "object", "additionalProperties": {"type": "number"}},
+        "warnings": {"type": "array", "items": {"type": "string", "maxLength": 500}},
+        "notes": {"type": "string", "maxLength": 2000}
+      }
+    }
+  },
+  "$defs": {
+    "trackpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timestamp": {"type": "string", "format": "date-time"},
+        "lat": {"type": "number", "minimum": -90, "maximum": 90},
+        "lon": {"type": "number", "minimum": -180, "maximum": 180},
+        "elevation_meters": {"type": "number"},
+        "heart_rate_bpm": {"type": "integer", "minimum": 1, "maximum": 255},
+        "cadence_rpm": {"type": "number", "minimum": 0},
+        "power_watts": {"type": "integer", "minimum": 0},
+        "speed_mps": {"type": "number", "minimum": 0},
+        "distance_meters": {"type": "number", "minimum": 0}
+      }
+    }
+  }
+}

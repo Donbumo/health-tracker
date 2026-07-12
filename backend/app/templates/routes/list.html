@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Rutas Â· Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Rutas</h1>
+      <p>Rutas importadas desde GPX/TCX.</p>
+    </div>
+    <a class="button" href="{{ url_for('main.real_file_import') }}">Importar archivo</a>
+  </section>
+
+  <section class="card">
+    {% if routes %}
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Distancia</th>
+              <th>Gain/loss</th>
+              <th>Puntos</th>
+              <th>Fuente</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for route in routes %}
+              <tr>
+                <td><a href="{{ url_for('activities.route_detail', route_id=route.id) }}">{{ route.name }}</a></td>
+                <td>{{ route.route_type }}</td>
+                <td>{% if route.distance_meters is not none %}{{ route.distance_meters }} m{% else %}â€”{% endif %}</td>
+                <td>{{ route.elevation_gain_meters or 'â€”' }} / {{ route.elevation_loss_meters or 'â€”' }}</td>
+                <td>{{ route.point_count }}</td>
+                <td>{{ route.source_app or route.source_type }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p>No hay rutas importadas todavÃ­a.</p>
+      <a class="button" href="{{ url_for('main.real_file_import') }}">Importar GPX/TCX</a>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -1,4 +1,5 @@
 from app.models.daily_energy import DailyEnergy
+from app.models.activity import Activity, Route
 from app.models.exercise import Exercise, ExerciseAlias
 from app.models.import_run import ImportRun
 from app.models.medical_lab import MedicalLabReport, MedicalLabResult
@@ -17,6 +18,8 @@ from app.models.weigh_in import WeighIn
 
 __all__ = [
     "DailyEnergy",
+    "Activity",
+    "Route",
     "Exercise",
     "ExerciseAlias",
     "ImportRun",

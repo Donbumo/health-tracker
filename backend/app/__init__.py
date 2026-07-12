@@ -38,6 +38,7 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     from app.auth import auth_bp
     from app.admin import admin_bp
+    from app.activities import activities_bp
     from app.body import body_bp
     from app.main import main_bp
     from app.medical import medical_bp
@@ -49,6 +50,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     from app.recipes import recipes_bp
 
     app.register_blueprint(main_bp)
+    app.register_blueprint(activities_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(body_bp)

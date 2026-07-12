@@ -42,8 +42,11 @@ Usa esta lista antes de invitar a un compañero real a una alpha por LAN/VPN.
 ## Importación y auditoría
 
 - [ ] `/imports/standard` abre para usuario autenticado.
+- [ ] `/imports/files` abre para usuario autenticado.
 - [ ] Preview de JSON válido no escribe datos.
+- [ ] Preview de FIT/GPX/TCX/CSV válido no escribe datos de dominio.
 - [ ] Confirmación explícita guarda datos.
+- [ ] Reimportar el mismo FIT/GPX/TCX/CSV devuelve `skip` o duplicado esperado, no inserta copias.
 - [ ] `/imports/history` muestra el run agregado.
 - [ ] `/imports/history/<id>` muestra hashes truncados y no payload crudo.
 - [ ] Token inválido o plan conflictivo no crea datos de dominio.

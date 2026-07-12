@@ -19,6 +19,7 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from app.extensions import db
 from app.models import (
+    Activity,
     DailyEnergy,
     DailyNutrition,
     FoodProduct,
@@ -28,6 +29,7 @@ from app.models import (
     NutritionMeal,
     Recipe,
     RecipeIngredient,
+    Route,
     TrainingPlan,
     TrainingPlanVersion,
     TrainingSession,
@@ -65,6 +67,9 @@ TARGET_SCHEMAS = {
     "training_plan": "training_plan",
     "recipe": "recipe",
     "recipe_bundle": "recipe_bundle",
+    "activity": "activity",
+    "route": "route",
+    "activity_route": "activity",
 }
 
 EXPECTED_SECTIONS = (
@@ -385,7 +390,7 @@ class StandardImportExecutor:
         target_type: str,
         index: int,
     ) -> PlannedOperation:
-        schema_name = TARGET_SCHEMAS.get(target_type)
+        schema_name = self._schema_name_for_document(target_type, document)
         if schema_name is None:
             return PlannedOperation("invalid", target_type, index, "Unsupported target")
 
@@ -414,7 +419,7 @@ class StandardImportExecutor:
             )
 
         label = self._document_label(document, schema_name)
-        model = self._model_name(target_type)
+        model = self._model_name(target_type, document)
         if existing is None:
             return PlannedOperation("insert", target_type, index, label, model=model)
 
@@ -626,6 +631,26 @@ class StandardImportExecutor:
             )
             return db.session.execute(query).scalar_one_or_none()
 
+        resolved_target = _resolve_activity_route_target(target_type, document)
+
+        if resolved_target == "activity":
+            fingerprint = _canonical_document_sha(document)
+            return db.session.execute(
+                db.select(Activity).where(
+                    Activity.user_id == user_id,
+                    Activity.fingerprint_sha256 == fingerprint,
+                )
+            ).scalar_one_or_none()
+
+        if resolved_target == "route":
+            fingerprint = _canonical_document_sha(document)
+            return db.session.execute(
+                db.select(Route).where(
+                    Route.user_id == user_id,
+                    Route.fingerprint_sha256 == fingerprint,
+                )
+            ).scalar_one_or_none()
+
         return None
 
     @staticmethod
@@ -636,6 +661,8 @@ class StandardImportExecutor:
             serialized = serialize_training_plan(document)
             sha256 = hashlib.sha256(serialized).hexdigest()
             return any(version.sha256 == sha256 for version in existing.versions)
+        if isinstance(existing, (Activity, Route)):
+            return existing.fingerprint_sha256 == _canonical_document_sha(document)
         return False
 
     def _apply_document(
@@ -665,6 +692,11 @@ class StandardImportExecutor:
             return self._apply_completed_workout(document, user_id)
         if target_type == "medical_lab":
             return self._apply_medical_lab(document, user_id, existing_id)
+        resolved_target = _resolve_activity_route_target(target_type, document)
+        if resolved_target == "activity":
+            return self._apply_activity(document, user_id, existing_id)
+        if resolved_target == "route":
+            return self._apply_route(document, user_id, existing_id)
         raise StandardImportError("Unsupported target")
 
     def _apply_weigh_in(self, document: dict[str, Any], user_id: int, existing_id: int | None) -> WeighIn:
@@ -1015,6 +1047,75 @@ class StandardImportExecutor:
             )
         return report
 
+    def _apply_activity(self, document: dict[str, Any], user_id: int, existing_id: int | None) -> Activity:
+        data = document["data"]
+        record = db.session.get(Activity, existing_id) if existing_id else Activity(user_id=user_id)
+        if record is None or record.user_id != user_id:
+            raise StandardImportError("Activity target does not belong to this user")
+        record.activity_type = data["activity_type"].strip()
+        record.started_at = datetime.fromisoformat(data["started_at"].replace("Z", "+00:00"))
+        record.ended_at = (
+            datetime.fromisoformat(data["ended_at"].replace("Z", "+00:00"))
+            if data.get("ended_at")
+            else None
+        )
+        for field in (
+            "duration_seconds",
+            "moving_time_seconds",
+            "avg_heart_rate_bpm",
+            "max_heart_rate_bpm",
+            "avg_power_watts",
+            "max_power_watts",
+        ):
+            setattr(record, field, data.get(field))
+        for field in (
+            "distance_meters",
+            "calories_kcal",
+            "avg_cadence_rpm",
+            "max_cadence_rpm",
+            "avg_speed_mps",
+            "max_speed_mps",
+            "elevation_gain_meters",
+            "elevation_loss_meters",
+        ):
+            setattr(record, field, _decimal(data.get(field)))
+        for field in ("sport_profile", "manufacturer", "product", "source_app", "notes"):
+            setattr(record, field, data.get(field))
+        record.source_type = document.get("source_type", "uploaded")
+        record.source_file_id = document.get("source_file_id")
+        record.fingerprint_sha256 = _canonical_document_sha(document)
+        record.canonical_json = document
+        record.laps_json = data.get("laps")
+        record.track_json = data.get("track")
+        record.bounds_json = data.get("bounds")
+        record.point_count = len(data.get("track") or [])
+        record.warnings_json = data.get("warnings")
+        db.session.add(record)
+        return record
+
+    def _apply_route(self, document: dict[str, Any], user_id: int, existing_id: int | None) -> Route:
+        data = document["data"]
+        record = db.session.get(Route, existing_id) if existing_id else Route(user_id=user_id)
+        if record is None or record.user_id != user_id:
+            raise StandardImportError("Route target does not belong to this user")
+        record.name = data["name"].strip()
+        record.route_type = data["route_type"].strip()
+        record.distance_meters = _decimal(data.get("distance_meters"))
+        record.elevation_gain_meters = _decimal(data.get("elevation_gain_meters"))
+        record.elevation_loss_meters = _decimal(data.get("elevation_loss_meters"))
+        record.bounds_json = data.get("bounds")
+        record.points_json = data.get("points")
+        record.point_count = len(data.get("points") or [])
+        record.source_app = data.get("source_app")
+        record.notes = data.get("notes")
+        record.source_type = document.get("source_type", "uploaded")
+        record.source_file_id = document.get("source_file_id")
+        record.fingerprint_sha256 = _canonical_document_sha(document)
+        record.canonical_json = document
+        record.warnings_json = data.get("warnings")
+        db.session.add(record)
+        return record
+
     def _resolve_food_product(self, user_id: int, item: dict[str, Any]) -> FoodProduct:
         if item.get("food_product_id") is not None:
             product = db.session.execute(
@@ -1061,10 +1162,25 @@ class StandardImportExecutor:
             return str(document.get("date") or schema_name)
         if schema_name == "completed_workout":
             return str(document.get("data", {}).get("performed_at") or schema_name)
+        if schema_name == "activity":
+            return str(document.get("data", {}).get("started_at") or schema_name)
+        if schema_name == "route":
+            return str(document.get("data", {}).get("name") or schema_name)
         return schema_name
 
     @staticmethod
-    def _model_name(target_type: str) -> str:
+    def _schema_name_for_document(target_type: str, document: dict[str, Any]) -> str | None:
+        if target_type == "activity_route":
+            record_type = document.get("record_type")
+            if record_type in {"activity", "route"}:
+                return record_type
+            return None
+        return TARGET_SCHEMAS.get(target_type)
+
+    @staticmethod
+    def _model_name(target_type: str, document: dict[str, Any] | None = None) -> str:
+        if target_type == "activity_route" and document is not None:
+            target_type = document.get("record_type", target_type)
         return {
             "weigh_in": "WeighIn",
             "weigh_in_batch": "WeighIn",
@@ -1077,6 +1193,9 @@ class StandardImportExecutor:
             "training_plan": "TrainingPlan",
             "recipe": "Recipe",
             "recipe_bundle": "Recipe",
+            "activity": "Activity",
+            "route": "Route",
+            "activity_route": "Activity/Route",
         }.get(target_type, target_type)
 
     @staticmethod
@@ -1150,6 +1269,21 @@ def canonical_json_bytes(value: Any) -> bytes:
         separators=(",", ":"),
         allow_nan=False,
     ).encode("utf-8")
+
+
+def _canonical_document_sha(document: dict[str, Any]) -> str:
+    normalized = json.loads(json.dumps(document, sort_keys=True))
+    normalized.pop("user_id", None)
+    normalized.pop("source_file_id", None)
+    return hashlib.sha256(canonical_json_bytes(normalized)).hexdigest()
+
+
+def _resolve_activity_route_target(target_type: str, document: dict[str, Any]) -> str:
+    if target_type == "activity_route":
+        record_type = document.get("record_type")
+        if record_type in {"activity", "route"}:
+            return record_type
+    return target_type
 
 
 def canonical_sha256(value: Any) -> str:

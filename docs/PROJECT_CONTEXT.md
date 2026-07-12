@@ -59,6 +59,7 @@ Módulos actualmente implementados o con núcleo funcional:
 - Fase posterior a 5B: importación estándar confirmada para QA desde web con plan `insert/update/skip/conflict/invalid` y confirmación explícita.
 - Ayudas locales de prompt para IA en `/imports/standard`: catálogo read-only para copiar prompts/plantillas JSON de los nueve targets soportados, sin integrar API externa, sin enviar datos fuera de la app y sin almacenar contenido copiado.
 - Portabilidad de cuenta: `/account/data`, `/account/export.json`, `/account/restore` y `/account/restore/confirm`. El restore ignora identidad exportada, no restaura binarios, omite derivados como `daily_balances` y no implementa borrado ni ZIP. Ver `docs/ACCOUNT_RESTORE.md`, `docs/DATA_PORTABILITY.md` y `docs/project-rules/account-restore.md` para el contrato operativo.
+- Rama `feature/phase-5-real-importers`: importadores reales para FIT, GPX, TCX, CSV de pesajes, CSV de energía diaria y JSON interno dentro del pipeline común; agrega `Activity`/`Route`, schemas `activity`/`route`, preview/confirmación firmada, auditoría `ImportRun`, UI de actividades/rutas y export/restore de esas secciones. FIT binario vendor-neutral usa `fitdecode==0.10.0`.
 - Validación local del bloque `feature/backend-complete-roundtrip`: `399 passed`.
 
 Estado real de Fase 5B verificado:
@@ -97,7 +98,7 @@ Bloques próximos previstos:
 3. Endurecer equivalencia semántica del round-trip si aparecen nuevos dominios o se agregan binarios.
 4. Diseñar restore de archivos binarios/ZIP solo si se define una política explícita de almacenamiento y privacidad.
 
-No presentar APK, app de reloj, FIT real, GPX real, Magene real, OCR, FHIR o API REST pública como implementados. Siguen siendo planes, stubs o estructura futura salvo que el código de una rama posterior demuestre lo contrario.
+No presentar APK, app de reloj, APIs privadas Magene/OnelapFit, OCR, FHIR o API REST pública como implementados. Siguen siendo planes, stubs o estructura futura salvo que el código de una rama posterior demuestre lo contrario. FIT/GPX/TCX se soportan como importación de archivos exportados en la rama de Fase 5, no como sincronización directa.
 
 Las subsecciones siguientes contienen contexto histórico útil. Si contradicen el estado verificado anterior, manda el estado verificado, los schemas y las pruebas actuales.
 
@@ -143,7 +144,7 @@ No se añadieron tablas ni migraciones durante esa fase.
 
 - Revisar si conviene crear modelo/tabla `ExportRecord` para registrar exportaciones.
 - Mantener exportadores como adaptadores separados, no como un exportador universal monolítico.
-- Mantener stubs FIT/GPX/Magene documentados hasta implementar soporte real.
+- Mantener la importación FIT/GPX/TCX documentada como flujo por archivo exportado; Magene/OnelapFit solo entra si exporta FIT/GPX/TCX estándar, sin APIs privadas.
 - No generar migraciones si no hay cambios reales en modelos.
 - Mantener pruebas de aislamiento por usuario en importación/exportación.
 - Mejorar documentación de uso HTTP/curl autenticado cuando el entorno lo permita.
@@ -235,7 +236,7 @@ dashboard
 - Validación: JSON Schema.
 - Frontend inicial: templates Flask/Jinja + Bootstrap o similar.
 - Futuro frontend avanzado: API REST + app móvil / PWA.
-- Parsing `.fit`: librería compatible con FIT, inicialmente `fitparse` o alternativa que permita lectura/escritura si se requiere.
+- Parsing `.fit`: el import actual usa `fitdecode`; si en el futuro se requiere escritura/export FIT, evaluar librería compatible para esa necesidad específica.
 - Exportaciones: JSON, CSV, HTML imprimible; PDF/FIT/GPX/ZWO/ERG/MRC como fases posteriores.
 
 ---
@@ -1472,7 +1473,7 @@ APP_BASE_URL
 - Perfil Magene.
 - Perfil Huawei companion.
 
-Estado: Fase 6 inicial completada para JSON/CSV/HTML e importadores base de rutinas/sesiones. FIT/GPX/Magene siguen como stubs documentados.
+Estado histórico: Fase 6 inicial completada para JSON/CSV/HTML e importadores base de rutinas/sesiones. En la rama de Fase 5 posterior, FIT/GPX/TCX por archivo exportado avanzan a importadores reales con trazabilidad; Magene/OnelapFit sigue limitado a archivos estándar exportados.
 
 ### Fase 7: APK companion
 

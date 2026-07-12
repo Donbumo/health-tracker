@@ -12,6 +12,7 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from app.extensions import db
 from app.models import (
+    Activity,
     DailyEnergy,
     DailyNutrition,
     FoodProduct,
@@ -21,6 +22,7 @@ from app.models import (
     NutritionMeal,
     Recipe,
     RecipeIngredient,
+    Route,
     TrainingPlan,
     TrainingPlanVersion,
     TrainingSession,
@@ -62,6 +64,8 @@ RESTORABLE_SECTIONS = (
     "medical_lab_reports",
     "training_plans",
     "training_sessions",
+    "activities",
+    "routes",
 )
 UNSUPPORTED_SECTIONS = ("uploads", "daily_balances")
 
@@ -488,6 +492,16 @@ class AccountRestoreService:
             document.setdefault("source_type", "uploaded")
             validate_json_document(document, "recipe")
             return document
+        if section == "activities":
+            document["user_id"] = user_id
+            document.pop("source_file_id", None)
+            validate_json_document(document, "activity")
+            return document
+        if section == "routes":
+            document["user_id"] = user_id
+            document.pop("source_file_id", None)
+            validate_json_document(document, "route")
+            return document
         if section == "food_products":
             document.pop("id", None)
             document.pop("is_active", None)
@@ -568,6 +582,20 @@ class AccountRestoreService:
                     TrainingSession.performed_at == performed_at,
                 )
             ).scalar_one_or_none()
+        if section == "activities":
+            return db.session.execute(
+                db.select(Activity).where(
+                    Activity.user_id == user_id,
+                    Activity.fingerprint_sha256 == _activity_route_sha(item),
+                )
+            ).scalar_one_or_none()
+        if section == "routes":
+            return db.session.execute(
+                db.select(Route).where(
+                    Route.user_id == user_id,
+                    Route.fingerprint_sha256 == _activity_route_sha(item),
+                )
+            ).scalar_one_or_none()
         return None
 
     def _same(self, section: str, existing: Any, item: dict[str, Any], *, user_id: int) -> bool:
@@ -583,6 +611,8 @@ class AccountRestoreService:
             )
 
             return build_completed_workout_document(existing, user_id) == item
+        if section in {"activities", "routes"}:
+            return existing.fingerprint_sha256 == _activity_route_sha(item)
         if hasattr(existing, "raw_payload_json") and existing.raw_payload_json is not None:
             return existing.raw_payload_json == item
         return False
@@ -674,6 +704,16 @@ class AccountRestoreService:
             record = self._apply_training_session(document, user_id=user_id)
             db.session.flush()
             committed[f"training_sessions:{index}"] = record.id
+
+        for section in ("activities", "routes"):
+            for index, item in enumerate(data.get(section) or []):
+                operation = operation_map.get((section, index), {})
+                if operation.get("operation") == "skip":
+                    continue
+                document = self._normalized_item(section, item, user_id=user_id)
+                record = self._apply_activity_or_route(section, document, user_id=user_id)
+                db.session.flush()
+                committed[f"{section}:{index}"] = record.id
 
         return committed
 
@@ -1011,6 +1051,67 @@ class AccountRestoreService:
                 )
         return session
 
+    def _apply_activity_or_route(self, section: str, document: dict[str, Any], *, user_id: int) -> Activity | Route:
+        existing = self._find_existing(section, document, user_id=user_id)
+        model = Activity if section == "activities" else Route
+        record = existing or model(user_id=user_id)
+        if record.user_id != user_id:
+            raise AccountRestoreError("Activity/route restore target does not belong to this user")
+        data = document["data"]
+        if section == "activities":
+            record.activity_type = data["activity_type"].strip()
+            record.started_at = datetime.fromisoformat(data["started_at"].replace("Z", "+00:00"))
+            record.ended_at = (
+                datetime.fromisoformat(data["ended_at"].replace("Z", "+00:00"))
+                if data.get("ended_at")
+                else None
+            )
+            for field in (
+                "duration_seconds",
+                "moving_time_seconds",
+                "avg_heart_rate_bpm",
+                "max_heart_rate_bpm",
+                "avg_power_watts",
+                "max_power_watts",
+            ):
+                setattr(record, field, data.get(field))
+            for field in (
+                "distance_meters",
+                "calories_kcal",
+                "avg_cadence_rpm",
+                "max_cadence_rpm",
+                "avg_speed_mps",
+                "max_speed_mps",
+                "elevation_gain_meters",
+                "elevation_loss_meters",
+            ):
+                setattr(record, field, _decimal(data.get(field)))
+            for field in ("sport_profile", "manufacturer", "product", "source_app", "notes"):
+                setattr(record, field, data.get(field))
+            record.laps_json = data.get("laps")
+            record.track_json = data.get("track")
+            record.bounds_json = data.get("bounds")
+            record.point_count = len(data.get("track") or [])
+            record.warnings_json = data.get("warnings")
+        else:
+            record.name = data["name"].strip()
+            record.route_type = data["route_type"].strip()
+            record.distance_meters = _decimal(data.get("distance_meters"))
+            record.elevation_gain_meters = _decimal(data.get("elevation_gain_meters"))
+            record.elevation_loss_meters = _decimal(data.get("elevation_loss_meters"))
+            record.bounds_json = data.get("bounds")
+            record.points_json = data.get("points")
+            record.point_count = len(data.get("points") or [])
+            record.source_app = data.get("source_app")
+            record.notes = data.get("notes")
+            record.warnings_json = data.get("warnings")
+        record.source_type = document.get("source_type", "uploaded")
+        record.source_file_id = None
+        record.fingerprint_sha256 = _activity_route_sha(document)
+        record.canonical_json = document
+        db.session.add(record)
+        return record
+
     @staticmethod
     def _summary(
         operations: list[dict[str, Any]],
@@ -1079,6 +1180,13 @@ def _training_version_sha(document: dict[str, Any], user_id: int) -> str:
     return hashlib.sha256(serialize_training_plan(normalized)).hexdigest()
 
 
+def _activity_route_sha(document: dict[str, Any]) -> str:
+    normalized = deepcopy(document)
+    normalized.pop("user_id", None)
+    normalized.pop("source_file_id", None)
+    return canonical_sha256(normalized)
+
+
 def _find_product_for_ingredient(user_id: int, ingredient: dict[str, Any]) -> FoodProduct | None:
     name = ingredient.get("food_product_name")
     if not name:
@@ -1144,6 +1252,11 @@ def _label(item: Any, section: str) -> str:
         return str(item.get("name") or section)
     if section == "training_sessions":
         return str((item.get("data") or {}).get("performed_at") or section)
+    if section == "activities":
+        data = item.get("data") or {}
+        return str(data.get("started_at") or data.get("activity_type") or section)
+    if section == "routes":
+        return str((item.get("data") or {}).get("name") or section)
     if section in {"weigh_ins", "daily_energy", "daily_nutrition"}:
         data = item.get("data") or {}
         return str(data.get("date") or data.get("recorded_at") or section)
@@ -1162,6 +1275,8 @@ def _model(section: str) -> str:
         "medical_lab_reports": "MedicalLabReport",
         "training_plans": "TrainingPlan",
         "training_sessions": "TrainingSession",
+        "activities": "Activity",
+        "routes": "Route",
     }.get(section, section)
 
 

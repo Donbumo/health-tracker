@@ -25,6 +25,8 @@ from app.main import main_bp
 from app.main.forms import (
     AccountRestoreConfirmForm,
     AccountRestorePreviewForm,
+    RealFileImportConfirmForm,
+    RealFileImportPreviewForm,
     StandardImportConfirmForm,
     StandardImportPreviewForm,
     UploadForm,
@@ -49,6 +51,11 @@ from app.services.importers.standard_import_executor import (
     StandardImportError,
     StandardImportTokenError,
     StandardImportExecutor,
+)
+from app.services.real_file_imports import (
+    RealFileImportError,
+    RealFileImportService,
+    RealFileImportTokenError,
 )
 from app.services.importers.import_prompt_catalog import ImportPromptCatalog
 from app.services.manual_json import (
@@ -364,6 +371,109 @@ def import_history_detail(run_id: int):
     return render_template("imports/history_detail.html", run=run)
 
 
+@main_bp.route("/imports/files", methods=["GET", "POST"])
+@login_required
+def real_file_import():
+    preview_form = RealFileImportPreviewForm()
+    confirm_form = RealFileImportConfirmForm()
+    preview_result = None
+    commit_result = None
+    parse_error = None
+    source_file = None
+    service = RealFileImportService()
+
+    if request.method == "POST" and "source_file_id" in request.form:
+        if confirm_form.validate_on_submit():
+            try:
+                source_file_id = int(confirm_form.source_file_id.data)
+            except (TypeError, ValueError):
+                source_file_id = 0
+            source_file = db.session.execute(
+                db.select(UploadedFile).where(
+                    UploadedFile.id == source_file_id,
+                    UploadedFile.user_id == current_user.id,
+                )
+            ).scalar_one_or_none()
+            if source_file is None:
+                abort(404)
+            try:
+                preview_result = service.preview_uploaded_file(
+                    source_file,
+                    user_id=current_user.id,
+                    requested_type=confirm_form.requested_type.data or None,
+                )
+                token_digest = _real_file_import_token_digest(
+                    confirm_form.confirmation_token.data
+                )
+                used_tokens = session.setdefault("used_real_file_import_tokens", [])
+                if token_digest in used_tokens:
+                    raise RealFileImportTokenError(
+                        "El token de confirmaciÃ³n de archivo ya fue usado."
+                    )
+                result = service.confirm_uploaded_file(
+                    source_file,
+                    user_id=current_user.id,
+                    requested_type=confirm_form.requested_type.data or None,
+                    confirmation_token=confirm_form.confirmation_token.data,
+                )
+                commit_result = result["commit_result"]
+                if commit_result["committed"]:
+                    used_tokens.append(token_digest)
+                    session["used_real_file_import_tokens"] = used_tokens[-20:]
+                    session.modified = True
+                    flash("Archivo importado correctamente.", "success")
+                else:
+                    flash("El archivo no se importÃ³; revisa errores o conflictos.", "warning")
+            except (RealFileImportError, RealFileImportTokenError, StandardImportError, ValueError) as error:
+                parse_error = f"No fue posible confirmar el archivo: {error}"
+        else:
+            parse_error = "La confirmaciÃ³n del archivo no es vÃ¡lida."
+
+    elif preview_form.validate_on_submit():
+        try:
+            source_file, duplicate = store_uploaded_file(
+                preview_form.file.data,
+                current_user.id,
+            )
+            if duplicate:
+                flash("El archivo ya existÃ­a; se muestra preview idempotente.", "warning")
+            preview_result = service.preview_uploaded_file(
+                source_file,
+                user_id=current_user.id,
+                requested_type=preview_form.requested_type.data or None,
+            )
+            _prepare_real_file_import_confirmation(
+                confirm_form,
+                source_file,
+                preview_form.requested_type.data or "",
+                preview_result,
+            )
+        except (UploadError, RealFileImportError, StandardImportError, ValueError) as error:
+            parse_error = f"No fue posible preparar el archivo: {error}"
+
+    return render_template(
+        "imports/files.html",
+        preview_form=preview_form,
+        confirm_form=confirm_form,
+        preview_result=preview_result,
+        commit_result=commit_result,
+        parse_error=parse_error,
+        source_file=source_file,
+    )
+
+
+def _prepare_real_file_import_confirmation(
+    form: RealFileImportConfirmForm,
+    source_file: UploadedFile,
+    requested_type: str,
+    preview_result: dict,
+) -> None:
+    form.source_file_id.data = str(source_file.id)
+    form.requested_type.data = requested_type
+    form.target_type.data = preview_result["target_type"]
+    form.confirmation_token.data = preview_result["confirmation_token"]
+
+
 def _prepare_standard_import_confirmation(
     form: StandardImportConfirmForm,
     executor: StandardImportExecutor,
@@ -390,6 +500,10 @@ def _standard_import_token_digest(token: str) -> str:
 
 
 def _account_restore_token_digest(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _real_file_import_token_digest(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 

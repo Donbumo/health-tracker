@@ -3,11 +3,13 @@ from typing import Any
 
 from app.extensions import db
 from app.models import (
+    Activity,
     DailyEnergy,
     DailyNutrition,
     FoodProduct,
     MedicalLabReport,
     Recipe,
+    Route,
     TrainingPlan,
     TrainingSession,
     UploadedFile,
@@ -155,6 +157,28 @@ def _food_product_document(product: FoodProduct, user_id: int) -> dict[str, Any]
     return data
 
 
+def _activity_document(activity: Activity, user_id: int) -> dict[str, Any]:
+    if activity.user_id != user_id:
+        raise ExportError("Activity does not belong to this user")
+    document = dict(activity.canonical_json)
+    document["user_id"] = user_id
+    if activity.source_file_id:
+        document["source_file_id"] = activity.source_file_id
+    validate_json_document(document, "activity")
+    return document
+
+
+def _route_document(route: Route, user_id: int) -> dict[str, Any]:
+    if route.user_id != user_id:
+        raise ExportError("Route does not belong to this user")
+    document = dict(route.canonical_json)
+    document["user_id"] = user_id
+    if route.source_file_id:
+        document["source_file_id"] = route.source_file_id
+    validate_json_document(document, "route")
+    return document
+
+
 def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
     if user.id != user_id:
         raise ExportError("User export does not belong to this user")
@@ -178,6 +202,8 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
         MedicalLabReport.id,
     )
     uploads = _records(UploadedFile, user_id, UploadedFile.created_at, UploadedFile.id)
+    activities = _records(Activity, user_id, Activity.started_at, Activity.id)
+    routes = _records(Route, user_id, Route.created_at, Route.id)
 
     return {
         "schema_version": "1.0",
@@ -210,6 +236,12 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
             "medical_lab_reports": [
                 build_medical_lab_document(report, user_id)
                 for report in medical_reports
+            ],
+            "activities": [
+                _activity_document(activity, user_id) for activity in activities
+            ],
+            "routes": [
+                _route_document(route, user_id) for route in routes
             ],
             "uploads": [_upload_metadata(upload, user_id) for upload in uploads],
         },

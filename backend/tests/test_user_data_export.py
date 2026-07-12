@@ -46,6 +46,8 @@ def test_account_export_contains_all_demo_sections_without_sensitive_fields(app,
         "uploads",
         "food_products",
         "recipes",
+        "activities",
+        "routes",
     }
     assert len(document["data"]["weigh_ins"]) == 2
     assert len(document["data"]["daily_nutrition"]) == 2

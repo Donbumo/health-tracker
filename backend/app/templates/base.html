@@ -22,9 +22,12 @@
           <a href="{{ url_for('training.list_plans') }}">Entrenamiento</a>
           <a href="{{ url_for('sessions.list_sessions') }}">Sesiones</a>
           <a href="{{ url_for('progress.overview') }}">Progreso</a>
+          <a href="{{ url_for('activities.list_activities') }}">Actividades</a>
+          <a href="{{ url_for('activities.list_routes') }}">Rutas</a>
           <a href="{{ url_for('medical.list_reports') }}">Laboratorios</a>
           <a href="{{ url_for('main.uploads') }}">Uploads</a>
-          <a href="{{ url_for('main.standard_import') }}">Importar</a>
+          <a href="{{ url_for('main.real_file_import') }}">Importar archivos</a>
+          <a href="{{ url_for('main.standard_import') }}">Importar JSON</a>
           <a href="{{ url_for('main.import_history') }}">Historial imports</a>
           <a href="{{ url_for('main.account_data') }}">Mis datos</a>
           <a href="{{ url_for('main.export_account_data') }}">Exportar datos</a>
@@ -53,6 +56,8 @@
               <a href="{{ url_for('training.list_plans') }}">Entrenamiento</a>
               <a href="{{ url_for('sessions.list_sessions') }}">Sesiones</a>
               <a href="{{ url_for('progress.overview') }}">Progreso</a>
+              <a href="{{ url_for('activities.list_activities') }}">Actividades</a>
+              <a href="{{ url_for('activities.list_routes') }}">Rutas</a>
             </section>
 
             <section class="mobile-menu-section" aria-labelledby="mobile-menu-data">
@@ -61,7 +66,8 @@
               <a href="{{ url_for('recipes.list_recipes') }}">Recetas</a>
               <a href="{{ url_for('medical.list_reports') }}">Laboratorios</a>
               <a href="{{ url_for('main.uploads') }}">Uploads</a>
-              <a href="{{ url_for('main.standard_import') }}">Importar</a>
+              <a href="{{ url_for('main.real_file_import') }}">Importar archivos</a>
+              <a href="{{ url_for('main.standard_import') }}">Importar JSON</a>
               <a href="{{ url_for('main.import_history') }}">Historial imports</a>
               <a href="{{ url_for('main.account_data') }}">Mis datos</a>
               <a href="{{ url_for('main.export_account_data') }}">Exportar datos</a>

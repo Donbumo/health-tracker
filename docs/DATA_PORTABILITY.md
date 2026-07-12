@@ -27,6 +27,8 @@ El export completo usa `schemas/user_data_export.schema.json` e incluye, cuando 
 - rutinas y versiones;
 - sesiones de entrenamiento;
 - reportes de laboratorio.
+- actividades importadas;
+- rutas importadas.
 
 ## Qué no incluye
 
@@ -65,6 +67,8 @@ El restore actual es un merge transaccional. No intenta que la cuenta destino qu
     - `/training-sessions`
     - `/progress`
     - `/medical/labs`
+    - `/activities`
+    - `/routes`
 11. Repetir el mismo restore y confirmar que no duplica registros.
 
 ## Comparación semántica

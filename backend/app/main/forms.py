@@ -32,6 +32,29 @@ class UserDataPreviewForm(FlaskForm):
     submit = SubmitField("Validar sin importar")
 
 
+class AccountRestorePreviewForm(FlaskForm):
+    file = FileField(
+        "Export JSON",
+        validators=[
+            FileRequired(),
+            FileAllowed(["json"], "Selecciona un archivo con extensiÃ³n .json."),
+        ],
+    )
+    submit = SubmitField("Previsualizar restore")
+
+
+class AccountRestoreConfirmForm(FlaskForm):
+    file = FileField(
+        "Repite el mismo export JSON para confirmar",
+        validators=[
+            FileRequired(),
+            FileAllowed(["json"], "Selecciona un archivo con extensión .json."),
+        ],
+    )
+    confirmation_token = HiddenField(validators=[DataRequired()])
+    submit = SubmitField("Confirmar restore")
+
+
 class StandardImportPreviewForm(FlaskForm):
     file = FileField(
         "JSON",

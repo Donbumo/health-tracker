@@ -285,7 +285,7 @@ El plan usa operaciones:
 - `conflict`
 - `invalid`
 
-El `user_id` efectivo siempre sale de la sesión autenticada; un `user_id` dentro del archivo no puede importar datos hacia otra cuenta. Si hay documentos inválidos o conflictos, el commit se bloquea. Este flujo no implementa restore completo de `/account/export.json`; ese respaldo sigue teniendo solo preview dry-run en `/account/import-preview`.
+El `user_id` efectivo siempre sale de la sesión autenticada; un `user_id` dentro del archivo no puede importar datos hacia otra cuenta. Si hay documentos inválidos o conflictos, el commit se bloquea. Para respaldos completos usa el flujo separado de **Mis datos** / `/account/data`.
 
 La confirmación web se firma contra usuario, target, payload y plan revisado. Si el plan cambia entre preview y confirmación, o el token vence, se reutiliza o pertenece a otro usuario, la app exige revisar un nuevo preview. El lote es atómico: si falla un elemento durante la escritura, se hace rollback y no queda éxito parcial silencioso.
 
@@ -399,7 +399,7 @@ Para QA, Gunicorn usa valores conservadores y configurables: timeout de 60 segun
 
 Un administrador puede abrir `/admin/system` para consultar estado de DB, versión operativa, hora UTC y conteos agregados. La pantalla no muestra datos personales ni secretos. `APP_VERSION` puede contener una versión o commit desplegado; si no se configura muestra `unknown`.
 
-Cada usuario autenticado puede descargar `/account/export.json`. El JSON incluye pesajes, nutrición, energía, balances, rutinas y sus versiones, sesiones, laboratorios y metadata segura de uploads. No incluye `password_hash`, secretos, rutas internas ni archivos binarios. La restauración/importación completa y el respaldo ZIP quedan para una fase futura.
+Cada usuario autenticado puede descargar `/account/export.json`. El JSON incluye productos de alimento, recetas, pesajes, nutrición, energía, balances, rutinas y sus versiones, sesiones, laboratorios y metadata segura de uploads. No incluye `password_hash`, secretos, rutas internas ni archivos binarios. El respaldo ZIP queda para una fase futura.
 
 ## Handoff y portabilidad
 
@@ -408,9 +408,19 @@ Cada usuario autenticado puede descargar `/account/export.json`. El JSON incluye
 Un usuario autenticado puede:
 
 - Descargar su respaldo validado desde `/account/export.json`.
-- Abrir `/account/import-preview` y seleccionar ese JSON para un dry-run.
+- Abrir `/account/restore` y seleccionar ese JSON para preview de restore.
+- Confirmar el restore si el plan no tiene conflictos ni documentos inválidos.
+- Opcionalmente abrir `/account/import-preview` para un dry-run heredado que solo valida y resume.
 
-El preview valida `schemas/user_data_export.schema.json`, muestra errores, advertencias y conteos por sección. Procesa el archivo únicamente en memoria: no crea `UploadedFile`, no guarda bytes en `/data`, no modifica registros y no hace restore. La restauración real, el remapeo de IDs y un posible respaldo ZIP pertenecen a una fase futura separada.
+El restore valida `schemas/user_data_export.schema.json`, muestra errores, advertencias y un plan `insert/update/skip/conflict/invalid/unsupported`. La confirmación web se firma contra usuario autenticado, payload y plan revisado. El archivo se procesa en memoria: no crea `UploadedFile`, no guarda bytes en `/data`, ignora usuario/email/rol del export y remapea IDs internos de rutinas/versiones para restaurar sesiones. `uploads` y `daily_balances` son metadata/derivados y se omiten. El commit es atómico: si falla un registro, se hace rollback completo y queda auditoría saneada en `ImportRun` con `target_type=user_data_restore`.
+
+No hay restore de archivos binarios, borrado masivo, selección manual de `user_id`, ZIP backup ni API pública.
+
+Guías dedicadas:
+
+- [`docs/ACCOUNT_RESTORE.md`](docs/ACCOUNT_RESTORE.md)
+- [`docs/DATA_PORTABILITY.md`](docs/DATA_PORTABILITY.md)
+- [`docs/project-rules/account-restore.md`](docs/project-rules/account-restore.md)
 
 ## QA de importación estándar confirmada
 

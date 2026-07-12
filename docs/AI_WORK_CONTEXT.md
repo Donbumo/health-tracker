@@ -18,8 +18,10 @@ Antes de modificar el repositorio, leer en este orden:
 6. `docs/project-rules/standard-json-generator-development.md` si la tarea toca Fase 5B, detección, aliases, `StandardJsonGenerator`, `UniversalJsonImportAssistant` o `AssistedImportService`.
 7. `docs/project-rules/confirmed-standard-import.md` si la tarea toca confirmación o escritura real desde JSON estándar.
 8. `docs/project-rules/import-audit-persistence.md` si la tarea toca auditoría persistente de importaciones.
-9. `docs/ACTIVE_HANDOFF.md`, solo como handoff temporal del bloque activo.
-10. README, código, tests y `git status`.
+9. `docs/project-rules/account-restore.md` si la tarea toca restore completo de cuenta.
+10. `docs/ACCOUNT_RESTORE.md` y `docs/DATA_PORTABILITY.md` si la tarea toca portabilidad o round-trip.
+11. `docs/ACTIVE_HANDOFF.md`, solo como handoff temporal del bloque activo.
+12. README, código, tests y `git status`.
 
 ## Precedencia
 
@@ -97,7 +99,7 @@ El proyecto actual incluye, según código, tests y README:
   - export JSON/CSV.
 - Importación asistida universal, actualmente read-only en la fase de preview/generación.
 
-No tratar APK, app de reloj, FIT real, GPX real, Magene real, OCR, FHIR, API REST pública, restore completo o PDF/Excel avanzado como implementados si el código no lo confirma.
+No tratar APK, app de reloj, FIT real, GPX real, Magene real, OCR, FHIR, API REST pública, restore de binarios/ZIP o PDF/Excel avanzado como implementados si el código no lo confirma.
 
 La verificación local posterior al cierre de Fase 5B e importación confirmada reportó inicialmente:
 
@@ -150,6 +152,9 @@ La importación confirmada posterior a Fase 5B existe mediante `StandardImportEx
 - rutas de consulta: `GET /imports/history` y `GET /imports/history/<id>`.
 - no se auditan previews ni tokens inválidos.
 - no se guardan payloads crudos, tokens, trazas ni datos de salud en `ImportRun`.
+- el restore completo de cuenta existe para `user_data_export` mediante `/account/restore`, con preview, token firmado, remapeo de IDs internos, commit atómico y auditoría `target_type=user_data_restore`.
+- el restore completo no restaura binarios de `uploads`, no escribe `/data`, no permite elegir `user_id` y no implementa borrado ni ZIP.
+- La validación local del bloque `feature/backend-complete-roundtrip` reportó `399 passed`.
 
 Cobertura automatizada adicional agregada en la rama `feature/overnight-backend-qa-closure`:
 
@@ -256,4 +261,7 @@ Al cerrar un bloque:
 - Reglas de `StandardJsonGenerator`: `project-rules/standard-json-generator-development.md`.
 - Importación estándar confirmada: `project-rules/confirmed-standard-import.md`.
 - Auditoría persistente de imports: `project-rules/import-audit-persistence.md`.
+- Account restore: `project-rules/account-restore.md`.
+- Guía de restore: `ACCOUNT_RESTORE.md`.
+- Portabilidad de datos: `DATA_PORTABILITY.md`.
 - Handoff temporal: `ACTIVE_HANDOFF.md`.

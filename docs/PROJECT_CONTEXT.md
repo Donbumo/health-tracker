@@ -49,6 +49,7 @@ Módulos actualmente implementados o con núcleo funcional:
 - Dashboard diario y QA web.
 - Healthcheck, diagnóstico admin y export completo de usuario.
 - Import-preview dry-run del export completo.
+- Restore completo de usuario desde `/account/restore`, con preview, confirmación firmada, remapeo de IDs internos, commit atómico y auditoría saneada.
 - Entrenamiento: rutinas versionables, sesiones, progreso, sobrecarga, aliases de ejercicios e imports/exports base.
 - Nutrición diaria, energía diaria y balance.
 - Peso y composición corporal.
@@ -57,6 +58,8 @@ Módulos actualmente implementados o con núcleo funcional:
 - Fase 5B cerrada para los targets finales: detección estricta de schemas, asistente universal read-only, generación estándar read-only y orquestación de preview.
 - Fase posterior a 5B: importación estándar confirmada para QA desde web con plan `insert/update/skip/conflict/invalid` y confirmación explícita.
 - Ayudas locales de prompt para IA en `/imports/standard`: catálogo read-only para copiar prompts/plantillas JSON de los nueve targets soportados, sin integrar API externa, sin enviar datos fuera de la app y sin almacenar contenido copiado.
+- Portabilidad de cuenta: `/account/data`, `/account/export.json`, `/account/restore` y `/account/restore/confirm`. El restore ignora identidad exportada, no restaura binarios, omite derivados como `daily_balances` y no implementa borrado ni ZIP. Ver `docs/ACCOUNT_RESTORE.md`, `docs/DATA_PORTABILITY.md` y `docs/project-rules/account-restore.md` para el contrato operativo.
+- Validación local del bloque `feature/backend-complete-roundtrip`: `399 passed`.
 
 Estado real de Fase 5B verificado:
 
@@ -91,7 +94,8 @@ Bloques próximos previstos:
 
 1. Definir pruning operativo de `ImportRun` si se requiere retención limitada.
 2. Ampliar contratos de update seguro solo donde existan claves naturales o IDs explícitos verificables.
-3. Restauración real desde export completo de usuario, todavía no implementada.
+3. Endurecer equivalencia semántica del round-trip si aparecen nuevos dominios o se agregan binarios.
+4. Diseñar restore de archivos binarios/ZIP solo si se define una política explícita de almacenamiento y privacidad.
 
 No presentar APK, app de reloj, FIT real, GPX real, Magene real, OCR, FHIR o API REST pública como implementados. Siguen siendo planes, stubs o estructura futura salvo que el código de una rama posterior demuestre lo contrario.
 

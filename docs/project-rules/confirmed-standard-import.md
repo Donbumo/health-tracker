@@ -147,4 +147,5 @@ Flujo esperado:
 5. Servicio ejecuta transacción.
 6. Sistema muestra resumen final.
 
-No existe restore completo de usuario en esta fase.
+El restore completo de `user_data_export` pertenece a una fase y regla separadas:
+`account-restore.md`. No mezclar ese flujo con `/imports/standard`.

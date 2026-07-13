@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Detalle de backup · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div><h1>Detalle de backup</h1><p>Registro owner-only del ZIP verificado.</p></div>
+    <div class="page-actions"><a class="button" href="{{ url_for('main.download_account_backup', backup_id=record.id) }}">Descargar ZIP</a></div>
+  </section>
+  <section class="card">
+    <dl class="detail-list">
+      <dt>Fecha</dt><dd>{{ record.created_at }}</dd>
+      <dt>Estado</dt><dd>{{ record.status }}</dd>
+      <dt>Tamaño</dt><dd>{{ record.size_bytes }} bytes</dd>
+      <dt>SHA256</dt><dd><code>{{ record.sha256 }}</code></dd>
+      <dt>Formato</dt><dd>ZIP backup 1.0</dd>
+    </dl>
+    {% if record.warnings_json %}<h2>Integridad y advertencias</h2><ul>{% for warning in record.warnings_json %}<li>{{ warning }}</li>{% endfor %}</ul>{% endif %}
+  </section>
+{% endblock %}

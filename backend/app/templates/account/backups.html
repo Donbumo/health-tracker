@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Backups completos · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Backups completos</h1>
+      <p>ZIP 1.0 con datos, uploads raw y exports generados de tu cuenta.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button" href="{{ url_for('main.new_account_backup') }}">Nuevo backup</a>
+      <a class="button button-secondary" href="{{ url_for('main.restore_account_backup') }}">Restaurar</a>
+    </div>
+  </section>
+  <section class="card">
+    {% if records %}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Tamaño</th><th>SHA256</th><th>Estado</th><th>Acción</th></tr></thead>
+          <tbody>
+            {% for record in records %}
+              <tr>
+                <td>{{ record.created_at }}</td>
+                <td>{{ record.size_bytes }} bytes</td>
+                <td><code>{{ record.sha256[:12] }}</code></td>
+                <td>{{ record.status }}</td>
+                <td><a href="{{ url_for('main.account_backup_detail', backup_id=record.id) }}">Ver detalle</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p>No hay backups completos registrados.</p>
+      <a class="button" href="{{ url_for('main.new_account_backup') }}">Generar el primero</a>
+    {% endif %}
+  </section>
+{% endblock %}

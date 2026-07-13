@@ -64,10 +64,13 @@ El restore registra `pending` antes de mutaciones de dominio. Si el plan tiene c
 
 El servicio aplica límites de tamaño, profundidad, cantidad de nodos, longitud de strings y tamaño de secciones para evitar payloads abusivos. No se deben relajar estos límites sin prueba y justificación.
 
+## Integración con backup completo
+
+El restore JSON de esta página mantiene `uploads` y `export_records` como unsupported porque no recibe bytes. Alpha 0.5 añade `/account/backups/restore`: valida un ZIP 1.0, reutiliza el mismo plan de `AccountRestoreService` mediante `apply_in_transaction` y coordina raw/generated con compensación del filesystem. No se duplicó la lógica de dominio.
+
 ## Pendiente explícito
 
-- Restore de archivos binarios.
-- Restore ZIP.
+- Cifrado/password ZIP con administración segura de claves.
 - Borrado destructivo o sincronización espejo.
 - Import desde API externa.
 - Selección manual de usuario destino.

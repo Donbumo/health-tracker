@@ -88,9 +88,15 @@ Las pruebas de round-trip comparan el export original contra el export restaurad
 
 Si aparece una diferencia en contenido de dominio, debe tratarse como bug.
 
+## Backup integral Alpha 0.5
+
+El pendiente histórico de binarios queda cubierto por el formato ZIP 1.0. `user_data_export` continúa siendo el contrato de datos; el backup agrega `manifest.json`, raw y generated con SHA256. El restore JSON independiente sigue tratando `uploads` y `export_records` como metadata unsupported, mientras `/account/backups/restore` coordina datos y archivos.
+
+Ver [FULL_BACKUP.md](FULL_BACKUP.md) y [BACKUP_FORMAT_1_0.md](BACKUP_FORMAT_1_0.md).
+
 ## Fases futuras
 
-- Restore ZIP/binarios.
+- Cifrado de backup con infraestructura revisada, no criptografía propia.
 - Política de retención/pruning de auditoría.
 - Herramienta de comparación visual para QA.
 - Restore selectivo por dominio.

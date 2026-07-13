@@ -2,7 +2,32 @@
 
 Documento temporal para retomar el proyecto sin memoria previa.
 
-Ultima actualizacion: 2026-07-12.
+Ultima actualizacion: 2026-07-13.
+
+## Estado vigente de Fase 6B
+
+- Rama: `feature/phase-6b-full-backup-recovery`.
+- Base/tag verificados: `f36ae9d`, `alpha-0.4-exporters-complete`.
+- Árbol inicial: limpio y sincronizado con `master`/`origin/master`.
+- Objetivo: Alpha 0.5, backup integral ZIP y recuperación de datos + binarios.
+- Baseline previa: `441 passed` local, `440 passed, 1 skipped` Docker.
+- Resultado local actual: `475 passed` (10 nuevas pruebas de orphan_details).
+- Resultado Docker final: `464 passed, 1 skipped`; skip exacto `tests/test_active_handoff.py` porque `docs/` no se copia a la imagen.
+- MariaDB: head `20260712_0020`, upgrade y `flask db check` limpios.
+- QA manual: backup A ZIP 1.0 creado/descargado, manifest inspeccionado, restore en cuenta QA B confirmado, reimport con 0 file inserts/31 skips, aislamiento 404, raw/generated descargables y persistentes tras restart; móvil 360/390/430 sin overflow global.
+- Reconcile dry-run: DB/files registrados íntegros, sin staging ni pending abandonado; reportó 2 archivos finales huérfanos preexistentes y no los modificó.
+- Ajuste orphan_details (2026-07-13): dry-run ahora muestra bloque de metadata allowlisted por cada huérfano; `--apply` no toca huérfanos finales; 10 pruebas nuevas cubren raw/generated/orden/no-path-absoluto/no-original_filename/no-contenido/vanished/dry-run-no-modifica/apply-no-elimina/zero-orphans.
+- Migraciones nuevas: ninguna; head sigue `20260712_0020`.
+- Contrato nuevo: `schemas/full_backup_manifest.schema.json`, `backup_format_version=1.0`.
+- Servicios: `AccountBackupService`, `BackupArchiveReader`, `BackupRestoreCoordinator` y `BackupReconciliationService`.
+- Rutas: `/account/backups`, `/account/backups/new`, detalle/download, `/account/backups/restore` y confirmación.
+- Regla canónica: `project-rules/full-backup.md`.
+- No se tocó `.env`, `/data` manualmente ni se usaron datos reales. No se hizo commit ni push.
+
+Los dos archivos finales huérfanos reportados por reconcile son clasificados como `legacy_upload` y/o `legacy_generated`; solo se reportan, no se eliminan automáticamente. Investigar antes de borrar manualmente.
+
+
+Las secciones históricas de Alpha 0.4 que siguen a continuación explican la base. Si contradicen este bloque, manda esta sección, schemas, tests y reglas canónicas.
 
 Este handoff no reemplaza:
 
@@ -160,7 +185,6 @@ Skip Docker esperado si aparece: `tests/test_active_handoff.py`, porque `docs/` 
 
 ## Siguiente accion concreta
 
-1. Ejecutar suite local y Docker con migración `20260712_0020`.
-2. Validar manualmente `/exports` y descargas Activity/Route/TrainingPlan/TrainingSession.
-3. Verificar móvil 360/390/430 y restart sin borrar volúmenes.
-4. No hacer commit ni push hasta instrucción explícita.
+1. Revisar el diff y la matriz final de Fase 6B.
+2. Investigar por separado los 2 archivos huérfanos reportados por reconcile antes de cualquier borrado; no son records missing/corrupt.
+3. No hacer commit ni push hasta instrucción explícita.

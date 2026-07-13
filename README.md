@@ -572,19 +572,40 @@ schemas/                   # contratos JSON versionados
 docker-compose.yml
 ```
 
+## Backup integral Alpha 0.5
+
+Desde `/account/data` un usuario autenticado puede previsualizar y generar un backup ZIP 1.0 con su export JSON, uploads raw y exports generados. `/account/backups/restore` valida manifest, límites, paths, tamaños y SHA256 antes de mostrar el plan; la escritura exige confirmación firmada y conserva ownership del usuario destino.
+
+Rutas principales:
+
+- `/account/backups`: historial owner-only.
+- `/account/backups/new`: preview y generación.
+- `/account/backups/<id>/download`: descarga verificada.
+- `/account/backups/restore`: preview read-only en staging.
+- `/account/backups/restore/confirm`: restore confirmado.
+
+Reconciliación operativa, dry-run por defecto:
+
+```powershell
+docker compose exec web flask backup reconcile
+docker compose exec web flask backup reconcile --apply
+```
+
+El ZIP no incluye contraseñas, password hashes, sesiones ni secretos y no está cifrado. Consulta [FULL_BACKUP.md](docs/FULL_BACKUP.md), [BACKUP_FORMAT_1_0.md](docs/BACKUP_FORMAT_1_0.md), [BACKUP_SECURITY.md](docs/BACKUP_SECURITY.md) y [BACKUP_RESTORE_RUNBOOK.md](docs/BACKUP_RESTORE_RUNBOOK.md).
+
 ## Seguridad y privacidad
 
 - No expongas la aplicación directamente a Internet; úsala en red local o mediante VPN.
 - En HTTP local conserva `SESSION_COOKIE_SECURE=false`. Con HTTPS, cámbialo a `true`.
-- No se ofrecen rutas para descargar archivos originales en esta fase.
+- Backups y archivos raw restaurados tienen descarga owner-only con verificación de tamaño y SHA256.
 - El código no contiene datos personales reales; `.env`, `data/`, exports y formatos sensibles están ignorados.
 - Cada consulta y cada upload de esta fase se filtran por el `user_id` autenticado.
 
-## Alpha privada 0.1
+## Alpha privada 0.5
 
 Health Tracker está preparado para evaluación privada por usuarios invitados mediante una red local o VPN privada.
 
-La Alpha 0.1 permite:
+La Alpha 0.5 conserva los flujos de la Alpha 0.1 y agrega importación real, exportadores avanzados y backup/restore integral:
 
 - crear cuentas desde la administración;
 - registrar peso, nutrición, energía y entrenamiento;
@@ -592,6 +613,7 @@ La Alpha 0.1 permite:
 - exportar los datos personales;
 - usar la interfaz desde computadora o teléfono;
 - mantener los datos aislados entre usuarios.
+- crear y restaurar backups ZIP con datos y binarios verificados.
 
 Esta aplicación no sustituye atención médica y no debe exponerse directamente a Internet.
 

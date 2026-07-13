@@ -68,7 +68,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     @app.context_processor
     def inject_release_context():
         return {
-            "alpha_release_label": "Alpha 0.1",
+            "alpha_release_label": "Alpha 0.5",
         }
 
     @app.errorhandler(403)

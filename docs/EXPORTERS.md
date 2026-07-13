@@ -35,3 +35,7 @@ Cada combinación dominio/formato declara disponibilidad, motivo si no es compat
 El preview no crea archivos ni `ExportRecord`. La generación solo ocurre después de POST con CSRF.
 
 Referencias: [actividad/rutas](ACTIVITY_ROUTE_EXPORTS.md), [entrenamiento](TRAINING_EXPORTS.md) y [storage](EXPORT_STORAGE.md).
+
+## Backup integral
+
+`AccountBackupService` usa `ExportRecord(domain=account_backup, format=zip)` para registrar ZIPs completos. No es un exportador universal ni modifica el registry por dominio: compone el `user_data_export` existente con raw/generated, escribe por streaming, valida el archivo terminado y publica mediante movimiento atómico. Los backups anteriores se excluyen para evitar recursión.

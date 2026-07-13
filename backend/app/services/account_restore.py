@@ -300,6 +300,56 @@ class AccountRestoreService:
 
         return {**result, "audit_run_id": audit_run.id}
 
+    def apply_in_transaction(
+        self,
+        payload: dict[str, Any],
+        *,
+        user_id: int,
+        expected_plan_sha256: str,
+    ) -> dict[str, Any]:
+        """Apply a previously reviewed plan without committing or auditing.
+
+        This narrow entry point exists for coordinators that must include the
+        account restore in a larger database/filesystem transaction.  Callers
+        remain responsible for a persisted pending audit run, commit/rollback,
+        and compensating any filesystem changes.
+        """
+        self._validate_export(payload)
+        plan = self._build_plan(payload, user_id=user_id)
+        if self.plan_sha256(plan) != expected_plan_sha256:
+            raise AccountRestoreTokenError(
+                "Restore preview changed; review the new plan and confirm again"
+            )
+        blocking = [
+            item
+            for item in plan["operations"]
+            if item["operation"] in {"invalid", "conflict"}
+        ]
+        if blocking:
+            raise AccountRestoreError(
+                "Restore contains invalid or conflicting records"
+            )
+
+        committed = self._apply_payload(payload, user_id=user_id)
+        result = {
+            **self._summary(
+                [
+                    {
+                        **item,
+                        "existing_id": committed.get(
+                            f"{item['section']}:{item['index']}",
+                            item.get("existing_id"),
+                        ),
+                    }
+                    for item in plan["operations"]
+                ],
+                committed=True,
+                rollback=False,
+            ),
+            "created_or_updated_ids": committed,
+        }
+        return result
+
     @staticmethod
     def plan_sha256(plan: dict[str, Any]) -> str:
         fingerprint = {

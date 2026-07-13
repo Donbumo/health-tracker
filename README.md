@@ -1,5 +1,17 @@
 # Health Tracker
 
+## Alpha 0.6: API Auth Foundation
+
+La API `/api/v1` prepara la futura companion sin reutilizar cookies web: access corto, refresh opaco hash-only con rotación/reuse detection, logout, dispositivos, `/me`, bootstrap y rutina activa con ETag.
+
+```powershell
+curl.exe http://localhost:8000/api/v1/health
+flask api-auth cleanup
+flask api-auth cleanup --apply
+```
+
+CORS está cerrado por defecto, HTTPS es obligatorio fuera de QA y el rate limiter en memoria es por proceso: solo basta para QA privada/self-hosted; producción pública requiere backend compartido. Los IDs públicos son UUID persistidos y no cambian al rotar `API_TOKEN_SIGNING_KEY`. Sync push/pull, conflictos, planned workouts, APK y reloj no están implementados. Consulta `docs/API_V1.md`, `docs/API_AUTH.md`, `docs/API_DEVICE_SESSIONS.md`, `docs/API_SECURITY.md` y `docs/COMPANION_BOOTSTRAP.md`.
+
 Aplicación web privada, self-hosted y multiusuario. El MVP actual incluye autenticación, almacenamiento aislado, entrenamiento versionable, nutrición/energía diaria, peso y composición corporal, además de un dashboard diario consolidado.
 
 ## Alcance de la Fase 1

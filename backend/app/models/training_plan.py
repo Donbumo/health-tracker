@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import uuid
 
 from app.extensions import db
 
@@ -11,9 +12,11 @@ class TrainingPlan(db.Model):
             name="ck_training_plans_active_version_number",
         ),
         db.Index("ix_training_plans_user_created", "user_id", "created_at"),
+        db.UniqueConstraint("public_id", name="uq_training_plans_public_id"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(36), nullable=False, default=lambda: str(uuid.uuid4()))
     user_id = db.Column(
         db.Integer,
         db.ForeignKey("users.id", ondelete="CASCADE"),
@@ -82,9 +85,11 @@ class TrainingPlanVersion(db.Model):
             "user_id",
             "created_at",
         ),
+        db.UniqueConstraint("public_id", name="uq_training_plan_versions_public_id"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(36), nullable=False, default=lambda: str(uuid.uuid4()))
     user_id = db.Column(
         db.Integer,
         db.ForeignKey("users.id", ondelete="CASCADE"),

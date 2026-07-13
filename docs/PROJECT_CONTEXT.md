@@ -1,5 +1,9 @@
 # Contexto del proyecto: Plataforma self-hosted de salud, nutrición, entrenamiento y dispositivos
 
+## Alpha 0.6 / Fase 7A
+
+Base `/api/v1` con access firmado corto, refresh opaco hash-only rotatorio, reuse detection, dispositivos revocables, UUID públicos persistidos, JSON/request ID, rate limiting QA, CORS allowlist, `/me`, bootstrap y rutina activa read-only. Migraciones aditivas `20260713_0021` y `20260713_0022`. Sync offline, conflictos, tombstones, planned workouts, APK y reloj siguen planificados, no implementados.
+
 ## Visión general
 
 El proyecto es una aplicación web self-hosted, multiusuario y privada, pensada para ejecutarse localmente o mediante VPN.

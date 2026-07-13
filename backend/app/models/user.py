@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import uuid
 
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -10,9 +11,11 @@ class User(UserMixin, db.Model):
     __tablename__ = "users"
     __table_args__ = (
         db.CheckConstraint("role IN ('admin', 'user')", name="ck_users_role"),
+        db.UniqueConstraint("public_id", name="uq_users_public_id"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(36), nullable=False, default=lambda: str(uuid.uuid4()))
     username = db.Column(db.String(254), nullable=False, unique=True, index=True)
     email = db.Column(db.String(254), nullable=True, unique=True, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
@@ -115,6 +118,18 @@ class User(UserMixin, db.Model):
     )
     routes = db.relationship(
         "Route",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    api_devices = db.relationship(
+        "ApiDevice",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    api_sessions = db.relationship(
+        "ApiSession",
         back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,

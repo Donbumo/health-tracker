@@ -1,9 +1,10 @@
 import click
+from datetime import datetime, timezone
 from flask import current_app
 from flask.cli import with_appcontext
 
 from app.extensions import db
-from app.models import User
+from app.models import ApiDevice, ApiRefreshToken, ApiSession, User
 from app.services.demo_seed import (
     DEMO_EMAIL,
     DEMO_PASSWORD,
@@ -129,7 +130,45 @@ def backup_reconcile_command(apply_changes: bool, stale_after_hours: int) -> Non
         click.echo(f"  reason={detail['reason']}")
 
 
+@click.group("api-auth")
+def api_auth_group() -> None:
+    """Maintain API device sessions without exposing token material."""
+
+
+@api_auth_group.command("cleanup")
+@click.option("--apply", "apply_changes", is_flag=True, help="Revoke expired records; default is dry-run.")
+@with_appcontext
+def api_auth_cleanup_command(apply_changes: bool) -> None:
+    """Report or revoke expired API sessions and refresh tokens."""
+    now = datetime.now(timezone.utc)
+    expired_sessions = db.session.execute(
+        db.select(ApiSession).where(ApiSession.expires_at < now, ApiSession.revoked_at.is_(None))
+    ).scalars().all()
+    expired_tokens = db.session.execute(
+        db.select(ApiRefreshToken).where(ApiRefreshToken.expires_at < now, ApiRefreshToken.revoked_at.is_(None))
+    ).scalars().all()
+    reuse_families = db.session.execute(
+        db.select(ApiRefreshToken).where(ApiRefreshToken.reuse_detected_at.is_not(None))
+    ).scalars().all()
+    revoked_devices = db.session.execute(
+        db.select(ApiDevice).where(ApiDevice.revoked_at.is_not(None))
+    ).scalars().all()
+    if apply_changes:
+        for record in expired_sessions:
+            record.revoked_at = now
+            record.revoke_reason = "expired_cleanup"
+        for record in expired_tokens:
+            record.revoked_at = now
+        db.session.commit()
+    click.echo(f"mode={'apply' if apply_changes else 'dry-run'}")
+    click.echo(f"expired_sessions={len(expired_sessions)}")
+    click.echo(f"expired_refresh_tokens={len(expired_tokens)}")
+    click.echo(f"reuse_detected_tokens={len(reuse_families)}")
+    click.echo(f"revoked_devices={len(revoked_devices)}")
+
+
 def register_commands(app) -> None:
     app.cli.add_command(seed_admin_command)
     app.cli.add_command(seed_group)
     app.cli.add_command(backup_group)
+    app.cli.add_command(api_auth_group)

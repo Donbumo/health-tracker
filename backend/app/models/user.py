@@ -101,6 +101,12 @@ class User(UserMixin, db.Model):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    export_records = db.relationship(
+        "ExportRecord",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
     activities = db.relationship(
         "Activity",
         back_populates="user",

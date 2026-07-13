@@ -31,6 +31,7 @@
           <a href="{{ url_for('main.import_history') }}">Historial imports</a>
           <a href="{{ url_for('main.account_data') }}">Mis datos</a>
           <a href="{{ url_for('main.export_account_data') }}">Exportar datos</a>
+          <a href="{{ url_for('exports.history') }}">Historial exports</a>
           {% if current_user.is_admin %}
             <a href="{{ url_for('admin.users') }}">Admin</a>
             <a href="{{ url_for('admin.system') }}">Sistema</a>
@@ -71,6 +72,7 @@
               <a href="{{ url_for('main.import_history') }}">Historial imports</a>
               <a href="{{ url_for('main.account_data') }}">Mis datos</a>
               <a href="{{ url_for('main.export_account_data') }}">Exportar datos</a>
+              <a href="{{ url_for('exports.history') }}">Historial exports</a>
             </section>
 
             {% if current_user.is_admin %}

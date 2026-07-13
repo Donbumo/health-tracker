@@ -29,6 +29,7 @@ El export completo usa `schemas/user_data_export.schema.json` e incluye, cuando 
 - reportes de laboratorio.
 - actividades importadas;
 - rutas importadas.
+- metadata allowlisted de exports generados, sin binarios ni paths internos.
 
 ## Qué no incluye
 
@@ -38,6 +39,8 @@ El export completo usa `schemas/user_data_export.schema.json` e incluye, cuando 
 - archivos binarios;
 - rutas internas sensibles;
 - datos de otros usuarios.
+
+`export_records` usa `binary_included: false`. Restore lo marca `unsupported`: no recrea el archivo ni genera un link roto. El backup ZIP con binarios queda para Alpha 0.5.
 
 ## Restore actual
 

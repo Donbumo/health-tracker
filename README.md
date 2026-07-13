@@ -60,14 +60,16 @@ Para planes de fuerza, cada serie puede usar `reps` como objetivo exacto o el pa
 
 ## Alcance de la Fase 6
 
-- Interfaz común para exportadores y adaptadores separados por tipo de recurso.
-- Rutinas exportables como JSON interno validado o CSV plano.
-- Sesiones exportables como JSON interno validado, CSV plano o HTML imprimible.
-- Importadores separados para `training_plan` y `completed_workout` JSON.
-- Conservación del archivo original, SHA256 y deduplicación por `(user_id, sha256)`.
-- Stubs documentados, sin parser real, para FIT genérico, GPX y Magene FIT.
+- Registry uniforme con preview read-only, capability, warnings y pérdidas declaradas.
+- `ExportRecord` owner-only con SHA256, tamaño, media type, storage relativo y estado.
+- Activity: JSON, CSV resumen/track/laps, GPX 1.1 y TCX Activity.
+- Route: JSON, CSV de puntos, GPX 1.1 y TCX Course.
+- Rutinas/versiones: JSON, CSV, HTML, PDF y ZWO/ERG/MRC cuando los targets de potencia son explícitos.
+- Sesiones: completed_workout JSON, CSV, HTML y PDF.
+- Historial y descarga segura desde `/exports`, con verificación de tamaño/hash y eliminación controlada.
+- FIT de salida queda experimental/unsupported; no se usa un encoder casero ni se fabrican archivos `.fit` falsos.
 
-Las descargas se generan en memoria. No se registran como `UploadedFile`, porque ese modelo representa archivos fuente; queda pendiente un modelo específico de auditoría de exports si se necesita en una fase posterior.
+Consulta `docs/EXPORTERS.md`, `docs/ACTIVITY_ROUTE_EXPORTS.md`, `docs/TRAINING_EXPORTS.md` y `docs/EXPORT_STORAGE.md`.
 
 ## Fase 5 / Alpha 0.3: importadores reales
 

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Generar export · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading"><div><h1>Generar export</h1><p>El preview es read-only. El archivo se crea solo al confirmar un formato compatible.</p></div></section>
+  {% if domain == 'training_plan' %}
+    <form class="card form-grid" method="get">
+      <label for="version_id">Versión</label><select id="version_id" name="version_id"><option value="">Activa</option>{% for version in versions %}<option value="{{ version.id }}" {% if context.version_id == version.id|string %}selected{% endif %}>v{{ version.version_number }}</option>{% endfor %}</select>
+      <label for="week_number">Semana para ZWO/ERG/MRC</label><input id="week_number" name="week_number" type="number" min="1" value="{{ context.week_number or '' }}">
+      <label for="day_number">Día para ZWO/ERG/MRC</label><input id="day_number" name="day_number" type="number" min="1" max="7" value="{{ context.day_number or '' }}">
+      <button class="button button-secondary" type="submit">Actualizar capacidades</button>
+    </form>
+  {% endif %}
+  <section class="summary-grid">
+    {% for item in previews %}
+      <article class="card"><h2>{{ item.spec.format_name|upper }}</h2>
+        {% if item.preview and item.preview.capability.supported %}
+          <p>Disponible · {{ item.preview.media_type }}</p>
+          {% if item.preview.capability.lossy_fields %}<p><strong>Pérdidas declaradas:</strong> {{ item.preview.capability.lossy_fields|join(', ') }}</p>{% endif %}
+          {% if item.preview.capability.warnings %}<ul>{% for warning in item.preview.capability.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>{% endif %}
+          <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="format" value="{{ item.spec.format_name }}">{% for key, value in context.items() %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}<button class="button" type="submit">Generar {{ item.spec.format_name|upper }}</button></form>
+        {% else %}<p><strong>No disponible:</strong> {{ item.error or item.preview.capability.reason }}</p>{% endif %}
+      </article>
+    {% endfor %}
+  </section>
+{% endblock %}

@@ -43,7 +43,8 @@
         "training_sessions": {"$ref": "#/$defs/exportSection"},
         "medical_lab_reports": {"$ref": "#/$defs/exportSection"},
         "activities": {"$ref": "#/$defs/exportSection"},
-        "routes": {"$ref": "#/$defs/exportSection"}
+        "routes": {"$ref": "#/$defs/exportSection"},
+        "export_records": {"$ref": "#/$defs/exportSection"}
       }
     }
   },

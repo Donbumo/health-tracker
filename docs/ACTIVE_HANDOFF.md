@@ -2,7 +2,7 @@
 
 Documento temporal para retomar el proyecto sin memoria previa.
 
-Ultima actualizacion: 2026-07-11.
+Ultima actualizacion: 2026-07-12.
 
 Este handoff no reemplaza:
 
@@ -21,26 +21,34 @@ Si contradice schemas, tests, codigo o reglas canonicas, este archivo pierde pri
 
 ## Bloque activo
 
-- Rama de trabajo: `feature/phase-5-real-importers`.
-- Base efectiva verificada: `dcfdd3e`.
-- Base esperada por el usuario: `dcfdd3e`.
+- Rama de trabajo: `feature/phase-6-exporters-complete`.
+- Base efectiva verificada: `2d617ed`.
+- Base esperada por el usuario: `2d617ed`.
 - Arbol antes del trabajo: limpio.
-- Objetivo: Fase 5 / Alpha 0.3, importadores reales de archivos.
-- Se agregan modelos aditivos `Activity` y `Route`, schemas `activity`/`route`, pipeline `/imports/files`, vistas `/activities` y `/routes`, y export/restore de esas secciones.
-- FIT binario vendor-neutral usa `fitdecode==0.10.0`; valida header/CRC/truncado/límites y cubre session/lap/record/device/sport con fixtures binarias FIT sintéticas.
+- Objetivo: Fase 6 / Alpha 0.4, exportadores avanzados y artefactos auditables.
+- Se agrega el modelo aditivo `ExportRecord`, registry/capability, storage atómico generated, rutas `/exports` y formatos interoperables.
+- FIT binario de entrada se conserva; FIT de salida queda unsupported experimental.
 - No se tocó `.env` ni `/data`.
 - No se hizo commit ni push.
 - Regla fuerte: No tocar `/data`.
 
 ## Objetivo del bloque
 
-Implementar base verificable de importación real de archivos:
+Cerrar exportadores avanzados con trazabilidad:
 
 ```text
-upload raw -> detector/parser -> JSON estándar -> preview -> confirmación firmada -> ImportRun -> consulta/export/restore
+recurso owner-only -> capability/preview -> confirmación -> render -> storage atómico -> ExportRecord -> descarga verificada
 ```
 
 ## Estado actual del bloque
+
+- Línea base limpia previa: `429 passed`.
+- Registry con formatos por dominio y capability honesta.
+- Activity/Route: JSON, CSV, GPX y TCX.
+- TrainingPlan: JSON/CSV/HTML/PDF/ZWO/ERG/MRC, incluida versión histórica.
+- TrainingSession: JSON/CSV/HTML/PDF.
+- Storage generated con SHA256, tamaño, path relativo, owner y eliminación controlada.
+- FIT output: unsupported experimental; FIT input se conserva.
 
 - GPX: actividad si hay timestamps; ruta si no hay timestamps.
 - TCX: actividad con laps/trackpoints básicos.
@@ -49,6 +57,10 @@ upload raw -> detector/parser -> JSON estándar -> preview -> confirmación firm
 - FIT: decoder binario con `fitdecode`, actividad + ruta cuando hay GPS, actividad con warning cuando no hay GPS.
 
 ## Implementado en esta rama
+
+- Modelo/migración aditiva `ExportRecord` (`20260712_0020`).
+- Blueprint `/exports` con preview read-only, generación POST, historial, detalle, descarga y delete.
+- Metadata allowlisted `export_records` en `user_data_export`; restore la trata como unsupported sin binario.
 
 - Servicio `AccountRestoreService`.
 - Rutas:
@@ -99,6 +111,11 @@ upload raw -> detector/parser -> JSON estándar -> preview -> confirmación firm
 
 ## Riesgos y pendientes
 
+- FIT de salida no tiene encoder mantenido configurado.
+- GPX/TCX pueden perder metadata de dispositivo no interoperable; las pérdidas se declaran.
+- ZWO/ERG/MRC solo representan un día con potencia explícita y no convierten fuerza.
+- Backup ZIP/binarios sigue fuera de alcance (Alpha 0.5).
+
 - No hay restore ZIP ni restore de binarios de uploads.
 - No hay borrado masivo; el modo actual es merge.
 - La equivalencia semantica round-trip ignora IDs, timestamps y derivados.
@@ -110,6 +127,15 @@ upload raw -> detector/parser -> JSON estándar -> preview -> confirmación firm
 - Nota de compatibilidad legacy: `Restore/import real aÃºn no existe`.
 
 ## Validacion esperada
+
+Resultados de este bloque:
+
+- Local: `441 passed`.
+- Docker: `440 passed, 1 skipped`.
+- Skip Docker esperado: `tests/test_active_handoff.py`, porque `docs/` no se copia a la imagen.
+- MariaDB: head `20260712_0020`; `flask db check` limpio.
+- SQLite aislado para `0020`: upgrade/downgrade/upgrade y `db check` limpios.
+- QA web: PDF de rutina y sesión generados; historial persistió tras restart; Activity/Route mostraron formatos esperados; móvil 360/390/430 sin overflow global.
 
 ```powershell
 & '.\.venv\Scripts\python.exe' -m compileall -q backend
@@ -134,15 +160,7 @@ Skip Docker esperado si aparece: `tests/test_active_handoff.py`, porque `docs/` 
 
 ## Siguiente accion concreta
 
-1. Ejecutar validacion Docker final.
-2. Probar manualmente:
-   - crear/usar cuenta QA;
-   - exportar `/account/export.json`;
-   - restaurar en otra cuenta desde `/account/restore`;
-   - abrir dashboard, peso, nutricion, energia, recetas, rutinas, sesiones, progreso y laboratorios;
-   - repetir restore y confirmar que no duplica.
-3. Si todo queda verde, commit sugerido:
-
-```text
-feat: add account data restore roundtrip
-```
+1. Ejecutar suite local y Docker con migración `20260712_0020`.
+2. Validar manualmente `/exports` y descargas Activity/Route/TrainingPlan/TrainingSession.
+3. Verificar móvil 360/390/430 y restart sin borrar volúmenes.
+4. No hacer commit ni push hasta instrucción explícita.

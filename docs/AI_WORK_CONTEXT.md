@@ -4,7 +4,7 @@ Este documento es el punto de entrada para Codex y otros agentes que retomen el 
 
 No reemplaza a las reglas canónicas ni a los schemas. Su función es ordenar qué leer, qué manda en caso de conflicto y cuál es el estado técnico verificado al actualizar este contexto.
 
-Última actualización documental: 2026-07-09.
+Última actualización documental: 2026-07-12.
 
 ## Orden obligatorio de lectura
 
@@ -20,8 +20,9 @@ Antes de modificar el repositorio, leer en este orden:
 8. `docs/project-rules/import-audit-persistence.md` si la tarea toca auditoría persistente de importaciones.
 9. `docs/project-rules/account-restore.md` si la tarea toca restore completo de cuenta.
 10. `docs/ACCOUNT_RESTORE.md` y `docs/DATA_PORTABILITY.md` si la tarea toca portabilidad o round-trip.
-11. `docs/ACTIVE_HANDOFF.md`, solo como handoff temporal del bloque activo.
-12. README, código, tests y `git status`.
+11. `docs/project-rules/exporters.md` si la tarea toca exports o artefactos generated.
+12. `docs/ACTIVE_HANDOFF.md`, solo como handoff temporal del bloque activo.
+13. README, código, tests y `git status`.
 
 ## Precedencia
 
@@ -41,6 +42,10 @@ Si hay conflicto:
 `docs/ACTIVE_HANDOFF.md` es temporal. Puede orientar el siguiente bloque, pero no puede contradecir schemas, tests ni reglas canonicas.
 
 ## Estado técnico actual verificado
+
+La rama activa `feature/phase-6-exporters-complete` parte de `2d617ed` (tag `alpha-0.3-real-file-ingestion`). Agrega Alpha 0.4: registry de exportadores, `ExportRecord`, storage generated con SHA256, Activity/Route GPX/TCX/CSV, entrenamiento HTML/PDF/ZWO/ERG/MRC y UI `/exports`. FIT de salida permanece experimental/unsupported por ausencia de encoder mantenido configurado.
+
+La línea base limpia previa a este bloque fue `429 passed`. El cierre verificado de la rama reportó `441 passed` local y `440 passed, 1 skipped` en Docker; el skip es `test_active_handoff.py` porque la imagen no copia `docs/`.
 
 Esta actualizacion documental se integro en `master` mediante el merge `9a5d474`.
 
@@ -262,6 +267,7 @@ Al cerrar un bloque:
 - Reglas de `StandardJsonGenerator`: `project-rules/standard-json-generator-development.md`.
 - Importación estándar confirmada: `project-rules/confirmed-standard-import.md`.
 - Real-file imports: `project-rules/real-file-imports.md`.
+- Exportadores: `project-rules/exporters.md`.
 - Auditoría persistente de imports: `project-rules/import-audit-persistence.md`.
 - Account restore: `project-rules/account-restore.md`.
 - Guía de restore: `ACCOUNT_RESTORE.md`.

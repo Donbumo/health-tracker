@@ -9,6 +9,7 @@ Antes de modificar el proyecto, lee primero:
 - `docs/project-rules/canonical-data-contract-import-update.md`
 - `docs/project-rules/phase-5b-universal-json-import-assistant.md`
 - `docs/project-rules/standard-json-generator-development.md` cuando la tarea toque Fase 5B, detección, aliases, `StandardJsonGenerator`, `UniversalJsonImportAssistant` o `AssistedImportService`
+- `docs/project-rules/exporters.md` cuando la tarea toque exports, storage generated, `ExportRecord`, GPX/TCX de salida, PDF o ZWO/ERG/MRC
 
 `docs/PROJECT_CONTEXT.md` contiene la visión completa del producto, arquitectura, módulos, fases, schemas, importadores, exportadores, reglas de privacidad y estado actual del desarrollo.
 

@@ -6,7 +6,9 @@
       <h1>Actividad {{ activity.id }}</h1>
       <p>{{ activity.activity_type }} Â· {{ activity.started_at.isoformat() }}</p>
     </div>
-    <a class="button button-secondary" href="{{ url_for('activities.export_activity_json', activity_id=activity.id) }}">Exportar JSON</a>
+    <div class="page-actions">
+      <a class="button" href="{{ url_for('exports.create', domain='activity', source_id=activity.id) }}">Exportar actividad</a>
+    </div>
   </section>
 
   <section class="card">

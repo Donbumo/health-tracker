@@ -10,8 +10,7 @@
       <a class="button" href="{{ url_for('sessions.new_session', plan_id=plan.id) }}">Registrar sesión</a>
       <a class="button" href="{{ url_for('training.new_version', plan_id=plan.id) }}">Nueva versión</a>
       <a class="button button-secondary" href="{{ url_for('training.version_history', plan_id=plan.id) }}">Historial</a>
-      <a class="button" href="{{ url_for('training.export_format', plan_id=plan.id, format_name='json') }}">Rutina JSON</a>
-      <a class="button button-secondary" href="{{ url_for('training.export_format', plan_id=plan.id, format_name='csv') }}">Rutina CSV</a>
+      <a class="button" href="{{ url_for('exports.create', domain='training_plan', source_id=plan.id) }}">Exportadores avanzados</a>
       <a class="button button-secondary" href="{{ url_for('training.list_plans') }}">Volver</a>
     </div>
   </section>

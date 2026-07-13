@@ -6,7 +6,9 @@
       <h1>{{ route.name }}</h1>
       <p>{{ route.route_type }}</p>
     </div>
-    <a class="button button-secondary" href="{{ url_for('activities.export_route_json', route_id=route.id) }}">Exportar JSON</a>
+    <div class="page-actions">
+      <a class="button" href="{{ url_for('exports.create', domain='route', source_id=route.id) }}">Exportar ruta</a>
+    </div>
   </section>
 
   <section class="card">

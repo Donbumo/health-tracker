@@ -10,6 +10,7 @@
 
   <section class="quick-actions">
     <a class="button" href="{{ url_for('main.export_account_data') }}">Exportar respaldo</a>
+    <a class="button button-secondary" href="{{ url_for('exports.history') }}">Historial de exports</a>
     <a class="button" href="{{ url_for('main.restore_account_data') }}">Restore desde export</a>
     <a class="button button-secondary" href="{{ url_for('main.standard_import') }}">Importar JSON estándar</a>
     <a class="button button-secondary" href="{{ url_for('main.import_history') }}">Historial imports/restores</a>
@@ -20,6 +21,11 @@
       <h2>Exportar respaldo</h2>
       <p>Descarga un JSON completo de tus datos. No incluye password hash, secretos ni archivos binarios.</p>
       <a class="button" href="{{ url_for('main.export_account_data') }}">Exportar JSON</a>
+    </article>
+    <article class="card">
+      <h2>Exports generados</h2>
+      <p>Consulta archivos generados, SHA256, estado y descarga owner-only.</p>
+      <a class="button button-secondary" href="{{ url_for('exports.history') }}">Ver exports</a>
     </article>
     <article class="card">
       <h2>Restore desde export</h2>

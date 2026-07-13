@@ -272,18 +272,44 @@ def parse_csv_import(content: bytes, *, user_id: int, target: str | None) -> Par
 def parse_gpx(content: bytes, *, user_id: int) -> ParsedRealFile:
     root = _safe_xml_root(content)
     points = []
+    has_track = False
+    has_route = False
     for element in root.iter():
-        if _local_name(element.tag) in {"trkpt", "rtept"}:
+        local_name = _local_name(element.tag)
+        if local_name == "trk":
+            has_track = True
+        elif local_name == "rte":
+            has_route = True
+        if local_name in {"trkpt", "rtept"}:
             if len(points) >= MAX_POINTS:
                 raise RealFileImportError("Too many GPX points")
             points.append(_xml_point(element))
     if not points:
         raise RealFileImportError("GPX contains no route/activity points")
-    route_doc = _route_document(user_id, "GPX route", "gpx", points, "gpx")
+    route_name = _first_text(root, "name") or "GPX route"
+    route_doc = _route_document(user_id, route_name, "gpx", points, "gpx")
     timestamps = [point.get("timestamp") for point in points if point.get("timestamp")]
     warnings = []
-    if timestamps:
-        documents = [_activity_document(user_id, "outdoor", points, "gpx", source_app="gpx")]
+    if has_route and not has_track:
+        documents = [route_doc]
+        target = "route"
+        if not timestamps:
+            warnings.append("GPX has no timestamps; activity summary was not generated.")
+    elif timestamps:
+        activity_type = _first_text(root, "activity_type") or "outdoor"
+        activity = _activity_document(user_id, activity_type, points, "gpx", source_app="gpx")
+        laps_text = _first_text(root, "laps")
+        if laps_text:
+            try:
+                laps = json.loads(laps_text)
+            except (TypeError, ValueError):
+                warnings.append("GPX lap extension could not be decoded.")
+            else:
+                if isinstance(laps, list) and len(laps) <= 1000 and all(isinstance(item, dict) for item in laps):
+                    activity["data"]["laps"] = laps
+                else:
+                    warnings.append("GPX lap extension was ignored because it is invalid.")
+        documents = [activity]
         target = "activity"
     else:
         documents = [route_doc]
@@ -772,7 +798,9 @@ def _first_text(root: ET.Element, local_name: str) -> str | None:
 
 def _xml_point(element: ET.Element) -> dict[str, Any]:
     point = {"lat": float(element.attrib["lat"]), "lon": float(element.attrib["lon"])}
-    for child in element:
+    for child in element.iter():
+        if child is element:
+            continue
         name = _local_name(child.tag)
         text = (child.text or "").strip()
         if name == "ele" and text:
@@ -781,6 +809,14 @@ def _xml_point(element: ET.Element) -> dict[str, Any]:
             point["timestamp"] = text.replace("Z", "+00:00")
         if name in {"hr", "heartrate"} and text:
             point["heart_rate_bpm"] = int(float(text))
+        if name in {"cad", "cadence"} and text:
+            point["cadence_rpm"] = float(text)
+        if name in {"power", "watts"} and text:
+            point["power_watts"] = int(float(text))
+        if name == "speed" and text:
+            point["speed_mps"] = float(text)
+        if name == "distance" and text:
+            point["distance_meters"] = float(text)
     return point
 
 

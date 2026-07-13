@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Exports · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading"><div><h1>Historial de exports</h1><p>Artefactos generados para tu cuenta, con SHA256 e integridad verificada al descargar.</p></div></section>
+  {% if records %}
+    <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Dominio</th><th>Formato</th><th>Archivo</th><th>Estado</th><th>Acción</th></tr></thead><tbody>
+    {% for record in records %}<tr><td>{{ record.created_at }}</td><td>{{ record.domain }}</td><td>{{ record.format }}</td><td>{{ record.filename }}</td><td>{{ record.status }}</td><td><a class="button button-secondary" href="{{ url_for('exports.detail', export_id=record.id) }}">Detalle</a></td></tr>{% endfor %}
+    </tbody></table></div>
+  {% else %}<section class="card"><p>No hay exports generados.</p><p>Abre una actividad, ruta, rutina o sesión para generar uno.</p></section>{% endif %}
+{% endblock %}

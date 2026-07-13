@@ -67,7 +67,7 @@ RESTORABLE_SECTIONS = (
     "activities",
     "routes",
 )
-UNSUPPORTED_SECTIONS = ("uploads", "daily_balances")
+UNSUPPORTED_SECTIONS = ("uploads", "daily_balances", "export_records")
 
 
 class AccountRestoreError(ValueError):

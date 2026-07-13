@@ -9,3 +9,4 @@ jsonschema>=4.23,<5
 rfc3339-validator>=0.1.4,<1
 tzdata>=2025,<2027
 fitdecode==0.10.0
+reportlab==4.4.9

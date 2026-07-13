@@ -57,6 +57,12 @@ Usa esta lista antes de invitar a un compañero real a una alpha por LAN/VPN.
 - [ ] Export no incluye `password_hash`, tokens ni archivos binarios.
 - [ ] Segundo usuario no ve peso, energía, nutrición, sesiones, imports ni exports del primero.
 - [ ] IDs ajenos responden 404 o 403 según ruta.
+- [ ] `/exports` muestra solo artefactos del usuario autenticado.
+- [ ] Preview de export no crea archivo ni `ExportRecord`.
+- [ ] Confirmación genera archivo, SHA256 y registro owner-only.
+- [ ] Activity y Route descargan JSON/CSV/GPX/TCX según capability.
+- [ ] Rutina y sesión descargan PDF válido; ZWO/ERG/MRC rechazan planes incompatibles.
+- [ ] Archivo faltante o alterado no se descarga.
 
 ## Logout y persistencia
 

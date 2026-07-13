@@ -1,7 +1,7 @@
 import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 
 class ExportError(ValueError):
@@ -15,6 +15,36 @@ class ExportArtifact:
     extension: str
     warning: str | None = None
     inline: bool = False
+
+
+@dataclass(frozen=True)
+class ExportCapability:
+    supported: bool
+    reason: str | None = None
+    warnings: tuple[str, ...] = ()
+    lossy_fields: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class ExportPreview:
+    domain: str
+    format_name: str
+    extension: str
+    media_type: str
+    filename: str
+    capability: ExportCapability
+
+
+@dataclass(frozen=True)
+class ExportSpec:
+    domain: str
+    format_name: str
+    extension: str
+    media_type: str
+    render: Callable[[Any, int, dict[str, Any]], ExportArtifact]
+    filename: Callable[[Any, dict[str, Any]], str]
+    capability: Callable[[Any, int, dict[str, Any]], ExportCapability]
+    exporter_version: str = "1.0"
 
 
 class BaseExporter(ABC):

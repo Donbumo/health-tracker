@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}Export {{ record.id }} · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading"><div><h1>{{ record.filename }}</h1><p>{{ record.domain }} · {{ record.format }} · {{ record.status }}</p></div></section>
+  <section class="card"><dl class="metadata"><dt>SHA256</dt><dd><code>{{ record.sha256[:16] }}…</code></dd><dt>Tamaño</dt><dd>{{ record.size_bytes }} bytes</dd><dt>Media type</dt><dd>{{ record.media_type }}</dd><dt>Creado</dt><dd>{{ record.created_at }}</dd></dl>
+  {% if record.warnings_json %}<h2>Warnings</h2><ul>{% for warning in record.warnings_json %}<li>{{ warning }}</li>{% endfor %}</ul>{% endif %}
+  {% if record.status == 'ready' %}<a class="button" href="{{ url_for('exports.download', export_id=record.id) }}">Descargar</a><form method="post" action="{{ url_for('exports.delete', export_id=record.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button-secondary" type="submit">Eliminar artefacto</button></form>{% endif %}</section>
+{% endblock %}

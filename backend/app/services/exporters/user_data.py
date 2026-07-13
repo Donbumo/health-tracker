@@ -6,6 +6,7 @@ from app.models import (
     Activity,
     DailyEnergy,
     DailyNutrition,
+    ExportRecord,
     FoodProduct,
     MedicalLabReport,
     Recipe,
@@ -179,6 +180,28 @@ def _route_document(route: Route, user_id: int) -> dict[str, Any]:
     return document
 
 
+def _export_record_metadata(record: ExportRecord, user_id: int) -> dict[str, Any]:
+    if record.user_id != user_id:
+        raise ExportError("Export record does not belong to this user")
+    return {
+        "id": record.id,
+        "domain": record.domain,
+        "source_type": record.source_type,
+        "source_id": record.source_id,
+        "format": record.format,
+        "exporter_version": record.exporter_version,
+        "filename": record.filename,
+        "media_type": record.media_type,
+        "size_bytes": record.size_bytes,
+        "sha256": record.sha256,
+        "status": record.status,
+        "warnings": record.warnings_json or [],
+        "created_at": _iso(record.created_at),
+        "expires_at": _iso(record.expires_at),
+        "binary_included": False,
+    }
+
+
 def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
     if user.id != user_id:
         raise ExportError("User export does not belong to this user")
@@ -204,6 +227,12 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
     uploads = _records(UploadedFile, user_id, UploadedFile.created_at, UploadedFile.id)
     activities = _records(Activity, user_id, Activity.started_at, Activity.id)
     routes = _records(Route, user_id, Route.created_at, Route.id)
+    export_records = _records(
+        ExportRecord,
+        user_id,
+        ExportRecord.created_at,
+        ExportRecord.id,
+    )
 
     return {
         "schema_version": "1.0",
@@ -244,6 +273,9 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
                 _route_document(route, user_id) for route in routes
             ],
             "uploads": [_upload_metadata(upload, user_id) for upload in uploads],
+            "export_records": [
+                _export_record_metadata(record, user_id) for record in export_records
+            ],
         },
     }
 

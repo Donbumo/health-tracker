@@ -1,6 +1,7 @@
 from app.models.daily_energy import DailyEnergy
 from app.models.activity import Activity, Route
 from app.models.exercise import Exercise, ExerciseAlias
+from app.models.export_record import ExportRecord
 from app.models.import_run import ImportRun
 from app.models.medical_lab import MedicalLabReport, MedicalLabResult
 from app.models.nutrition import DailyNutrition, FoodProduct, NutritionItem, NutritionMeal
@@ -22,6 +23,7 @@ __all__ = [
     "Route",
     "Exercise",
     "ExerciseAlias",
+    "ExportRecord",
     "ImportRun",
     "MedicalLabReport",
     "MedicalLabResult",

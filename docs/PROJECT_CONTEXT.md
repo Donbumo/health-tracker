@@ -29,7 +29,7 @@ La aplicación debe permitir que varios usuarios, por ejemplo miembros de una fa
 
 Actualización verificada: 2026-07-09.
 
-El estado ejecutable actual es bastante posterior a la Fase 6 inicial descrita en secciones históricas de este documento. Para cualquier tarea nueva, usar también `docs/AI_WORK_CONTEXT.md`, las reglas en `docs/project-rules/` y el estado real del código.
+El estado ejecutable actual incluye la Fase 5 / Alpha 0.3 integrada en `2d617ed`. La rama `feature/phase-6-exporters-complete` implementa el cierre de exportadores de Alpha 0.4 con auditoría persistente, storage seguro, formatos Activity/Route y entrenamiento avanzado. Para cualquier tarea nueva, usar también `docs/AI_WORK_CONTEXT.md`, las reglas en `docs/project-rules/` y el estado real del código.
 
 Estado verificado en `master` / `docs/refresh-ai-context`:
 
@@ -140,9 +140,18 @@ No se añadieron tablas ni migraciones durante esa fase.
 - `workout_sessions.py`
 - `sessions`
 
+### Evolución actual de Fase 6
+
+- `ExportRecord` reemplaza el TODO histórico de auditoría de exports.
+- `/exports` ofrece preview, generación confirmada, historial, descarga y borrado controlado owner-only.
+- Activity/Route exportan JSON, CSV, GPX y TCX con round-trip probado.
+- TrainingPlan exporta versiones activas/históricas en JSON/CSV/HTML/PDF; ZWO/ERG/MRC solo cuando capability confirma potencia explícita.
+- TrainingSession exporta JSON/CSV/HTML/PDF.
+- FIT output no está implementado y se declara unsupported experimental.
+- Validación de la rama: `441 passed` local; `440 passed, 1 skipped` en Docker; migración MariaDB en head `20260712_0020` y `db check` limpio.
+
 ### Pendientes técnicos cercanos
 
-- Revisar si conviene crear modelo/tabla `ExportRecord` para registrar exportaciones.
 - Mantener exportadores como adaptadores separados, no como un exportador universal monolítico.
 - Mantener la importación FIT/GPX/TCX documentada como flujo por archivo exportado; Magene/OnelapFit solo entra si exporta FIT/GPX/TCX estándar, sin APIs privadas.
 - No generar migraciones si no hay cambios reales en modelos.
@@ -1473,7 +1482,7 @@ APP_BASE_URL
 - Perfil Magene.
 - Perfil Huawei companion.
 
-Estado histórico: Fase 6 inicial completada para JSON/CSV/HTML e importadores base de rutinas/sesiones. En la rama de Fase 5 posterior, FIT/GPX/TCX por archivo exportado avanzan a importadores reales con trazabilidad; Magene/OnelapFit sigue limitado a archivos estándar exportados.
+Estado actual: Fase 6 avanzada en `feature/phase-6-exporters-complete`; FIT de salida continúa unsupported experimental. Magene/OnelapFit sigue limitado a archivos estándar interoperables, sin APIs privadas.
 
 ### Fase 7: APK companion
 

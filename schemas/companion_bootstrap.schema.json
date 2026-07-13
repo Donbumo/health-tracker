@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/companion_bootstrap.schema.json",
+  "title": "Companion bootstrap API v1 payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["api_version", "server_time", "user", "device", "capabilities", "active_routine"],
+  "properties": {
+    "api_version": {"const": "1"},
+    "server_time": {"type": "string", "format": "date-time"},
+    "user": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "timezone"],
+      "properties": {
+        "id": {"type": "string", "format": "uuid"},
+        "timezone": {"type": "string", "minLength": 1, "maxLength": 100}
+      }
+    },
+    "device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["device_id", "session_id"],
+      "properties": {
+        "device_id": {"type": "string", "format": "uuid"},
+        "session_id": {"type": "string", "format": "uuid"}
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "additionalProperties": {"type": "boolean"},
+      "required": ["offline_sync_push", "incremental_pull", "planned_workouts", "watch_bridge", "fit_output", "backup_zip", "raw_file_import", "advanced_exports"]
+    },
+    "active_routine": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["plan_id", "version_id", "version", "name", "etag", "selection_policy"],
+          "properties": {
+            "plan_id": {"type": "string", "format": "uuid"},
+            "version_id": {"type": "string", "format": "uuid"},
+            "version": {"type": "integer", "minimum": 1},
+            "name": {"type": "string", "minLength": 1},
+            "etag": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+            "selection_policy": {"const": "most_recent_plan_active_version"}
+          }
+        }
+      ]
+    }
+  }
+}

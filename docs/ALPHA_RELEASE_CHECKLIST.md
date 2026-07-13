@@ -1,5 +1,14 @@
 # Checklist de release alpha privada
 
+## Alpha 0.6 — API Auth Foundation
+
+- [x] Suite local y Docker verde.
+- [x] Migraciones `20260713_0021` y `20260713_0022`: upgrade/check y downgrade/upgrade temporal.
+- [x] Login, refresh/reuse, logout-all, dispositivos y restart QA.
+- [x] `/me`, bootstrap y rutina activa owner-only.
+- [x] CORS cerrado y logs sin secretos.
+- [x] Sync Fase 7B confirmado unsupported.
+
 Usa esta lista antes de invitar a un compañero real a una alpha por LAN/VPN.
 
 ## Instalación y migraciones

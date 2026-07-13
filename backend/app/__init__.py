@@ -1,7 +1,8 @@
 from pathlib import Path
+import uuid
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from flask import Flask, render_template
+from flask import Flask, jsonify, render_template, request
 
 from app.cli import register_commands
 from app.config import Config
@@ -19,6 +20,25 @@ def create_app(test_config: dict | None = None) -> Flask:
     secret_key = app.config.get("SECRET_KEY") or ""
     if len(secret_key) < 32 or secret_key == "replace-with-a-long-random-secret":
         raise RuntimeError("SECRET_KEY must be a non-placeholder value of at least 32 characters")
+
+    api_signing_key = app.config.get("API_TOKEN_SIGNING_KEY") or ""
+    if api_signing_key and (
+        len(api_signing_key) < 32
+        or api_signing_key == "replace-with-a-long-random-secret"
+    ):
+        raise RuntimeError(
+            "API_TOKEN_SIGNING_KEY must contain at least 32 non-placeholder characters"
+        )
+    if not api_signing_key:
+        if app.config.get("API_REQUIRE_SEPARATE_SIGNING_KEY"):
+            raise RuntimeError(
+                "API_TOKEN_SIGNING_KEY is required by API_REQUIRE_SEPARATE_SIGNING_KEY"
+            )
+        app.config["API_TOKEN_SIGNING_KEY"] = secret_key
+        app.logger.warning(
+            "API_TOKEN_SIGNING_KEY is not configured; using validated SECRET_KEY "
+            "with the API-specific signing salt"
+        )
 
     Path(app.config["UPLOAD_ROOT"]).mkdir(parents=True, exist_ok=True)
     Path(app.config["GENERATED_UPLOAD_ROOT"]).mkdir(parents=True, exist_ok=True)
@@ -49,6 +69,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     from app.foods import foods_bp
     from app.exports import exports_bp
     from app.recipes import recipes_bp
+    from app.api_v1 import api_v1_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(activities_bp)
@@ -63,12 +84,21 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(foods_bp)
     app.register_blueprint(exports_bp)
     app.register_blueprint(recipes_bp)
+    csrf.exempt(api_v1_bp)
+    app.register_blueprint(api_v1_bp)
     register_commands(app)
+
+    @app.after_request
+    def secure_api_fallback_responses(response):
+        if request.path.startswith("/api/v1"):
+            response.headers["Cache-Control"] = "no-store"
+            response.headers["X-Content-Type-Options"] = "nosniff"
+        return response
 
     @app.context_processor
     def inject_release_context():
         return {
-            "alpha_release_label": "Alpha 0.5",
+            "alpha_release_label": "Alpha 0.6",
         }
 
     @app.errorhandler(403)
@@ -77,7 +107,21 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     @app.errorhandler(404)
     def not_found(_error):
+        if request.path.startswith("/api/v1"):
+            return jsonify(
+                error={"code": "not_found", "message": "Recurso no encontrado.", "details": {}},
+                meta={"api_version": "1", "request_id": str(uuid.uuid4())},
+            ), 404
         return render_template("404.html"), 404
+
+    @app.errorhandler(405)
+    def method_not_allowed(_error):
+        if request.path.startswith("/api/v1"):
+            return jsonify(
+                error={"code": "method_not_allowed", "message": "Método no permitido.", "details": {}},
+                meta={"api_version": "1", "request_id": str(uuid.uuid4())},
+            ), 405
+        return render_template("404.html"), 405
 
     @app.errorhandler(413)
     def request_too_large(_error):

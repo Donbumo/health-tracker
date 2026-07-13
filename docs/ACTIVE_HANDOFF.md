@@ -1,5 +1,17 @@
 # Handoff activo de Health Tracker
 
+## 2026-07-13 — Fase 7A
+
+- Rama `feature/phase-7a-api-auth`; base `7916cde`, tag `alpha-0.5-full-backup-recovery`.
+- Nueva API `/api/v1`, sesiones/dispositivos, access/refresh y migraciones `20260713_0021`/`0022`; la segunda persiste UUID públicos de usuario/rutina/versión.
+- Validación final: local `507 passed`; Docker `506 passed, 1 skipped` (`test_active_handoff.py`, porque `docs/` no entra en la imagen).
+- Migraciones `20260713_0021`/`0022`: MariaDB en head con upgrade/check limpios; downgrade/upgrade aislado de `0022` limpio en SQLite temporal y backfill UUID verificado.
+- QA HTTP: login, `/me`, devices, bootstrap, rutina y refresh 200; sin Bearer 401; dos refresh simultáneos en MariaDB producen exactamente un 200/un 401, un solo sucesor y revocación de familia; token persiste tras restart; revocar dispositivo invalida access.
+- Sin sync Fase 7B, planned workouts, APK o reloj.
+- Riesgos: rate limit por proceso/no global; no hay rutina global activa y se declara `most_recent_plan_active_version`.
+
+Leer `../AGENTS.md`, `AI_WORK_CONTEXT.md` y `project-rules/api-v1.md`. Sustituir este bloque por resultados exactos al cerrar.
+
 Documento temporal para retomar el proyecto sin memoria previa.
 
 Ultima actualizacion: 2026-07-13.

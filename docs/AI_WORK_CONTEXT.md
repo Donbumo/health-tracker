@@ -1,5 +1,9 @@
 # Contexto operativo para agentes de IA
 
+## API v1
+
+Para companion leer `project-rules/api-v1.md`. Fase 7A añade Bearer persistido independiente de web. Fase 7B sync no está implementada y no debe simularse.
+
 Este documento es el punto de entrada para Codex y otros agentes que retomen el proyecto sin depender de conversaciones anteriores.
 
 No reemplaza a las reglas canónicas ni a los schemas. Su función es ordenar qué leer, qué manda en caso de conflicto y cuál es el estado técnico verificado al actualizar este contexto.

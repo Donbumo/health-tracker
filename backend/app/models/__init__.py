@@ -15,6 +15,7 @@ from app.models.training_session import (
 from app.models.uploaded_file import UploadedFile
 from app.models.user import User
 from app.models.weigh_in import WeighIn
+from app.models.api_auth import ApiDevice, ApiRefreshToken, ApiSession
 
 
 __all__ = [
@@ -41,4 +42,7 @@ __all__ = [
     "UploadedFile",
     "User",
     "WeighIn",
+    "ApiDevice",
+    "ApiRefreshToken",
+    "ApiSession",
 ]

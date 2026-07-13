@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/active_routine_api.schema.json",
+  "title": "Active routine API v1 snapshot",
+  "oneOf": [
+    {"type": "null"},
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "plan_id", "version_id", "version", "name", "days", "version_created_at", "plan_updated_at", "selection_policy", "etag"],
+      "properties": {
+        "schema_version": {"const": "1.0"},
+        "plan_id": {"type": "string", "format": "uuid"},
+        "version_id": {"type": "string", "format": "uuid"},
+        "version": {"type": "integer", "minimum": 1},
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "description": {"type": ["string", "null"], "maxLength": 5000},
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["week_number", "day_number", "name", "exercises"],
+            "properties": {
+              "week_number": {"type": "integer", "minimum": 1},
+              "day_number": {"type": "integer", "minimum": 1, "maximum": 7},
+              "name": {"type": "string", "minLength": 1, "maxLength": 200},
+              "exercises": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["exercise_order", "name", "sets"]
+                }
+              }
+            }
+          }
+        },
+        "version_created_at": {"type": "string", "format": "date-time"},
+        "plan_updated_at": {"type": "string", "format": "date-time"},
+        "selection_policy": {"const": "most_recent_plan_active_version"},
+        "etag": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    }
+  ]
+}

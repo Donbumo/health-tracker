@@ -23,6 +23,11 @@ ALLOWED_METADATA_KEYS = {
     "mode",
     "contract_version",
     "operation_names",
+    "backup_sha256",
+    "manifest_sha256",
+    "file_count",
+    "byte_count",
+    "cleanup_status",
 }
 
 

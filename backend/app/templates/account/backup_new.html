@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Nuevo backup · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div><h1>Generar backup completo</h1><p>El preview es read-only; la creación valida cada archivo antes de publicar el ZIP.</p></div>
+  </section>
+  <section class="summary-grid">
+    <article class="card"><h2>Datos</h2><p>{{ preview.data_sections|length }} secciones</p></article>
+    <article class="card"><h2>Raw</h2><p>{{ preview.raw_uploads }} archivo(s)</p></article>
+    <article class="card"><h2>Generados</h2><p>{{ preview.generated_exports }} archivo(s)</p></article>
+    <article class="card"><h2>Tamaño estimado</h2><p>{{ preview.estimated_bytes }} bytes</p></article>
+  </section>
+  {% if preview.errors %}<div class="alert alert-danger"><ul>{% for error in preview.errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
+  {% if preview.warnings %}<div class="notice warning"><ul>{% for warning in preview.warnings %}<li>{{ warning }}</li>{% endfor %}</ul></div>{% endif %}
+  <section class="card narrow-form">
+    <h2>Confirmar generación</h2>
+    <form method="post">
+      {{ form.hidden_tag() }}
+      {{ form.submit(class_="button", disabled=not preview.valid) }}
+    </form>
+  </section>
+{% endblock %}

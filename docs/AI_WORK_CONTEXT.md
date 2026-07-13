@@ -6,6 +6,8 @@ No reemplaza a las reglas canónicas ni a los schemas. Su función es ordenar qu
 
 Última actualización documental: 2026-07-12.
 
+Estado más reciente: `feature/phase-6b-full-backup-recovery` parte de `f36ae9d`, tag exacto `alpha-0.4-exporters-complete`. Implementa backup/restore ZIP 1.0 sin migración nueva. Línea base previa `441 passed`; suite local del bloque `465 passed`. Leer también `docs/project-rules/full-backup.md`, `docs/FULL_BACKUP.md` y `docs/BACKUP_SECURITY.md` para tareas de portabilidad binaria.
+
 ## Orden obligatorio de lectura
 
 Antes de modificar el repositorio, leer en este orden:
@@ -270,6 +272,8 @@ Al cerrar un bloque:
 - Exportadores: `project-rules/exporters.md`.
 - Auditoría persistente de imports: `project-rules/import-audit-persistence.md`.
 - Account restore: `project-rules/account-restore.md`.
+- Backup integral: `project-rules/full-backup.md`.
+- Formato y seguridad de backup: `BACKUP_FORMAT_1_0.md`, `FULL_BACKUP.md`, `BACKUP_SECURITY.md` y `BACKUP_RESTORE_RUNBOOK.md`.
 - Guía de restore: `ACCOUNT_RESTORE.md`.
 - Portabilidad de datos: `DATA_PORTABILITY.md`.
 - Handoff temporal: `ACTIVE_HANDOFF.md`.

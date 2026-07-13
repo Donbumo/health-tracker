@@ -27,7 +27,11 @@ La aplicación debe permitir que varios usuarios, por ejemplo miembros de una fa
 
 ## Estado actual del proyecto
 
-Actualización verificada: 2026-07-09.
+Actualización verificada: 2026-07-12.
+
+La rama `feature/phase-6b-full-backup-recovery`, basada en el tag `alpha-0.4-exporters-complete` (`f36ae9d`), agrega Alpha 0.5: backup ZIP 1.0 con manifest, export de cuenta, raw y generated; preview seguro en staging; confirmación firmada; restore coordinado con compensación; dedupe; auditoría y reconciliación. No requiere modelo ni migración nueva: reutiliza `ExportRecord`, `UploadedFile` e `ImportRun`.
+
+Línea base previa: `441 passed`. Resultado final: `465 passed` local y `464 passed, 1 skipped` en Docker.
 
 El estado ejecutable actual incluye la Fase 5 / Alpha 0.3 integrada en `2d617ed`. La rama `feature/phase-6-exporters-complete` implementa el cierre de exportadores de Alpha 0.4 con auditoría persistente, storage seguro, formatos Activity/Route y entrenamiento avanzado. Para cualquier tarea nueva, usar también `docs/AI_WORK_CONTEXT.md`, las reglas en `docs/project-rules/` y el estado real del código.
 
@@ -96,7 +100,7 @@ Bloques próximos previstos:
 1. Definir pruning operativo de `ImportRun` si se requiere retención limitada.
 2. Ampliar contratos de update seguro solo donde existan claves naturales o IDs explícitos verificables.
 3. Endurecer equivalencia semántica del round-trip si aparecen nuevos dominios o se agregan binarios.
-4. Diseñar restore de archivos binarios/ZIP solo si se define una política explícita de almacenamiento y privacidad.
+4. Evaluar cifrado de backup únicamente con infraestructura y administración de claves revisadas; ZIP 1.0 no está cifrado.
 
 No presentar APK, app de reloj, APIs privadas Magene/OnelapFit, OCR, FHIR o API REST pública como implementados. Siguen siendo planes, stubs o estructura futura salvo que el código de una rama posterior demuestre lo contrario. FIT/GPX/TCX se soportan como importación de archivos exportados en la rama de Fase 5, no como sincronización directa.
 

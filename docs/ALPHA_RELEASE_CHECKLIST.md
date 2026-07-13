@@ -24,7 +24,7 @@ Usa esta lista antes de invitar a un compañero real a una alpha por LAN/VPN.
 ## Primer acceso
 
 - [ ] Dashboard vacío responde 200.
-- [ ] Se ve aviso de `Alpha 0.1`.
+- [ ] Se ve aviso de `Alpha 0.5`.
 - [ ] Se ve aviso de que no sustituye atención médica.
 - [ ] Se ve checklist de primeros pasos.
 - [ ] La navegación funciona en ancho móvil.
@@ -63,6 +63,17 @@ Usa esta lista antes de invitar a un compañero real a una alpha por LAN/VPN.
 - [ ] Activity y Route descargan JSON/CSV/GPX/TCX según capability.
 - [ ] Rutina y sesión descargan PDF válido; ZWO/ERG/MRC rechazan planes incompatibles.
 - [ ] Archivo faltante o alterado no se descarga.
+
+## Backup integral y recuperación
+
+- [ ] `/account/backups/new` muestra preview antes de crear el ZIP.
+- [ ] El backup contiene un único `manifest.json` y `account/user_data_export.json`.
+- [ ] Raw uploads y exports generados incluidos coinciden por tamaño y SHA256.
+- [ ] `/account/backups/restore` valida sin escribir datos ni storage final.
+- [ ] Confirmación restaura datos y archivos con ownership del usuario autenticado.
+- [ ] Repetir el mismo backup produce skips y no duplica archivos.
+- [ ] Otro usuario no puede ver ni descargar el backup, raw o generated restaurados.
+- [ ] `flask backup reconcile` corre en dry-run y no modifica registros.
 
 ## Logout y persistencia
 

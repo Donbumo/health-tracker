@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Restore de backup · Health Tracker{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div><h1>Restore de backup completo</h1><p>Valida manifest, hashes, datos y archivos antes de escribir.</p></div>
+  </section>
+  <section class="notice warning"><p>El usuario, rol e IDs del origen no dan autoridad. El restore siempre pertenece a la cuenta autenticada y no restaura contraseñas ni sesiones.</p></section>
+  <section class="card narrow-form">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="field">{{ form.file.label }}{{ form.file(accept="application/zip,.zip") }}{% for error in form.file.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+      <p class="help">Límite comprimido: 100 MB. El preview usa staging privado y no escribe datos ni storage final.</p>
+      {{ form.submit(class_="button") }}
+    </form>
+  </section>
+  {% if parse_error %}<div class="alert alert-danger">{{ parse_error }}</div>{% endif %}
+  {% if preview %}
+    <section class="card">
+      <h2>Preview verificado</h2>
+      <p><strong>{{ 'Listo para confirmar' if preview.valid else 'Bloqueado' }}</strong> · ZIP <code>{{ preview.backup_sha256[:12] }}</code> · manifest <code>{{ preview.manifest_sha256[:12] }}</code></p>
+      <ul>
+        <li>Datos: {{ preview.account.plan.inserts }} insert, {{ preview.account.plan.updates }} update, {{ preview.account.plan.skips }} skip, {{ preview.account.plan.conflicts }} conflictos, {{ preview.account.plan.invalid }} inválidos.</li>
+        <li>Archivos: {{ preview.files.inserts }} insert, {{ preview.files.skips }} skip, {{ preview.files.bytes }} bytes.</li>
+        <li>Raw: {{ preview.manifest.totals.raw_uploads }} · Generados: {{ preview.manifest.totals.generated_exports }}</li>
+      </ul>
+      {% if preview.warnings %}<h3>Advertencias</h3><ul>{% for warning in preview.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>{% endif %}
+      {% if preview.valid %}
+        <form method="post" action="{{ url_for('main.confirm_account_backup_restore') }}">
+          {{ confirm_form.hidden_tag() }}
+          {{ confirm_form.submit(class_="button") }}
+        </form>
+      {% endif %}
+    </section>
+  {% endif %}
+  {% if commit_result %}
+    <section class="card">
+      <h2>Resultado</h2>
+      <p><strong>{{ 'Restaurado' if commit_result.committed else 'No restaurado' }}</strong> · rollback: {{ 'sí' if commit_result.rollback else 'no' }} · audit run: {{ commit_result.audit_run_id }}</p>
+      <ul><li>Inserts: {{ commit_result.inserts }}</li><li>Updates: {{ commit_result.updates }}</li><li>Skips: {{ commit_result.skips }}</li><li>Cleanup: {{ commit_result.cleanup_status or 'no aplica' }}</li></ul>
+      {% if commit_result.files %}
+        <h3>Archivos</h3>
+        <ul>
+          {% for operation in commit_result.files.operations %}
+            <li>
+              {{ operation.kind }} · {{ operation.operation }}
+              {% if operation.existing_id and operation.kind == 'raw_upload' %}
+                · <a href="{{ url_for('main.download_account_upload', upload_id=operation.existing_id) }}">Descargar raw</a>
+              {% elif operation.existing_id and operation.kind == 'generated_export' %}
+                · <a href="{{ url_for('exports.download', export_id=operation.existing_id) }}">Descargar generado</a>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </section>
+  {% endif %}
+{% endblock %}

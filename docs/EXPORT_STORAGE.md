@@ -26,3 +26,9 @@ No se guardan paths absolutos, payloads clínicos, trazas, tokens ni secretos en
 ## Retención
 
 `expires_at` es opcional. El borrado explícito elimina el binario y marca `deleted`; no borra datos de dominio. La metadata allowlisted puede aparecer en el export completo de cuenta con `binary_included: false`; account restore la trata como `unsupported` y no crea links rotos.
+
+## Backups y archivos restaurados
+
+Los ZIP completos viven en `uploads/generated/backups/user_<id>/`. Generated restaurados viven en `uploads/generated/restored/user_<id>/`; raw restaurados usan paths internos nuevos bajo `uploads/raw/user_<id>/`. Todos se verifican por tamaño/SHA256 antes de descarga.
+
+El ZIP se construye por chunks y no usa el límite de render en memoria de 25 MiB. El export JSON del interior sí se serializa como un único documento y conserva su límite defensivo de 10 MiB en lectura. Staging vive bajo `DATA_ROOT/staging/account_backups` y nunca es parte de Git.

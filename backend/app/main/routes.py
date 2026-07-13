@@ -23,6 +23,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.extensions import db
 from app.main import main_bp
 from app.main.forms import (
+    AccountBackupCreateForm,
+    AccountBackupRestoreConfirmForm,
+    AccountBackupRestorePreviewForm,
     AccountRestoreConfirmForm,
     AccountRestorePreviewForm,
     RealFileImportConfirmForm,
@@ -39,6 +42,14 @@ from app.services.account_restore import (
     AccountRestoreService,
     AccountRestoreTokenError,
     MAX_EXPORT_BYTES,
+)
+from app.services.backups import (
+    AccountBackupService,
+    BackupError,
+    BackupRestoreCoordinator,
+    BackupSecurityError,
+    BackupTokenError,
+    resolve_uploaded_download,
 )
 from app.services.files import UploadError, store_uploaded_file
 from app.services.files import mark_import_status
@@ -106,7 +117,168 @@ def account_data():
         per_page=1,
     )
     latest_run = latest_runs[0] if latest_runs else None
-    return render_template("account/data.html", latest_run=latest_run)
+    backups = AccountBackupService().list_records(user_id=current_user.id)[:3]
+    return render_template(
+        "account/data.html",
+        latest_run=latest_run,
+        backups=backups,
+    )
+
+
+@main_bp.get("/account/backups")
+@login_required
+def account_backups():
+    records = AccountBackupService().list_records(user_id=current_user.id)
+    return render_template("account/backups.html", records=records)
+
+
+@main_bp.route("/account/backups/new", methods=["GET", "POST"])
+@login_required
+def new_account_backup():
+    form = AccountBackupCreateForm()
+    service = AccountBackupService()
+    preview = service.preview(
+        current_user._get_current_object(),
+        user_id=current_user.id,
+    )
+    if form.validate_on_submit():
+        try:
+            record = service.create(
+                current_user._get_current_object(),
+                user_id=current_user.id,
+            )
+        except BackupError as error:
+            flash(str(error), "danger")
+        else:
+            flash("Backup ZIP generado y verificado.", "success")
+            return redirect(url_for("main.account_backup_detail", backup_id=record.id))
+    return render_template("account/backup_new.html", form=form, preview=preview)
+
+
+@main_bp.get("/account/backups/<int:backup_id>")
+@login_required
+def account_backup_detail(backup_id: int):
+    record = AccountBackupService().get_record(
+        user_id=current_user.id,
+        backup_id=backup_id,
+    )
+    if record is None:
+        abort(404)
+    return render_template("account/backup_detail.html", record=record)
+
+
+@main_bp.get("/account/backups/<int:backup_id>/download")
+@login_required
+def download_account_backup(backup_id: int):
+    service = AccountBackupService()
+    record = service.get_record(user_id=current_user.id, backup_id=backup_id)
+    if record is None:
+        abort(404)
+    try:
+        path = service.resolve_download(record, user_id=current_user.id)
+    except BackupError:
+        abort(404)
+    response = send_file(
+        path,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=record.filename,
+        conditional=True,
+    )
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
+@main_bp.get("/account/uploads/<int:upload_id>/download")
+@login_required
+def download_account_upload(upload_id: int):
+    record = db.session.execute(
+        db.select(UploadedFile).where(
+            UploadedFile.id == upload_id,
+            UploadedFile.user_id == current_user.id,
+        )
+    ).scalar_one_or_none()
+    if record is None:
+        abort(404)
+    try:
+        path = resolve_uploaded_download(record, user_id=current_user.id)
+    except BackupError:
+        abort(404)
+    response = send_file(
+        path,
+        mimetype=record.mime_type or "application/octet-stream",
+        as_attachment=True,
+        download_name=record.original_filename,
+        conditional=True,
+    )
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
+@main_bp.route("/account/backups/restore", methods=["GET", "POST"])
+@login_required
+def restore_account_backup():
+    form = AccountBackupRestorePreviewForm()
+    confirm_form = AccountBackupRestoreConfirmForm()
+    preview = None
+    parse_error = None
+    coordinator = BackupRestoreCoordinator()
+    if form.validate_on_submit():
+        staging_id = None
+        try:
+            staging_id = coordinator.stage_upload(form.file.data, user_id=current_user.id)
+            preview = coordinator.preview(staging_id=staging_id, user_id=current_user.id)
+            confirm_form.staging_id.data = staging_id
+            confirm_form.confirmation_token.data = preview["confirmation_token"]
+        except (BackupError, ValueError) as error:
+            if staging_id:
+                coordinator.cleanup_staging(user_id=current_user.id, staging_id=staging_id)
+            parse_error = f"No fue posible preparar el backup: {error}"
+    return render_template(
+        "account/backup_restore.html",
+        form=form,
+        confirm_form=confirm_form,
+        preview=preview,
+        commit_result=None,
+        parse_error=parse_error,
+    )
+
+
+@main_bp.post("/account/backups/restore/confirm")
+@login_required
+def confirm_account_backup_restore():
+    form = AccountBackupRestoreConfirmForm()
+    preview_form = AccountBackupRestorePreviewForm()
+    commit_result = None
+    parse_error = None
+    if form.validate_on_submit():
+        token_digest = _account_restore_token_digest(form.confirmation_token.data)
+        used_tokens = session.setdefault("used_backup_restore_tokens", [])
+        try:
+            if token_digest in used_tokens:
+                raise BackupTokenError("El token de restore completo ya fue usado.")
+            commit_result = BackupRestoreCoordinator().confirm(
+                staging_id=form.staging_id.data,
+                user_id=current_user.id,
+                confirmation_token=form.confirmation_token.data,
+            )
+            used_tokens.append(token_digest)
+            session["used_backup_restore_tokens"] = used_tokens[-20:]
+            session.modified = True
+        except (BackupError, BackupSecurityError, BackupTokenError, ValueError) as error:
+            parse_error = f"No fue posible confirmar el restore completo: {error}"
+    else:
+        parse_error = "La confirmación no es válida."
+    return render_template(
+        "account/backup_restore.html",
+        form=preview_form,
+        confirm_form=form,
+        preview=None,
+        commit_result=commit_result,
+        parse_error=parse_error,
+    )
 
 
 @main_bp.route("/account/import-preview", methods=["GET", "POST"])

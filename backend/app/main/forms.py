@@ -55,6 +55,27 @@ class AccountRestoreConfirmForm(FlaskForm):
     submit = SubmitField("Confirmar restore")
 
 
+class AccountBackupCreateForm(FlaskForm):
+    submit = SubmitField("Generar backup ZIP")
+
+
+class AccountBackupRestorePreviewForm(FlaskForm):
+    file = FileField(
+        "Backup ZIP",
+        validators=[
+            FileRequired(),
+            FileAllowed(["zip"], "Selecciona un backup con extensión .zip."),
+        ],
+    )
+    submit = SubmitField("Validar y previsualizar")
+
+
+class AccountBackupRestoreConfirmForm(FlaskForm):
+    staging_id = HiddenField(validators=[DataRequired()])
+    confirmation_token = HiddenField(validators=[DataRequired()])
+    submit = SubmitField("Confirmar restore completo")
+
+
 class StandardImportPreviewForm(FlaskForm):
     file = FileField(
         "JSON",

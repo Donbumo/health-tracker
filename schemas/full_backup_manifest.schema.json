@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/full_backup_manifest.schema.json",
+  "title": "Health Tracker full backup manifest 1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "backup_format_version",
+    "schema_version",
+    "created_at",
+    "app_version",
+    "source_account",
+    "account_export",
+    "entries",
+    "totals",
+    "capabilities",
+    "unsupported",
+    "warnings"
+  ],
+  "properties": {
+    "backup_format_version": {"const": "1.0"},
+    "schema_version": {"const": "1.0"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "app_version": {"type": "string", "minLength": 1, "maxLength": 100},
+    "source_account": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_user_id"],
+      "properties": {
+        "source_user_id": {"type": "integer", "minimum": 1}
+      }
+    },
+    "account_export": {"const": "account/user_data_export.json"},
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2000,
+      "items": {"$ref": "#/$defs/entry"}
+    },
+    "totals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entries", "raw_uploads", "generated_exports", "uncompressed_bytes"],
+      "properties": {
+        "entries": {"type": "integer", "minimum": 1},
+        "raw_uploads": {"type": "integer", "minimum": 0},
+        "generated_exports": {"type": "integer", "minimum": 0},
+        "uncompressed_bytes": {"type": "integer", "minimum": 0}
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "items": {"type": "string", "maxLength": 100},
+      "maxItems": 20,
+      "uniqueItems": true
+    },
+    "unsupported": {
+      "type": "array",
+      "items": {"type": "string", "maxLength": 200},
+      "maxItems": 100
+    },
+    "warnings": {
+      "type": "array",
+      "items": {"type": "string", "maxLength": 500},
+      "maxItems": 100
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "logical_id",
+        "kind",
+        "relative_path",
+        "original_filename",
+        "media_type",
+        "size_bytes",
+        "sha256",
+        "source_record_type",
+        "source_record_id",
+        "source_file_id",
+        "required",
+        "metadata"
+      ],
+      "properties": {
+        "logical_id": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$"},
+        "kind": {
+          "type": "string",
+          "enum": ["account_export", "raw_upload", "generated_export"]
+        },
+        "relative_path": {"type": "string", "minLength": 1, "maxLength": 512},
+        "original_filename": {"type": "string", "minLength": 1, "maxLength": 255},
+        "media_type": {
+          "oneOf": [
+            {"type": "string", "minLength": 1, "maxLength": 255},
+            {"type": "null"}
+          ]
+        },
+        "size_bytes": {"type": "integer", "minimum": 0, "maximum": 104857600},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "source_record_type": {
+          "oneOf": [
+            {"type": "string", "minLength": 1, "maxLength": 64},
+            {"type": "null"}
+          ]
+        },
+        "source_record_id": {
+          "oneOf": [
+            {"type": "integer", "minimum": 1},
+            {"type": "null"}
+          ]
+        },
+        "source_file_id": {
+          "oneOf": [
+            {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$"},
+            {"type": "null"}
+          ]
+        },
+        "required": {"type": "boolean"},
+        "metadata": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "source_type": {"type": "string", "maxLength": 64},
+            "detected_type": {"type": "string", "maxLength": 32},
+            "import_status": {"type": "string", "maxLength": 20},
+            "domain": {"type": "string", "maxLength": 64},
+            "format": {"type": "string", "maxLength": 32},
+            "exporter_version": {"type": "string", "maxLength": 20},
+            "status": {"type": "string", "maxLength": 20}
+          }
+        }
+      }
+    }
+  }
+}

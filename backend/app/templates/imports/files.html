@@ -1,14 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Importar archivos reales Â· Health Tracker{% endblock %}
+{% block title %}Importar archivos reales · Health Tracker{% endblock %}
 {% block content %}
   <section class="card">
     <h1>Importar archivos reales</h1>
-    <p>Sube archivos FIT, GPX, TCX, CSV o JSON. Primero se genera un preview; solo se escribe en tu cuenta despuÃ©s de confirmar.</p>
+    <p>Sube archivos FIT, GPX, TCX, CSV o JSON. Primero se genera un preview; solo se escribe en tu cuenta después de confirmar.</p>
     <p class="help">No se ejecuta contenido del archivo. El raw queda trazable como upload de tu usuario.</p>
     <p>
       <a href="{{ url_for('main.import_history') }}">Ver historial de importaciones</a>
-      Â·
-      <a href="{{ url_for('main.standard_import') }}">Importar JSON estÃ¡ndar/asistido</a>
+      ·
+      <a href="{{ url_for('main.standard_import') }}">Importar JSON estándar/asistido</a>
     </p>
 
     {% if parse_error %}
@@ -27,7 +27,7 @@
       <div class="field">
         {{ preview_form.requested_type.label }}
         {{ preview_form.requested_type() }}
-        <p class="help">Usa selecciÃ³n manual solo si el CSV no puede detectarse de forma segura.</p>
+        <p class="help">Usa selección manual solo si el CSV no puede detectarse de forma segura.</p>
       </div>
       {{ preview_form.submit(class_="button") }}
     </form>
@@ -39,7 +39,7 @@
       {% if source_file %}
         <dl class="metadata">
           <dt>Archivo</dt><dd>{{ source_file.original_filename }}</dd>
-          <dt>SHA256</dt><dd><code>{{ source_file.sha256[:12] }}â€¦</code></dd>
+          <dt>SHA256</dt><dd><code>{{ source_file.sha256[:12] }}…</code></dd>
         </dl>
       {% endif %}
       <dl class="metadata">
@@ -57,18 +57,18 @@
         </ul>
       {% endif %}
 
-      <h3>Plan de importaciÃ³n</h3>
-      <table>
+      <h3>Plan de importación</h3>
+      <div class="table-wrap"><table>
         <tbody>
           <tr><th>Total</th><td>{{ preview_result.plan.total }}</td></tr>
-          <tr><th>VÃ¡lidos</th><td>{{ preview_result.plan.valid }}</td></tr>
-          <tr><th>InvÃ¡lidos</th><td>{{ preview_result.plan.invalid }}</td></tr>
+          <tr><th>Válidos</th><td>{{ preview_result.plan.valid }}</td></tr>
+          <tr><th>Inválidos</th><td>{{ preview_result.plan.invalid }}</td></tr>
           <tr><th>Inserts</th><td>{{ preview_result.plan.inserts }}</td></tr>
           <tr><th>Updates</th><td>{{ preview_result.plan.updates }}</td></tr>
           <tr><th>Skips</th><td>{{ preview_result.plan.skips }}</td></tr>
           <tr><th>Conflictos</th><td>{{ preview_result.plan.conflicts }}</td></tr>
         </tbody>
-      </table>
+      </table></div>
 
       {% if preview_result.plan.errors %}
         <h3>Errores</h3>
@@ -84,7 +84,7 @@
           <thead>
             <tr>
               <th>#</th>
-              <th>OperaciÃ³n</th>
+              <th>Operación</th>
               <th>Modelo</th>
               <th>Detalle</th>
             </tr>
@@ -109,7 +109,7 @@
           {{ confirm_form.requested_type() }}
           {{ confirm_form.target_type() }}
           {{ confirm_form.confirmation_token() }}
-          <p class="muted">La confirmaciÃ³n estÃ¡ ligada a tu usuario, archivo, SHA256, target y plan revisado.</p>
+          <p class="muted">La confirmación está ligada a tu usuario, archivo, SHA256, target y plan revisado.</p>
           {{ confirm_form.submit(class_="button") }}
         </form>
       {% endif %}
@@ -119,13 +119,13 @@
   {% if commit_result %}
     <section class="card">
       <h2>Resumen final</h2>
-      <table>
+      <div class="table-wrap"><table>
         <tbody>
-          <tr><th>Guardado</th><td>{{ 'sÃ­' if commit_result.committed else 'no' }}</td></tr>
-          <tr><th>Rollback</th><td>{{ 'sÃ­' if commit_result.rollback else 'no' }}</td></tr>
+          <tr><th>Guardado</th><td>{{ 'sí' if commit_result.committed else 'no' }}</td></tr>
+          <tr><th>Rollback</th><td>{{ 'sí' if commit_result.rollback else 'no' }}</td></tr>
           {% if commit_result.audit_run_id %}
             <tr>
-              <th>AuditorÃ­a</th>
+              <th>Auditoría</th>
               <td><a href="{{ url_for('main.import_history_detail', run_id=commit_result.audit_run_id) }}">ImportRun #{{ commit_result.audit_run_id }}</a></td>
             </tr>
           {% endif %}
@@ -133,12 +133,12 @@
           <tr><th>Updates</th><td>{{ commit_result.updates }}</td></tr>
           <tr><th>Skips</th><td>{{ commit_result.skips }}</td></tr>
           <tr><th>Conflictos</th><td>{{ commit_result.conflicts }}</td></tr>
-          <tr><th>InvÃ¡lidos</th><td>{{ commit_result.invalid }}</td></tr>
+          <tr><th>Inválidos</th><td>{{ commit_result.invalid }}</td></tr>
         </tbody>
-      </table>
+      </table></div>
       <p>
         <a href="{{ url_for('activities.list_activities') }}">Ver actividades</a>
-        Â·
+        ·
         <a href="{{ url_for('activities.list_routes') }}">Ver rutas</a>
       </p>
     </section>

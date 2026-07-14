@@ -1,7 +1,9 @@
 import json
 import hashlib
-from datetime import datetime
+import os
+from datetime import datetime, timezone
 from io import BytesIO
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from flask import (
@@ -17,8 +19,9 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
-from sqlalchemy import text
+from sqlalchemy import func, text
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.main import main_bp
@@ -36,7 +39,8 @@ from app.main.forms import (
     UserDataPreviewForm,
     WeighInForm,
 )
-from app.models import UploadedFile
+from app.models import ApiDevice, ExportRecord, ImportRun, UploadedFile
+from app.api_v1.auth import revoke_session
 from app.services.account_restore import (
     AccountRestoreError,
     AccountRestoreService,
@@ -123,6 +127,114 @@ def account_data():
         latest_run=latest_run,
         backups=backups,
     )
+
+
+@main_bp.get("/account/devices")
+@login_required
+def account_devices():
+    devices = db.session.execute(
+        db.select(ApiDevice)
+        .where(ApiDevice.user_id == current_user.id)
+        .options(selectinload(ApiDevice.sessions))
+        .order_by(ApiDevice.last_seen_at.desc(), ApiDevice.created_at.desc())
+    ).scalars().all()
+    return render_template("account/devices.html", devices=devices)
+
+
+@main_bp.post("/account/devices/<string:device_id>/revoke")
+@login_required
+def revoke_account_device(device_id: str):
+    device = db.session.execute(
+        db.select(ApiDevice).where(
+            ApiDevice.user_id == current_user.id,
+            ApiDevice.public_device_id == device_id,
+        )
+    ).scalar_one_or_none()
+    if device is None:
+        abort(404)
+    now = datetime.now(timezone.utc)
+    device.revoked_at = device.revoked_at or now
+    for api_session in device.sessions:
+        revoke_session(api_session, "device_revoked_web")
+    db.session.commit()
+    flash("Dispositivo revocado. Sus sesiones API ya no están activas.", "success")
+    return redirect(url_for("main.account_devices"))
+
+
+@main_bp.get("/account/system")
+@login_required
+def account_system():
+    try:
+        db.session.execute(text("SELECT 1"))
+        counts = {
+            "imports": db.session.execute(
+                db.select(func.count(ImportRun.id)).where(
+                    ImportRun.user_id == current_user.id
+                )
+            ).scalar_one(),
+            "exports": db.session.execute(
+                db.select(func.count(ExportRecord.id)).where(
+                    ExportRecord.user_id == current_user.id,
+                    ExportRecord.domain != "account_backup",
+                )
+            ).scalar_one(),
+            "backups": db.session.execute(
+                db.select(func.count(ExportRecord.id)).where(
+                    ExportRecord.user_id == current_user.id,
+                    ExportRecord.domain == "account_backup",
+                )
+            ).scalar_one(),
+            "active_devices": db.session.execute(
+                db.select(func.count(ApiDevice.id)).where(
+                    ApiDevice.user_id == current_user.id,
+                    ApiDevice.revoked_at.is_(None),
+                )
+            ).scalar_one(),
+        }
+        latest_backup = db.session.execute(
+            db.select(ExportRecord)
+            .where(
+                ExportRecord.user_id == current_user.id,
+                ExportRecord.domain == "account_backup",
+            )
+            .order_by(ExportRecord.created_at.desc(), ExportRecord.id.desc())
+        ).scalars().first()
+    except SQLAlchemyError:
+        db.session.rollback()
+        current_app.logger.exception("Account system status database check failed")
+        database_status = "error"
+        counts = None
+        latest_backup = None
+    else:
+        database_status = "ok"
+    migration_head = None
+    if database_status == "ok":
+        try:
+            migration_head = db.session.execute(
+                text("SELECT version_num FROM alembic_version")
+            ).scalar_one_or_none()
+        except SQLAlchemyError:
+            db.session.rollback()
+    storage_status = {
+        "raw": _storage_available(current_app.config["UPLOAD_ROOT"]),
+        "generated": _storage_available(current_app.config["GENERATED_UPLOAD_ROOT"]),
+    }
+    return render_template(
+        "account/system.html",
+        database_status=database_status,
+        migration_head=migration_head or "unknown",
+        app_version=current_app.config.get("APP_VERSION", "unknown"),
+        server_time=datetime.now(timezone.utc),
+        storage_status=storage_status,
+        counts=counts,
+        latest_backup=latest_backup,
+        reconciliation_status="No persistido; disponible como dry-run por CLI.",
+    )
+
+
+def _storage_available(path_value) -> bool:
+    path = Path(path_value)
+    return path.is_dir() and os.access(path, os.R_OK | os.W_OK)
 
 
 @main_bp.get("/account/backups")
@@ -356,7 +468,7 @@ def confirm_account_restore():
             used_tokens = session.setdefault("used_account_restore_tokens", [])
             if token_digest in used_tokens:
                 raise AccountRestoreTokenError(
-                    "El token de confirmaciÃ³n de restore ya fue usado."
+                    "El token de confirmación de restore ya fue usado."
                 )
             commit_result = service.commit(
                 payload,
@@ -369,7 +481,7 @@ def confirm_account_restore():
         except (json.JSONDecodeError, AccountRestoreTokenError, AccountRestoreError, ValueError) as error:
             parse_error = f"No fue posible confirmar el restore: {error}"
     else:
-        parse_error = "La confirmaciÃ³n no es vÃ¡lida."
+        parse_error = "La confirmación no es válida."
     return render_template(
         "account/restore.html",
         form=preview_form,
@@ -580,7 +692,7 @@ def real_file_import():
                 used_tokens = session.setdefault("used_real_file_import_tokens", [])
                 if token_digest in used_tokens:
                     raise RealFileImportTokenError(
-                        "El token de confirmaciÃ³n de archivo ya fue usado."
+                        "El token de confirmación de archivo ya fue usado."
                     )
                 result = service.confirm_uploaded_file(
                     source_file,
@@ -595,11 +707,11 @@ def real_file_import():
                     session.modified = True
                     flash("Archivo importado correctamente.", "success")
                 else:
-                    flash("El archivo no se importÃ³; revisa errores o conflictos.", "warning")
+                    flash("El archivo no se importó; revisa errores o conflictos.", "warning")
             except (RealFileImportError, RealFileImportTokenError, StandardImportError, ValueError) as error:
                 parse_error = f"No fue posible confirmar el archivo: {error}"
         else:
-            parse_error = "La confirmaciÃ³n del archivo no es vÃ¡lida."
+            parse_error = "La confirmación del archivo no es válida."
 
     elif preview_form.validate_on_submit():
         try:
@@ -608,7 +720,7 @@ def real_file_import():
                 current_user.id,
             )
             if duplicate:
-                flash("El archivo ya existÃ­a; se muestra preview idempotente.", "warning")
+                flash("El archivo ya existía; se muestra preview idempotente.", "warning")
             preview_result = service.preview_uploaded_file(
                 source_file,
                 user_id=current_user.id,
@@ -682,15 +794,15 @@ def _real_file_import_token_digest(token: str) -> str:
 def _read_json_upload(storage, *, limit_bytes: int) -> dict:
     raw = storage.stream.read(limit_bytes + 1)
     if len(raw) > limit_bytes:
-        raise ValueError("El archivo supera el lÃ­mite permitido.")
+        raise ValueError("El archivo supera el límite permitido.")
     try:
         payload = json.loads(raw.decode("utf-8-sig"))
     except UnicodeDecodeError as error:
-        raise ValueError("El archivo debe usar codificaciÃ³n UTF-8.") from error
+        raise ValueError("El archivo debe usar codificación UTF-8.") from error
     except json.JSONDecodeError as error:
         raise ValueError(
-            "El archivo no contiene JSON vÃ¡lido "
-            f"(lÃ­nea {error.lineno}, columna {error.colno})."
+            "El archivo no contiene JSON válido "
+            f"(línea {error.lineno}, columna {error.colno})."
         ) from error
     if not isinstance(payload, dict):
         raise ValueError("El archivo debe contener un objeto JSON.")

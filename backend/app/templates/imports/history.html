@@ -9,7 +9,7 @@
 
   <section class="card">
     {% if runs %}
-      <table>
+      <div class="table-wrap"><table>
         <thead>
           <tr>
             <th>Fecha</th>
@@ -40,7 +40,7 @@
             </tr>
           {% endfor %}
         </tbody>
-      </table>
+      </table></div>
       <nav aria-label="Paginación">
         {% if has_previous %}
           <a class="button button-secondary" href="{{ url_for('main.import_history', page=page-1) }}">Anterior</a>

@@ -2,8 +2,23 @@ from datetime import date, datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
+from sqlalchemy import func
+from sqlalchemy.orm import selectinload
+
 from app.extensions import db
-from app.models import Activity, DailyEnergy, DailyNutrition, MedicalLabReport, TrainingSession, User, WeighIn
+from app.models import (
+    Activity,
+    ApiDevice,
+    DailyEnergy,
+    DailyNutrition,
+    ExportRecord,
+    ImportRun,
+    MedicalLabReport,
+    TrainingSession,
+    TrainingSessionExercise,
+    User,
+    WeighIn,
+)
 from app.services.daily_balance import daily_balance
 from app.services.overload import session_metrics
 
@@ -59,6 +74,11 @@ def _session_summaries(
     sessions = db.session.execute(
         db.select(TrainingSession)
         .where(TrainingSession.user_id == user_id)
+        .options(
+            selectinload(TrainingSession.exercises).selectinload(
+                TrainingSessionExercise.sets
+            )
+        )
         .order_by(TrainingSession.performed_at.asc(), TrainingSession.id.asc())
     ).scalars()
     summaries = []
@@ -242,6 +262,42 @@ def _onboarding_checklist(user_id: int) -> dict:
     }
 
 
+def _operation_summary(user_id: int) -> dict:
+    latest_import = db.session.execute(
+        db.select(ImportRun)
+        .where(ImportRun.user_id == user_id)
+        .order_by(ImportRun.created_at.desc(), ImportRun.id.desc())
+    ).scalars().first()
+    latest_export = db.session.execute(
+        db.select(ExportRecord)
+        .where(
+            ExportRecord.user_id == user_id,
+            ExportRecord.domain != "account_backup",
+        )
+        .order_by(ExportRecord.created_at.desc(), ExportRecord.id.desc())
+    ).scalars().first()
+    latest_backup = db.session.execute(
+        db.select(ExportRecord)
+        .where(
+            ExportRecord.user_id == user_id,
+            ExportRecord.domain == "account_backup",
+        )
+        .order_by(ExportRecord.created_at.desc(), ExportRecord.id.desc())
+    ).scalars().first()
+    active_devices = db.session.execute(
+        db.select(func.count(ApiDevice.id)).where(
+            ApiDevice.user_id == user_id,
+            ApiDevice.revoked_at.is_(None),
+        )
+    ).scalar_one()
+    return {
+        "latest_import": latest_import,
+        "latest_export": latest_export,
+        "latest_backup": latest_backup,
+        "active_devices": active_devices,
+    }
+
+
 def daily_health_dashboard(
     user_id: int,
     target_date: date,
@@ -272,4 +328,5 @@ def daily_health_dashboard(
         ),
         "completion": _completion_summary(balance, weight, sessions),
         "onboarding": _onboarding_checklist(user_id),
+        "operations": _operation_summary(user_id),
     }

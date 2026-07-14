@@ -4,6 +4,10 @@
 
 Base `/api/v1` con access firmado corto, refresh opaco hash-only rotatorio, reuse detection, dispositivos revocables, UUID públicos persistidos, JSON/request ID, rate limiting QA, CORS allowlist, `/me`, bootstrap y rutina activa read-only. Migraciones aditivas `20260713_0021` y `20260713_0022`. Sync offline, conflictos, tombstones, planned workouts, APK y reloj siguen planificados, no implementados.
 
+## Alpha 0.6.1 / Web UI Homelab
+
+La capa web conserva Flask/Jinja/CSS y agrega un shell responsive con navegación agrupada, dashboard orientado al día, tema del sistema, accesibilidad base, estado owner-only en `/account/system` y gestión owner-only de dispositivos en `/account/devices`. No agrega modelos ni migraciones y no cambia los contratos de API o datos. El estado homelab no expone secretos, logs ni paths internos.
+
 ## Visión general
 
 El proyecto es una aplicación web self-hosted, multiusuario y privada, pensada para ejecutarse localmente o mediante VPN.

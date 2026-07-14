@@ -10,14 +10,15 @@
     </form>
   </section>
 
-  <section class="card">
+  <div class="dashboard-flow">
+  <section class="card dashboard-intro">
     <h2>Bienvenida a {{ alpha_release_label }}</h2>
     <p>Esta es una alpha privada para uso personal o de un grupo de confianza en LAN/VPN. Organiza tus datos de salud, nutrición y entrenamiento, pero no sustituye atención médica.</p>
     <p class="help">Tus registros se guardan en tu cuenta y las pantallas de usuario normal filtran por tu usuario autenticado.</p>
     <p><a href="{{ url_for('main.privacy') }}">Leer privacidad y alcance de la alpha</a></p>
   </section>
 
-  <section class="card">
+  <section class="card onboarding-card">
     <h2>Primeros pasos</h2>
     <p>{{ summary.onboarding.completed_count }}/{{ summary.onboarding.total_count }} pasos listos.</p>
     <ul class="checklist">
@@ -38,7 +39,7 @@
     </ul>
   </section>
 
-  <section class="card">
+  <section class="card quick-actions-card">
     <h2>Acciones rápidas de QA</h2>
     <div class="quick-actions">
       <a class="button" href="{{ url_for('wellness.manual_nutrition') }}">Capturar nutrición</a>
@@ -52,7 +53,7 @@
     </div>
   </section>
 
-  <section class="card">
+  <section class="card daily-status-card">
     <h2>Estado del día</h2>
     {% if summary.completion.status == 'complete' %}
       <p><strong>Día completo para el balance energético.</strong></p>
@@ -85,7 +86,7 @@
     </ul>
   </section>
 
-  <section class="summary-grid">
+  <section class="summary-grid dashboard-metrics">
     <div class="metric"><strong>{{ summary.calories_consumed if summary.calories_consumed is not none else '—' }}</strong><span>kcal ingeridas</span></div>
     <div class="metric"><strong>{{ summary.calories_expended if summary.calories_expended is not none else '—' }}</strong><span>kcal gastadas</span></div>
     <div class="metric">
@@ -179,15 +180,15 @@
     <h2>Actividad importada</h2>
     {% if summary.activity_summary.latest %}
       <p>
-        Ãšltima actividad:
+        Última actividad:
         <a href="{{ url_for('activities.activity_detail', activity_id=summary.activity_summary.latest.id) }}">
-          {{ summary.activity_summary.latest.activity_type }} Â· {{ summary.activity_summary.latest.started_at.isoformat() }}
+          {{ summary.activity_summary.latest.activity_type }} · {{ summary.activity_summary.latest.started_at.isoformat() }}
         </a>
       </p>
       <dl class="metadata">
-        <dt>Actividades 7 dÃ­as</dt><dd>{{ summary.activity_summary.weekly_count }}</dd>
-        <dt>Distancia 7 dÃ­as</dt><dd>{{ summary.activity_summary.weekly_distance_meters }} m</dd>
-        <dt>DuraciÃ³n 7 dÃ­as</dt><dd>{{ summary.activity_summary.weekly_duration_seconds if summary.activity_summary.weekly_duration_seconds is not none else 'â€”' }} s</dd>
+        <dt>Actividades 7 días</dt><dd>{{ summary.activity_summary.weekly_count }}</dd>
+        <dt>Distancia 7 días</dt><dd>{{ summary.activity_summary.weekly_distance_meters }} m</dd>
+        <dt>Duración 7 días</dt><dd>{{ summary.activity_summary.weekly_duration_seconds if summary.activity_summary.weekly_duration_seconds is not none else '—' }} s</dd>
       </dl>
       <a class="button button-secondary" href="{{ url_for('activities.list_activities') }}">Ver actividades</a>
     {% else %}
@@ -208,4 +209,41 @@
       <a class="button button-secondary" href="{{ url_for('medical.import_report') }}">Importar JSON</a>
     {% endif %}
   </section>
+
+  <section class="card operations-card">
+    <div class="page-heading">
+      <div><h2>Operación reciente</h2><p>Actividad técnica segura de tu propia cuenta.</p></div>
+      <a class="button button-secondary" href="{{ url_for('main.account_system') }}">Ver estado homelab</a>
+    </div>
+    <div class="card-grid">
+      <article>
+        <h3>Importación</h3>
+        {% if summary.operations.latest_import %}
+          <p><span class="status status-{{ 'success' if summary.operations.latest_import.status == 'succeeded' else 'warning' }}">{{ summary.operations.latest_import.status }}</span></p>
+          <p>{{ summary.operations.latest_import.target_type }} · {{ summary.operations.latest_import.created_at }}</p>
+          <a href="{{ url_for('main.import_history_detail', run_id=summary.operations.latest_import.id) }}">Ver detalle</a>
+        {% else %}<p class="help">Sin importaciones confirmadas.</p>{% endif %}
+      </article>
+      <article>
+        <h3>Último export</h3>
+        {% if summary.operations.latest_export %}
+          <p>{{ summary.operations.latest_export.domain }} · {{ summary.operations.latest_export.format }}</p>
+          <a href="{{ url_for('exports.detail', export_id=summary.operations.latest_export.id) }}">Ver export</a>
+        {% else %}<p class="help">Sin exports generados.</p>{% endif %}
+      </article>
+      <article>
+        <h3>Backup</h3>
+        {% if summary.operations.latest_backup %}
+          <p>{{ summary.operations.latest_backup.created_at }}</p>
+          <a href="{{ url_for('main.account_backup_detail', backup_id=summary.operations.latest_backup.id) }}">Ver backup</a>
+        {% else %}<p class="help">Aún no hay backups completos.</p>{% endif %}
+      </article>
+      <article>
+        <h3>Dispositivos API</h3>
+        <p>{{ summary.operations.active_devices }} activos</p>
+        <a href="{{ url_for('main.account_devices') }}">Administrar dispositivos</a>
+      </article>
+    </div>
+  </section>
+  </div>
 {% endblock %}

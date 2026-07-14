@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Rutas Â· Health Tracker{% endblock %}
+{% block title %}Rutas · Health Tracker{% endblock %}
 {% block content %}
   <section class="page-heading">
     <div>
@@ -28,8 +28,8 @@
               <tr>
                 <td><a href="{{ url_for('activities.route_detail', route_id=route.id) }}">{{ route.name }}</a></td>
                 <td>{{ route.route_type }}</td>
-                <td>{% if route.distance_meters is not none %}{{ route.distance_meters }} m{% else %}â€”{% endif %}</td>
-                <td>{{ route.elevation_gain_meters or 'â€”' }} / {{ route.elevation_loss_meters or 'â€”' }}</td>
+                <td>{% if route.distance_meters is not none %}{{ route.distance_meters }} m{% else %}—{% endif %}</td>
+                <td>{{ route.elevation_gain_meters or '—' }} / {{ route.elevation_loss_meters or '—' }}</td>
                 <td>{{ route.point_count }}</td>
                 <td>{{ route.source_app or route.source_type }}</td>
               </tr>
@@ -38,7 +38,7 @@
         </table>
       </div>
     {% else %}
-      <p>No hay rutas importadas todavÃ­a.</p>
+      <p>No hay rutas importadas todavía.</p>
       <a class="button" href="{{ url_for('main.real_file_import') }}">Importar GPX/TCX</a>
     {% endif %}
   </section>

@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}ImportaciÃ³n asistida Â· Health Tracker{% endblock %}
+{% block title %}Importación asistida · Health Tracker{% endblock %}
 {% block content %}
   <section class="card">
-    <h1>ImportaciÃ³n asistida</h1>
-    <p>Preview primero, escritura solo despuÃ©s de confirmar. No se ejecuta cÃ³digo del archivo.</p>
+    <h1>Importación asistida</h1>
+    <p>Preview primero, escritura solo después de confirmar. No se ejecuta código del archivo.</p>
 
     <p><a href="{{ url_for('main.import_history') }}">Ver historial de importaciones confirmadas</a></p>
 
@@ -80,19 +80,19 @@
     <section class="card">
       <h2>Preview y plan</h2>
       <p><strong>Target:</strong> {{ preview_result.target_type }}</p>
-      <p><strong>Documentos estÃ¡ndar:</strong> {{ preview_result.documents|length }}</p>
+      <p><strong>Documentos estándar:</strong> {{ preview_result.documents|length }}</p>
 
-      <table>
+      <div class="table-wrap"><table>
         <tbody>
           <tr><th>Total</th><td>{{ preview_result.plan.total }}</td></tr>
-          <tr><th>VÃ¡lidos</th><td>{{ preview_result.plan.valid }}</td></tr>
-          <tr><th>InvÃ¡lidos</th><td>{{ preview_result.plan.invalid }}</td></tr>
+          <tr><th>Válidos</th><td>{{ preview_result.plan.valid }}</td></tr>
+          <tr><th>Inválidos</th><td>{{ preview_result.plan.invalid }}</td></tr>
           <tr><th>Inserts</th><td>{{ preview_result.plan.inserts }}</td></tr>
           <tr><th>Updates</th><td>{{ preview_result.plan.updates }}</td></tr>
           <tr><th>Skips</th><td>{{ preview_result.plan.skips }}</td></tr>
           <tr><th>Conflictos</th><td>{{ preview_result.plan.conflicts }}</td></tr>
         </tbody>
-      </table>
+      </table></div>
 
       {% if preview_result.plan.errors %}
         <h3>Errores</h3>
@@ -104,11 +104,11 @@
       {% endif %}
 
       <h3>Operaciones</h3>
-      <table>
+      <div class="table-wrap"><table>
         <thead>
           <tr>
             <th>#</th>
-            <th>OperaciÃ³n</th>
+            <th>Operación</th>
             <th>Modelo</th>
             <th>Detalle</th>
           </tr>
@@ -123,7 +123,7 @@
             </tr>
           {% endfor %}
         </tbody>
-      </table>
+      </table></div>
 
       {% if preview_result.plan.total > 0 and preview_result.plan.invalid == 0 and preview_result.plan.conflicts == 0 and not commit_result %}
         <form method="post">
@@ -131,7 +131,7 @@
           {{ confirm_form.payload_json() }}
           {{ confirm_form.target_type() }}
           {{ confirm_form.confirmation_token() }}
-          <p class="muted">Al confirmar se guardarÃ¡n los datos en tu cuenta. El import es atÃ³mico para el lote.</p>
+          <p class="muted">Al confirmar se guardarán los datos en tu cuenta. El import es atómico para el lote.</p>
           {{ confirm_form.submit(class_="button") }}
         </form>
       {% endif %}
@@ -141,13 +141,13 @@
   {% if commit_result %}
     <section class="card">
       <h2>Resumen final</h2>
-      <table>
+      <div class="table-wrap"><table>
         <tbody>
           <tr><th>Guardado</th><td>{{ 'sí' if commit_result.committed else 'no' }}</td></tr>
           <tr><th>Rollback</th><td>{{ 'sí' if commit_result.rollback else 'no' }}</td></tr>
           {% if commit_result.audit_run_id %}
             <tr>
-              <th>AuditorÃƒÂ­a</th>
+              <th>Auditoría</th>
               <td><a href="{{ url_for('main.import_history_detail', run_id=commit_result.audit_run_id) }}">ImportRun #{{ commit_result.audit_run_id }}</a></td>
             </tr>
           {% endif %}
@@ -155,9 +155,9 @@
           <tr><th>Updates</th><td>{{ commit_result.updates }}</td></tr>
           <tr><th>Skips</th><td>{{ commit_result.skips }}</td></tr>
           <tr><th>Conflictos</th><td>{{ commit_result.conflicts }}</td></tr>
-          <tr><th>InvÃ¡lidos</th><td>{{ commit_result.invalid }}</td></tr>
+          <tr><th>Inválidos</th><td>{{ commit_result.invalid }}</td></tr>
         </tbody>
-      </table>
+      </table></div>
     </section>
   {% endif %}
   <script type="application/json" id="ai-prompt-catalog">{{ prompt_targets|tojson }}</script>

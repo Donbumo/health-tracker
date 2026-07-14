@@ -16,6 +16,8 @@
     <a class="button" href="{{ url_for('main.restore_account_data') }}">Restore desde export</a>
     <a class="button button-secondary" href="{{ url_for('main.standard_import') }}">Importar JSON estándar</a>
     <a class="button button-secondary" href="{{ url_for('main.import_history') }}">Historial imports/restores</a>
+    <a class="button button-secondary" href="{{ url_for('main.account_devices') }}">Dispositivos API</a>
+    <a class="button button-secondary" href="{{ url_for('main.account_system') }}">Estado homelab</a>
   </section>
 
   <section class="card">
@@ -61,6 +63,11 @@
       <h2>Historial de imports/restores</h2>
       <p>Consulta auditoría saneada de importaciones confirmadas y restores. No muestra payload crudo.</p>
       <a class="button button-secondary" href="{{ url_for('main.import_history') }}">Ver historial</a>
+    </article>
+    <article class="card">
+      <h2>Dispositivos y sistema</h2>
+      <p>Consulta dispositivos companion y metadata operativa segura, sin tokens, rutas ni secretos.</p>
+      <a class="button button-secondary" href="{{ url_for('main.account_system') }}">Abrir estado homelab</a>
     </article>
   </section>
 

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Ruta {{ route.id }} Â· Health Tracker{% endblock %}
+{% block title %}Ruta {{ route.id }} · Health Tracker{% endblock %}
 {% block content %}
   <section class="page-heading">
     <div>
@@ -14,12 +14,12 @@
   <section class="card">
     <h2>Resumen</h2>
     <dl class="metadata">
-      <dt>Distancia</dt><dd>{{ route.distance_meters if route.distance_meters is not none else 'â€”' }} m</dd>
-      <dt>Gain/loss</dt><dd>{{ route.elevation_gain_meters or 'â€”' }} / {{ route.elevation_loss_meters or 'â€”' }} m</dd>
+      <dt>Distancia</dt><dd>{{ route.distance_meters if route.distance_meters is not none else '—' }} m</dd>
+      <dt>Gain/loss</dt><dd>{{ route.elevation_gain_meters or '—' }} / {{ route.elevation_loss_meters or '—' }} m</dd>
       <dt>Puntos</dt><dd>{{ route.point_count }}</dd>
       <dt>Fuente</dt><dd>{{ route.source_app or route.source_type }}</dd>
-      <dt>Archivo fuente</dt><dd>{% if route.source_file_id %}Upload #{{ route.source_file_id }}{% else %}â€”{% endif %}</dd>
-      <dt>Huella</dt><dd><code>{{ route.fingerprint_sha256[:12] }}â€¦</code></dd>
+      <dt>Archivo fuente</dt><dd>{% if route.source_file_id %}Upload #{{ route.source_file_id }}{% else %}—{% endif %}</dd>
+      <dt>Huella</dt><dd><code>{{ route.fingerprint_sha256[:12] }}…</code></dd>
     </dl>
     {% if route.bounds_json %}
       <h3>Bounds</h3>

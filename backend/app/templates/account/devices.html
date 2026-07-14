@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Dispositivos API · Health Tracker{% endblock %}
+{% block breadcrumb %}Dispositivos API{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Dispositivos API</h1>
+      <p>Sesiones companion vinculadas a tu cuenta. Nunca se muestran tokens.</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('main.account_system') }}">Estado homelab</a>
+  </section>
+
+  {% if devices %}
+    <section class="card-grid" aria-label="Dispositivos vinculados">
+      {% for device in devices %}
+        <article class="card">
+          <div class="page-heading">
+            <div>
+              <h2>{{ device.name }}</h2>
+              <span class="status {{ 'status-danger' if device.revoked_at else 'status-success' }}">{{ 'Revocado' if device.revoked_at else 'Activo' }}</span>
+            </div>
+          </div>
+          <dl class="metadata">
+            <dt>Plataforma</dt><dd>{{ device.platform }}</dd>
+            <dt>App</dt><dd>{{ device.app_version or 'No indicada' }}</dd>
+            <dt>Sistema</dt><dd>{{ device.os_version or 'No indicado' }}</dd>
+            <dt>Última actividad</dt><dd>{{ device.last_seen_at }}</dd>
+            <dt>Sesiones activas</dt><dd>{{ device.sessions|selectattr('revoked_at', 'none')|list|length }}</dd>
+            <dt>ID público</dt><dd><code>{{ device.public_device_id }}</code></dd>
+          </dl>
+          {% if not device.revoked_at %}
+            <details class="danger-zone">
+              <summary>Revocar dispositivo</summary>
+              <p class="help">Cierra todas sus sesiones API. Para volver a usarlo será necesario iniciar sesión otra vez.</p>
+              <form action="{{ url_for('main.revoke_account_device', device_id=device.public_device_id) }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label class="checkbox"><input type="checkbox" required> Confirmo que deseo revocar este dispositivo</label>
+                <button class="button button-danger" type="submit">Revocar dispositivo</button>
+              </form>
+            </details>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </section>
+  {% else %}
+    <section class="empty-state">
+      <h2>Sin dispositivos vinculados</h2>
+      <p>Los dispositivos aparecerán aquí después de iniciar sesión mediante la API companion.</p>
+      <a class="button button-secondary" href="{{ url_for('main.account_data') }}">Volver al Centro de datos</a>
+    </section>
+  {% endif %}
+{% endblock %}

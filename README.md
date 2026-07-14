@@ -12,6 +12,17 @@ flask api-auth cleanup --apply
 
 CORS está cerrado por defecto, HTTPS es obligatorio fuera de QA y el rate limiter en memoria es por proceso: solo basta para QA privada/self-hosted; producción pública requiere backend compartido. Los IDs públicos son UUID persistidos y no cambian al rotar `API_TOKEN_SIGNING_KEY`. Sync push/pull, conflictos, planned workouts, APK y reloj no están implementados. Consulta `docs/API_V1.md`, `docs/API_AUTH.md`, `docs/API_DEVICE_SESSIONS.md`, `docs/API_SECURITY.md` y `docs/COMPANION_BOOTSTRAP.md`.
 
+## Alpha 0.6.1: Web UI Homelab
+
+La interfaz web usa un shell responsive propio: navegación lateral agrupada en escritorio, menú compacto en móvil, dashboard centrado en el estado diario y accesos de cuenta para dispositivos API y diagnóstico seguro del homelab.
+
+- `/account/devices`: dispositivos API propios y revocación segura mediante POST + CSRF.
+- `/account/system`: salud de DB/storage y conteos operativos del usuario sin exponer secretos ni rutas.
+- Tema claro/oscuro automático según el sistema.
+- Tablas contenidas, formularios táctiles y navegación por teclado con foco visible.
+
+Consulta [WEB_UI_HOMELAB.md](docs/WEB_UI_HOMELAB.md), [WEB_UI_DESIGN_SYSTEM.md](docs/WEB_UI_DESIGN_SYSTEM.md) y [WEB_UI_ACCESSIBILITY.md](docs/WEB_UI_ACCESSIBILITY.md).
+
 Aplicación web privada, self-hosted y multiusuario. El MVP actual incluye autenticación, almacenamiento aislado, entrenamiento versionable, nutrición/energía diaria, peso y composición corporal, además de un dashboard diario consolidado.
 
 ## Alcance de la Fase 1

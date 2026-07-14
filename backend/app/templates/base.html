@@ -3,124 +3,142 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <title>{% block title %}Health Tracker{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
 <body>
-  <header class="site-header">
-    <nav class="container nav" aria-label="Navegación principal">
-      <a class="brand" href="{{ url_for('main.index') }}">Health Tracker</a>
-      {% if current_user.is_authenticated %}
-        <div class="nav-actions desktop-nav">
-          <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
-          <a href="{{ url_for('wellness.balance') }}">Wellness</a>
-          <a href="{{ url_for('body.list_weigh_ins') }}">Peso</a>
-          <a href="{{ url_for('wellness.nutrition_list') }}">Nutrición</a>
-          <a href="{{ url_for('foods.list_foods') }}">Alacena</a>
-          <a href="{{ url_for('recipes.list_recipes') }}">Recetas</a>
-          <a href="{{ url_for('wellness.energy_list') }}">Energía</a>
-          <a href="{{ url_for('training.list_plans') }}">Entrenamiento</a>
-          <a href="{{ url_for('sessions.list_sessions') }}">Sesiones</a>
-          <a href="{{ url_for('progress.overview') }}">Progreso</a>
-          <a href="{{ url_for('activities.list_activities') }}">Actividades</a>
-          <a href="{{ url_for('activities.list_routes') }}">Rutas</a>
-          <a href="{{ url_for('medical.list_reports') }}">Laboratorios</a>
-          <a href="{{ url_for('main.uploads') }}">Uploads</a>
-          <a href="{{ url_for('main.real_file_import') }}">Importar archivos</a>
-          <a href="{{ url_for('main.standard_import') }}">Importar JSON</a>
-          <a href="{{ url_for('main.import_history') }}">Historial imports</a>
-          <a href="{{ url_for('main.account_data') }}">Mis datos</a>
-          <a href="{{ url_for('main.account_backups') }}">Backups</a>
-          <a href="{{ url_for('main.export_account_data') }}">Exportar datos</a>
-          <a href="{{ url_for('exports.history') }}">Historial exports</a>
-          {% if current_user.is_admin %}
-            <a href="{{ url_for('admin.users') }}">Admin</a>
-            <a href="{{ url_for('admin.system') }}">Sistema</a>
-          {% endif %}
-          <span>{{ current_user.username }}</span>
-          <form action="{{ url_for('auth.logout') }}" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button class="button button-secondary" type="submit">Cerrar sesión</button>
-          </form>
-        </div>
-        <details class="mobile-menu">
-          <summary aria-label="Abrir o cerrar menú principal">Menú</summary>
-          <div class="mobile-menu-panel">
-            <p class="mobile-menu-user">{{ current_user.username }}</p>
+  {% set current_endpoint = request.endpoint or '' %}
+  {% macro nav_link(endpoint, label, prefix) -%}
+    {% set active = current_endpoint == endpoint or current_endpoint.startswith(prefix) %}
+    <a class="nav-link{{ ' is-active' if active else '' }}" href="{{ url_for(endpoint) }}"{% if active %} aria-current="page"{% endif %}>{{ label }}</a>
+  {%- endmacro %}
+  {% macro navigation(section_class) -%}
+    <div class="{{ section_class }}">
+      <section class="nav-section" aria-label="Principal" aria-labelledby="nav-home-{{ section_class }}">
+        <h2 id="nav-home-{{ section_class }}">Inicio</h2>
+        {{ nav_link('main.dashboard', 'Dashboard', 'main.dashboard') }}
+        {{ nav_link('wellness.balance', 'Wellness', 'wellness.balance') }}
+      </section>
+      <section class="nav-section" aria-labelledby="nav-training-{{ section_class }}">
+        <h2 id="nav-training-{{ section_class }}">Entrenamiento</h2>
+        {{ nav_link('training.list_plans', 'Rutinas', 'training.') }}
+        {{ nav_link('sessions.list_sessions', 'Sesiones', 'sessions.') }}
+        {{ nav_link('progress.overview', 'Progreso', 'progress.') }}
+      </section>
+      <section class="nav-section" aria-labelledby="nav-activity-{{ section_class }}">
+        <h2 id="nav-activity-{{ section_class }}">Actividad</h2>
+        {{ nav_link('activities.list_activities', 'Actividades', 'activities.activity') }}
+        {{ nav_link('activities.list_routes', 'Rutas', 'activities.route') }}
+      </section>
+      <section class="nav-section" aria-labelledby="nav-nutrition-{{ section_class }}">
+        <h2 id="nav-nutrition-{{ section_class }}">Nutrición</h2>
+        {{ nav_link('wellness.nutrition_list', 'Nutrición diaria', 'wellness.nutrition') }}
+        {{ nav_link('wellness.energy_list', 'Energía', 'wellness.energy') }}
+        {{ nav_link('foods.list_foods', 'Alacena', 'foods.') }}
+        {{ nav_link('recipes.list_recipes', 'Recetas', 'recipes.') }}
+      </section>
+      <section class="nav-section" aria-labelledby="nav-health-{{ section_class }}">
+        <h2 id="nav-health-{{ section_class }}">Salud</h2>
+        {{ nav_link('body.list_weigh_ins', 'Peso', 'body.') }}
+        {{ nav_link('medical.list_reports', 'Laboratorios', 'medical.') }}
+      </section>
+      <section class="nav-section" aria-labelledby="nav-data-{{ section_class }}">
+        <h2 id="nav-data-{{ section_class }}">Datos</h2>
+        {{ nav_link('main.real_file_import', 'Importar archivos', 'main.real_file_import') }}
+        {{ nav_link('main.standard_import', 'Importar JSON', 'main.standard_import') }}
+        {{ nav_link('main.import_history', 'Historial imports', 'main.import_history') }}
+        {{ nav_link('main.uploads', 'Uploads', 'main.uploads') }}
+        {{ nav_link('exports.history', 'Historial exports', 'exports.') }}
+      </section>
+      <section class="nav-section" aria-labelledby="nav-account-{{ section_class }}">
+        <h2 id="nav-account-{{ section_class }}">Cuenta</h2>
+        {{ nav_link('main.account_data', 'Centro de datos', 'main.account_data') }}
+        {{ nav_link('main.account_backups', 'Backups', 'main.account_backup') }}
+        {{ nav_link('main.account_devices', 'Dispositivos API', 'main.account_devices') }}
+        {{ nav_link('main.account_system', 'Estado homelab', 'main.account_system') }}
+        <a class="nav-link" href="{{ url_for('main.export_account_data') }}">Exportar datos</a>
+        {% if current_user.is_admin %}
+          <span class="nav-subheading">Administración</span>
+          {{ nav_link('admin.users', 'Admin', 'admin.users') }}
+          {{ nav_link('admin.system', 'Sistema admin', 'admin.system') }}
+        {% endif %}
+      </section>
+    </div>
+  {%- endmacro %}
 
-            <section class="mobile-menu-section" aria-labelledby="mobile-menu-main">
-              <h2 id="mobile-menu-main">Principal</h2>
-              <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
-              <a href="{{ url_for('wellness.balance') }}">Wellness</a>
-              <a href="{{ url_for('body.list_weigh_ins') }}">Peso</a>
-              <a href="{{ url_for('wellness.nutrition_list') }}">Nutrición</a>
-              <a href="{{ url_for('wellness.energy_list') }}">Energía</a>
-              <a href="{{ url_for('training.list_plans') }}">Entrenamiento</a>
-              <a href="{{ url_for('sessions.list_sessions') }}">Sesiones</a>
-              <a href="{{ url_for('progress.overview') }}">Progreso</a>
-              <a href="{{ url_for('activities.list_activities') }}">Actividades</a>
-              <a href="{{ url_for('activities.list_routes') }}">Rutas</a>
-            </section>
-
-            <section class="mobile-menu-section" aria-labelledby="mobile-menu-data">
-              <h2 id="mobile-menu-data">Datos</h2>
-              <a href="{{ url_for('foods.list_foods') }}">Alacena</a>
-              <a href="{{ url_for('recipes.list_recipes') }}">Recetas</a>
-              <a href="{{ url_for('medical.list_reports') }}">Laboratorios</a>
-              <a href="{{ url_for('main.uploads') }}">Uploads</a>
-              <a href="{{ url_for('main.real_file_import') }}">Importar archivos</a>
-              <a href="{{ url_for('main.standard_import') }}">Importar JSON</a>
-              <a href="{{ url_for('main.import_history') }}">Historial imports</a>
-              <a href="{{ url_for('main.account_data') }}">Mis datos</a>
-              <a href="{{ url_for('main.account_backups') }}">Backups</a>
-              <a href="{{ url_for('main.export_account_data') }}">Exportar datos</a>
-              <a href="{{ url_for('exports.history') }}">Historial exports</a>
-            </section>
-
-            {% if current_user.is_admin %}
-              <section class="mobile-menu-section" aria-labelledby="mobile-menu-admin">
-                <h2 id="mobile-menu-admin">Administración</h2>
-                <a href="{{ url_for('admin.users') }}">Admin</a>
-                <a href="{{ url_for('admin.system') }}">Sistema</a>
-              </section>
-            {% endif %}
-
-            <div class="mobile-menu-logout">
+  <a class="skip-link" href="#main-content">Saltar al contenido</a>
+  {% if current_user.is_authenticated %}
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navegación principal">
+        <a class="brand brand-desktop" href="{{ url_for('main.dashboard') }}">Health Tracker</a>
+        <div class="nav-actions desktop-nav">{{ navigation('desktop-navigation') }}</div>
+      </aside>
+      <div class="app-frame">
+        <header class="topbar">
+          <a class="brand brand-mobile" href="{{ url_for('main.dashboard') }}">Health Tracker</a>
+          <span class="environment-badge">Self-hosted</span>
+          <details class="mobile-menu">
+            <summary aria-label="Abrir o cerrar menú principal">Menú</summary>
+            <div class="mobile-menu-panel">
+              <p class="mobile-menu-user">{{ current_user.username }}</p>
+              {{ navigation('mobile-navigation') }}
+              <div class="mobile-menu-logout">
+                <form action="{{ url_for('auth.logout') }}" method="post">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="button button-secondary" type="submit">Cerrar sesión</button>
+                </form>
+              </div>
+            </div>
+          </details>
+          <details class="user-menu">
+            <summary aria-label="Abrir menú de cuenta">{{ current_user.username }}</summary>
+            <div class="user-menu-panel">
+              <a href="{{ url_for('main.account_data') }}">Centro de datos</a>
+              <a href="{{ url_for('main.account_devices') }}">Dispositivos API</a>
+              <a href="{{ url_for('main.account_system') }}">Estado homelab</a>
               <form action="{{ url_for('auth.logout') }}" method="post">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="button button-secondary" type="submit">Cerrar sesión</button>
               </form>
             </div>
-          </div>
-        </details>
-      {% endif %}
-    </nav>
-  </header>
+          </details>
+        </header>
+  {% else %}
+    <header class="public-header"><a class="brand" href="{{ url_for('main.index') }}">Health Tracker</a></header>
+  {% endif %}
 
-  <main class="container">
+  <main id="main-content" class="{{ 'content' if current_user.is_authenticated else 'container public-content' }}" tabindex="-1">
+    {% if current_user.is_authenticated %}
+          <nav class="breadcrumbs" aria-label="Migas de pan">
+            <a href="{{ url_for('main.dashboard') }}">Inicio</a>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">{% block breadcrumb %}{{ self.title()|striptags|replace(' · Health Tracker', '') }}{% endblock %}</span>
+          </nav>
+    {% endif %}
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="messages" aria-live="polite">
-          {% for category, message in messages %}
-            <div class="alert alert-{{ category }}">{{ message }}</div>
-          {% endfor %}
+          {% for category, message in messages %}<div class="alert alert-{{ category }}" role="status">{{ message }}</div>{% endfor %}
         </div>
       {% endif %}
     {% endwith %}
-
     {% block content %}{% endblock %}
   </main>
-  <footer class="site-footer">
-    <div class="container footer-actions">
-      <span>{{ alpha_release_label }}</span>
-      <span>Uso privado por LAN/VPN; no sustituye atención médica.</span>
-      <a href="{{ url_for('main.privacy') }}">Privacidad</a>
-      <a href="{{ url_for('main.healthcheck') }}">Estado</a>
-      {% if current_user.is_authenticated %}
-        <a href="{{ url_for('main.account_data') }}">Mis datos</a>
-        <a href="{{ url_for('main.export_account_data') }}">Exportar mis datos</a>
-      {% endif %}
+
+  {% if current_user.is_authenticated %}
+        <footer class="site-footer">
+          <div class="footer-actions">
+            <span>{{ alpha_release_label }} · Self-hosted</span>
+            <span>No sustituye atención médica.</span>
+            <a href="{{ url_for('main.privacy') }}">Privacidad</a>
+            <a href="{{ url_for('main.account_system') }}">Estado</a>
+          </div>
+        </footer>
+      </div>
     </div>
-  </footer>
+  {% else %}
+    <footer class="site-footer"><div class="container footer-actions"><span>{{ alpha_release_label }}</span><a href="{{ url_for('main.privacy') }}">Privacidad</a><a href="{{ url_for('main.healthcheck') }}">Estado</a></div></footer>
+  {% endif %}
 </body>
 </html>

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Estado homelab · Health Tracker{% endblock %}
+{% block breadcrumb %}Estado homelab{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <h1>Estado homelab</h1>
+      <p>Diagnóstico seguro de tu instalación y tus procesos de datos.</p>
+    </div>
+    <span class="status {{ 'status-success' if database_status == 'ok' else 'status-danger' }}">{{ 'Operativo' if database_status == 'ok' else 'Requiere atención' }}</span>
+  </section>
+
+  <section class="summary-grid" aria-label="Estado de servicios">
+    <div class="metric"><strong>{{ 'OK' if database_status == 'ok' else 'Error' }}</strong><span>Base de datos</span></div>
+    <div class="metric"><strong>{{ 'OK' if storage_status.raw else 'Error' }}</strong><span>Storage raw</span></div>
+    <div class="metric"><strong>{{ 'OK' if storage_status.generated else 'Error' }}</strong><span>Storage generated</span></div>
+    <div class="metric"><strong>{{ counts.active_devices if counts else '—' }}</strong><span>Dispositivos API activos</span></div>
+  </section>
+
+  <section class="card-grid">
+    <article class="card">
+      <h2>Aplicación</h2>
+      <dl class="metadata">
+        <dt>Versión</dt><dd>{{ app_version }}</dd>
+        <dt>Migración</dt><dd><code>{{ migration_head }}</code></dd>
+        <dt>Hora servidor</dt><dd>{{ server_time.isoformat() }}</dd>
+        <dt>Web</dt><dd><span class="status status-success">Disponible</span></dd>
+      </dl>
+    </article>
+    <article class="card">
+      <h2>Tus operaciones</h2>
+      {% if counts %}
+        <dl class="metadata">
+          <dt>Imports/restores</dt><dd>{{ counts.imports }}</dd>
+          <dt>Exports</dt><dd>{{ counts.exports }}</dd>
+          <dt>Backups</dt><dd>{{ counts.backups }}</dd>
+          <dt>Último backup</dt><dd>{{ latest_backup.created_at if latest_backup else 'Sin backups' }}</dd>
+        </dl>
+      {% else %}
+        <p class="alert alert-danger">No fue posible consultar los conteos.</p>
+      {% endif %}
+    </article>
+  </section>
+
+  <section class="card">
+    <h2>Reconciliación</h2>
+    <p>{{ reconciliation_status }}</p>
+    <p class="help">Esta pantalla no ejecuta reconciliación, no muestra rutas, nombres de archivos, variables, logs ni secretos.</p>
+  </section>
+
+  <section class="quick-actions" aria-label="Acciones seguras">
+    <a class="button" href="{{ url_for('main.new_account_backup') }}">Crear backup</a>
+    <a class="button button-secondary" href="{{ url_for('main.import_history') }}">Ver imports</a>
+    <a class="button button-secondary" href="{{ url_for('exports.history') }}">Ver exports</a>
+    <a class="button button-secondary" href="{{ url_for('main.account_devices') }}">Ver dispositivos</a>
+  </section>
+{% endblock %}

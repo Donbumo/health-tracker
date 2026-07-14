@@ -9,6 +9,19 @@
 - [x] CORS cerrado y logs sin secretos.
 - [x] Sync Fase 7B confirmado unsupported.
 
+## Alpha 0.6.1 — Web UI Homelab
+
+- [x] Navegación lateral agrupada y ruta activa clara en escritorio.
+- [x] Menú móvil cerrado por defecto y usable a 360/390/430 px.
+- [x] Dashboard diario aparece antes del onboarding.
+- [x] `/account/system` muestra estado seguro sin secretos ni paths.
+- [x] `/account/devices` lista solo dispositivos propios y revoca por POST + CSRF.
+- [x] Formularios tienen controles táctiles, foco visible y labels asociados.
+- [x] Tablas anchas desplazan solo dentro de su wrapper.
+- [x] Tema claro y oscuro del sistema mantienen contraste legible.
+- [x] No existe scroll horizontal global en 360/390/430/768/1024/1366 px.
+- [x] Suite local, suite Docker y `flask db check` verdes.
+
 Usa esta lista antes de invitar a un compañero real a una alpha por LAN/VPN.
 
 ## Instalación y migraciones

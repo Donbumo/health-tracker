@@ -8,9 +8,11 @@ Este documento es el punto de entrada para Codex y otros agentes que retomen el 
 
 No reemplaza a las reglas canónicas ni a los schemas. Su función es ordenar qué leer, qué manda en caso de conflicto y cuál es el estado técnico verificado al actualizar este contexto.
 
-Última actualización documental: 2026-07-12.
+Última actualización documental: 2026-07-13.
 
-Estado más reciente: `feature/phase-6b-full-backup-recovery` parte de `f36ae9d`, tag exacto `alpha-0.4-exporters-complete`. Implementa backup/restore ZIP 1.0 sin migración nueva. Línea base previa `441 passed`; suite local del bloque `465 passed`. Leer también `docs/project-rules/full-backup.md`, `docs/FULL_BACKUP.md` y `docs/BACKUP_SECURITY.md` para tareas de portabilidad binaria.
+Estado más reciente: `feature/phase-web-ui-homelab` parte de `e998979`, tag exacto `alpha-0.6-api-auth`. El bloque Alpha 0.6.1 consolida el shell Flask/Jinja, navegación responsive, dashboard diario, estado owner-only del homelab y gestión owner-only de dispositivos, sin migración ni cambio de contrato de datos. Para tareas web leer `docs/project-rules/web-ui.md`.
+
+Estado histórico de Alpha 0.5: `feature/phase-6b-full-backup-recovery` partió de `f36ae9d`, tag exacto `alpha-0.4-exporters-complete`, e implementó backup/restore ZIP 1.0 sin migración nueva. Leer también `docs/project-rules/full-backup.md`, `docs/FULL_BACKUP.md` y `docs/BACKUP_SECURITY.md` para tareas de portabilidad binaria.
 
 ## Orden obligatorio de lectura
 
@@ -27,8 +29,9 @@ Antes de modificar el repositorio, leer en este orden:
 9. `docs/project-rules/account-restore.md` si la tarea toca restore completo de cuenta.
 10. `docs/ACCOUNT_RESTORE.md` y `docs/DATA_PORTABILITY.md` si la tarea toca portabilidad o round-trip.
 11. `docs/project-rules/exporters.md` si la tarea toca exports o artefactos generated.
-12. `docs/ACTIVE_HANDOFF.md`, solo como handoff temporal del bloque activo.
-13. README, código, tests y `git status`.
+12. `docs/project-rules/web-ui.md` si la tarea toca Jinja, CSS, navegación, dashboard o flujos web.
+13. `docs/ACTIVE_HANDOFF.md`, solo como handoff temporal del bloque activo.
+14. README, código, tests y `git status`.
 
 ## Precedencia
 

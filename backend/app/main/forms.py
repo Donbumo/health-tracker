@@ -37,7 +37,7 @@ class AccountRestorePreviewForm(FlaskForm):
         "Export JSON",
         validators=[
             FileRequired(),
-            FileAllowed(["json"], "Selecciona un archivo con extensiÃ³n .json."),
+            FileAllowed(["json"], "Selecciona un archivo con extensión .json."),
         ],
     )
     submit = SubmitField("Previsualizar restore")
@@ -81,22 +81,22 @@ class StandardImportPreviewForm(FlaskForm):
         "JSON",
         validators=[
             FileRequired(),
-            FileAllowed(["json"], "Selecciona un archivo con extensiÃ³n .json."),
+            FileAllowed(["json"], "Selecciona un archivo con extensión .json."),
         ],
     )
     target_type = SelectField(
         "Target",
         choices=[
-            ("", "Detectar automÃ¡ticamente"),
+            ("", "Detectar automáticamente"),
             ("weigh_in_batch", "Pesajes"),
             ('daily_energy', 'Energía diaria'),
-            ("daily_nutrition", "NutriciÃ³n diaria"),
+            ("daily_nutrition", "Nutrición diaria"),
             ("food_products", "Alimentos/productos"),
             ("recipe", "Receta"),
             ("recipe_bundle", "Bundle de recetas"),
             ("training_plan", "Rutina"),
-            ("completed_workout", "SesiÃ³n completada"),
-            ("medical_lab", "Laboratorio mÃ©dico"),
+            ("completed_workout", "Sesión completada"),
+            ("medical_lab", "Laboratorio médico"),
         ],
         validators=[Optional()],
     )
@@ -124,9 +124,9 @@ class RealFileImportPreviewForm(FlaskForm):
     requested_type = SelectField(
         "Perfil CSV",
         choices=[
-            ("", "Detectar automÃ¡ticamente"),
+            ("", "Detectar automáticamente"),
             ("weigh_in_csv", "CSV de pesajes"),
-            ("daily_energy_csv", "CSV de energÃ­a diaria"),
+            ("daily_energy_csv", "CSV de energía diaria"),
         ],
         validators=[Optional()],
     )

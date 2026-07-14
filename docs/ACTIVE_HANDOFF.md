@@ -1,5 +1,22 @@
 # Handoff activo de Health Tracker
 
+## 2026-07-13 — Alpha 0.6.1 Web UI Homelab
+
+- Rama `feature/phase-web-ui-homelab`; base `e998979`, tag exacto `alpha-0.6-api-auth`.
+- Árbol inicial limpio y sincronizado con `master`/`origin/master`.
+- Objetivo: consolidar la UI Flask/Jinja/CSS para escritorio y móvil sin cambiar contratos de backend.
+- Implementado: shell autenticado, navegación agrupada, menú móvil nativo, tema del sistema, dashboard orientado al día, operación reciente, `/account/system` y `/account/devices` owner-only.
+- Seguridad: revocación de dispositivo por POST + CSRF; no se muestran tokens, secretos, paths internos, logs ni datos de otros usuarios.
+- Modelos, schemas y migraciones: sin cambios.
+- Regla canónica: `project-rules/web-ui.md`; guías: `WEB_UI_HOMELAB.md`, `WEB_UI_DESIGN_SYSTEM.md` y `WEB_UI_ACCESSIBILITY.md`.
+- Validación final: local `513 passed`; Docker `512 passed, 1 skipped`. El skip exacto es `tests/test_active_handoff.py` porque `docs/` no se copia a la imagen. `compileall`, `docker compose config`, head/upgrade y `flask db check` limpios.
+- QA visual: login/logout, dashboard, módulos principales, 404, dispositivos y estado homelab revisados; sin overflow global a 360/390/430/768/1024/1366 px. Menú móvil cerrado por defecto y sesión persistente después de reiniciar `web`.
+- Bug corregido: mojibake visible preexistente en actividad, rutas e imports; el escaneo de templates y el DOM final quedan limpios.
+- Riesgos: el tema sigue la preferencia del sistema y no tiene toggle persistente; no se realizó auditoría formal con lector de pantalla; el status homelab es diagnóstico ligero, no monitoreo de infraestructura.
+- Siguiente acción: revisar el diff y decidir integración; no se hizo commit, push, merge ni tag.
+
+Este bloque reemplaza como estado temporal a las secciones históricas que siguen, pero no reemplaza schemas, tests, `AGENTS.md` ni reglas canónicas.
+
 ## 2026-07-13 — Fase 7A
 
 - Rama `feature/phase-7a-api-auth`; base `7916cde`, tag `alpha-0.5-full-backup-recovery`.

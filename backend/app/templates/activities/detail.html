@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Actividad {{ activity.id }} Â· Health Tracker{% endblock %}
+{% block title %}Actividad {{ activity.id }} · Health Tracker{% endblock %}
 {% block content %}
   <section class="page-heading">
     <div>
       <h1>Actividad {{ activity.id }}</h1>
-      <p>{{ activity.activity_type }} Â· {{ activity.started_at.isoformat() }}</p>
+      <p>{{ activity.activity_type }} · {{ activity.started_at.isoformat() }}</p>
     </div>
     <div class="page-actions">
       <a class="button" href="{{ url_for('exports.create', domain='activity', source_id=activity.id) }}">Exportar actividad</a>
@@ -15,18 +15,18 @@
     <h2>Resumen</h2>
     <dl class="metadata">
       <dt>Inicio</dt><dd>{{ activity.started_at.isoformat() }}</dd>
-      <dt>Fin</dt><dd>{{ activity.ended_at.isoformat() if activity.ended_at else 'â€”' }}</dd>
-      <dt>DuraciÃ³n</dt><dd>{{ activity.duration_seconds if activity.duration_seconds is not none else 'â€”' }} s</dd>
-      <dt>Moving time</dt><dd>{{ activity.moving_time_seconds if activity.moving_time_seconds is not none else 'â€”' }} s</dd>
-      <dt>Distancia</dt><dd>{{ activity.distance_meters if activity.distance_meters is not none else 'â€”' }} m</dd>
-      <dt>CalorÃ­as</dt><dd>{{ activity.calories_kcal if activity.calories_kcal is not none else 'â€”' }}</dd>
-      <dt>FC promedio/mÃ¡xima</dt><dd>{{ activity.avg_heart_rate_bpm or 'â€”' }} / {{ activity.max_heart_rate_bpm or 'â€”' }}</dd>
-      <dt>Cadencia promedio/mÃ¡xima</dt><dd>{{ activity.avg_cadence_rpm or 'â€”' }} / {{ activity.max_cadence_rpm or 'â€”' }}</dd>
-      <dt>Potencia promedio/mÃ¡xima</dt><dd>{{ activity.avg_power_watts or 'â€”' }} / {{ activity.max_power_watts or 'â€”' }}</dd>
+      <dt>Fin</dt><dd>{{ activity.ended_at.isoformat() if activity.ended_at else '—' }}</dd>
+      <dt>Duración</dt><dd>{{ activity.duration_seconds if activity.duration_seconds is not none else '—' }} s</dd>
+      <dt>Moving time</dt><dd>{{ activity.moving_time_seconds if activity.moving_time_seconds is not none else '—' }} s</dd>
+      <dt>Distancia</dt><dd>{{ activity.distance_meters if activity.distance_meters is not none else '—' }} m</dd>
+      <dt>Calorías</dt><dd>{{ activity.calories_kcal if activity.calories_kcal is not none else '—' }}</dd>
+      <dt>FC promedio/máxima</dt><dd>{{ activity.avg_heart_rate_bpm or '—' }} / {{ activity.max_heart_rate_bpm or '—' }}</dd>
+      <dt>Cadencia promedio/máxima</dt><dd>{{ activity.avg_cadence_rpm or '—' }} / {{ activity.max_cadence_rpm or '—' }}</dd>
+      <dt>Potencia promedio/máxima</dt><dd>{{ activity.avg_power_watts or '—' }} / {{ activity.max_power_watts or '—' }}</dd>
       <dt>Puntos</dt><dd>{{ activity.point_count }}</dd>
-      <dt>Dispositivo</dt><dd>{{ activity.manufacturer or 'â€”' }} {{ activity.product or '' }}</dd>
-      <dt>Archivo fuente</dt><dd>{% if activity.source_file_id %}Upload #{{ activity.source_file_id }}{% else %}â€”{% endif %}</dd>
-      <dt>Huella</dt><dd><code>{{ activity.fingerprint_sha256[:12] }}â€¦</code></dd>
+      <dt>Dispositivo</dt><dd>{{ activity.manufacturer or '—' }} {{ activity.product or '' }}</dd>
+      <dt>Archivo fuente</dt><dd>{% if activity.source_file_id %}Upload #{{ activity.source_file_id }}{% else %}—{% endif %}</dd>
+      <dt>Huella</dt><dd><code>{{ activity.fingerprint_sha256[:12] }}…</code></dd>
     </dl>
   </section>
 

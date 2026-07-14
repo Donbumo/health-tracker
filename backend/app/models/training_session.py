@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import uuid
 
 from app.extensions import db
 
@@ -36,9 +37,23 @@ class TrainingSession(db.Model):
             "user_id",
             "performed_at",
         ),
+        db.UniqueConstraint("public_id", name="uq_training_sessions_public_id"),
+        db.UniqueConstraint(
+            "user_id",
+            "source_device_id",
+            "client_event_id",
+            name="uq_training_sessions_device_event",
+        ),
+        db.UniqueConstraint(
+            "planned_workout_id", name="uq_training_sessions_planned_workout"
+        ),
+        db.CheckConstraint("revision >= 1", name="ck_training_sessions_revision"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(
+        db.String(36), nullable=False, default=lambda: str(uuid.uuid4())
+    )
     user_id = db.Column(
         db.Integer,
         db.ForeignKey("users.id", ondelete="CASCADE"),
@@ -59,6 +74,28 @@ class TrainingSession(db.Model):
         db.ForeignKey("uploaded_files.id", ondelete="SET NULL"),
         nullable=True,
     )
+    planned_workout_id = db.Column(
+        db.Integer,
+        db.ForeignKey("planned_workouts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    source_device_id = db.Column(
+        db.Integer, db.ForeignKey("api_devices.id", ondelete="SET NULL"), nullable=True
+    )
+    client_event_id = db.Column(db.String(36), nullable=True)
+    client_payload_sha256 = db.Column(db.String(64), nullable=True)
+    revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    timezone = db.Column(db.String(64), nullable=True)
+    started_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    completed_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        server_default=db.func.current_timestamp(),
+    )
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
     performed_at = db.Column(db.DateTime(timezone=True), nullable=False)
     planned_week_number = db.Column(db.Integer, nullable=False)
     planned_day_number = db.Column(db.Integer, nullable=False)
@@ -80,6 +117,10 @@ class TrainingSession(db.Model):
         back_populates="sessions",
     )
     source_file = db.relationship("UploadedFile")
+    planned_workout = db.relationship(
+        "PlannedWorkout", back_populates="completed_session"
+    )
+    source_device = db.relationship("ApiDevice")
     exercises = db.relationship(
         "TrainingSessionExercise",
         back_populates="training_session",

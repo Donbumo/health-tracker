@@ -1,5 +1,11 @@
 # Contexto del proyecto: Plataforma self-hosted de salud, nutrición, entrenamiento y dispositivos
 
+## Estado verificado: Mobile Sync Foundation
+
+La Fase 7B añade `PlannedWorkout`, identidad pública/revisión para `TrainingSession`, cambios incrementales, estado de cursor por dispositivo e idempotencia persistente. API Sync 1.0 escribe únicamente planned/completed workouts. Otros dominios permanecen fuera de push.
+
+No hay APK ni app de reloj. La rutina activa continúa seleccionándose temporalmente por `most_recent_plan_active_version`.
+
 ## Alpha 0.6 / Fase 7A
 
 Base `/api/v1` con access firmado corto, refresh opaco hash-only rotatorio, reuse detection, dispositivos revocables, UUID públicos persistidos, JSON/request ID, rate limiting QA, CORS allowlist, `/me`, bootstrap y rutina activa read-only. Migraciones aditivas `20260713_0021` y `20260713_0022`. Sync offline, conflictos, tombstones, planned workouts, APK y reloj siguen planificados, no implementados.

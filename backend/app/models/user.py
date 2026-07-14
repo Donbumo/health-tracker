@@ -128,6 +128,12 @@ class User(UserMixin, db.Model):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    planned_workouts = db.relationship(
+        "PlannedWorkout",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
     api_sessions = db.relationship(
         "ApiSession",
         back_populates="user",

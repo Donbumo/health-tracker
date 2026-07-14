@@ -1,5 +1,21 @@
 # Handoff activo de Health Tracker
 
+## Actualización 2026-07-14 — Fase 7B
+
+- Rama: `feature/phase-7b-mobile-sync`.
+- Base: `1da7e13`, tag `alpha-0.6.1-web-ui-homelab`.
+- Baseline previa: `513 passed` local.
+- Migración aditiva: `20260714_0023_mobile_sync.py`.
+- Push soportado: `planned_workout`, `completed_workout`.
+- No implementado: APK, reloj, CRDT, push de wellness/labs/activity/route.
+- Resultado local: `522 passed, 1 skipped`; el skip es la prueba de concurrencia MariaDB, ejecutada solo en Docker.
+- Resultado Docker: `522 passed, 1 skipped`; el skip es `test_active_handoff.py` porque `docs/` no se copia a la imagen.
+- MariaDB: idempotency-key, client-operation y revision race verificados.
+- `flask db check`: limpio. `git diff --check`: limpio.
+- Pendiente de release: recorrido visual manual en navegador; el controlador local no permitió abrir `localhost` durante este bloque.
+
+Regla canónica: [`project-rules/mobile-sync.md`](project-rules/mobile-sync.md). Este handoff es temporal y no puede contradecir schemas, tests ni reglas canónicas.
+
 ## 2026-07-13 — Alpha 0.6.1 Web UI Homelab
 
 - Rama `feature/phase-web-ui-homelab`; base `e998979`, tag exacto `alpha-0.6-api-auth`.

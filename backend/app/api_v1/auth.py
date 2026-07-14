@@ -8,7 +8,7 @@ from itsdangerous import BadData, URLSafeSerializer
 
 from app.api_v1.errors import ApiError
 from app.extensions import db
-from app.models import ApiDevice, ApiRefreshToken, ApiSession, User
+from app.models import ApiDevice, ApiRefreshToken, ApiSession, DeviceSyncState, User
 
 
 def utcnow():
@@ -98,6 +98,15 @@ def create_login_session(user: User, device_data: dict) -> dict:
         expires_at=session_expiry,
     )
     db.session.add(api_session)
+    db.session.flush()
+    state = db.session.execute(
+        db.select(DeviceSyncState).where(
+            DeviceSyncState.user_id == user.id,
+            DeviceSyncState.device_id == device.id,
+        )
+    ).scalar_one_or_none()
+    if state is None:
+        db.session.add(DeviceSyncState(user_id=user.id, device_id=device.id))
     raw, _record = _new_refresh(api_session)
     db.session.commit()
     return token_response(api_session, raw)

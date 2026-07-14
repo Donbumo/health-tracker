@@ -7,9 +7,10 @@ from app.models import TrainingPlan, TrainingPlanVersion
 
 
 CAPABILITIES = {
-    "offline_sync_push": False,
-    "incremental_pull": False,
-    "planned_workouts": False,
+    "offline_sync_push": True,
+    "incremental_pull": True,
+    "planned_workouts": True,
+    "completed_workouts": True,
     "watch_bridge": False,
     "fit_output": False,
     "backup_zip": True,

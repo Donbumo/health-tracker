@@ -26,7 +26,12 @@ class Config:
         query={"charset": "utf8mb4"},
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
+    # create_app keeps READ COMMITTED for MariaDB and removes it for SQLite.
+    # That lets the loser of a unique-key idempotency race observe the winner.
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "isolation_level": "READ COMMITTED",
+    }
 
     DATA_ROOT = Path(os.getenv("DATA_ROOT", PROJECT_ROOT / "data"))
     UPLOAD_ROOT = DATA_ROOT / "uploads" / "raw"
@@ -62,6 +67,13 @@ class Config:
     API_RATE_LIMIT_WINDOW_SECONDS = int(
         os.getenv("API_RATE_LIMIT_WINDOW_SECONDS", "60")
     )
+    SYNC_PUSH_MAX_OPERATIONS = int(os.getenv("SYNC_PUSH_MAX_OPERATIONS", "100"))
+    SYNC_PULL_MAX_LIMIT = int(os.getenv("SYNC_PULL_MAX_LIMIT", "200"))
+    SYNC_BOOTSTRAP_PAST_DAYS = int(os.getenv("SYNC_BOOTSTRAP_PAST_DAYS", "14"))
+    SYNC_BOOTSTRAP_FUTURE_DAYS = int(os.getenv("SYNC_BOOTSTRAP_FUTURE_DAYS", "30"))
+    SYNC_IDEMPOTENCY_DAYS = int(os.getenv("SYNC_IDEMPOTENCY_DAYS", "30"))
+    SYNC_CHANGE_RETENTION_DAYS = int(os.getenv("SYNC_CHANGE_RETENTION_DAYS", "90"))
+    SYNC_TOMBSTONE_RETENTION_DAYS = int(os.getenv("SYNC_TOMBSTONE_RETENTION_DAYS", "90"))
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"

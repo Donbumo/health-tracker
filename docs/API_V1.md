@@ -1,5 +1,11 @@
 # API v1
 
+## Mobile sync 1.0
+
+Alpha 0.7 añade endpoints Bearer owner-only para planned workouts, completed workouts y `/sync/{bootstrap,pull,push,status}`. Las mutaciones requieren `Idempotency-Key`; los UUID son públicos y persistentes. El soporte de escritura se limita a `planned_workout` y `completed_workout`.
+
+Contrato detallado: [SYNC_PROTOCOL_1_0.md](SYNC_PROTOCOL_1_0.md).
+
 Base URL: `/api/v1`. Éxito usa `data` y `meta` (`api_version`, `request_id`); error usa `error.code`, mensaje seguro, `details` y el mismo `meta`.
 
 Endpoints: `GET /health`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `POST /auth/logout-all`, `GET /me`, `GET /devices`, `DELETE /devices/<uuid>`, `GET /companion/bootstrap` y `GET /routines/active`.

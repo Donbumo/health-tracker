@@ -1,10 +1,19 @@
 import click
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from flask import current_app
 from flask.cli import with_appcontext
 
 from app.extensions import db
-from app.models import ApiDevice, ApiRefreshToken, ApiSession, User
+from app.models import (
+    ApiDevice,
+    ApiRefreshToken,
+    ApiSession,
+    DeviceSyncState,
+    IdempotencyRecord,
+    PlannedWorkout,
+    SyncChange,
+    User,
+)
 from app.services.demo_seed import (
     DEMO_EMAIL,
     DEMO_PASSWORD,
@@ -167,8 +176,62 @@ def api_auth_cleanup_command(apply_changes: bool) -> None:
     click.echo(f"revoked_devices={len(revoked_devices)}")
 
 
+@click.group("mobile-sync")
+def mobile_sync_group() -> None:
+    """Inspect and clean retained mobile synchronization metadata."""
+
+
+@mobile_sync_group.command("cleanup")
+@click.option("--apply", "apply_changes", is_flag=True, help="Delete only safely expired metadata; default is dry-run.")
+@with_appcontext
+def mobile_sync_cleanup_command(apply_changes: bool) -> None:
+    """Clean expired idempotency rows without invalidating an active cursor."""
+    now = datetime.now(timezone.utc)
+    idempotency = db.session.execute(
+        db.select(IdempotencyRecord).where(IdempotencyRecord.expires_at < now)
+    ).scalars().all()
+    stale_cutoff = now - timedelta(
+        days=current_app.config["SYNC_CHANGE_RETENTION_DAYS"]
+    )
+    states = db.session.execute(db.select(DeviceSyncState)).scalars().all()
+    minimum_cursor = min((item.last_pull_sequence for item in states), default=None)
+    change_statement = db.select(SyncChange).where(SyncChange.changed_at < stale_cutoff)
+    if minimum_cursor is None:
+        changes = []
+    else:
+        changes = db.session.execute(
+            change_statement.where(SyncChange.sequence <= minimum_cursor)
+        ).scalars().all()
+    tombstone_cutoff = now - timedelta(
+        days=current_app.config["SYNC_TOMBSTONE_RETENTION_DAYS"]
+    )
+    tombstones = db.session.execute(
+        db.select(PlannedWorkout).where(
+            PlannedWorkout.deleted_at.is_not(None),
+            PlannedWorkout.deleted_at < tombstone_cutoff,
+        )
+    ).scalars().all()
+    stale_devices = db.session.execute(
+        db.select(DeviceSyncState).where(DeviceSyncState.updated_at < stale_cutoff)
+    ).scalars().all()
+    if apply_changes:
+        for item in idempotency:
+            db.session.delete(item)
+        for item in changes:
+            db.session.delete(item)
+        # Tombstones and device cursor rows are reported only. Removing either can
+        # make an offline client miss a deletion, so physical cleanup is deferred.
+        db.session.commit()
+    click.echo(f"mode={'apply' if apply_changes else 'dry-run'}")
+    click.echo(f"expired_idempotency_records={len(idempotency)}")
+    click.echo(f"safe_expired_changes={len(changes)}")
+    click.echo(f"expired_tombstones_report_only={len(tombstones)}")
+    click.echo(f"stale_device_cursors_report_only={len(stale_devices)}")
+
+
 def register_commands(app) -> None:
     app.cli.add_command(seed_admin_command)
     app.cli.add_command(seed_group)
     app.cli.add_command(backup_group)
     app.cli.add_command(api_auth_group)
+    app.cli.add_command(mobile_sync_group)

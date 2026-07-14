@@ -1,5 +1,9 @@
 # Contexto operativo para agentes de IA
 
+## Bloque activo: Fase 7B
+
+Para tareas de sync móvil, leer también [`project-rules/mobile-sync.md`](project-rules/mobile-sync.md), [`SYNC_PROTOCOL_1_0.md`](SYNC_PROTOCOL_1_0.md) y [`SYNC_CONFLICTS.md`](SYNC_CONFLICTS.md). No confundir esta base backend con una APK implementada. Los únicos targets de push 1.0 son `planned_workout` y `completed_workout`.
+
 ## API v1
 
 Para companion leer `project-rules/api-v1.md`. Fase 7A añade Bearer persistido independiente de web. Fase 7B sync no está implementada y no debe simularse.

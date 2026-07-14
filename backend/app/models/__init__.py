@@ -16,6 +16,12 @@ from app.models.uploaded_file import UploadedFile
 from app.models.user import User
 from app.models.weigh_in import WeighIn
 from app.models.api_auth import ApiDevice, ApiRefreshToken, ApiSession
+from app.models.mobile_sync import (
+    DeviceSyncState,
+    IdempotencyRecord,
+    PlannedWorkout,
+    SyncChange,
+)
 
 
 __all__ = [
@@ -45,4 +51,8 @@ __all__ = [
     "ApiDevice",
     "ApiRefreshToken",
     "ApiSession",
+    "DeviceSyncState",
+    "IdempotencyRecord",
+    "PlannedWorkout",
+    "SyncChange",
 ]

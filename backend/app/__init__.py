@@ -17,6 +17,14 @@ def create_app(test_config: dict | None = None) -> Flask:
     if test_config:
         app.config.update(test_config)
 
+    engine_options = dict(app.config.get("SQLALCHEMY_ENGINE_OPTIONS") or {})
+    database_uri = str(app.config.get("SQLALCHEMY_DATABASE_URI") or "")
+    if database_uri.startswith(("mysql", "mariadb")):
+        engine_options.setdefault("isolation_level", "READ COMMITTED")
+    else:
+        engine_options.pop("isolation_level", None)
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
+
     secret_key = app.config.get("SECRET_KEY") or ""
     if len(secret_key) < 32 or secret_key == "replace-with-a-long-random-secret":
         raise RuntimeError("SECRET_KEY must be a non-placeholder value of at least 32 characters")
@@ -70,6 +78,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     from app.exports import exports_bp
     from app.recipes import recipes_bp
     from app.api_v1 import api_v1_bp
+    from app.planned import planned_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(activities_bp)
@@ -84,6 +93,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(foods_bp)
     app.register_blueprint(exports_bp)
     app.register_blueprint(recipes_bp)
+    app.register_blueprint(planned_bp)
     csrf.exempt(api_v1_bp)
     app.register_blueprint(api_v1_bp)
     register_commands(app)
@@ -98,7 +108,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     @app.context_processor
     def inject_release_context():
         return {
-            "alpha_release_label": "Alpha 0.6.1",
+            "alpha_release_label": "Alpha 0.7",
         }
 
     @app.errorhandler(403)

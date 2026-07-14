@@ -416,9 +416,10 @@ def test_me_bootstrap_and_active_routine_are_isolated_deterministic_and_schema_v
     bootstrap = client.get("/api/v1/companion/bootstrap", headers=headers)
     assert bootstrap.status_code == 200
     capabilities = bootstrap.get_json()["data"]["capabilities"]
-    assert capabilities["offline_sync_push"] is False
-    assert capabilities["incremental_pull"] is False
-    assert capabilities["planned_workouts"] is False
+    assert capabilities["offline_sync_push"] is True
+    assert capabilities["incremental_pull"] is True
+    assert capabilities["planned_workouts"] is True
+    assert capabilities["completed_workouts"] is True
     assert capabilities["backup_zip"] is True
     first = client.get("/api/v1/routines/active", headers=headers)
     second = client.get("/api/v1/routines/active", headers=headers)

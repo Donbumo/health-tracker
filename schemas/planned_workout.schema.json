@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/planned_workout.schema.json",
+  "title": "Planned workout API entity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "training_plan_id", "training_plan_version_id", "scheduled_for_date", "timezone", "status", "title", "snapshot", "source_version", "revision", "created_at", "updated_at", "completed_at", "cancelled_at", "deleted"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "id": {"type": "string", "format": "uuid"},
+    "training_plan_id": {"type": "string", "format": "uuid"},
+    "training_plan_version_id": {"type": "string", "format": "uuid"},
+    "scheduled_for_date": {"type": "string", "format": "date"},
+    "timezone": {"type": "string", "minLength": 1, "maxLength": 64},
+    "status": {"enum": ["planned", "in_progress", "completed", "skipped", "cancelled"]},
+    "title": {"type": "string", "minLength": 1, "maxLength": 200},
+    "snapshot": {"type": "object"},
+    "source_version": {"type": "integer", "minimum": 1},
+    "revision": {"type": "integer", "minimum": 1},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"type": ["string", "null"], "format": "date-time"},
+    "cancelled_at": {"type": ["string", "null"], "format": "date-time"},
+    "deleted": {"type": "boolean"}
+  }
+}

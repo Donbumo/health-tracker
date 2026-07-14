@@ -1,5 +1,17 @@
 # Checklist de release alpha privada
 
+## Alpha 0.7 — Mobile Sync Foundation
+
+- [x] PlannedWorkout persistente con snapshot y versión histórica.
+- [x] Completed workout API sobre TrainingSession.
+- [x] Bootstrap, pull, push y status.
+- [x] Revisiones, conflictos, tombstones e idempotencia.
+- [x] UI web mínima y cleanup CLI.
+- [x] Suites SQLite y MariaDB verdes; concurrencia MariaDB probada.
+- [ ] Recorrido visual manual final en navegador.
+- [ ] APK companion (fuera de alcance).
+- [ ] Watch bridge (fuera de alcance).
+
 ## Alpha 0.6 — API Auth Foundation
 
 - [x] Suite local y Docker verde.

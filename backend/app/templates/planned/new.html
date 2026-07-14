@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Planificar entrenamiento · Health Tracker{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">Entrenamiento</p><h1>Planificar entrenamiento</h1><p>La versión seleccionada se conservará aunque después actives otra.</p></div></div>
+<form class="card form-card" method="post">
+  {{ form.hidden_tag() }}
+  <div class="form-grid">
+    <div class="field">{{ form.planned_day.label }}{{ form.planned_day() }}{% for error in form.planned_day.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+    <div class="field">{{ form.scheduled_for_date.label }}{{ form.scheduled_for_date() }}{% for error in form.scheduled_for_date.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+    <div class="field">{{ form.timezone.label }}{{ form.timezone() }}{% for error in form.timezone.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+  </div>
+  <div class="form-actions">{{ form.submit(class="button") }}<a class="button button-secondary" href="{{ url_for('planned.list_workouts') }}">Cancelar</a></div>
+</form>
+{% endblock %}

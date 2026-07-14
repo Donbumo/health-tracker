@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/sync_pull.schema.json",
+  "title": "Mobile sync pull response",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "changes", "next_cursor", "has_more", "server_time"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "changes": {"type": "array", "items": {
+      "type": "object", "additionalProperties": false,
+      "required": ["entity_type", "entity_id", "operation", "revision", "changed_at", "payload_hash", "payload"],
+      "properties": {
+        "entity_type": {"enum": ["planned_workout", "completed_workout"]},
+        "entity_id": {"type": "string", "format": "uuid"},
+        "operation": {"enum": ["upsert", "delete"]},
+        "revision": {"type": "integer", "minimum": 1},
+        "changed_at": {"type": "string", "format": "date-time"},
+        "payload_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "payload": {"type": ["object", "null"]}
+      }
+    }},
+    "next_cursor": {"type": "string", "minLength": 1},
+    "has_more": {"type": "boolean"},
+    "server_time": {"type": "string", "format": "date-time"}
+  }
+}

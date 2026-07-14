@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Entrenamientos planificados · Health Tracker{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><p class="eyebrow">Entrenamiento</p><h1>Entrenamientos planificados</h1><p>La rutina y versión quedan congeladas al planificar.</p></div>
+  <div class="page-actions"><a class="button" href="{{ url_for('planned.create') }}">Planificar entrenamiento</a></div>
+</div>
+{% if records %}
+  <div class="table-wrapper">
+    <table>
+      <thead><tr><th>Fecha</th><th>Entrenamiento</th><th>Versión</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody>
+      {% for item in records %}
+        <tr>
+          <td>{{ item.scheduled_for_date }}<br><small>{{ item.timezone }}</small></td>
+          <td>{{ item.title_snapshot }}</td>
+          <td>{{ item.training_plan.name }} · v{{ item.source_version }}</td>
+          <td><span class="status status-muted">{{ item.status }}</span></td>
+          <td>
+            {% if item.status in ['planned', 'in_progress', 'skipped'] %}
+              <form class="inline-form" method="post" action="{{ url_for('planned.reschedule', public_id=item.public_id) }}">
+                {{ reschedule_form.hidden_tag() }}
+                <input type="date" name="scheduled_for_date" value="{{ item.scheduled_for_date }}" aria-label="Nueva fecha">
+                <input type="text" name="timezone" value="{{ item.timezone }}" aria-label="Zona horaria">
+                <button class="button button-secondary" type="submit">Reprogramar</button>
+              </form>
+              <form class="inline-form" method="post" action="{{ url_for('planned.skip', public_id=item.public_id) }}">{{ action_form.hidden_tag() }}<button class="button button-secondary" type="submit">Omitir</button></form>
+              <form class="inline-form" method="post" action="{{ url_for('planned.cancel', public_id=item.public_id) }}">{{ action_form.hidden_tag() }}<button class="button button-danger" type="submit">Cancelar</button></form>
+            {% endif %}
+            {% if item.completed_session %}<a href="{{ url_for('sessions.detail', session_id=item.completed_session.id) }}">Ver sesión</a>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="empty-state"><h2>Sin entrenamientos planificados</h2><p>Elige un día de una versión concreta de tu rutina.</p><a class="button" href="{{ url_for('planned.create') }}">Planificar primero</a></div>
+{% endif %}
+{% endblock %}

@@ -1,5 +1,11 @@
 # Health Tracker
 
+## Alpha 0.7: planned workouts y sincronización offline
+
+El backend API v1 soporta snapshots de rutina activa, entrenamientos planificados y sesiones completadas, además de bootstrap/pull/push/status para un companion futuro. No existe APK ni app de reloj en esta entrega.
+
+Rutas principales: `/planned-workouts`, `/api/v1/planned-workouts`, `/api/v1/completed-workouts` y `/api/v1/sync/{bootstrap,pull,push,status}`. Las mutaciones requieren Bearer e `Idempotency-Key`. Consulta [docs/MOBILE_SYNC.md](docs/MOBILE_SYNC.md).
+
 ## Alpha 0.6: API Auth Foundation
 
 La API `/api/v1` prepara la futura companion sin reutilizar cookies web: access corto, refresh opaco hash-only con rotación/reuse detection, logout, dispositivos, `/me`, bootstrap y rutina activa con ETag.

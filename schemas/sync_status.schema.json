@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/sync_status.schema.json",
+  "title": "Mobile sync device status",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "device_id", "cursor", "last_pull_at_sequence", "last_push_at", "server_sequence", "server_time"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "device_id": {"type": "string", "format": "uuid"},
+    "cursor": {"type": "string", "minLength": 1},
+    "last_pull_at_sequence": {"type": "integer", "minimum": 0},
+    "last_push_at": {"type": ["string", "null"], "format": "date-time"},
+    "server_sequence": {"type": "integer", "minimum": 0},
+    "server_time": {"type": "string", "format": "date-time"}
+  }
+}

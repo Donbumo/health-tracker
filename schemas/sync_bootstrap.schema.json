@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/sync_bootstrap.schema.json",
+  "title": "Mobile sync bootstrap response",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "server_time", "cursor", "active_routine", "planned_workouts", "completed_workouts", "capabilities", "limits", "schemas", "device"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "server_time": {"type": "string", "format": "date-time"},
+    "cursor": {"type": "string", "minLength": 1},
+    "active_routine": {"type": ["object", "null"]},
+    "planned_workouts": {"type": "array", "items": {"type": "object"}},
+    "completed_workouts": {"type": "array", "items": {"type": "object"}},
+    "capabilities": {"type": "object"},
+    "limits": {"type": "object"},
+    "schemas": {"type": "object"},
+    "device": {"type": "object", "additionalProperties": false, "required": ["device_id", "session_id"], "properties": {"device_id": {"type": "string", "format": "uuid"}, "session_id": {"type": "string", "format": "uuid"}}}
+  }
+}

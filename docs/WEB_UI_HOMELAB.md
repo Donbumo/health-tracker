@@ -1,5 +1,9 @@
 # Web UI Homelab
 
+## Entrenamientos planificados
+
+La navegación autenticada incluye `Planificados`. La lista y creación son owner-only, responsive y usan POST + CSRF para reprogramar, omitir o cancelar. La UI no permite elegir otro `user_id`.
+
 Health Tracker Alpha 0.6.1 conserva Flask, Jinja y CSS propio. La interfaz está pensada para una instalación privada en LAN o VPN y prioriza los datos diarios, la trazabilidad y las acciones frecuentes.
 
 ## Estructura

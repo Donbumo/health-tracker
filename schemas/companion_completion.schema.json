@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/companion_completion.schema.json",
+  "title": "Companion workout completion 1.0",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "client_event_id", "package_hash", "base_revision", "result"],
+  "properties": {
+    "schema_version": {"const": "1.0"}, "client_event_id": {"type": "string", "format": "uuid"}, "package_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "base_revision": {"type": "integer", "minimum": 1}, "result": {"type": "object"}
+  }
+}

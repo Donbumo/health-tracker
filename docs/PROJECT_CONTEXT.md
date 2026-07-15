@@ -6,6 +6,16 @@ La Fase 7B añade `PlannedWorkout`, identidad pública/revisión para `TrainingS
 
 No hay APK ni app de reloj. La rutina activa continúa seleccionándose temporalmente por `most_recent_plan_active_version`.
 
+## Alpha 0.7 publicada / Fase 7C activa
+
+Alpha 0.7 está integrada en el merge `b0b6bb2`, tag `alpha-0.7-mobile-sync`, con migración head `20260714_0023`. Incluye planned workouts, completed workout upload, bootstrap/pull/push/status, conflictos por revisión, tombstones, cursor por dispositivo, idempotencia, cleanup CLI y UI homelab mínima. Suites local/Docker y concurrencia MariaDB pasaron; la cobertura Flask/HTML existe y el sign-off visual humano final quedó pendiente operativo.
+
+La rama `feature/phase-7c-companion-delivery` construye Alpha 0.8 sobre esa base: perfil negociado por dispositivo, package 1.0 inmutable, delivery persistente, ACK/start/abort/fail, checkpoints pequeños y completion que reutiliza `TrainingSession` y Mobile Sync. No implementa APK, reloj, Bluetooth, telemetría continua, FIT output ni vendors.
+
+Estado verificado de Alpha 0.8 en desarrollo: migraciones aditivas `20260714_0024` y `20260714_0025`, single head `0025`, ciclo aislado SQLite reversible y MariaDB `db check` limpio. Suite local `535 passed, 2 skipped, 1 warning`; Docker `536 passed, 1 skipped, 1 warning`. QA HTTP y tema oscuro en seis anchos pasaron; el sign-off visual de tema claro continúa pendiente.
+
+Limitaciones reales: rate limiter por proceso; tombstones/cursores obsoletos report-only; sin CRDT ni last-write-wins general; activity/route/body/wellness/labs sin sync write; `watch_bridge=false`, `bluetooth_bridge=false`, `continuous_telemetry=false` y `fit_output=false`; clave API independiente recomendada para homelab y obligatoria antes de exposición pública; incompatibilidad histórica SQLite de migración `0015` aún documentada.
+
 ## Alpha 0.6 / Fase 7A
 
 Base `/api/v1` con access firmado corto, refresh opaco hash-only rotatorio, reuse detection, dispositivos revocables, UUID públicos persistidos, JSON/request ID, rate limiting QA, CORS allowlist, `/me`, bootstrap y rutina activa read-only. Migraciones aditivas `20260713_0021` y `20260713_0022`. Sync offline, conflictos, tombstones, planned workouts, APK y reloj siguen planificados, no implementados.

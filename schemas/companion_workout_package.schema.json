@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/companion_workout_package.schema.json",
+  "title": "Companion workout package 1.0",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "package_id", "planned_workout_id", "plan_id", "plan_version_id", "title", "scheduled_for_date", "timezone", "revision", "generated_at", "expires_at", "exercises", "supported_metrics", "unsupported_fields", "package_hash", "server_capabilities", "device_capabilities", "compatibility_warnings"],
+  "properties": {
+    "schema_version": {"const": "1.0"}, "package_id": {"type": "string", "format": "uuid"}, "planned_workout_id": {"type": "string", "format": "uuid"}, "plan_id": {"type": "string", "format": "uuid"}, "plan_version_id": {"type": "string", "format": "uuid"},
+    "title": {"type": "string", "minLength": 1, "maxLength": 200}, "scheduled_for_date": {"type": "string", "format": "date"}, "timezone": {"type": "string", "minLength": 1, "maxLength": 64}, "revision": {"type": "integer", "minimum": 1}, "generated_at": {"type": "string", "format": "date-time"}, "expires_at": {"type": ["string", "null"], "format": "date-time"},
+    "exercises": {"type": "array", "maxItems": 100, "items": {"type": "object", "additionalProperties": false, "required": ["exercise_order", "name", "sets"], "properties": {"exercise_order": {"type": "integer", "minimum": 1}, "name": {"type": "string", "minLength": 1, "maxLength": 200}, "notes": {"type": "string", "maxLength": 2000}, "sets": {"type": "array", "minItems": 1, "maxItems": 100, "items": {"type": "object"}}}}},
+    "supported_metrics": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}, "unsupported_fields": {"type": "array", "items": {"type": "string"}}, "package_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "server_capabilities": {"type": "object"}, "device_capabilities": {"type": "object"}, "compatibility_warnings": {"type": "array", "items": {"type": "string"}}
+  }
+}

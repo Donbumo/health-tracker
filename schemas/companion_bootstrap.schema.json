@@ -4,7 +4,7 @@
   "title": "Companion bootstrap API v1 payload",
   "type": "object",
   "additionalProperties": false,
-  "required": ["api_version", "server_time", "user", "device", "capabilities", "active_routine"],
+  "required": ["api_version", "server_time", "user", "device", "capabilities", "active_routine", "companion"],
   "properties": {
     "api_version": {"const": "1"},
     "server_time": {"type": "string", "format": "date-time"},
@@ -48,6 +48,20 @@
           }
         }
       ]
+    },
+    "companion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "versions", "deliveries"],
+      "properties": {
+        "profile": {"type": ["object", "null"]},
+        "versions": {
+          "type": "object", "additionalProperties": false,
+          "required": ["protocol", "workout_package", "result"],
+          "properties": {"protocol": {"const": "1.0"}, "workout_package": {"const": "1.0"}, "result": {"const": "1.0"}}
+        },
+        "deliveries": {"type": "array", "items": {"type": "object"}}
+      }
     }
   }
 }

@@ -22,6 +22,11 @@ from app.models.mobile_sync import (
     PlannedWorkout,
     SyncChange,
 )
+from app.models.companion import (
+    CompanionDeviceProfile,
+    CompanionProgressEvent,
+    CompanionWorkoutDelivery,
+)
 
 
 __all__ = [
@@ -55,4 +60,7 @@ __all__ = [
     "IdempotencyRecord",
     "PlannedWorkout",
     "SyncChange",
+    "CompanionDeviceProfile",
+    "CompanionProgressEvent",
+    "CompanionWorkoutDelivery",
 ]

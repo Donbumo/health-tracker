@@ -1,10 +1,10 @@
 from datetime import date, timedelta
 
-from flask import abort, current_app, flash, redirect, render_template, url_for
+from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
-from app.models import PlannedWorkout, TrainingPlanVersion
+from app.models import ApiDevice, CompanionDeviceProfile, PlannedWorkout, TrainingPlanVersion
 from app.planned import planned_bp
 from app.planned.forms import (
     PlannedWorkoutActionForm,
@@ -12,6 +12,7 @@ from app.planned.forms import (
     PlannedWorkoutRescheduleForm,
 )
 from app.services.mobile_sync import MobileSyncError, PlannedWorkoutService
+from app.services.companion import prepare_delivery
 
 
 def _options(user_id: int):
@@ -53,11 +54,19 @@ def list_workouts():
     start = date.today() - timedelta(days=30)
     end = date.today() + timedelta(days=60)
     records = PlannedWorkoutService.list_range(current_user.id, start, end)
+    companion_devices = db.session.execute(
+        db.select(ApiDevice).join(CompanionDeviceProfile).where(
+            ApiDevice.user_id == current_user.id,
+            ApiDevice.revoked_at.is_(None),
+            CompanionDeviceProfile.revoked_at.is_(None),
+        ).order_by(ApiDevice.name)
+    ).scalars().all()
     return render_template(
         "planned/list.html",
         records=records,
         action_form=PlannedWorkoutActionForm(),
         reschedule_form=PlannedWorkoutRescheduleForm(),
+        companion_devices=companion_devices,
     )
 
 
@@ -154,3 +163,32 @@ def skip(public_id):
 @login_required
 def cancel(public_id):
     return _web_transition(public_id, "cancelled")
+
+
+@planned_bp.post("/<public_id>/prepare-delivery")
+@login_required
+def prepare_companion_delivery(public_id):
+    record = _owned(public_id)
+    device = db.session.execute(
+        db.select(ApiDevice).where(
+            ApiDevice.user_id == current_user.id,
+            ApiDevice.public_device_id == request.form.get("device_id", ""),
+            ApiDevice.revoked_at.is_(None),
+        )
+    ).scalar_one_or_none()
+    if device is None:
+        abort(404)
+    try:
+        _delivery, duplicate = prepare_delivery(
+            user_id=current_user.id,
+            device=device,
+            planned_public_id=record.public_id,
+            mark_delivered=False,
+        )
+        db.session.commit()
+    except MobileSyncError as error:
+        db.session.rollback()
+        flash(f"No fue posible preparar la entrega: {error}", "danger")
+    else:
+        flash("La entrega ya existía." if duplicate else "Entrega companion preparada.", "success")
+    return redirect(url_for("main.account_devices"))

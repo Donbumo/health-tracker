@@ -91,7 +91,7 @@ def test_alpha_teammate_full_web_flow_and_isolation(app, client):
     dashboard = client.get("/dashboard")
     assert dashboard.status_code == 200
     assert "Primeros pasos".encode() in dashboard.data
-    assert b"Alpha 0.7" in dashboard.data
+    assert b"Alpha 0.8" in dashboard.data
 
     weight = client.post(
         "/manual/weigh-in",

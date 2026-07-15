@@ -1,8 +1,20 @@
 # Health Tracker
 
+## Alpha 0.8: Companion Delivery Protocol
+
+El backend vendor-neutral permite negociar capacidades, generar un package versionado desde un entrenamiento planificado, persistir su entrega por dispositivo, confirmar recepción, enviar checkpoints pequeños y completar la sesión con idempotencia. Reutiliza `PlannedWorkout`, `TrainingSession`, Bearer API v1 y Mobile Sync; no incluye APK, reloj, Bluetooth, telemetría continua ni FIT output.
+
+Rutas principales: `/api/v1/companion/profile`, `/api/v1/companion/negotiate` y `/api/v1/companion/deliveries`. Las mutaciones requieren Bearer, dispositivo vigente, revisión e `Idempotency-Key`. Operación: `flask companion cleanup` (dry-run) o `flask companion cleanup --apply`.
+
+Consulta [docs/COMPANION_PROTOCOL_1_0.md](docs/COMPANION_PROTOCOL_1_0.md).
+
+Estado de la rama de desarrollo: head Alembic `20260714_0025`, suites local y MariaDB verdes, QA HTTP completo y revisión responsive en tema oscuro. El sign-off visual de tema claro permanece pendiente; Alpha 0.8 todavía no es un APK ni una app de reloj.
+
 ## Alpha 0.7: planned workouts y sincronización offline
 
 El backend API v1 soporta snapshots de rutina activa, entrenamientos planificados y sesiones completadas, además de bootstrap/pull/push/status para un companion futuro. No existe APK ni app de reloj en esta entrega.
+
+Alpha 0.7 está integrada en `b0b6bb2`, tag `alpha-0.7-mobile-sync`, migración head `20260714_0023`. Sus suites local/Docker y concurrencia MariaDB pasaron; la cobertura Flask/HTML de planned workouts existe, pero el sign-off visual humano final quedó pendiente operativo.
 
 Rutas principales: `/planned-workouts`, `/api/v1/planned-workouts`, `/api/v1/completed-workouts` y `/api/v1/sync/{bootstrap,pull,push,status}`. Las mutaciones requieren Bearer e `Idempotency-Key`. Consulta [docs/MOBILE_SYNC.md](docs/MOBILE_SYNC.md).
 

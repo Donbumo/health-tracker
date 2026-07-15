@@ -1,5 +1,19 @@
 # Checklist de release alpha privada
 
+## Alpha 0.8 — Companion Backend Foundation
+
+- [x] Perfil persistente y negociación allowlisted 1.0.
+- [x] Package inmutable con hash y campos descartados explícitos.
+- [x] Delivery persistente, ACK, start, abort, fail y estados terminales.
+- [x] Checkpoints pequeños, secuencia e idempotencia.
+- [x] Completion reutiliza `TrainingSession` y Mobile Sync atómicamente.
+- [x] Schemas, CLI y UI homelab mínima.
+- [x] Suite local y Docker finales verdes.
+- [x] Upgrade/downgrade/upgrade y single head `20260714_0025` verificados.
+- [x] QA manual HTTP y persistencia tras restart.
+- [ ] Sign-off visual humano completo de planned workouts/companion: oscuro verificado en seis anchos; claro pendiente por falta de emulación disponible.
+- [ ] APK/reloj/Bluetooth/telemetría continua (fuera de alcance).
+
 ## Alpha 0.7 — Mobile Sync Foundation
 
 - [x] PlannedWorkout persistente con snapshot y versión histórica.

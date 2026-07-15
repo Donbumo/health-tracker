@@ -16,6 +16,15 @@ CAPABILITIES = {
     "backup_zip": True,
     "raw_file_import": True,
     "advanced_exports": True,
+    "companion_delivery": True,
+    "capability_negotiation": True,
+    "progress_checkpoints": True,
+    "workout_package": True,
+    "bluetooth_bridge": False,
+    "continuous_telemetry": False,
+    "vendor_huawei": False,
+    "vendor_garmin": False,
+    "vendor_magene": False,
 }
 
 

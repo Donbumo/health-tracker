@@ -135,7 +135,11 @@ def account_devices():
     devices = db.session.execute(
         db.select(ApiDevice)
         .where(ApiDevice.user_id == current_user.id)
-        .options(selectinload(ApiDevice.sessions))
+        .options(
+            selectinload(ApiDevice.sessions),
+            selectinload(ApiDevice.companion_profile),
+            selectinload(ApiDevice.companion_deliveries),
+        )
         .order_by(ApiDevice.last_seen_at.desc(), ApiDevice.created_at.desc())
     ).scalars().all()
     return render_template("account/devices.html", devices=devices)

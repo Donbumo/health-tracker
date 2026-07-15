@@ -26,6 +26,16 @@
               </form>
               <form class="inline-form" method="post" action="{{ url_for('planned.skip', public_id=item.public_id) }}">{{ action_form.hidden_tag() }}<button class="button button-secondary" type="submit">Omitir</button></form>
               <form class="inline-form" method="post" action="{{ url_for('planned.cancel', public_id=item.public_id) }}">{{ action_form.hidden_tag() }}<button class="button button-danger" type="submit">Cancelar</button></form>
+              {% if companion_devices and item.status in ['planned', 'in_progress'] %}
+                <form class="inline-form" method="post" action="{{ url_for('planned.prepare_companion_delivery', public_id=item.public_id) }}">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <label for="device-{{ item.public_id }}">Companion</label>
+                  <select id="device-{{ item.public_id }}" name="device_id" required>
+                    {% for device in companion_devices %}<option value="{{ device.public_device_id }}">{{ device.name }}</option>{% endfor %}
+                  </select>
+                  <button class="button button-secondary" type="submit">Preparar para este dispositivo</button>
+                </form>
+              {% endif %}
             {% endif %}
             {% if item.completed_session %}<a href="{{ url_for('sessions.detail', session_id=item.completed_session.id) }}">Ver sesión</a>{% endif %}
           </td>

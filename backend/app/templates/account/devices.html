@@ -27,7 +27,24 @@
             <dt>Última actividad</dt><dd>{{ device.last_seen_at }}</dd>
             <dt>Sesiones activas</dt><dd>{{ device.sessions|selectattr('revoked_at', 'none')|list|length }}</dd>
             <dt>ID público</dt><dd><code>{{ device.public_device_id }}</code></dd>
+            <dt>Perfil companion</dt><dd>{{ 'Negociado' if device.companion_profile and not device.companion_profile.revoked_at else 'Sin negociar' }}</dd>
+            {% if device.companion_profile %}
+              <dt>Protocolo</dt><dd>{{ device.companion_profile.protocol_version }}</dd>
+              <dt>Workout/result</dt><dd>{{ device.companion_profile.workout_schema_version }} / {{ device.companion_profile.result_schema_version }}</dd>
+              <dt>Features</dt><dd>{{ device.companion_profile.supported_features_json|join(', ') or 'Ninguna' }}</dd>
+              <dt>Última negociación</dt><dd>{{ device.companion_profile.last_negotiated_at }}</dd>
+            {% endif %}
           </dl>
+          {% if device.companion_deliveries %}
+            <h3>Entregas recientes</h3>
+            <ul class="stack-list">
+              {% for delivery in device.companion_deliveries|sort(attribute='created_at', reverse=true) %}
+                <li><span class="status status-muted">{{ delivery.status }}</span> {{ delivery.planned_workout.title_snapshot }} · <code>{{ delivery.package_hash[:12] }}…</code></li>
+              {% endfor %}
+            </ul>
+          {% elif device.companion_profile %}
+            <p class="help">Sin entregas companion preparadas.</p>
+          {% endif %}
           {% if not device.revoked_at %}
             <details class="danger-zone">
               <summary>Revocar dispositivo</summary>

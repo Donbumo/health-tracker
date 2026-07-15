@@ -1,5 +1,22 @@
 # Handoff activo de Health Tracker
 
+## Actualización 2026-07-14 — Fase 7C / Alpha 0.8
+
+- Rama: `feature/phase-7c-companion-delivery`.
+- Base verificada: `b0b6bb2`, tag exacto `alpha-0.7-mobile-sync`; `master` y `origin/master` coincidían y el árbol inicial estaba limpio.
+- Alpha 0.7 integrada: planned workouts, completed upload, sync bootstrap/pull/push/status, revisiones, tombstones, cursor, idempotencia, cleanup y UI mínima; head previo `20260714_0023`.
+- Implementación activa: perfil/negociación companion 1.0, package/hash, delivery persistente, ACK/start/abort/fail, checkpoints, completion reutilizando `TrainingSession`, schemas, CLI y UI homelab.
+- Migraciones nuevas: `20260714_0024_companion_delivery.py` y `20260714_0025_companion_profile_cascade.py`; la segunda corrige en sitio la política FK sin borrar filas.
+- Validación final: específica `51 passed, 2 skipped`; local completa `535 passed, 2 skipped, 1 warning`; Docker/MariaDB `536 passed, 1 skipped, 1 warning`. El único skip Docker es `test_active_handoff.py` porque `docs/` no se copia a la imagen; el warning es el ZIP duplicado intencional de backup.
+- No implementado: APK, reloj, Bluetooth, telemetría continua, FIT output, vendors, CRDT ni sync write de wellness/labs/activity/route.
+- Migraciones: single head `20260714_0025`; MariaDB upgrade/check limpios. Ciclo SQLite temporal `0023 -> 0024 -> 0025 -> 0024 -> 0025` y `db check` limpio. El historial SQLite completo sigue bloqueado por la incompatibilidad preexistente de `0015`.
+- QA HTTP: negociación, delivery/package, ACK/start/checkpoint, replay, conflicto de secuencia, completion idempotente, persistencia tras restart y revocación pasaron sin imprimir tokens.
+- QA visual real: `/planned-workouts` y `/account/devices` revisados a 360/390/430/768/1024/1366 px en tema oscuro, sin overflow global, con perfil/versiones/features/deliveries, acción owner-only y CSRF. El navegador disponible no permitió emular tema claro; esa comprobación visual sigue pendiente y no debe marcarse como realizada.
+- Riesgos: rate limiter por proceso; retención de perfiles/terminales report-only; incompatibilidad histórica SQLite de `0015`; tema claro pendiente de sign-off visual real.
+- Siguiente acción: revisión final del diff y sign-off visual de tema claro antes de decidir release/integración de Alpha 0.8.
+
+Reglas: [`project-rules/companion-protocol.md`](project-rules/companion-protocol.md), [`project-rules/api-v1.md`](project-rules/api-v1.md) y [`project-rules/mobile-sync.md`](project-rules/mobile-sync.md). Este handoff no reemplaza schemas ni tests.
+
 ## Actualización 2026-07-14 — Fase 7B
 
 - Rama: `feature/phase-7b-mobile-sync`.

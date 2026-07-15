@@ -12,6 +12,9 @@ from app.models import (
     IdempotencyRecord,
     PlannedWorkout,
     SyncChange,
+    CompanionDeviceProfile,
+    CompanionProgressEvent,
+    CompanionWorkoutDelivery,
     User,
 )
 from app.services.demo_seed import (
@@ -21,6 +24,7 @@ from app.services.demo_seed import (
     seed_demo_data,
 )
 from app.services.backup_reconcile import BackupReconciliationService
+from app.services.mobile_sync import canonical_hash
 
 
 @click.command("seed-admin")
@@ -229,9 +233,74 @@ def mobile_sync_cleanup_command(apply_changes: bool) -> None:
     click.echo(f"stale_device_cursors_report_only={len(stale_devices)}")
 
 
+@click.group("companion")
+def companion_group() -> None:
+    """Inspect retained companion delivery metadata safely."""
+
+
+@companion_group.command("cleanup")
+@click.option("--apply", "apply_changes", is_flag=True, help="Expire deliveries and remove old checkpoints; default is dry-run.")
+@with_appcontext
+def companion_cleanup_command(apply_changes: bool) -> None:
+    """Report companion drift without deleting workouts or sessions."""
+    now = datetime.now(timezone.utc)
+    progress_cutoff = now - timedelta(days=current_app.config["COMPANION_PROGRESS_RETENTION_DAYS"])
+    terminal_cutoff = now - timedelta(days=current_app.config["COMPANION_TERMINAL_RETENTION_DAYS"])
+    terminal = {"completed", "aborted", "failed", "expired", "cancelled"}
+    expired = db.session.execute(
+        db.select(CompanionWorkoutDelivery).where(
+            CompanionWorkoutDelivery.expires_at.is_not(None),
+            CompanionWorkoutDelivery.expires_at < now,
+            CompanionWorkoutDelivery.status.not_in(terminal),
+        )
+    ).scalars().all()
+    old_terminal = db.session.execute(
+        db.select(CompanionWorkoutDelivery).where(
+            CompanionWorkoutDelivery.status.in_(terminal),
+            CompanionWorkoutDelivery.updated_at < terminal_cutoff,
+        )
+    ).scalars().all()
+    old_progress = db.session.execute(
+        db.select(CompanionProgressEvent).where(CompanionProgressEvent.created_at < progress_cutoff)
+    ).scalars().all()
+    old_profiles = db.session.execute(
+        db.select(CompanionDeviceProfile).where(
+            CompanionDeviceProfile.revoked_at.is_not(None),
+            CompanionDeviceProfile.revoked_at < terminal_cutoff,
+        )
+    ).scalars().all()
+    deliveries = db.session.execute(db.select(CompanionWorkoutDelivery)).scalars().all()
+    orphaned = [item for item in deliveries if item.planned_workout is None or item.profile is None or item.api_device is None]
+    mismatched = [item for item in deliveries if item.profile.api_device_id != item.api_device_id or item.profile.user_id != item.user_id]
+    bad_hash = []
+    for item in deliveries:
+        package = dict(item.payload_snapshot_json or {})
+        stored = package.pop("package_hash", None)
+        if stored != item.package_hash or canonical_hash(package) != item.package_hash:
+            bad_hash.append(item)
+    if apply_changes:
+        for item in expired:
+            item.status = "expired"
+            item.updated_at = now
+            item.revision += 1
+        for item in old_progress:
+            if item.delivery.status in terminal:
+                db.session.delete(item)
+        db.session.commit()
+    click.echo(f"mode={'apply' if apply_changes else 'dry-run'}")
+    click.echo(f"expired_nonterminal={len(expired)}")
+    click.echo(f"old_terminal_report_only={len(old_terminal)}")
+    click.echo(f"old_progress={len(old_progress)}")
+    click.echo(f"old_revoked_profiles_report_only={len(old_profiles)}")
+    click.echo(f"orphaned_deliveries={len(orphaned)}")
+    click.echo(f"package_hash_mismatch={len(bad_hash)}")
+    click.echo(f"profile_device_mismatch={len(mismatched)}")
+
+
 def register_commands(app) -> None:
     app.cli.add_command(seed_admin_command)
     app.cli.add_command(seed_group)
     app.cli.add_command(backup_group)
     app.cli.add_command(api_auth_group)
     app.cli.add_command(mobile_sync_group)
+    app.cli.add_command(companion_group)

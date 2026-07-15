@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/companion_device_profile.schema.json",
+  "title": "Companion device profile 1.0",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "id", "device_id", "protocol_version", "workout_schema_version", "result_schema_version", "supported_features", "supported_metrics", "limits", "supports_offline", "supports_rest_timer", "supports_haptics", "supports_rpe", "supports_rir", "supports_weight", "supports_heart_rate_summary", "supports_calories_summary", "revision", "last_negotiated_at", "revoked"],
+  "properties": {
+    "schema_version": {"const": "1.0"}, "id": {"type": "string", "format": "uuid"}, "device_id": {"type": "string", "format": "uuid"},
+    "protocol_version": {"const": "1.0"}, "workout_schema_version": {"const": "1.0"}, "result_schema_version": {"const": "1.0"},
+    "supported_features": {"type": "array", "uniqueItems": true, "maxItems": 32, "items": {"type": "string", "maxLength": 64}},
+    "supported_metrics": {"type": "array", "uniqueItems": true, "maxItems": 32, "items": {"type": "string", "maxLength": 64}},
+    "limits": {"type": "object", "additionalProperties": false, "required": ["max_payload_bytes", "max_progress_events_per_workout"], "properties": {"max_payload_bytes": {"type": "integer", "minimum": 1024, "maximum": 1048576}, "max_progress_events_per_workout": {"type": "integer", "minimum": 1, "maximum": 10000}}},
+    "supports_offline": {"type": "boolean"}, "supports_rest_timer": {"type": "boolean"}, "supports_haptics": {"type": "boolean"}, "supports_rpe": {"type": "boolean"}, "supports_rir": {"type": "boolean"}, "supports_weight": {"type": "boolean"}, "supports_heart_rate_summary": {"type": "boolean"}, "supports_calories_summary": {"type": "boolean"},
+    "revision": {"type": "integer", "minimum": 1}, "last_negotiated_at": {"type": "string", "format": "date-time"}, "revoked": {"type": "boolean"}
+  }
+}

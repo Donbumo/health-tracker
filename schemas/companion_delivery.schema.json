@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/companion_delivery.schema.json",
+  "title": "Companion delivery 1.0",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "id", "device_id", "profile_id", "planned_workout_id", "package_schema_version", "package_hash", "status", "revision", "last_client_sequence", "created_at", "updated_at", "delivered_at", "acknowledged_at", "started_at", "completed_at", "aborted_at", "failed_at", "expires_at", "failure_code", "training_session_id"],
+  "properties": {
+    "schema_version": {"const": "1.0"}, "id": {"type": "string", "format": "uuid"}, "device_id": {"type": "string", "format": "uuid"}, "profile_id": {"type": "string", "format": "uuid"}, "planned_workout_id": {"type": "string", "format": "uuid"}, "package_schema_version": {"const": "1.0"}, "package_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "status": {"enum": ["prepared", "delivered", "acknowledged", "started", "completed", "aborted", "failed", "expired", "cancelled"]}, "revision": {"type": "integer", "minimum": 1}, "last_client_sequence": {"type": "integer", "minimum": 0},
+    "created_at": {"type": "string", "format": "date-time"}, "updated_at": {"type": "string", "format": "date-time"}, "delivered_at": {"$ref": "#/$defs/nullableDate"}, "acknowledged_at": {"$ref": "#/$defs/nullableDate"}, "started_at": {"$ref": "#/$defs/nullableDate"}, "completed_at": {"$ref": "#/$defs/nullableDate"}, "aborted_at": {"$ref": "#/$defs/nullableDate"}, "failed_at": {"$ref": "#/$defs/nullableDate"}, "expires_at": {"$ref": "#/$defs/nullableDate"}, "failure_code": {"type": ["string", "null"], "maxLength": 64}, "training_session_id": {"type": ["string", "null"], "format": "uuid"}, "package": {"type": "object"}
+  },
+  "$defs": {"nullableDate": {"type": ["string", "null"], "format": "date-time"}}
+}

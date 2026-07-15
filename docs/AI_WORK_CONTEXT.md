@@ -1,12 +1,20 @@
 # Contexto operativo para agentes de IA
 
-## Bloque activo: Fase 7B
+## Bloque activo: Fase 7C
 
-Para tareas de sync móvil, leer también [`project-rules/mobile-sync.md`](project-rules/mobile-sync.md), [`SYNC_PROTOCOL_1_0.md`](SYNC_PROTOCOL_1_0.md) y [`SYNC_CONFLICTS.md`](SYNC_CONFLICTS.md). No confundir esta base backend con una APK implementada. Los únicos targets de push 1.0 son `planned_workout` y `completed_workout`.
+La rama `feature/phase-7c-companion-delivery` parte de `b0b6bb2`, tag exacto `alpha-0.7-mobile-sync`. Implementa Alpha 0.8: perfil/negociación companion, package 1.0, delivery persistente, checkpoints y completion sobre `TrainingSession`/Mobile Sync. Leer [`project-rules/companion-protocol.md`](project-rules/companion-protocol.md) y [`COMPANION_PROTOCOL_1_0.md`](COMPANION_PROTOCOL_1_0.md).
+
+Estado verificado de la rama: Alembic single head `20260714_0025`; local `535 passed, 2 skipped, 1 warning`; Docker/MariaDB `536 passed, 1 skipped, 1 warning`; `db check`, QA HTTP y dry-runs operativos limpios. El sign-off visual oscuro pasó a 360/390/430/768/1024/1366 px; el tema claro sigue pendiente de una comprobación visual real.
+
+Alpha 0.7 está integrada y publicada en `b0b6bb2`, tag `alpha-0.7-mobile-sync`, migración head `20260714_0023`. Suites local/Docker y concurrencia MariaDB pasaron. Planned workouts cuenta con cobertura Flask/HTML; el sign-off visual humano final quedó pendiente operativo.
+
+Limitaciones vigentes: rate limiter por proceso; tombstones y cursores obsoletos report-only; sin CRDT ni last-write-wins general; sin sync write para activity/route/body/wellness/labs; sin APK/reloj/Bluetooth/telemetría continua/FIT output/vendors. `API_TOKEN_SIGNING_KEY` independiente es recomendada en homelab y obligatoria antes de exposición pública. Persiste la incompatibilidad histórica SQLite de migración `0015`.
+
+Para tareas de sync móvil, leer también [`project-rules/mobile-sync.md`](project-rules/mobile-sync.md), [`SYNC_PROTOCOL_1_0.md`](SYNC_PROTOCOL_1_0.md) y [`SYNC_CONFLICTS.md`](SYNC_CONFLICTS.md). No confundir esta base backend con una APK implementada. Los únicos targets de push de dominio 1.0 son `planned_workout` y `completed_workout`; perfil/delivery companion son metadata del protocolo.
 
 ## API v1
 
-Para companion leer `project-rules/api-v1.md`. Fase 7A añade Bearer persistido independiente de web. Fase 7B sync no está implementada y no debe simularse.
+Para companion leer `project-rules/api-v1.md` y `project-rules/companion-protocol.md`. Fase 7A añade Bearer persistido independiente de web y Fase 7B aporta Mobile Sync 1.0.
 
 Este documento es el punto de entrada para Codex y otros agentes que retomen el proyecto sin depender de conversaciones anteriores.
 
@@ -36,6 +44,8 @@ Antes de modificar el repositorio, leer en este orden:
 12. `docs/project-rules/web-ui.md` si la tarea toca Jinja, CSS, navegación, dashboard o flujos web.
 13. `docs/ACTIVE_HANDOFF.md`, solo como handoff temporal del bloque activo.
 14. README, código, tests y `git status`.
+
+Para Fase 7C insertar `docs/project-rules/companion-protocol.md` después de las reglas API/mobile sync.
 
 ## Precedencia
 

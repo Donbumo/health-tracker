@@ -14,6 +14,7 @@ from app.api_v1.schemas import json_body, validate_login
 from app.api_v1.services import CAPABILITIES, active_routine, rfc3339
 from app.extensions import db
 from app.models import ApiDevice, User
+from app.services.companion import active_deliveries, get_profile, serialize_delivery, serialize_profile
 
 
 def _client_key(value: str = "") -> str:
@@ -171,6 +172,8 @@ def revoke_device(device_id):
 @bearer_required
 def bootstrap():
     routine = active_routine(g.api_user.id)
+    profile = get_profile(g.api_user.id, g.api_session.device_id, required=False)
+    deliveries = active_deliveries(g.api_user.id, g.api_session.device_id, limit=10)
     return success({
         "api_version": "1",
         "server_time": rfc3339(datetime.now(timezone.utc)),
@@ -178,6 +181,11 @@ def bootstrap():
         "device": {"device_id": g.api_session.device.public_device_id, "session_id": g.api_session.public_session_id},
         "capabilities": CAPABILITIES,
         "active_routine": None if routine is None else {key: routine[key] for key in ("plan_id", "version_id", "version", "name", "etag", "selection_policy")},
+        "companion": {
+            "profile": serialize_profile(profile) if profile else None,
+            "versions": {"protocol": "1.0", "workout_package": "1.0", "result": "1.0"},
+            "deliveries": [serialize_delivery(item) for item in deliveries if item.status not in {"completed", "aborted", "failed", "expired", "cancelled"}],
+        },
     })
 
 

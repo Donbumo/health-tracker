@@ -26,6 +26,7 @@ from app.services.mobile_sync import (
     utcnow,
 )
 from app.services.validation import JsonSchemaValidationError, validate_json_document
+from app.services.companion import active_deliveries, get_profile, serialize_delivery, serialize_profile
 
 
 def _audit(event: str, *, entity_type: str | None = None) -> None:
@@ -277,6 +278,8 @@ def sync_bootstrap():
     sequence = current_sequence(g.api_user.id)
     state = sync_state(g.api_user.id, g.api_session.device_id)
     state.last_pull_sequence = sequence
+    companion_profile = get_profile(g.api_user.id, g.api_session.device_id, required=False)
+    companion_deliveries = active_deliveries(g.api_user.id, g.api_session.device_id, limit=10)
     db.session.commit()
     data = {
         "schema_version": "1.0",
@@ -300,6 +303,11 @@ def sync_bootstrap():
             "device_id": g.api_session.device.public_device_id,
             "session_id": g.api_session.public_session_id,
         },
+        "companion": {
+            "profile": serialize_profile(companion_profile) if companion_profile else None,
+            "deliveries": [serialize_delivery(item) for item in companion_deliveries if item.status not in {"completed", "aborted", "failed", "expired", "cancelled"}],
+            "versions": {"protocol": "1.0", "workout_package": "1.0", "result": "1.0"},
+        },
     }
     return success(data)
 
@@ -315,7 +323,7 @@ def sync_pull():
     requested_types = {
         item.strip() for item in request.args.get("entity_types", "").split(",") if item.strip()
     }
-    if requested_types - {"planned_workout", "completed_workout"}:
+    if requested_types - {"planned_workout", "completed_workout", "companion_profile", "companion_delivery"}:
         raise MobileSyncError("unsupported_entity", "El filtro contiene una entidad no soportada.")
     statement = db.select(SyncChange).where(
         SyncChange.user_id == g.api_user.id, SyncChange.sequence > after

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/companion_progress_event.schema.json",
+  "title": "Companion progress checkpoint 1.0",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "client_event_id", "client_sequence", "event_type", "occurred_at", "payload"],
+  "properties": {
+    "schema_version": {"const": "1.0"}, "client_event_id": {"type": "string", "format": "uuid"}, "client_sequence": {"type": "integer", "minimum": 1}, "event_type": {"enum": ["heartbeat", "exercise_started", "set_completed", "exercise_completed", "paused", "resumed", "checkpoint"]}, "occurred_at": {"type": "string", "format": "date-time"},
+    "payload": {"type": "object", "additionalProperties": false, "maxProperties": 10, "properties": {"exercise_order": {"type": "integer", "minimum": 1}, "set_number": {"type": "integer", "minimum": 1}, "completed_reps": {"type": "integer", "minimum": 0}, "weight_kg": {"type": "number", "minimum": 0}, "rir": {"type": "number", "minimum": 0, "maximum": 10}, "rpe": {"type": "number", "minimum": 1, "maximum": 10}, "elapsed_seconds": {"type": "integer", "minimum": 0}, "rest_seconds": {"type": "integer", "minimum": 0}, "message_code": {"type": "string", "maxLength": 64}}}
+  }
+}

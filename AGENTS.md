@@ -5,6 +5,7 @@
 Antes de modificar el proyecto, lee primero:
 
 - `docs/project-rules/api-v1.md` cuando la tarea toque `/api/v1`, Bearer, dispositivos o sincronización companion
+- `docs/project-rules/companion-protocol.md` cuando la tarea toque perfiles, negociación, packages, deliveries o checkpoints companion
 - `docs/AI_WORK_CONTEXT.md`
 - `docs/PROJECT_CONTEXT.md`
 - `docs/project-rules/canonical-data-contract-import-update.md`

@@ -31,6 +31,13 @@ class ApiDevice(db.Model):
 
     user = db.relationship("User", back_populates="api_devices")
     sessions = db.relationship("ApiSession", back_populates="device", cascade="all, delete-orphan", passive_deletes=True)
+    companion_profile = db.relationship(
+        "CompanionDeviceProfile", back_populates="api_device", uselist=False,
+        cascade="all, delete-orphan", passive_deletes=True,
+    )
+    companion_deliveries = db.relationship(
+        "CompanionWorkoutDelivery", back_populates="api_device", passive_deletes=True
+    )
 
 
 class ApiSession(db.Model):

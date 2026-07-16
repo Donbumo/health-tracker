@@ -49,6 +49,7 @@ def test_account_export_contains_all_demo_sections_without_sensitive_fields(app,
             "activities",
             "routes",
             "export_records",
+            "exercise_load_profiles",
         }
     assert len(document["data"]["weigh_ins"]) == 2
     assert len(document["data"]["daily_nutrition"]) == 2
@@ -114,6 +115,7 @@ def test_account_export_is_strictly_isolated_by_user(app, client, user):
         "id": user,
         "email": "owner@example.test",
         "role": "user",
+        "preferred_load_unit": "kg",
     }
     assert "owner-only-source" in serialized
     assert "private-user-source" not in serialized

@@ -397,6 +397,13 @@ class StandardImportExecutor:
         try:
             validate_json_document(document, schema_name)
             self._validate_document_owner(document, user_id=user_id, schema_name=schema_name)
+            if schema_name == "completed_workout":
+                from app.services.workout_loads import validate_completed_workout_loads
+
+                try:
+                    validate_completed_workout_loads(document)
+                except ValueError as error:
+                    raise StandardImportError(str(error)) from error
         except (JsonSchemaValidationError, StandardImportError) as error:
             errors = getattr(error, "errors", None) or [str(error)]
             return PlannedOperation(
@@ -995,6 +1002,8 @@ class StandardImportExecutor:
             db.session.add(exercise)
             db.session.flush()
             for set_data in exercise_data["sets"]:
+                from app.services.workout_loads import validate_load_details
+
                 db.session.add(
                     TrainingSet(
                         user_id=user_id,
@@ -1005,6 +1014,9 @@ class StandardImportExecutor:
                             set_data["set_number"],
                         ),
                         weight_kg=_decimal(set_data["weight_kg"]),
+                        load_details_json=validate_load_details(
+                            set_data["weight_kg"], set_data.get("load_details")
+                        ),
                         reps=set_data["reps"],
                         rir=_decimal(set_data.get("rir")),
                         rpe=_decimal(set_data.get("rpe")),

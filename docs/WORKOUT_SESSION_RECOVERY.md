@@ -23,5 +23,5 @@ El mensaje de recuperación es: “El token de seguridad venció. Recuperamos to
 
 Abrir una sesión planificada, completar métricas y series, confirmar que aparece “Borrador guardado”, recargar y verificar recuperación. Simular un CSRF vencido, confirmar el mensaje y el token nuevo, reenviar y comprobar que existe una sola sesión. Repetir con error de red y verificar que el borrador permanece.
 
-La captura avanzada de cargas no forma parte de este hotfix. Es el bloque P1 futuro `feature/workout-load-entry`.
+La captura avanzada de cargas no forma parte del hotfix Alpha 0.8.1; se implementa de forma aditiva en el bloque posterior `feature/workout-load-entry`.
 

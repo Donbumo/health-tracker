@@ -56,6 +56,8 @@ LOCAL_ALIASES = {
     "peso": "weight_kg",
     "weight": "weight_kg",
     "weight_kg": "weight_kg",
+    "detalle_carga": "load_details",
+    "load_details": "load_details",
     "reps": "reps",
     "rir": "rir",
     "rpe": "rpe",
@@ -175,6 +177,8 @@ def generate(
                                 set_data["planned_set_number"] = _int_or_none(value)
                             elif canonical == "weight_kg":
                                 set_data["weight_kg"] = _float_or_none(value)
+                            elif canonical == "load_details" and isinstance(value, dict):
+                                set_data["load_details"] = value
                             elif canonical == "reps":
                                 set_data["reps"] = _int_or_none(value)
                             elif canonical == "rir":

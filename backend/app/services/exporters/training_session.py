@@ -58,6 +58,8 @@ def build_completed_workout_document(
                 set_data["rest_seconds"] = training_set.rest_seconds
             if training_set.notes:
                 set_data["notes"] = training_set.notes
+            if training_set.load_details_json:
+                set_data["load_details"] = training_set.load_details_json
             exercise_data["sets"].append(set_data)
         exercises.append(exercise_data)
 
@@ -127,6 +129,9 @@ class TrainingSessionCsvExporter(BaseExporter):
         "set_number",
         "planned_set_number",
         "weight_kg",
+        "load_mode",
+        "load_unit",
+        "load_components",
         "reps",
         "rir",
         "rpe",
@@ -168,6 +173,9 @@ class TrainingSessionCsvExporter(BaseExporter):
                         "set_number": training_set.set_number,
                         "planned_set_number": training_set.planned_set_number,
                         "weight_kg": training_set.weight_kg,
+                        "load_mode": (training_set.load_details_json or {}).get("load_mode", ""),
+                        "load_unit": (training_set.load_details_json or {}).get("original_unit", ""),
+                        "load_components": str((training_set.load_details_json or {}).get("components", "")),
                         "reps": training_set.reps,
                         "rir": training_set.rir if training_set.rir is not None else "",
                         "rpe": training_set.rpe if training_set.rpe is not None else "",
@@ -200,11 +208,18 @@ class TrainingSessionHtmlExporter(BaseExporter):
         rows = []
         for exercise in resource.exercises:
             for training_set in exercise.sets:
+                load = training_set.load_details_json or {}
+                load_display = (
+                    f"{escape(str(load.get('normalized_total_kg')))} kg / {escape(str(load.get('calculated_total_lb')))} lb"
+                    if load
+                    else f"{training_set.weight_kg} kg"
+                )
                 rows.append(
                     "<tr>"
                     f"<td>{escape(exercise.name)}</td>"
                     f"<td>{training_set.set_number}</td>"
-                    f"<td>{training_set.weight_kg}</td>"
+                    f"<td>{load_display}</td>"
+                    f"<td>{escape(str(load.get('load_mode') or 'direct_total'))}</td>"
                     f"<td>{training_set.reps}</td>"
                     f"<td>{training_set.rir if training_set.rir is not None else '—'}</td>"
                     f"<td>{training_set.rpe if training_set.rpe is not None else '—'}</td>"
@@ -226,7 +241,7 @@ class TrainingSessionHtmlExporter(BaseExporter):
 <h1>{escape(resource.training_plan.name)}</h1>
 <p>Sesión: {escape(document['data']['performed_at'])} · versión {resource.training_plan_version.version_number}</p>
 {summary_html}
-<table><thead><tr><th>Ejercicio</th><th>Serie</th><th>Peso kg</th><th>Reps</th><th>RIR</th><th>RPE</th><th>Descanso s</th></tr></thead>
+<table><thead><tr><th>Ejercicio</th><th>Serie</th><th>Carga</th><th>Modo</th><th>Reps</th><th>RIR</th><th>RPE</th><th>Descanso s</th></tr></thead>
 <tbody>{''.join(rows)}</tbody></table></body></html>"""
         return ExportArtifact(
             content=html.encode("utf-8"),

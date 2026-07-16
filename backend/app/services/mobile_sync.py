@@ -183,6 +183,11 @@ def serialize_completed_workout(record: TrainingSession) -> dict:
                         "set_number": item.set_number,
                         "planned_set_number": item.planned_set_number,
                         "weight_kg": float(item.weight_kg),
+                        **(
+                            {"load_details": item.load_details_json}
+                            if item.load_details_json
+                            else {}
+                        ),
                         "reps": item.reps,
                         "rir": float(item.rir) if item.rir is not None else None,
                         "rpe": float(item.rpe) if item.rpe is not None else None,
@@ -426,7 +431,10 @@ def create_completed_workout(
 ) -> tuple[TrainingSession, bool]:
     try:
         validate_json_document(payload, "completed_workout_api")
-    except JsonSchemaValidationError as error:
+        from app.services.workout_loads import validate_completed_workout_loads
+
+        validate_completed_workout_loads(payload)
+    except (JsonSchemaValidationError, ValueError) as error:
         raise MobileSyncError("invalid_workout", str(error)) from error
     request_hash = canonical_hash(payload)
     existing = db.session.execute(
@@ -525,6 +533,8 @@ def create_completed_workout(
         db.session.add(exercise)
         db.session.flush()
         for set_data in exercise_data["sets"]:
+            from app.services.workout_loads import validate_load_details
+
             db.session.add(
                 TrainingSet(
                     user_id=user_id,
@@ -532,6 +542,9 @@ def create_completed_workout(
                     set_number=set_data["set_number"],
                     planned_set_number=set_data["planned_set_number"],
                     weight_kg=Decimal(str(set_data["weight_kg"])),
+                    load_details_json=validate_load_details(
+                        set_data["weight_kg"], set_data.get("load_details")
+                    ),
                     reps=set_data["reps"],
                     rir=Decimal(str(set_data["rir"])) if set_data.get("rir") is not None else None,
                     rpe=Decimal(str(set_data["rpe"])) if set_data.get("rpe") is not None else None,

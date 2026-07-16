@@ -1,10 +1,18 @@
 # Contexto del proyecto: Plataforma self-hosted de salud, nutrición, entrenamiento y dispositivos
 
+## Alpha 0.9 en desarrollo: captura avanzada de carga
+
+`feature/workout-load-entry` parte de `3d23ed1`, tag `alpha-0.8.1-workout-session-recovery`. Implementa modos explícitos de carga, conversión Decimal kg/lb, perfiles owner-only por identidad de ejercicio y detalle opcional versionado en cada set. La migración aditiva/reversible es `20260716_0027_workout_load_entry.py`.
+
+Compatibilidad: `TrainingSet.weight_kg` sigue siendo el total normalizado usado por progreso y clientes anteriores; sesiones sin detalle no se reescriben. JSON, export/restore de cuenta y Mobile Sync conservan `load_details`. Los paquetes companion planeados todavía no transportan carga avanzada y lo declaran como capability `false`. No hay APK, reloj, Bluetooth ni telemetría continua.
+
+Validación final: local `566 passed, 3 skipped, 1 warning`; Docker/MariaDB aislado `568 passed, 1 skipped, 1 warning`; single head `20260716_0027`; ciclos reversibles SQLite y MariaDB, `db check`, QA HTTP y responsive oscuro en seis anchos limpios. El stack activo no se modificó y el stack QA fue eliminado. El sign-off visual real de tema claro continúa pendiente por falta de emulación en el navegador disponible.
+
 ## Alpha 0.8.1 en desarrollo: Workout Session Recovery
 
 La rama `hotfix/alpha-0.8.1-workout-session-recovery` parte exactamente de `7ee865f`, tag `alpha-0.8-companion-backend`. Añade recuperación global y segura de CSRF web, borrador local y persistente owner-only, `TrainingSession.client_submission_id`, commit atómico con planned workout/Mobile Sync y cleanup dry-run/apply. La migración aditiva es `20260715_0026_workout_session_recovery.py`.
 
-`client_submission_id` pertenece al formulario web y no modifica `client_event_id` de Mobile Sync. La captura avanzada de cargas P1 (`feature/workout-load-entry`) no está implementada.
+`client_submission_id` pertenece al formulario web y no modifica `client_event_id` de Mobile Sync. La captura avanzada de cargas P1 está implementada en `feature/workout-load-entry`, pendiente únicamente de su cierre verificable y eventual integración.
 
 Validación del hotfix: local `548 passed, 3 skipped, 1 warning`; Docker/MariaDB `550 passed, 1 skipped, 1 warning`; single head `20260715_0026`, ciclos aislados upgrade/downgrade/upgrade y check limpios en SQLite y MariaDB 11.4. QA oscuro pasó en 360/390/430/768/1024/1366 px; tema claro requiere sign-off visual externo antes del release.
 

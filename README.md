@@ -1,12 +1,18 @@
 # Health Tracker
 
+## Alpha 0.9 en desarrollo: captura avanzada de carga
+
+La rama `feature/workout-load-entry` añade captura por carga total, por lado, barra, máquinas, pila, mancuernas, peso corporal, asistencia y duración/distancia. El backend usa `Decimal`, conserva la unidad/componentes originales y mantiene `weight_kg` como total normalizado compatible. La sesión muestra kg y lb, última carga, copia entre series, ajustes rápidos y perfiles privados por ejercicio.
+
+La migración aditiva es `20260716_0027_workout_load_entry.py`. Los clientes antiguos pueden seguir enviando únicamente `weight_kg`; `load_details` es opcional y versionado. Consulta [WORKOUT_LOAD_ENTRY.md](docs/WORKOUT_LOAD_ENTRY.md) para modos, semántica y QA. No incluye APK, reloj ni cargas avanzadas planeadas en paquetes companion.
+
 ## Alpha 0.8.1: recuperación de sesiones web
 
 El formulario de entrenamiento incorpora autoguardado local y servidor, recuperación específica cuando vence CSRF e idempotencia por `client_submission_id`. Un reintento idéntico abre la sesión ya creada; contenido distinto con el mismo ID produce conflicto seguro. La sesión web dura 12 horas con actividad y CSRF 8 horas, sin desactivar la protección.
 
 Operación: `flask workout-drafts cleanup` es dry-run y `flask workout-drafts cleanup --apply` elimina solo borradores inválidos, expirados o completados. Consulta [docs/WORKOUT_SESSION_RECOVERY.md](docs/WORKOUT_SESSION_RECOVERY.md), [docs/WORKOUT_DRAFTS.md](docs/WORKOUT_DRAFTS.md) y [docs/WORKOUT_SUBMISSION_IDEMPOTENCY.md](docs/WORKOUT_SUBMISSION_IDEMPOTENCY.md).
 
-La captura avanzada de cargas es P1 y sigue pendiente para `feature/workout-load-entry`.
+La captura avanzada de cargas P1 se implementa en `feature/workout-load-entry`. Los gates locales, MariaDB aislado, QA HTTP y tema oscuro pasaron; antes de publicar Alpha 0.9 queda el sign-off visual real de tema claro.
 
 ## Alpha 0.8: Companion Delivery Protocol
 

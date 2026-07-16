@@ -37,6 +37,13 @@ class Exercise(db.Model):
         passive_deletes=True,
         order_by="ExerciseAlias.alias_name",
     )
+    load_profile = db.relationship(
+        "ExerciseLoadProfile",
+        back_populates="exercise",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        uselist=False,
+    )
 
 
 class ExerciseAlias(db.Model):

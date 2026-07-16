@@ -219,6 +219,8 @@ COMPLETED_WORKOUT_ALIASES = {
     "average_heart_rate_bpm": "average_heart_rate_bpm",
     "calorias": "calories_burned",
     "calories_burned": "calories_burned",
+    "detalle_carga": "load_details",
+    "load_details": "load_details",
 }
 
 TRAINING_PLAN_ALIASES = {

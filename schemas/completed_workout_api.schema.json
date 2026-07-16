@@ -46,12 +46,40 @@
         "set_number": {"type": "integer", "minimum": 1},
         "planned_set_number": {"type": "integer", "minimum": 1},
         "weight_kg": {"type": "number", "minimum": 0, "maximum": 2000},
+        "load_details": {"$ref": "#/$defs/loadDetails"},
         "reps": {"type": "integer", "minimum": 1, "maximum": 10000},
         "rir": {"type": "number", "minimum": 0, "maximum": 10},
         "rpe": {"type": "number", "minimum": 1, "maximum": 10},
         "rest_seconds": {"type": "integer", "minimum": 0, "maximum": 86400},
         "duration_seconds": {"type": "integer", "minimum": 1, "maximum": 86400},
         "notes": {"type": "string", "maxLength": 2000}
+      }
+    },
+    "loadDetails": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schema_version", "load_mode", "original_input", "original_unit", "components", "normalized_total_kg", "calculated_total_lb", "display_total", "bodyweight_kg", "assistance", "calculation_version"],
+      "properties": {
+        "schema_version": {"const": "1.0"},
+        "load_mode": {"enum": ["direct_total", "per_side", "bar_plus_per_side", "machine_initial_total", "machine_initial_per_side", "machine_external_per_side_initial_total", "selector_stack", "dumbbell_each", "bodyweight", "bodyweight_plus", "assistance", "duration_distance"]},
+        "original_input": {"type": "object", "additionalProperties": false, "required": ["unit", "components"], "properties": {"unit": {"enum": ["kg", "lb"]}, "components": {"$ref": "#/$defs/loadComponents"}}},
+        "original_unit": {"enum": ["kg", "lb"]},
+        "components": {"$ref": "#/$defs/loadComponents"},
+        "normalized_total_kg": {"type": "string", "pattern": "^[0-9]+(?:\\.[0-9]+)?$"},
+        "calculated_total_lb": {"type": "string", "pattern": "^[0-9]+(?:\\.[0-9]+)?$"},
+        "display_total": {"type": "object", "additionalProperties": false, "required": ["value", "unit"], "properties": {"value": {"type": "string", "pattern": "^[0-9]+(?:\\.[0-9]+)?$"}, "unit": {"enum": ["kg", "lb"]}}},
+        "bodyweight_kg": {"type": ["string", "null"], "pattern": "^[0-9]+(?:\\.[0-9]+)?$"},
+        "assistance": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/weightComponent"}]},
+        "calculation_version": {"const": "1.0"},
+        "warnings": {"type": "array", "items": {"type": "string", "maxLength": 100}, "maxItems": 10}
+      }
+    },
+    "weightComponent": {"type": "object", "additionalProperties": false, "required": ["value", "unit"], "properties": {"value": {"type": "string", "pattern": "^[0-9]+(?:\\.[0-9]+)?$"}, "unit": {"enum": ["kg", "lb"]}}},
+    "durationComponent": {"type": "object", "additionalProperties": false, "required": ["value", "unit"], "properties": {"value": {"type": "string", "pattern": "^[0-9]+(?:\\.[0-9]+)?$"}, "unit": {"const": "s"}}},
+    "distanceComponent": {"type": "object", "additionalProperties": false, "required": ["value", "unit"], "properties": {"value": {"type": "string", "pattern": "^[0-9]+(?:\\.[0-9]+)?$"}, "unit": {"const": "m"}}},
+    "loadComponents": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "direct_total": {"$ref": "#/$defs/weightComponent"}, "per_side": {"$ref": "#/$defs/weightComponent"}, "bar": {"$ref": "#/$defs/weightComponent"}, "initial_total": {"$ref": "#/$defs/weightComponent"}, "added_total": {"$ref": "#/$defs/weightComponent"}, "initial_per_side": {"$ref": "#/$defs/weightComponent"}, "external_per_side": {"$ref": "#/$defs/weightComponent"}, "selector_stack": {"$ref": "#/$defs/weightComponent"}, "dumbbell_each": {"$ref": "#/$defs/weightComponent"}, "bodyweight": {"$ref": "#/$defs/weightComponent"}, "assistance": {"$ref": "#/$defs/weightComponent"}, "duration_seconds": {"$ref": "#/$defs/durationComponent"}, "distance_meters": {"$ref": "#/$defs/distanceComponent"}
       }
     }
   }

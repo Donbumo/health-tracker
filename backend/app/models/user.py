@@ -11,6 +11,9 @@ class User(UserMixin, db.Model):
     __tablename__ = "users"
     __table_args__ = (
         db.CheckConstraint("role IN ('admin', 'user')", name="ck_users_role"),
+        db.CheckConstraint(
+            "preferred_load_unit IN ('kg', 'lb')", name="ck_users_load_unit"
+        ),
         db.UniqueConstraint("public_id", name="uq_users_public_id"),
     )
 
@@ -24,6 +27,9 @@ class User(UserMixin, db.Model):
         nullable=False,
         default="user",
         server_default="user",
+    )
+    preferred_load_unit = db.Column(
+        db.String(2), nullable=False, default="kg", server_default="kg"
     )
     created_at = db.Column(
         db.DateTime(timezone=True),
@@ -52,6 +58,12 @@ class User(UserMixin, db.Model):
     )
     exercises = db.relationship(
         "Exercise",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    exercise_load_profiles = db.relationship(
+        "ExerciseLoadProfile",
         back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,

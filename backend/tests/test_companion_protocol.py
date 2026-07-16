@@ -28,6 +28,7 @@ from app.models import (
     User,
 )
 from app.services.mobile_sync import canonical_hash
+from app.services.workout_loads import calculate_workout_load
 
 
 DEVICE_ID = "81111111-1111-4111-8111-111111111111"
@@ -155,7 +156,7 @@ def _setup(client, app, user, *, features=None):
 
 
 def _result(planned_id, event_id):
-    return {
+    result = {
         "schema_version": "1.0",
         "client_event_id": event_id,
         "planned_workout_id": planned_id,
@@ -174,6 +175,10 @@ def _result(planned_id, event_id):
             ],
         }],
     }
+    result["exercises"][0]["sets"][0]["load_details"] = calculate_workout_load(
+        "direct_total", "kg", {"direct_total": "50"}
+    ).details
+    return result
 
 
 def test_profile_negotiation_allowlists_versions_revision_and_persistence(app, client, user):
@@ -281,6 +286,7 @@ def test_completion_reuses_training_session_is_atomic_idempotent_and_emits_sync(
     data = created.get_json()["data"]
     assert data["delivery"]["status"] == "completed"
     assert data["delivery"]["training_session_id"] == data["completed_workout"]["id"]
+    assert data["completed_workout"]["exercises"][0]["sets"][0]["load_details"]["load_mode"] == "direct_total"
     replay = client.post(f"/api/v1/companion/deliveries/{delivery['id']}/complete", headers={**headers, "Idempotency-Key": "complete-2"}, json=payload)
     assert replay.status_code == 200
     assert replay.get_json()["data"]["completed_workout"]["id"] == data["completed_workout"]["id"]

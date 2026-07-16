@@ -11,6 +11,7 @@
       <p>{{ session.training_plan.name }} · versión {{ session.training_plan_version.version_number }}</p>
     </div>
     <div class="page-actions">
+      <a class="button" href="{{ url_for('sessions.edit_session', session_id=session.id) }}">Editar sesión</a>
       <a class="button" href="{{ url_for('progress.session_summary', session_id=session.id) }}">Ver progreso</a>
       <a class="button" href="{{ url_for('exports.create', domain='training_session', source_id=session.id) }}">Exportadores avanzados</a>
       <a class="button button-secondary" href="{{ url_for('sessions.list_sessions') }}">Volver</a>
@@ -73,12 +74,13 @@
       <h3><a href="{{ url_for('progress.exercise_detail', exercise_id=exercise.id) }}">{{ exercise.name }}</a></h3>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Serie</th><th>Peso kg</th><th>Reps</th><th>RIR</th><th>RPE</th><th>Descanso s</th><th>Notas</th></tr></thead>
+          <thead><tr><th>Serie</th><th>Carga</th><th>Modo</th><th>Reps</th><th>RIR</th><th>RPE</th><th>Descanso s</th><th>Notas</th></tr></thead>
           <tbody>
             {% for item in exercise.sets %}
               <tr>
                 <td>{{ item.set_number }}</td>
-                <td>{{ item.weight_kg }}</td>
+                <td>{% if item.load_details_json %}{{ item.load_details_json.normalized_total_kg|float|round(2) }} kg / {{ item.load_details_json.calculated_total_lb|float|round(2) }} lb{% else %}{{ item.weight_kg }} kg{% endif %}</td>
+                <td>{{ item.load_details_json.load_mode if item.load_details_json else 'Carga total heredada' }}</td>
                 <td>{{ item.reps }}</td>
                 <td>{{ item.rir if item.rir is not none else '—' }}</td>
                 <td>{{ item.rpe if item.rpe is not none else '—' }}</td>

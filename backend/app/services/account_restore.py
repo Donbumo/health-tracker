@@ -64,6 +64,7 @@ RESTORABLE_SECTIONS = (
     "medical_lab_reports",
     "training_plans",
     "training_sessions",
+    "exercise_load_profiles",
     "activities",
     "routes",
 )
@@ -519,6 +520,31 @@ class AccountRestoreService:
         document = deepcopy(item)
         if section == "training_plans":
             return document
+        if section == "exercise_load_profiles":
+            from app.services.workout_loads import SUPPORTED_MODES, calculate_workout_load
+
+            if document.get("load_mode") not in SUPPORTED_MODES:
+                raise AccountRestoreError("Unsupported exercise load mode")
+            if document.get("preferred_unit") not in {"kg", "lb"}:
+                raise AccountRestoreError("Unsupported exercise load unit")
+            if not isinstance(document.get("exercise_name"), str) or not document["exercise_name"].strip():
+                raise AccountRestoreError("Exercise load profile requires a name")
+            configuration = document.get("configuration") or {}
+            if set(configuration) - {
+                "schema_version",
+                "calculation_version",
+                "components",
+            }:
+                raise AccountRestoreError("Exercise load profile configuration is invalid")
+            calculate_workout_load(
+                document["load_mode"],
+                document["preferred_unit"],
+                configuration.get("components") or {},
+            )
+            increments = document.get("quick_increments") or []
+            if not isinstance(increments, list) or len(increments) > 10:
+                raise AccountRestoreError("Exercise load quick increments are invalid")
+            return document
         if section == "training_sessions":
             document["user_id"] = user_id
             maps = id_maps or {}
@@ -531,6 +557,12 @@ class AccountRestoreService:
                 data["training_plan_version_id"] = maps["training_plan_versions"][old_version_id]
             document["data"] = data
             validate_json_document(document, "completed_workout")
+            try:
+                from app.services.workout_loads import validate_completed_workout_loads
+
+                validate_completed_workout_loads(document)
+            except ValueError as error:
+                raise AccountRestoreError(str(error)) from error
             return document
         if section == "medical_lab_reports":
             document["user_id"] = user_id
@@ -581,6 +613,19 @@ class AccountRestoreService:
         if section == "recipes":
             return db.session.execute(
                 db.select(Recipe).where(Recipe.user_id == user_id, Recipe.name == item["name"].strip())
+            ).scalar_one_or_none()
+        if section == "exercise_load_profiles":
+            from app.models import ExerciseLoadProfile
+            from app.services.exercise_identity import find_exercise_identity
+
+            exercise = find_exercise_identity(user_id, item["exercise_name"])
+            if exercise is None:
+                return None
+            return db.session.execute(
+                db.select(ExerciseLoadProfile).where(
+                    ExerciseLoadProfile.user_id == user_id,
+                    ExerciseLoadProfile.exercise_id == exercise.id,
+                )
             ).scalar_one_or_none()
         if section == "weigh_ins":
             recorded_at = datetime.fromisoformat(item["data"]["recorded_at"].replace("Z", "+00:00"))
@@ -663,6 +708,13 @@ class AccountRestoreService:
             return build_completed_workout_document(existing, user_id) == item
         if section in {"activities", "routes"}:
             return existing.fingerprint_sha256 == _activity_route_sha(item)
+        if section == "exercise_load_profiles":
+            return (
+                existing.load_mode == item["load_mode"]
+                and existing.preferred_unit == item["preferred_unit"]
+                and (existing.configuration_json or {}) == (item.get("configuration") or {})
+                and (existing.quick_increments_json or []) == (item.get("quick_increments") or [])
+            )
         if hasattr(existing, "raw_payload_json") and existing.raw_payload_json is not None:
             return existing.raw_payload_json == item
         return False
@@ -764,6 +816,35 @@ class AccountRestoreService:
                 record = self._apply_activity_or_route(section, document, user_id=user_id)
                 db.session.flush()
                 committed[f"{section}:{index}"] = record.id
+
+        for index, item in enumerate(data.get("exercise_load_profiles") or []):
+            operation = operation_map.get(("exercise_load_profiles", index), {})
+            if operation.get("operation") == "skip":
+                continue
+            from app.services.workout_loads import (
+                calculate_workout_load,
+                upsert_exercise_load_profile,
+            )
+
+            restored_load_details = calculate_workout_load(
+                item["load_mode"],
+                item["preferred_unit"],
+                (item.get("configuration") or {}).get("components", {}),
+            ).details
+
+            profile = upsert_exercise_load_profile(
+                user_id=user_id,
+                exercise_name=item["exercise_name"],
+                load_details=restored_load_details,
+            )
+            profile.quick_increments_json = item.get("quick_increments") or ["2.5", "5"]
+            db.session.flush()
+            committed[f"exercise_load_profiles:{index}"] = profile.id
+
+        preferred_unit = (payload.get("user") or {}).get("preferred_load_unit")
+        if preferred_unit in {"kg", "lb"}:
+            from app.models import User
+            db.session.get(User, user_id).preferred_load_unit = preferred_unit
 
         return committed
 
@@ -1091,6 +1172,8 @@ class AccountRestoreService:
             db.session.add(exercise)
             db.session.flush()
             for set_data in exercise_data["sets"]:
+                from app.services.workout_loads import validate_load_details
+
                 db.session.add(
                     TrainingSet(
                         user_id=user_id,
@@ -1098,6 +1181,9 @@ class AccountRestoreService:
                         set_number=set_data["set_number"],
                         planned_set_number=set_data["planned_set_number"],
                         weight_kg=_decimal(set_data["weight_kg"]),
+                        load_details_json=validate_load_details(
+                            set_data["weight_kg"], set_data.get("load_details")
+                        ),
                         reps=set_data["reps"],
                         rir=_decimal(set_data.get("rir")),
                         rpe=_decimal(set_data.get("rpe")),
@@ -1331,6 +1417,7 @@ def _model(section: str) -> str:
         "medical_lab_reports": "MedicalLabReport",
         "training_plans": "TrainingPlan",
         "training_sessions": "TrainingSession",
+        "exercise_load_profiles": "ExerciseLoadProfile",
         "activities": "Activity",
         "routes": "Route",
     }.get(section, section)

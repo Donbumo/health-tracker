@@ -1,12 +1,20 @@
 # Contexto operativo para agentes de IA
 
+## Bloque activo: Alpha 0.9 Workout Load Entry
+
+La rama `feature/workout-load-entry` parte exactamente de `3d23ed1`, tag `alpha-0.8.1-workout-session-recovery`. Añade calculador Decimal, preferencia kg/lb, `ExerciseLoadProfile`, `TrainingSet.load_details_json`, formulario móvil y contratos aditivos de import/export/restore/sync. Leer [`project-rules/workout-load-entry.md`](project-rules/workout-load-entry.md) y [`WORKOUT_LOAD_ENTRY.md`](WORKOUT_LOAD_ENTRY.md).
+
+La migración nueva `20260716_0027` solo debe probarse en bases aisladas durante este bloque. No ejecutar Docker ni migraciones persistentes mientras el usuario utiliza el sistema en gimnasio. `weight_kg` conserva su semántica de total normalizado; `load_details` es opcional. Companion declara `advanced_load_details_in_planned_package=false`; no hay APK ni reloj.
+
+Validación final del bloque: local `566 passed, 3 skipped, 1 warning`; Docker/MariaDB aislado `568 passed, 1 skipped, 1 warning`; single head y `db check` limpios. QA HTTP, migración reversible, persistencia y responsive oscuro en seis anchos pasaron sin tocar el stack activo. Solo queda pendiente un sign-off visual real de tema claro; no debe presentarse como realizado.
+
 ## Bloque activo: Alpha 0.8.1 Workout Session Recovery
 
 La rama activa `hotfix/alpha-0.8.1-workout-session-recovery` parte de `7ee865f`, tag `alpha-0.8-companion-backend`. Para sesiones web, CSRF, drafts o idempotencia leer primero [`project-rules/workout-session-recovery.md`](project-rules/workout-session-recovery.md). El bloque añade la migración `20260715_0026`, sin cambiar los contratos Bearer, Mobile Sync o Companion.
 
 Estado verificado: local `548 passed, 3 skipped, 1 warning`; Docker/MariaDB `550 passed, 1 skipped, 1 warning`; single head `20260715_0026` y `db check` limpio. QA responsive real pasó en tema oscuro en seis anchos; tema claro continúa pendiente por falta de emulación disponible y no debe marcarse como realizado.
 
-P1 de captura avanzada de cargas sigue pendiente en `feature/workout-load-entry`. No confundir `client_submission_id` web con `client_event_id` móvil.
+P1 de captura avanzada de cargas está implementada en `feature/workout-load-entry` y en validación final aislada. No confundir `client_submission_id` web con `client_event_id` móvil.
 
 ## Bloque activo: Fase 7C
 

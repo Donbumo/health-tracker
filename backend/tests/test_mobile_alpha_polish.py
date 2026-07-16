@@ -44,7 +44,7 @@ def test_base_template_has_mobile_viewport_and_collapsed_mobile_navigation(clien
         "Historial imports",
         "Cerrar sesi",
         "Privacidad",
-        "Alpha 0.8",
+        "Alpha 0.9",
     ):
         assert label in html
 

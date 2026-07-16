@@ -26,6 +26,7 @@ services:
         condition: service_healthy
     environment:
       SECRET_KEY: ${SECRET_KEY}
+      API_TOKEN_SIGNING_KEY: ${API_TOKEN_SIGNING_KEY:-}
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       DB_HOST: db

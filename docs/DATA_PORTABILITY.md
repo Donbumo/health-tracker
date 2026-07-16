@@ -1,5 +1,7 @@
 # Data portability
 
+Alpha 0.9 conserva de forma aditiva los detalles de carga de cada serie (`load_details` 1.0), la unidad preferida y los perfiles privados de carga por ejercicio. Restore recalcula/valida los totales, reescribe ownership al usuario destino y mantiene `weight_kg` como total normalizado. Sesiones anteriores sin este bloque siguen siendo válidas.
+
 Documento corto para QA y handoff de portabilidad de datos.
 
 ## Qué existe

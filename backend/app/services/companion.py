@@ -62,6 +62,7 @@ SERVER_CAPABILITIES = {
     "bluetooth_bridge": False,
     "continuous_telemetry": False,
     "fit_output": False,
+    "advanced_load_details_in_planned_package": False,
     "vendor_huawei": False,
     "vendor_garmin": False,
     "vendor_magene": False,

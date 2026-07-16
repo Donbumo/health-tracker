@@ -15,6 +15,7 @@ from app.services.importers.standard_import_executor import (
     StandardImportError,
     StandardImportExecutor,
 )
+from app.services.workout_loads import calculate_workout_load
 
 
 def _energy_document(user_id: int, date_value: str = "2026-07-20", calories: int = 2400):
@@ -636,6 +637,14 @@ def test_confirmed_import_supports_completed_workout_insert_and_conflict_on_repe
             plan_id=plan.id,
             version_id=version.id,
         )
+        document["data"]["exercises"][0]["sets"][0].update(
+            {
+                "weight_kg": 45.36,
+                "load_details": calculate_workout_load(
+                    "per_side", "lb", {"per_side": "50"}
+                ).details,
+            }
+        )
 
         first = executor.commit_documents(
             [document],
@@ -653,6 +662,7 @@ def test_confirmed_import_supports_completed_workout_insert_and_conflict_on_repe
         session = db.session.execute(db.select(TrainingSession)).scalar_one()
         assert first["inserts"] == 1
         assert session.user_id == user
+        assert session.exercises[0].sets[0].load_details_json["load_mode"] == "per_side"
         assert repeat["committed"] is False
         assert repeat["conflicts"] == 1
 

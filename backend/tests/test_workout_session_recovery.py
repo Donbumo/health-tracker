@@ -53,8 +53,14 @@ def _full_form(planned_day: str, submission_id: str) -> dict[str, str]:
         "average_heart_rate_bpm": "143",
         "calories_burned": "678.25",
         "notes": "Fictional long workout notes",
+        "preferred_load_unit": "lb",
         "exercise_0_set_0_completed": "1",
         "exercise_0_set_0_weight_kg": "82.50",
+        "exercise_0_set_0_load_mode": "machine_initial_total",
+        "exercise_0_set_0_load_unit": "lb",
+        "exercise_0_set_0_load_initial_total": "37",
+        "exercise_0_set_0_load_added_total": "45",
+        "exercise_0_remember_load": "1",
         "exercise_0_set_0_reps": "7",
         "exercise_0_set_0_rir": "1.5",
         "exercise_0_set_0_rpe": "9.0",
@@ -127,6 +133,9 @@ def test_expired_csrf_recovers_every_workout_field_and_second_submit_saves_once(
         "678.25",
         "Fictional long workout notes",
         "82.50",
+        "machine_initial_total",
+        "37",
+        "45",
         "7",
         "1.5",
         "9.0",
@@ -169,6 +178,60 @@ def test_expired_csrf_recovers_every_workout_field_and_second_submit_saves_once(
                 SyncChange.entity_type == "completed_workout"
             )
         ).scalar_one() == 1
+
+
+def test_expired_csrf_recovers_owned_session_edit_without_early_write(
+    app, client, user
+):
+    login(client)
+    _import_plan(client, user)
+    context = _context(app, user)
+    submission_id = str(uuid.uuid4())
+    original_form = _full_form(context["planned_day"], submission_id)
+    created = client.post("/training-sessions/new", data=original_form)
+    assert created.status_code == 302
+    with app.app_context():
+        session = db.session.execute(db.select(TrainingSession)).scalar_one()
+        session_id = session.id
+        original_revision = session.revision
+
+    app.config["WTF_CSRF_ENABLED"] = True
+    page = client.get(f"/training-sessions/{session_id}/edit")
+    original_token = _hidden(page, "csrf_token")
+    edited_form = dict(original_form)
+    edited_form.update(
+        csrf_token=original_token,
+        exercise_0_set_0_load_initial_total="40",
+        exercise_0_set_0_load_added_total="50",
+        exercise_0_set_0_reps="8",
+        notes="Fictional recovered edit",
+    )
+    app.config["WTF_CSRF_TIME_LIMIT"] = -1
+    recovered = client.post(
+        f"/training-sessions/{session_id}/edit", data=edited_form
+    )
+    assert recovered.status_code == 422
+    assert b"Guardar cambios" in recovered.data
+    assert b"Fictional recovered edit" in recovered.data
+    assert b'name="exercise_0_set_0_load_initial_total" value="40"' in recovered.data
+    assert _hidden(recovered, "csrf_token") != original_token
+    with app.app_context():
+        session = db.session.get(TrainingSession, session_id)
+        training_set = db.session.execute(db.select(TrainingSet)).scalar_one()
+        assert session.revision == original_revision
+        assert training_set.reps == 7
+
+    app.config["WTF_CSRF_TIME_LIMIT"] = 8 * 60 * 60
+    edited_form["csrf_token"] = _hidden(recovered, "csrf_token")
+    saved = client.post(
+        f"/training-sessions/{session_id}/edit", data=edited_form
+    )
+    assert saved.status_code == 302
+    with app.app_context():
+        session = db.session.get(TrainingSession, session_id)
+        training_set = db.session.execute(db.select(TrainingSet)).scalar_one()
+        assert session.revision == original_revision + 1
+        assert training_set.reps == 8
 
 
 def test_same_submission_with_changed_payload_is_a_safe_conflict(app, client, user):

@@ -21,7 +21,8 @@
             {"type": "null"}
           ]
         },
-        "role": {"type": "string", "enum": ["admin", "user"]}
+        "role": {"type": "string", "enum": ["admin", "user"]},
+        "preferred_load_unit": {"type": "string", "enum": ["kg", "lb"]}
       }
     },
     "data": {
@@ -41,6 +42,7 @@
         "daily_balances": {"$ref": "#/$defs/exportSection"},
         "training_plans": {"$ref": "#/$defs/exportSection"},
         "training_sessions": {"$ref": "#/$defs/exportSection"},
+        "exercise_load_profiles": {"$ref": "#/$defs/exportSection"},
         "medical_lab_reports": {"$ref": "#/$defs/exportSection"},
         "activities": {"$ref": "#/$defs/exportSection"},
         "routes": {"$ref": "#/$defs/exportSection"},

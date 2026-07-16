@@ -233,12 +233,15 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
         ExportRecord.created_at,
         ExportRecord.id,
     )
+    from app.models import ExerciseLoadProfile
+
+    load_profiles = _records(ExerciseLoadProfile, user_id, ExerciseLoadProfile.id)
 
     return {
         "schema_version": "1.0",
         "type": "user_data_export",
         "exported_at": datetime.now(timezone.utc).isoformat(),
-        "user": {"id": user.id, "email": user.email, "role": user.role},
+        "user": {"id": user.id, "email": user.email, "role": user.role, "preferred_load_unit": user.preferred_load_unit},
         "data": {
             "food_products": [
                 _food_product_document(product, user_id) for product in food_products
@@ -261,6 +264,16 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
             "training_sessions": [
                 build_completed_workout_document(session, user_id)
                 for session in sessions
+            ],
+            "exercise_load_profiles": [
+                {
+                    "exercise_name": profile.exercise.canonical_name,
+                    "load_mode": profile.load_mode,
+                    "preferred_unit": profile.preferred_unit,
+                    "configuration": profile.configuration_json or {},
+                    "quick_increments": profile.quick_increments_json or [],
+                }
+                for profile in load_profiles
             ],
             "medical_lab_reports": [
                 build_medical_lab_document(report, user_id)

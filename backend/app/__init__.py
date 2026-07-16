@@ -119,7 +119,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     @app.context_processor
     def inject_release_context():
         return {
-            "alpha_release_label": "Alpha 0.8",
+            "alpha_release_label": "Alpha 0.9",
         }
 
     @app.errorhandler(403)
@@ -175,6 +175,18 @@ def create_app(test_config: dict | None = None) -> Flask:
             session.pop("csrf_token", None)
             g.pop("csrf_token", None)
             return render_csrf_recovery(request_id=request_id)
+        if (
+            request.endpoint == "sessions.edit_session"
+            and current_user.is_authenticated
+        ):
+            from app.sessions.routes import render_edit_csrf_recovery
+
+            session.pop("csrf_token", None)
+            g.pop("csrf_token", None)
+            return render_edit_csrf_recovery(
+                session_id=request.view_args["session_id"],
+                request_id=request_id,
+            )
         return render_template(
             "csrf_recovery.html",
             request_id=request_id,

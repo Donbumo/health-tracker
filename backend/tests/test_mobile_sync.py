@@ -26,6 +26,7 @@ from app.models import (
     User,
 )
 from app.services.mobile_sync import encode_cursor
+from app.services.workout_loads import calculate_workout_load
 
 
 DEVICE_ID = "71111111-1111-4111-8111-111111111111"
@@ -263,6 +264,9 @@ def test_completed_workout_maps_full_session_completes_plan_and_is_idempotent(
     headers = _auth(tokens["access_token"])
     planned = _create_planned(client, headers, plan_id, version_id)
     payload = _completed_payload(planned["id"])
+    payload["exercises"][0]["sets"][0]["load_details"] = calculate_workout_load(
+        "direct_total", "kg", {"direct_total": "50"}
+    ).details
     created = client.post(
         "/api/v1/completed-workouts",
         json=payload,
@@ -279,6 +283,7 @@ def test_completed_workout_maps_full_session_completes_plan_and_is_idempotent(
     assert detail["calories_burned"] == 321.5
     assert detail["exercises"][0]["sets"][1]["rpe"] == 9
     assert detail["exercises"][0]["sets"][1]["rest_seconds"] == 150
+    assert detail["exercises"][0]["sets"][0]["load_details"]["load_mode"] == "direct_total"
     replay_event = client.post(
         "/api/v1/completed-workouts",
         json=payload,
@@ -295,6 +300,16 @@ def test_completed_workout_maps_full_session_completes_plan_and_is_idempotent(
     )
     assert conflict.status_code == 409
     assert conflict.get_json()["error"]["code"] == "event_conflict"
+    invalid_load = copy.deepcopy(payload)
+    invalid_load["client_event_id"] = str(uuid.uuid4())
+    invalid_load["exercises"][0]["sets"][0]["load_details"]["normalized_total_kg"] = "999"
+    rejected = client.post(
+        "/api/v1/completed-workouts",
+        json=invalid_load,
+        headers={**headers, "Idempotency-Key": "completed-invalid-load"},
+    )
+    assert rejected.status_code == 400
+    assert rejected.get_json()["error"]["code"] == "invalid_workout"
     with app.app_context():
         session = db.session.execute(db.select(TrainingSession)).scalar_one()
         planned_record = db.session.execute(db.select(PlannedWorkout)).scalar_one()

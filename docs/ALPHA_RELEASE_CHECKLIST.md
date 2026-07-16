@@ -1,5 +1,15 @@
 # Checklist de release alpha privada
 
+## Alpha 0.9 — Workout Load Entry
+
+- [x] Doce modos explícitos, `Decimal`, kg/lb mixtos y `calculation_version` canónico.
+- [x] Perfiles/última carga owner-only, draft, CSRF recovery, idempotencia y edición segura.
+- [x] Import/export, backup/restore, Mobile Sync y Companion aditivos.
+- [x] Migración 0027 reversible en SQLite y MariaDB aislados; sesiones heredadas intactas.
+- [x] Suites local/Docker, QA HTTP, restart, logs y dry-runs limpios.
+- [x] Responsive real oscuro a 360/390/430/768/1024/1366 px.
+- [ ] Sign-off visual real en tema claro; el navegador de QA no ofrece emulación.
+
 ## Alpha 0.8.1 — Workout Session Recovery
 
 - [x] Recuperación específica de CSRF con token nuevo y campos preservados.
@@ -11,7 +21,7 @@
 - [x] Suite completa local y Docker final; concurrencia MariaDB incluida.
 - [x] QA manual móvil oscuro, reinicio, persistencia y logs.
 - [ ] Sign-off visual real en tema claro; el navegador de QA actual no ofrece emulación.
-- [ ] P1 captura avanzada de cargas (fuera de este hotfix; `feature/workout-load-entry`).
+- [x] P1 captura avanzada de cargas implementada en `feature/workout-load-entry`; su publicación depende de los gates Alpha 0.9.
 
 ## Alpha 0.8 — Companion Backend Foundation
 

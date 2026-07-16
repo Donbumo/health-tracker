@@ -143,7 +143,9 @@ def validate_draft_payload(payload: Any) -> dict[str, Any]:
         value = context.get(key)
         if not isinstance(value, int) or isinstance(value, bool) or not minimum <= value <= maximum:
             raise WorkoutDraftError("invalid_draft", f"{key} is invalid.")
-    if not isinstance(fields, dict) or len(fields) > 1000:
+    # Advanced load entry adds several bounded component controls per set.
+    # The byte limit remains the authoritative cap for server storage.
+    if not isinstance(fields, dict) or len(fields) > 4000:
         raise WorkoutDraftError("invalid_draft", "Draft fields are invalid.")
     for name, value in fields.items():
         normalized = str(name).casefold()

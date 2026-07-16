@@ -37,8 +37,20 @@ from app.services.workout_sessions import (
     list_planned_days,
     resolve_planned_day,
     resolve_planned_workout_day,
+    resolve_session_planned_day,
+    update_manual_training_session,
 )
 from app.services.workout_drafts import latest_context_draft, serialize_draft
+from app.services.workout_loads import (
+    MODE_COMPONENTS,
+    LOAD_MODE_LABELS,
+    COMPONENT_LABELS,
+    SUPPORTED_MODES,
+    SUPPORTED_UNITS,
+    WorkoutLoadError,
+    calculate_workout_load,
+    load_entry_defaults,
+)
 from app.sessions import sessions_bp
 from app.sessions.forms import CompletedWorkoutImportForm, TrainingSessionForm
 
@@ -81,12 +93,34 @@ def _actual_exercises(planned_day: PlannedDay) -> list[dict]:
             if request.form.get(f"{prefix}_completed") != "1":
                 continue
 
-            weight = _decimal_value(
-                request.form.get(f"{prefix}_weight_kg", ""),
-                "Weight",
-                Decimal("0"),
-                Decimal("2000"),
-            )
+            load_mode = request.form.get(f"{prefix}_load_mode", "direct_total")
+            load_unit = request.form.get(f"{prefix}_load_unit", "kg")
+            component_names = MODE_COMPONENTS.get(load_mode)
+            if component_names is None:
+                raise TrainingSessionError("Unsupported load mode")
+            components = {
+                name: {
+                    "value": request.form.get(f"{prefix}_load_{name}", ""),
+                    "unit": (
+                        "s"
+                        if name == "duration_seconds"
+                        else "m"
+                        if name == "distance_meters"
+                        else request.form.get(
+                            f"{prefix}_load_{name}_unit", load_unit
+                        )
+                    ),
+                }
+                for name in component_names
+            }
+            if load_mode == "direct_total" and not components["direct_total"]["value"]:
+                components["direct_total"]["value"] = request.form.get(
+                    f"{prefix}_weight_kg", ""
+                )
+            try:
+                load = calculate_workout_load(load_mode, load_unit, components)
+            except WorkoutLoadError as error:
+                raise TrainingSessionError(str(error)) from error
             reps_value = _decimal_value(
                 request.form.get(f"{prefix}_reps", ""),
                 "Reps",
@@ -99,7 +133,8 @@ def _actual_exercises(planned_day: PlannedDay) -> list[dict]:
             set_data = {
                 "set_number": len(completed_sets) + 1,
                 "planned_set_number": planned_set["set_number"],
-                "weight_kg": float(weight),
+                "weight_kg": float(load.weight_kg),
+                "load_details": load.details,
                 "reps": int(reps_value),
             }
             rir_value = request.form.get(f"{prefix}_rir", "").strip()
@@ -256,7 +291,22 @@ def _server_draft(selected_day, planned_workout):
     return serialize_draft(draft, include_payload=True) if draft else None
 
 
-def _template_context(form, plan_id, options, selected_day, planned_workout):
+def _template_context(
+    form,
+    plan_id,
+    options,
+    selected_day,
+    planned_workout,
+    *,
+    form_values=None,
+    drafts_enabled=True,
+    editing_session=None,
+):
+    exercise_names = (
+        [item["name"] for item in selected_day.day["exercises"]]
+        if selected_day is not None
+        else []
+    )
     return {
         "form": form,
         "options": options,
@@ -264,14 +314,76 @@ def _template_context(form, plan_id, options, selected_day, planned_workout):
         "planned_workout": planned_workout,
         "plan_id": plan_id,
         "timezone_name": current_app.config["APP_TIMEZONE"],
-        "server_draft": _server_draft(selected_day, planned_workout),
+        "server_draft": (
+            _server_draft(selected_day, planned_workout) if drafts_enabled else None
+        ),
         "user_public_id": current_user.public_id,
+        "preferred_load_unit": current_user.preferred_load_unit,
+        "load_modes": SUPPORTED_MODES,
+        "load_units": SUPPORTED_UNITS,
+        "load_components": MODE_COMPONENTS,
+        "load_mode_labels": LOAD_MODE_LABELS,
+        "load_component_labels": COMPONENT_LABELS,
+        "load_defaults": load_entry_defaults(current_user.id, exercise_names),
         "draft_max_bytes": current_app.config["WORKOUT_DRAFT_MAX_BYTES"],
         "draft_ttl_days": current_app.config["WORKOUT_DRAFT_TTL_DAYS"],
         "draft_server_debounce_ms": current_app.config[
             "WORKOUT_DRAFT_SERVER_DEBOUNCE_MS"
         ],
+        "form_values": form_values if form_values is not None else request.form,
+        "drafts_enabled": drafts_enabled,
+        "editing_session": editing_session,
     }
+
+
+def _session_edit_form_values(session: TrainingSession) -> dict[str, str]:
+    values: dict[str, str] = {}
+    actual_exercises = {
+        item.planned_exercise_order: item for item in session.exercises
+    }
+    planned_day = resolve_session_planned_day(session, current_user.id)
+    for exercise_index, planned_exercise in enumerate(planned_day.day["exercises"]):
+        actual_exercise = actual_exercises.get(planned_exercise["exercise_order"])
+        if actual_exercise is None:
+            continue
+        actual_sets = {
+            item.planned_set_number: item for item in actual_exercise.sets
+        }
+        for set_index, planned_set in enumerate(planned_exercise["sets"]):
+            actual_set = actual_sets.get(planned_set["set_number"])
+            if actual_set is None:
+                continue
+            prefix = f"exercise_{exercise_index}_set_{set_index}"
+            values[f"{prefix}_completed"] = "1"
+            details = actual_set.load_details_json or {
+                "load_mode": "direct_total",
+                "original_unit": "kg",
+                "components": {
+                    "direct_total": {"value": str(actual_set.weight_kg), "unit": "kg"}
+                },
+            }
+            mode = details.get("load_mode", details.get("mode", "direct_total"))
+            default_unit = details.get(
+                "original_unit", details.get("unit", current_user.preferred_load_unit)
+            )
+            values[f"{prefix}_load_mode"] = mode
+            values[f"{prefix}_load_unit"] = default_unit
+            for name, component in details.get("components", {}).items():
+                if isinstance(component, dict):
+                    values[f"{prefix}_load_{name}"] = str(component.get("value", ""))
+                    values[f"{prefix}_load_{name}_unit"] = str(
+                        component.get("unit", default_unit)
+                    )
+                else:
+                    values[f"{prefix}_load_{name}"] = str(component)
+                    values[f"{prefix}_load_{name}_unit"] = default_unit
+            values[f"{prefix}_weight_kg"] = str(actual_set.weight_kg)
+            values[f"{prefix}_reps"] = str(actual_set.reps)
+            for field in ("rir", "rpe", "rest_seconds", "notes"):
+                value = getattr(actual_set, field)
+                if value is not None:
+                    values[f"{prefix}_{field}"] = str(value)
+    return values
 
 
 def render_csrf_recovery(*, request_id: str):
@@ -284,6 +396,30 @@ def render_csrf_recovery(*, request_id: str):
         recovery_message=(
             "El token de seguridad venció. Recuperamos todos tus datos; "
             "vuelve a presionar Guardar."
+        ),
+        request_id=request_id,
+    )
+    return render_template("sessions/new.html", **context), 422
+
+
+def render_edit_csrf_recovery(*, session_id: int, request_id: str):
+    training_session = _user_session_or_404(session_id)
+    selected_day = resolve_session_planned_day(training_session, current_user.id)
+    form = TrainingSessionForm()
+    context = _template_context(
+        form,
+        training_session.training_plan_id,
+        [selected_day],
+        selected_day,
+        training_session.planned_workout,
+        form_values=request.form,
+        drafts_enabled=False,
+        editing_session=training_session,
+    )
+    context.update(
+        recovery_message=(
+            "El token de seguridad venciÃ³. Recuperamos todos tus datos; "
+            "vuelve a presionar Guardar cambios."
         ),
         request_id=request_id,
     )
@@ -318,11 +454,13 @@ def new_session():
                 if submitted_client_id
                 else None
             )
+            completed_exercises = _actual_exercises(selected_day)
+            completed_by_name = {item["name"]: item for item in completed_exercises}
             session, duplicate = create_manual_training_session(
                 user_id=current_user.id,
                 planned_day=selected_day,
                 performed_at=performed_at,
-                exercises=_actual_exercises(selected_day),
+                exercises=completed_exercises,
                 duration_seconds=(
                     form.duration_minutes.data * 60
                     if form.duration_minutes.data is not None
@@ -333,6 +471,16 @@ def new_session():
                 notes=form.notes.data,
                 client_submission_id=client_submission_id,
                 planned_workout=planned_workout,
+                preferred_load_unit=request.form.get("preferred_load_unit", "kg"),
+                remembered_profiles=[
+                    {
+                        "exercise_name": planned_exercise["name"],
+                        "load_details": completed_by_name[planned_exercise["name"]]["sets"][0]["load_details"],
+                    }
+                    for index, planned_exercise in enumerate(selected_day.day["exercises"])
+                    if request.form.get(f"exercise_{index}_remember_load") == "1"
+                    and planned_exercise["name"] in completed_by_name
+                ],
             )
         except (
             ValueError,
@@ -358,6 +506,90 @@ def new_session():
 
     context = _template_context(
         form, plan_id, options, selected_day, planned_workout
+    )
+    context["recovery_message"] = None
+    return render_template("sessions/new.html", **context)
+
+
+@sessions_bp.route("/<int:session_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit_session(session_id: int):
+    training_session = _user_session_or_404(session_id)
+    selected_day = resolve_session_planned_day(training_session, current_user.id)
+    form = TrainingSessionForm()
+    if not form.is_submitted():
+        form.planned_day.data = selected_day.key
+        form.planned_workout_id.data = (
+            training_session.planned_workout.public_id
+            if training_session.planned_workout
+            else ""
+        )
+        form.client_submission_id.data = (
+            training_session.client_submission_id or str(uuid.uuid4())
+        )
+        form.performed_at.data = training_session.performed_at.replace(tzinfo=None)
+        form.duration_minutes.data = (
+            training_session.duration_seconds // 60
+            if training_session.duration_seconds is not None
+            else None
+        )
+        form.average_heart_rate_bpm.data = training_session.average_heart_rate_bpm
+        form.calories_burned.data = training_session.calories_burned
+        form.notes.data = training_session.notes
+
+    if form.validate_on_submit():
+        app_timezone = ZoneInfo(current_app.config["APP_TIMEZONE"])
+        try:
+            completed_exercises = _actual_exercises(selected_day)
+            completed_by_name = {item["name"]: item for item in completed_exercises}
+            updated, unchanged = update_manual_training_session(
+                session=training_session,
+                user_id=current_user.id,
+                planned_day=selected_day,
+                performed_at=form.performed_at.data.replace(tzinfo=app_timezone),
+                exercises=completed_exercises,
+                duration_seconds=(
+                    form.duration_minutes.data * 60
+                    if form.duration_minutes.data is not None
+                    else None
+                ),
+                average_heart_rate_bpm=form.average_heart_rate_bpm.data,
+                calories_burned=form.calories_burned.data,
+                notes=form.notes.data,
+                preferred_load_unit=request.form.get("preferred_load_unit", "kg"),
+                remembered_profiles=[
+                    {
+                        "exercise_name": planned_exercise["name"],
+                        "load_details": completed_by_name[planned_exercise["name"]]["sets"][0]["load_details"],
+                    }
+                    for index, planned_exercise in enumerate(selected_day.day["exercises"])
+                    if request.form.get(f"exercise_{index}_remember_load") == "1"
+                    and planned_exercise["name"] in completed_by_name
+                ],
+            )
+        except (
+            ValueError,
+            JsonSchemaValidationError,
+            ManualJsonGenerationError,
+            TrainingSessionError,
+        ) as error:
+            flash(f"No fue posible actualizar la sesiÃ³n: {error}", "danger")
+        else:
+            flash(
+                "La sesiÃ³n no cambiÃ³." if unchanged else "SesiÃ³n actualizada correctamente.",
+                "warning" if unchanged else "success",
+            )
+            return redirect(url_for("sessions.detail", session_id=updated.id))
+
+    context = _template_context(
+        form,
+        training_session.training_plan_id,
+        [selected_day],
+        selected_day,
+        training_session.planned_workout,
+        form_values=(request.form if form.is_submitted() else _session_edit_form_values(training_session)),
+        drafts_enabled=False,
+        editing_session=training_session,
     )
     context["recovery_message"] = None
     return render_template("sessions/new.html", **context)

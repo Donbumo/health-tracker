@@ -1,5 +1,20 @@
 # Handoff activo de Health Tracker
 
+## Actualización 2026-07-16 — Alpha 0.9 Workout Load Entry
+
+- Rama: `feature/workout-load-entry`.
+- Base exacta: `3d23ed1`, tag `alpha-0.8.1-workout-session-recovery`; árbol inicial limpio.
+- Baseline local previa: `548 passed, 3 skipped, 1 warning`.
+- Objetivo: captura avanzada de cargas sin cambiar la semántica compatible de `weight_kg`.
+- Implementación: calculador puro Decimal, 12 modos, unidades mixtas por componente, `calculation_version`, `ExerciseLoadProfile`, detalle por set, perfiles/última carga, edición owner-only, UI móvil, drafts/idempotencia, import/export/backup/restore y sync aditivos.
+- Migración: `20260716_0027_workout_load_entry.py`, aditiva y reversible; ciclos aislados SQLite y MariaDB cubiertos. El ciclo MariaDB conservó dos series históricas con `load_details_json = NULL` y la misma huella antes/después. Nunca se aplicó al stack persistente.
+- Companion: completion puede conservar `load_details`; packages planeados declaran `advanced_load_details_in_planned_package=false`.
+- Restricciones: no tocar `.env`, `/data`, el stack activo, sus volúmenes ni datos reales; no commit/push/merge/tag.
+- Validación final: local `566 passed, 3 skipped, 1 warning`; Docker/MariaDB aislado `568 passed, 1 skipped, 1 warning`; focal Docker `127 passed, 1 warning`; `compileall` y `db check` limpios; single head `20260716_0027`. El skip Docker es únicamente `test_active_handoff.py` porque `docs/` no se copia a la imagen; el warning es el ZIP duplicado intencional.
+- QA real aislado: proyecto temporal `health-tracker-alpha09-qa`, puerto `18090`, DB/red/volúmenes exclusivos y eliminados al terminar. Pasaron fórmulas, draft/reload, CSRF recovery, idempotencia, edición, última carga, restart, exports, reimport, backup/restore, dry-runs y persistencia. Responsive oscuro pasó a 360/390/430/768/1024/1366 px sin overflow global. El navegador no expuso emulación real de tema claro; ese sign-off sigue pendiente.
+- Bugs corregidos: input vacío tratado como cero en JS; forma canónica incompleta de `load_details`; unidades únicas en vez de mixtas; revisión inicial de perfil; etiqueta Alpha; ausencia de edición web segura.
+- Regla canónica: [`project-rules/workout-load-entry.md`](project-rules/workout-load-entry.md). Guías: [`WORKOUT_LOAD_ENTRY.md`](WORKOUT_LOAD_ENTRY.md), [`WORKOUT_LOAD_MODES.md`](WORKOUT_LOAD_MODES.md) y [`WORKOUT_LOAD_CALCULATIONS.md`](WORKOUT_LOAD_CALCULATIONS.md).
+
 ## Actualización 2026-07-15 — Hotfix Alpha 0.8.1
 
 - Rama: `hotfix/alpha-0.8.1-workout-session-recovery`.

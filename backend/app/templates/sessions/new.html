@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Registrar sesión · Health Tracker{% endblock %}
+{% block title %}{{ 'Editar' if editing_session else 'Registrar' }} sesión · Health Tracker{% endblock %}
 {% block content %}
   <section class="page-heading">
     <div>
-      <h1>Registrar sesión</h1>
-      <p>Selecciona un día planeado y marca únicamente las series realizadas.</p>
+      <h1>{{ 'Editar sesión' if editing_session else 'Registrar sesión' }}</h1>
+      <p>{% if editing_session %}Actualiza los resultados sin cambiar la versión histórica del plan.{% else %}Selecciona un día planeado y marca únicamente las series realizadas.{% endif %}</p>
     </div>
   </section>
 
@@ -15,7 +15,7 @@
     </div>
   {% endif %}
 
-  <section class="card">
+  {% if not editing_session %}<section class="card">
     <form method="get" class="inline-selection">
       {% if plan_id %}<input type="hidden" name="plan_id" value="{{ plan_id }}">{% endif %}
       <div class="field grow">
@@ -30,7 +30,7 @@
       <button class="button" type="submit">Cargar ejercicios</button>
     </form>
     {% if not options %}<p>No hay días con ejercicios en las rutinas activas disponibles.</p>{% endif %}
-  </section>
+  </section>{% endif %}
 
   {% if selected_day %}
     <form
@@ -44,18 +44,26 @@
       data-week-number="{{ selected_day.week.week_number }}"
       data-day-number="{{ selected_day.day.day_number }}"
       data-form-url="{{ request.full_path.rstrip('?') }}"
+      data-drafts-enabled="{{ 'true' if drafts_enabled else 'false' }}"
       data-draft-max-bytes="{{ draft_max_bytes }}"
       data-draft-ttl-days="{{ draft_ttl_days }}"
       data-server-debounce-ms="{{ draft_server_debounce_ms }}"
       data-recovered-post="{{ 'true' if recovery_message else 'false' }}"
     >
       {{ form.hidden_tag() }}
-      <section class="workout-draft-toolbar" aria-live="polite">
+      {% if drafts_enabled %}<section class="workout-draft-toolbar" aria-live="polite">
         <span id="workout-draft-status" class="status status-muted" data-status-code="idle">Borrador listo</span>
         <button id="discard-workout-draft" class="button button-secondary" type="button">Descartar borrador</button>
-      </section>
+      </section>{% endif %}
       <section class="card">
         <h2>{{ selected_day.label }}</h2>
+        <div class="field load-unit-preference">
+          <label for="preferred-load-unit">Unidad de carga preferida</label>
+          <select id="preferred-load-unit" name="preferred_load_unit">
+            {% for unit in load_units %}<option value="{{ unit }}" {% if preferred_load_unit == unit %}selected{% endif %}>{{ unit|upper }}</option>{% endfor %}
+          </select>
+          <span class="help">Cada serie conserva su unidad original y muestra el total en kg y lb.</span>
+        </div>
         <div class="field">
           {{ form.performed_at.label }}
           {{ form.performed_at() }}
@@ -88,19 +96,26 @@
 
       {% for exercise in selected_day.day.exercises %}
         {% set exercise_index = loop.index0 %}
+        {% set exercise_default = load_defaults.get(exercise.name, {}) %}
+        {% set suggested_load = exercise_default.get('profile') or exercise_default.get('last') or {} %}
         <section class="card">
           <h2>{{ exercise.exercise_order }}. {{ exercise.name }}</h2>
+          {% if exercise_default.get('last') %}<p class="help load-last">Última carga: {{ exercise_default.last.normalized_total_kg|float|round(2) }} kg / {{ exercise_default.last.calculated_total_lb|float|round(2) }} lb ({{ exercise_default.last.load_mode }})</p>{% endif %}
+          <div class="workout-load-actions">
+            <button class="button button-secondary copy-load-sets" type="button" data-exercise-index="{{ exercise_index }}">Copiar carga a todas las series</button>
+            <label><input type="checkbox" name="exercise_{{ exercise_index }}_remember_load" value="1" {% if form_values.get('exercise_' ~ exercise_index ~ '_remember_load') %}checked{% endif %}> Recordar configuración</label>
+          </div>
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th>Realizada</th><th>Serie</th><th>Reps objetivo</th><th>Peso kg</th><th>Reps reales</th><th>RIR</th><th>RPE</th><th>Descanso s</th><th>Notas</th></tr>
+                <tr><th>Realizada</th><th>Serie</th><th>Reps objetivo</th><th>Carga</th><th>Reps reales</th><th>RIR</th><th>RPE</th><th>Descanso s</th><th>Notas</th></tr>
               </thead>
               <tbody>
                 {% for planned_set in exercise.sets %}
                   {% set set_index = loop.index0 %}
                   {% set prefix = 'exercise_' ~ exercise_index ~ '_set_' ~ set_index %}
                   <tr>
-                    <td><input type="checkbox" name="{{ prefix }}_completed" value="1" {% if request.form.get(prefix ~ '_completed') %}checked{% endif %}></td>
+                    <td><input type="checkbox" name="{{ prefix }}_completed" value="1" {% if form_values.get(prefix ~ '_completed') %}checked{% endif %}></td>
                     <td>{{ planned_set.set_number }}</td>
                     <td>
                       {% if planned_set.reps is defined %}
@@ -109,12 +124,48 @@
                         {{ planned_set.reps_min }}–{{ planned_set.reps_max }}
                       {% else %}—{% endif %}
                     </td>
-                    <td><input class="compact-input" type="number" min="0" max="2000" step="0.01" name="{{ prefix }}_weight_kg" value="{{ request.form.get(prefix ~ '_weight_kg', '') }}"></td>
-                    <td><input class="compact-input" type="number" min="1" max="10000" step="1" name="{{ prefix }}_reps" value="{{ request.form.get(prefix ~ '_reps', planned_set.reps|default(planned_set.reps_min|default(''))) }}"></td>
-                    <td><input class="compact-input" type="number" min="0" max="10" step="0.5" name="{{ prefix }}_rir" value="{{ request.form.get(prefix ~ '_rir', '') }}"></td>
-                    <td><input class="compact-input" type="number" min="1" max="10" step="0.5" name="{{ prefix }}_rpe" value="{{ request.form.get(prefix ~ '_rpe', '') }}"></td>
-                    <td><input class="compact-input" type="number" min="0" max="86400" step="1" name="{{ prefix }}_rest_seconds" value="{{ request.form.get(prefix ~ '_rest_seconds', '') }}"></td>
-                    <td><input type="text" maxlength="2000" name="{{ prefix }}_notes" value="{{ request.form.get(prefix ~ '_notes', '') }}"></td>
+                    <td>
+                      <div class="workout-load-editor" data-prefix="{{ prefix }}" data-exercise-index="{{ exercise_index }}">
+                        <div class="load-editor-row">
+                          <label>Modo
+                            <select name="{{ prefix }}_load_mode" data-load-mode>
+                              {% set selected_mode = form_values.get(prefix ~ '_load_mode', suggested_load.get('load_mode', 'direct_total')) %}
+                              {% for mode in load_modes %}<option value="{{ mode }}" {% if selected_mode == mode %}selected{% endif %}>{{ load_mode_labels[mode] }}</option>{% endfor %}
+                            </select>
+                          </label>
+                          <label>Unidad
+                            {% set selected_unit = form_values.get(prefix ~ '_load_unit', suggested_load.get('original_unit', preferred_load_unit)) %}
+                            <select name="{{ prefix }}_load_unit" data-load-unit>{% for unit in load_units %}<option value="{{ unit }}" {% if selected_unit == unit %}selected{% endif %}>{{ unit|upper }}</option>{% endfor %}</select>
+                          </label>
+                        </div>
+                        <div class="load-components">
+                          {% for component, label in load_component_labels.items() %}
+                            {% set suggested_component = suggested_load.get('components', {}).get(component, {}) %}
+                            <label data-component-field="{{ component }}">{{ label }}
+                              <span class="load-component-input">
+                                <input type="number" min="0" max="{{ 604800 if component == 'duration_seconds' else 10000000 if component == 'distance_meters' else 2000 }}" step="{{ 1 if component == 'duration_seconds' else 0.01 }}" inputmode="decimal" name="{{ prefix }}_load_{{ component }}" value="{{ form_values.get(prefix ~ '_load_' ~ component, suggested_component.get('value', '')) }}" data-load-component="{{ component }}">
+                                {% if component == 'duration_seconds' %}<span class="load-fixed-unit">s</span>
+                                {% elif component == 'distance_meters' %}<span class="load-fixed-unit">m</span>
+                                {% else %}
+                                  {% set component_unit = form_values.get(prefix ~ '_load_' ~ component ~ '_unit', suggested_component.get('unit', selected_unit)) %}
+                                  <select name="{{ prefix }}_load_{{ component }}_unit" aria-label="Unidad de {{ label|lower }}" data-load-component-unit="{{ component }}">{% for unit in load_units %}<option value="{{ unit }}" {% if component_unit == unit %}selected{% endif %}>{{ unit|upper }}</option>{% endfor %}</select>
+                                {% endif %}
+                              </span>
+                            </label>
+                          {% endfor %}
+                        </div>
+                        <input type="hidden" name="{{ prefix }}_weight_kg" value="{{ form_values.get(prefix ~ '_weight_kg', '') }}" data-normalized-weight>
+                        <output class="load-total" aria-live="polite">Total pendiente</output>
+                        <div class="load-quick-actions" aria-label="Ajustes rápidos">
+                          <button type="button" data-load-adjust="-5">−5</button><button type="button" data-load-adjust="-2.5">−2.5</button><button type="button" data-load-adjust="2.5">+2.5</button><button type="button" data-load-adjust="5">+5</button>
+                        </div>
+                      </div>
+                    </td>
+                    <td><input class="compact-input" type="number" min="1" max="10000" step="1" name="{{ prefix }}_reps" value="{{ form_values.get(prefix ~ '_reps', planned_set.reps|default(planned_set.reps_min|default(''))) }}"></td>
+                    <td><input class="compact-input" type="number" min="0" max="10" step="0.5" name="{{ prefix }}_rir" value="{{ form_values.get(prefix ~ '_rir', '') }}"></td>
+                    <td><input class="compact-input" type="number" min="1" max="10" step="0.5" name="{{ prefix }}_rpe" value="{{ form_values.get(prefix ~ '_rpe', '') }}"></td>
+                    <td><input class="compact-input" type="number" min="0" max="86400" step="1" name="{{ prefix }}_rest_seconds" value="{{ form_values.get(prefix ~ '_rest_seconds', '') }}"></td>
+                    <td><input type="text" maxlength="2000" name="{{ prefix }}_notes" value="{{ form_values.get(prefix ~ '_notes', '') }}"></td>
                   </tr>
                 {% endfor %}
               </tbody>
@@ -124,10 +175,11 @@
       {% endfor %}
 
       <section class="form-actions">
-        {{ form.submit(class_="button", data_saving_label="Guardando…") }}
+        {{ form.submit(class_="button", value=('Guardar cambios' if editing_session else 'Guardar sesión'), data_saving_label="Guardando…") }}
       </section>
     </form>
-    <script type="application/json" id="server-workout-draft">{{ server_draft|tojson }}</script>
-    <script src="{{ url_for('static', filename='js/workout_session_drafts.js') }}" defer></script>
+    {% if drafts_enabled %}<script type="application/json" id="server-workout-draft">{{ server_draft|tojson }}</script>
+    <script src="{{ url_for('static', filename='js/workout_session_drafts.js') }}" defer></script>{% endif %}
+    <script src="{{ url_for('static', filename='js/workout_load_entry.js') }}" defer></script>
   {% endif %}
 {% endblock %}

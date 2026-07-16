@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 import uuid
@@ -130,6 +130,38 @@ def resolve_planned_workout_day(
     raise TrainingSessionError("Planned workout day no longer exists")
 
 
+def resolve_session_planned_day(
+    session: TrainingSession, user_id: int
+) -> PlannedDay:
+    """Resolve the immutable plan-version day used by an existing session."""
+    if session.user_id != user_id:
+        raise TrainingSessionError("Training session does not belong to this user")
+    version = session.training_plan_version
+    plan = session.training_plan
+    if (
+        version.user_id != user_id
+        or plan.user_id != user_id
+        or version.training_plan_id != plan.id
+    ):
+        raise TrainingSessionError("Training session plan version is invalid")
+    for week_index, week in enumerate(version.content["data"]["weeks"]):
+        if week["week_number"] != session.planned_week_number:
+            continue
+        for day_index, day in enumerate(week["days"]):
+            if (
+                day["day_number"] == session.planned_day_number
+                and day.get("exercises")
+            ):
+                return PlannedDay(
+                    key=f"{version.id}:{week_index}:{day_index}",
+                    plan=plan,
+                    version=version,
+                    week=week,
+                    day=day,
+                )
+    raise TrainingSessionError("Training session planned day no longer exists")
+
+
 def build_completed_workout_document(
     *,
     user_id: int,
@@ -238,6 +270,8 @@ def import_completed_workout(
     client_submission_id: str | None = None,
     submission_payload_hash: str | None = None,
     planned_workout: PlannedWorkout | None = None,
+    preferred_load_unit: str | None = None,
+    remembered_profiles: list[dict[str, Any]] | None = None,
 ) -> tuple[TrainingSession, bool]:
     if client_submission_id is not None:
         existing_submission = _existing_submission(client_submission_id, user_id)
@@ -252,6 +286,12 @@ def import_completed_workout(
         return existing, True
 
     validate_json_document(document, "completed_workout")
+    try:
+        from app.services.workout_loads import validate_completed_workout_loads
+
+        validate_completed_workout_loads(document)
+    except ValueError as error:
+        raise TrainingSessionError(str(error)) from error
     if document["user_id"] != user_id or source_file.user_id != user_id:
         raise TrainingSessionError("Completed workout does not belong to this user")
     if source_file.source_type not in {"manual_generated", "uploaded"}:
@@ -334,6 +374,8 @@ def import_completed_workout(
             db.session.add(exercise)
             db.session.flush()
             for set_data in exercise_data["sets"]:
+                from app.services.workout_loads import validate_load_details
+
                 db.session.add(
                     TrainingSet(
                         user_id=user_id,
@@ -341,6 +383,9 @@ def import_completed_workout(
                         set_number=set_data["set_number"],
                         planned_set_number=set_data["planned_set_number"],
                         weight_kg=Decimal(str(set_data["weight_kg"])),
+                        load_details_json=validate_load_details(
+                            set_data["weight_kg"], set_data.get("load_details")
+                        ),
                         reps=set_data["reps"],
                         rir=(
                             Decimal(str(set_data["rir"]))
@@ -393,6 +438,24 @@ def import_completed_workout(
             ).scalar_one_or_none()
             if draft is not None:
                 db.session.delete(draft)
+        if preferred_load_unit is not None:
+            from app.models import User
+
+            if preferred_load_unit not in {"kg", "lb"}:
+                raise TrainingSessionError("Unsupported preferred load unit")
+            user = db.session.get(User, user_id)
+            if user is None:
+                raise TrainingSessionError("User not found")
+            user.preferred_load_unit = preferred_load_unit
+        if remembered_profiles:
+            from app.services.workout_loads import upsert_exercise_load_profile
+
+            for profile in remembered_profiles:
+                upsert_exercise_load_profile(
+                    user_id=user_id,
+                    exercise_name=profile["exercise_name"],
+                    load_details=profile["load_details"],
+                )
         db.session.commit()
         return session, False
     except IntegrityError:
@@ -440,6 +503,8 @@ def create_manual_training_session(
     notes: str | None = None,
     client_submission_id: str | None = None,
     planned_workout: PlannedWorkout | None = None,
+    preferred_load_unit: str | None = None,
+    remembered_profiles: list[dict[str, Any]] | None = None,
 ) -> tuple[TrainingSession, bool]:
     document = build_completed_workout_document(
         user_id=user_id,
@@ -494,6 +559,8 @@ def create_manual_training_session(
             client_submission_id=client_submission_id,
             submission_payload_hash=submission_payload_hash,
             planned_workout=planned_workout,
+            preferred_load_unit=preferred_load_unit,
+            remembered_profiles=remembered_profiles,
         )
     except Exception:
         db.session.rollback()
@@ -503,6 +570,171 @@ def create_manual_training_session(
                 generated_root
                 / f"user_{user_id}"
                 / stored_filename
+            ).resolve()
+            try:
+                candidate.relative_to(generated_root)
+            except ValueError:
+                pass
+            else:
+                candidate.unlink(missing_ok=True)
+        raise
+
+
+def update_manual_training_session(
+    *,
+    session: TrainingSession,
+    user_id: int,
+    planned_day: PlannedDay,
+    performed_at: datetime,
+    exercises: list[dict[str, Any]],
+    duration_seconds: int | None = None,
+    average_heart_rate_bpm: int | None = None,
+    calories_burned: Decimal | float | int | None = None,
+    notes: str | None = None,
+    preferred_load_unit: str | None = None,
+    remembered_profiles: list[dict[str, Any]] | None = None,
+) -> tuple[TrainingSession, bool]:
+    """Update one owned manual session while preserving stable row identities."""
+    if session.user_id != user_id:
+        raise TrainingSessionError("Training session does not belong to this user")
+    if (
+        session.training_plan_id != planned_day.plan.id
+        or session.training_plan_version_id != planned_day.version.id
+    ):
+        raise TrainingSessionError("Training session plan version cannot be changed")
+    document = build_completed_workout_document(
+        user_id=user_id,
+        planned_day=planned_day,
+        performed_at=performed_at,
+        exercises=exercises,
+        duration_seconds=duration_seconds,
+        average_heart_rate_bpm=average_heart_rate_bpm,
+        calories_burned=calories_burned,
+        notes=notes,
+        client_submission_id=session.client_submission_id,
+    )
+    from app.services.mobile_sync import canonical_hash
+
+    payload_hash = canonical_hash(document)
+    if session.client_payload_sha256 == payload_hash:
+        return session, True
+    filename = (
+        f"completed_workout_edit_{session.public_id}_r{session.revision + 1}.json"
+    )
+    source_file, file_duplicate = generate_standard_json(
+        document=document,
+        schema_name="completed_workout",
+        user_id=user_id,
+        original_filename=filename,
+        commit=False,
+    )
+    stored_filename = source_file.stored_filename
+    try:
+        from app.models import User
+        from app.services.mobile_sync import record_sync_change, serialize_completed_workout
+        from app.services.workout_loads import (
+            upsert_exercise_load_profile,
+            validate_load_details,
+        )
+
+        session.source_file = source_file
+        session.performed_at = performed_at
+        session.duration_seconds = duration_seconds
+        session.average_heart_rate_bpm = average_heart_rate_bpm
+        session.calories_burned = (
+            Decimal(str(calories_burned)) if calories_burned is not None else None
+        )
+        session.notes = notes.strip() if notes and notes.strip() else None
+        session.client_payload_sha256 = payload_hash
+        session.revision += 1
+        session.updated_at = datetime.now(timezone.utc)
+
+        existing_exercises = {
+            item.planned_exercise_order: item for item in session.exercises
+        }
+        incoming_orders = {item["planned_exercise_order"] for item in exercises}
+        for planned_order, existing in existing_exercises.items():
+            if planned_order not in incoming_orders:
+                db.session.delete(existing)
+        db.session.flush()
+        for exercise_data in exercises:
+            exercise = existing_exercises.get(exercise_data["planned_exercise_order"])
+            if exercise is None:
+                exercise = TrainingSessionExercise(
+                    user_id=user_id,
+                    training_session=session,
+                    planned_exercise_order=exercise_data["planned_exercise_order"],
+                )
+                db.session.add(exercise)
+                db.session.flush()
+            exercise.exercise_order = exercise_data["exercise_order"]
+            exercise.name = exercise_data["name"]
+            exercise.notes = exercise_data.get("notes")
+            existing_sets = {item.planned_set_number: item for item in exercise.sets}
+            incoming_set_numbers = {
+                item["planned_set_number"] for item in exercise_data["sets"]
+            }
+            for planned_set_number, existing_set in existing_sets.items():
+                if planned_set_number not in incoming_set_numbers:
+                    db.session.delete(existing_set)
+            db.session.flush()
+            for set_data in exercise_data["sets"]:
+                training_set = existing_sets.get(set_data["planned_set_number"])
+                if training_set is None:
+                    training_set = TrainingSet(
+                        user_id=user_id,
+                        session_exercise=exercise,
+                        planned_set_number=set_data["planned_set_number"],
+                    )
+                    db.session.add(training_set)
+                training_set.set_number = set_data["set_number"]
+                training_set.weight_kg = Decimal(str(set_data["weight_kg"]))
+                training_set.load_details_json = validate_load_details(
+                    set_data["weight_kg"], set_data.get("load_details")
+                )
+                training_set.reps = set_data["reps"]
+                training_set.rir = (
+                    Decimal(str(set_data["rir"]))
+                    if set_data.get("rir") is not None
+                    else None
+                )
+                training_set.rpe = (
+                    Decimal(str(set_data["rpe"]))
+                    if set_data.get("rpe") is not None
+                    else None
+                )
+                training_set.rest_seconds = set_data.get("rest_seconds")
+                training_set.notes = set_data.get("notes")
+
+        if preferred_load_unit is not None:
+            if preferred_load_unit not in {"kg", "lb"}:
+                raise TrainingSessionError("Unsupported preferred load unit")
+            db.session.get(User, user_id).preferred_load_unit = preferred_load_unit
+        for profile in remembered_profiles or []:
+            upsert_exercise_load_profile(
+                user_id=user_id,
+                exercise_name=profile["exercise_name"],
+                load_details=profile["load_details"],
+            )
+        db.session.flush()
+        db.session.expire(session, ["exercises"])
+        record_sync_change(
+            user_id=user_id,
+            entity_type="completed_workout",
+            entity_public_id=session.public_id,
+            operation="upsert",
+            revision=session.revision,
+            payload=serialize_completed_workout(session),
+            device_id=None,
+        )
+        db.session.commit()
+        return session, False
+    except Exception:
+        db.session.rollback()
+        if not file_duplicate:
+            generated_root = Path(current_app.config["GENERATED_UPLOAD_ROOT"]).resolve()
+            candidate = (
+                generated_root / f"user_{user_id}" / stored_filename
             ).resolve()
             try:
                 candidate.relative_to(generated_root)

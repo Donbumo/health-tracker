@@ -233,6 +233,7 @@ class TrainingSet(db.Model):
     set_number = db.Column(db.Integer, nullable=False)
     planned_set_number = db.Column(db.Integer, nullable=False)
     weight_kg = db.Column(db.Numeric(8, 2), nullable=False)
+    load_details_json = db.Column(db.JSON, nullable=True)
     reps = db.Column(db.Integer, nullable=False)
     rir = db.Column(db.Numeric(4, 1), nullable=True)
     rpe = db.Column(db.Numeric(4, 1), nullable=True)

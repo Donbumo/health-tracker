@@ -1,5 +1,7 @@
 # Sync Protocol 1.0
 
+Alpha 0.9 permite `load_details` 1.0 opcional dentro de cada set de `completed_workout`. Es aditivo: `weight_kg` continúa obligatorio para clientes 1.0 anteriores, mientras el servidor verifica que coincida con modo, unidad y componentes.
+
 ## Flujo
 
 1. Login API y registro del dispositivo.

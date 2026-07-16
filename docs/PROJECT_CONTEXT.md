@@ -1,5 +1,13 @@
 # Contexto del proyecto: Plataforma self-hosted de salud, nutrición, entrenamiento y dispositivos
 
+## Alpha 1.0 en desarrollo: Web Daily Driver
+
+`feature/alpha-1.0-web-daily-driver` parte de `d2e804a`, tag `alpha-0.9-workout-load-entry`. El bloque consolida navegación, onboarding derivado, preferencias, dashboard diario, rutina guiada/duplicación, filtros de agenda e historial, captura plegable, `/imports`, ayuda y PWA estática segura. La migración aditiva/reversible prevista es `20260717_0028_user_daily_preferences.py`.
+
+La arquitectura de importación no se reemplaza: `ImportAdapterRegistry` declara el soporte visible y delega en `StandardImportExecutor` y `RealFileImportService`. Preview sigue read-only, confirmación sigue firmada e `ImportRun` continúa como auditoría. El service worker nunca cachea navegación autenticada, API ni POST.
+
+No incluye SPA, mapping reusable persistido, diseñador visual complejo, APK, reloj, Bluetooth ni nuevas integraciones vendor. Los resultados finales local/Docker y el sign-off visual deben actualizarse al cerrar el bloque; no se consideran verificados por este encabezado.
+
 ## Alpha 0.9 en desarrollo: captura avanzada de carga
 
 `feature/workout-load-entry` parte de `3d23ed1`, tag `alpha-0.8.1-workout-session-recovery`. Implementa modos explícitos de carga, conversión Decimal kg/lb, perfiles owner-only por identidad de ejercicio y detalle opcional versionado en cada set. La migración aditiva/reversible es `20260716_0027_workout_load_entry.py`.

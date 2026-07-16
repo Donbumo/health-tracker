@@ -6,7 +6,7 @@
       <h1>Rutinas</h1>
       <p>Planes versionados asociados exclusivamente a tu usuario.</p>
     </div>
-    <a class="button" href="{{ url_for('training.import_plan') }}">Importar rutina</a>
+    <div class="page-actions"><a class="button" href="{{ url_for('training.create_plan') }}">Crear rutina</a><a class="button button-secondary" href="{{ url_for('main.import_hub', requested_type='training_plan') }}">Importar rutina</a></div>
   </section>
 
   <section class="card">
@@ -15,12 +15,13 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>Nombre</th><th>Versión activa</th><th>Actualización</th><th></th></tr>
+            <tr><th>Nombre</th><th>Contenido</th><th>Versión activa</th><th>Actualización</th><th></th></tr>
           </thead>
           <tbody>
             {% for plan in plan_list %}
               <tr>
                 <td>{{ plan.name }}</td>
+                <td>{{ plan_summaries[plan.id].weeks }} sem · {{ plan_summaries[plan.id].days }} días · {{ plan_summaries[plan.id].exercises }} ejercicios</td>
                 <td>{{ plan.active_version_number }}</td>
                 <td>{{ plan.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
                 <td><a href="{{ url_for('training.detail', plan_id=plan.id) }}">Ver detalle</a></td>
@@ -30,8 +31,7 @@
         </table>
       </div>
     {% else %}
-      <p>Todavía no has importado rutinas.</p>
-      <a class="button" href="{{ url_for('training.import_plan') }}">Importar JSON</a>
+      <div class="empty-state"><h2>Aún no tienes rutinas</h2><p>Crea una rutina guiada o importa un JSON compatible.</p><a class="button" href="{{ url_for('training.create_plan') }}">Crear rutina</a><a class="button button-secondary" href="{{ url_for('main.import_hub', requested_type='training_plan') }}">Importar rutina</a><details class="context-help"><summary>Ver un ejemplo</summary><p>Una rutina contiene semanas, días, ejercicios y series. La creación guiada prepara una estructura inicial que podrás versionar.</p></details></div>
     {% endif %}
   </section>
 {% endblock %}

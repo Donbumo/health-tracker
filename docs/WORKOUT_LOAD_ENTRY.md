@@ -1,5 +1,7 @@
 # Captura avanzada de carga — Alpha 0.9
 
+Alpha 1.0 reorganiza visualmente la captura diaria, pero no cambia fórmulas, modos, perfiles ni el contrato `load_details` 1.0 descrito aquí.
+
 La captura de sesiones permite registrar cómo se obtuvo la carga total sin perder compatibilidad con el historial. `weight_kg` continúa siendo el total normalizado usado por volumen, progreso y clientes antiguos. El bloque opcional `load_details` conserva el modo, unidades por componente, entrada original, totales y `calculation_version`.
 
 ## Modos

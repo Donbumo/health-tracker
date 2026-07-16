@@ -1,5 +1,20 @@
 # Handoff activo de Health Tracker
 
+## Actualización 2026-07-16 — Alpha 1.0 Web Daily Driver
+
+- Rama: `feature/alpha-1.0-web-daily-driver`; base `d2e804a`, tag `alpha-0.9-workout-load-entry`.
+- Baseline local antes del cambio: `566 passed, 3 skipped, 1 warning`.
+- Objetivo: hacer la web usable diariamente sin cambiar los contratos API ni reemplazar servicios de datos.
+- Implementado en el working tree: onboarding derivado, preferencias, dashboard hoy/borrador/reciente/atención, rutina guiada y duplicación, agenda/historial filtrables, captura plegable, `/imports`, registro declarativo de adaptadores, ayuda, errores humanos y PWA estática.
+- Migración nueva: `20260717_0028_user_daily_preferences.py`, aditiva/reversible; single head `20260717_0028`, upgrade y `db check` limpios. El ciclo MariaDB aislado upgrade/downgrade/upgrade ya había pasado antes del corte.
+- Restricciones: no `.env`, `/data`, stack activo, datos reales, commit, push, merge o tag.
+- Validación final posterior al corte: local `577 passed, 3 skipped, 1 warning`; focal Docker/MariaDB `48 passed`; Docker completa `579 passed, 1 skipped, 1 warning`; `compileall`, Compose y `db check` limpios. El skip Docker es `test_active_handoff.py` porque `docs/` no entra en la imagen y el warning es el ZIP duplicado intencional.
+- QA aislado: tema oscuro revisado en 60 combinaciones de 10 rutas por 6 anchos, sin overflow ni consola; navegación móvil, captura con barra Guardar sticky, Import Hub, ayuda, errores y controles táctiles comprobados. Se corrigió el campo Ejercicio del historial, que medía 21 px, declarando `type="text"`; después midió 49 px.
+- Operación: los cinco dry-runs disponibles quedaron en cero; reiniciar solo `web` conservó conteos agregados idénticos; logs actuales sin tracebacks, Bearer, contraseñas, CSRF, cookies ni payloads clínicos. Las menciones a nombres de claves son únicamente el warning de configuración sin valores. El stack QA, red, volúmenes y override temporal fueron eliminados.
+- Riesgos/pendientes: el navegador solo expuso tema oscuro y el sign-off claro sigue pendiente. Durante la recuperación QA un diagnóstico imprimió material codificado de una credencial; el volumen QA fue destruido, pero se recomienda rotar la credencial correspondiente antes del release. No hay mapping reusable persistido, calendario gráfico, editor visual complejo ni offline de datos autenticados.
+- Siguiente acción: validar tema claro real y rotar la credencial señalada antes de decidir el release Alpha 1.0.
+- Regla: [`project-rules/web-daily-driver.md`](project-rules/web-daily-driver.md). Guías: [`USER_GUIDE.md`](USER_GUIDE.md), [`GETTING_STARTED.md`](GETTING_STARTED.md), [`IMPORT_HUB.md`](IMPORT_HUB.md), [`DAILY_WORKFLOW.md`](DAILY_WORKFLOW.md).
+
 ## Actualización 2026-07-16 — Alpha 0.9 Workout Load Entry
 
 - Rama: `feature/workout-load-entry`.

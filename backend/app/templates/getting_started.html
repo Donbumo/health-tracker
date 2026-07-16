@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Primeros pasos · Health Tracker{% endblock %}
+{% block breadcrumb %}Primeros pasos{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <p class="eyebrow">Configura a tu ritmo</p>
+      <h1>Primeros pasos</h1>
+      <p>Prepara lo esencial para registrar entrenamientos y mantener una copia recuperable de tus datos.</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('main.dashboard') }}">Volver a hoy</a>
+  </section>
+
+  <section class="card" aria-labelledby="getting-started-progress">
+    <h2 id="getting-started-progress">{{ onboarding.completed_count }} de {{ onboarding.total_count }} pasos principales</h2>
+    <progress value="{{ onboarding.completed_count }}" max="{{ onboarding.total_count }}">
+      {{ onboarding.completed_count }} de {{ onboarding.total_count }}
+    </progress>
+    <p class="help">Los estados se calculan desde tus datos reales. Esta guía no crea registros por sí sola.</p>
+  </section>
+
+  <ol class="onboarding-steps">
+    {% for item in onboarding["items"] %}
+      <li class="card onboarding-step {{ 'is-complete' if item.complete else 'is-pending' }}">
+        <div>
+          <span class="status {{ 'status-success' if item.complete else 'status-muted' }}">
+            {{ 'Completado' if item.complete else ('Opcional' if not item.required else 'Pendiente') }}
+          </span>
+          <h2>{{ item.label }}</h2>
+          <p>{{ item.help }}</p>
+        </div>
+        <a class="button {{ 'button-secondary' if item.complete else '' }}" href="{{ url_for(item.endpoint) }}">
+          {{ 'Revisar' if item.complete else 'Continuar' }}
+        </a>
+      </li>
+    {% endfor %}
+  </ol>
+
+  {% if onboarding.required_complete and not onboarding.dismissed %}
+    <form method="post" action="{{ url_for('main.dismiss_getting_started') }}" class="form-actions">
+      {{ dismiss_form.hidden_tag() }}
+      {{ dismiss_form.submit(class_="button button-secondary") }}
+    </form>
+  {% endif %}
+{% endblock %}

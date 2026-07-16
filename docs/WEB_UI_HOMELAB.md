@@ -1,5 +1,11 @@
 # Web UI Homelab
 
+## Alpha 1.0 Web Daily Driver
+
+La entrada autenticada prioriza dashboard diario, onboarding discreto, agenda, borradores y acciones frecuentes. La ruta visible de importación es `/imports`; preferencias viven en `/account/preferences` y ayuda en `/help`. La PWA es opcional y solo cachea assets estáticos: no ofrece offline para datos autenticados.
+
+`/account/system` muestra estado, migración, storage, operaciones propias, si la firma API usa clave independiente y la limitación process-local del rate limiter, sin mostrar valores o paths.
+
 ## Recuperación de sesión web
 
 Alpha 0.8.1 añade a la captura de entrenamiento un indicador de borrador, restauración local/servidor, acción para descartarlo y recuperación específica ante CSRF vencido. El botón Guardar se deshabilita durante submit y el borrador local solo se elimina cuando el detalle confirma la misma submission exitosa. Validar a 360/390/430/768/1024/1366 px, claro y oscuro.

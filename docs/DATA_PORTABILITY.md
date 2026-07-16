@@ -1,5 +1,7 @@
 # Data portability
 
+Alpha 1.0 añade de forma opcional `display_name` y `timezone` al objeto `user` del export 1.0 y restaura esas preferencias al usuario destino sin cambiar identidad, email, rol o credenciales. `/imports` sigue separado de export/restore/backup en `/account/data`.
+
 Alpha 0.9 conserva de forma aditiva los detalles de carga de cada serie (`load_details` 1.0), la unidad preferida y los perfiles privados de carga por ejercicio. Restore recalcula/valida los totales, reescribe ownership al usuario destino y mantiene `weight_kg` como total normalizado. Sesiones anteriores sin este bloque siguen siendo válidas.
 
 Documento corto para QA y handoff de portabilidad de datos.

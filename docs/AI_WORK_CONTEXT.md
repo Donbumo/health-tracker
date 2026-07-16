@@ -1,5 +1,11 @@
 # Contexto operativo para agentes de IA
 
+## Bloque activo: Alpha 1.0 Web Daily Driver
+
+Rama `feature/alpha-1.0-web-daily-driver`, base exacta `d2e804a`, tag `alpha-0.9-workout-load-entry`. Leer [`project-rules/web-daily-driver.md`](project-rules/web-daily-driver.md), [`USER_GUIDE.md`](USER_GUIDE.md) e [`IMPORT_HUB.md`](IMPORT_HUB.md) para cambios web. El bloque usa la migración aditiva `20260717_0028` para nombre visible, zona horaria y ocultamiento del onboarding.
+
+Invariantes: `/imports` es la entrada visible, los adaptadores internos no se duplican, preview no escribe, el usuario proviene de la sesión y la PWA solo cachea `/static/`. No tocar `.env`, `/data` o el stack activo. No declarar Alpha 1.0 lista hasta tener suite local/Docker, migración y QA visual real documentados.
+
 ## Bloque activo: Alpha 0.9 Workout Load Entry
 
 La rama `feature/workout-load-entry` parte exactamente de `3d23ed1`, tag `alpha-0.8.1-workout-session-recovery`. Añade calculador Decimal, preferencia kg/lb, `ExerciseLoadProfile`, `TrainingSet.load_details_json`, formulario móvil y contratos aditivos de import/export/restore/sync. Leer [`project-rules/workout-load-entry.md`](project-rules/workout-load-entry.md) y [`WORKOUT_LOAD_ENTRY.md`](WORKOUT_LOAD_ENTRY.md).

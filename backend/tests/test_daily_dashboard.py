@@ -17,16 +17,16 @@ from tests.conftest import login
 TARGET_DATE = "2026-07-09"
 
 
-def test_empty_dashboard_exposes_all_qa_quick_actions(client, user):
+def test_empty_dashboard_exposes_daily_driver_quick_actions(client, user):
     login(client)
     response = client.get("/dashboard", query_string={"date": TARGET_DATE})
     assert response.status_code == 200
     for label, path in (
-        ("Capturar nutrición", "/manual/nutrition"),
-        ("Capturar energía", "/manual/energy"),
-        ("Capturar peso", "/manual/weigh-in"),
-        ("Registrar sesión", "/training-sessions/new"),
-        ("Importar rutina", "/training-plans/import"),
+        ("Nutrición", "/manual/nutrition"),
+        ("Energía", "/manual/energy"),
+        ("Peso", "/manual/weigh-in"),
+        ("Registrar entrenamiento", "/training-sessions/new"),
+        ("Importar", "/imports"),
         ("Ver progreso", "/progress"),
     ):
         assert label.encode() in response.data

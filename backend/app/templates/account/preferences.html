@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Preferencias · Health Tracker{% endblock %}
+{% block breadcrumb %}Preferencias{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <p class="eyebrow">Cuenta</p>
+      <h1>Preferencias</h1>
+      <p>Estas opciones se aplican solo a tu cuenta.</p>
+    </div>
+  </section>
+
+  <form method="post" class="card form-card narrow-form">
+    {{ form.hidden_tag() }}
+    <div class="field">
+      {{ form.display_name.label }}
+      {{ form.display_name(autocomplete="name", placeholder="Opcional") }}
+      <span class="help">Se muestra en la navegación; no cambia tu usuario de acceso.</span>
+      {% for error in form.display_name.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+    </div>
+    <div class="field">
+      {{ form.timezone.label }}
+      {{ form.timezone(autocomplete="off", placeholder="America/Mexico_City") }}
+      <span class="help">Usa un nombre IANA. Define qué fecha se considera “hoy”.</span>
+      {% for error in form.timezone.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+    </div>
+    <div class="field">
+      {{ form.preferred_load_unit.label }}
+      {{ form.preferred_load_unit() }}
+      {% for error in form.preferred_load_unit.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+    </div>
+    <div class="form-actions">
+      {{ form.submit(class_="button") }}
+      <a class="button button-secondary" href="{{ url_for('main.getting_started') }}">Ver primeros pasos</a>
+    </div>
+  </form>
+{% endblock %}

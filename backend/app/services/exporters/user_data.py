@@ -241,7 +241,14 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
         "schema_version": "1.0",
         "type": "user_data_export",
         "exported_at": datetime.now(timezone.utc).isoformat(),
-        "user": {"id": user.id, "email": user.email, "role": user.role, "preferred_load_unit": user.preferred_load_unit},
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "role": user.role,
+            "display_name": user.display_name,
+            "timezone": user.timezone,
+            "preferred_load_unit": user.preferred_load_unit,
+        },
         "data": {
             "food_products": [
                 _food_product_document(product, user_id) for product in food_products

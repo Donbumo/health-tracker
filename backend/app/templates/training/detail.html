@@ -8,6 +8,7 @@
     </div>
     <div class="page-actions">
       <a class="button" href="{{ url_for('sessions.new_session', plan_id=plan.id) }}">Registrar sesión</a>
+      <a class="button button-secondary" href="{{ url_for('planned.create') }}">Planear entrenamiento</a>
       <a class="button" href="{{ url_for('training.new_version', plan_id=plan.id) }}">Nueva versión</a>
       <a class="button button-secondary" href="{{ url_for('training.version_history', plan_id=plan.id) }}">Historial</a>
       <a class="button" href="{{ url_for('exports.create', domain='training_plan', source_id=plan.id) }}">Exportadores avanzados</a>
@@ -15,24 +16,33 @@
     </div>
   </section>
 
-  <section class="notice warning">
-    JSON conserva el documento interno completo. CSV aplana semanas, días, ejercicios y series, por lo que puede perder estructura o metadatos.
-  </section>
-
   <section class="card">
     <h2>Versión activa {{ active_version.version_number }}</h2>
     <dl class="metadata">
-      <dt>Schema</dt><dd>{{ active_version.schema_version }}</dd>
-      <dt>SHA256</dt><dd><code>{{ active_version.sha256 }}</code></dd>
-      <dt>Archivo origen</dt><dd>{{ active_version.source_file_id }}</dd>
+      <dt>Contenido</dt><dd>{{ summary.weeks }} semanas · {{ summary.days }} días · {{ summary.exercises }} ejercicios</dd>
       <dt>Autor</dt><dd>{{ active_version.created_by.username if active_version.created_by else 'No registrado' }}</dd>
       <dt>Motivo</dt><dd>{{ active_version.change_reason or 'No registrado' }}</dd>
       <dt>Creada</dt><dd>{{ active_version.created_at.strftime('%Y-%m-%d %H:%M') }}</dd>
     </dl>
+    {% if summary.exercise_names %}
+      <h3>Ejercicios</h3>
+      <ul class="tag-list">{% for name in summary.exercise_names %}<li>{{ name }}</li>{% endfor %}</ul>
+    {% endif %}
   </section>
 
   <section class="card">
-    <h2>Contenido</h2>
-    <pre class="code-block"><code>{{ active_version.content | tojson(indent=2) }}</code></pre>
+    <h2>Duplicar rutina</h2>
+    <p>Crea una copia independiente sin modificar esta rutina ni sus sesiones históricas.</p>
+    <form method="post" action="{{ url_for('training.duplicate_plan', plan_id=plan.id) }}" class="inline-selection">
+      {{ duplicate_form.hidden_tag() }}
+      <div class="field grow">{{ duplicate_form.name.label }}{{ duplicate_form.name() }}{% for error in duplicate_form.name.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+      {{ duplicate_form.submit(class_="button button-secondary") }}
+    </form>
   </section>
+
+  <details class="card context-help">
+    <summary>Información técnica y exportación</summary>
+    <p>Formato interno {{ active_version.schema_version }} · huella <code>{{ active_version.sha256[:12] }}…</code>.</p>
+    <p>JSON conserva toda la estructura. CSV puede perder jerarquía o metadatos.</p>
+  </details>
 {% endblock %}

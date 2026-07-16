@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Importar datos · Health Tracker{% endblock %}
+{% block breadcrumb %}Importar datos{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <p class="eyebrow">Datos</p>
+      <h1>Importar datos</h1>
+      <p>Elige un archivo, revisa lo que se guardará y confirma de forma explícita.</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('main.import_history') }}">Ver historial</a>
+  </section>
+
+  <details class="card context-help">
+    <summary>Formatos compatibles</summary>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Adaptador</th><th>Formatos</th><th>Dominios</th><th>Límite</th></tr></thead>
+        <tbody>
+          {% for adapter in adapter_specs %}
+            <tr>
+              <td>{{ adapter.label }}</td>
+              <td>{{ adapter.file_extensions|join(', ') }}</td>
+              <td>{{ adapter.data_domains|join(', ') }}</td>
+              <td>{{ (adapter.max_bytes / 1048576)|round(0)|int }} MB</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+
+  <section class="card import-hub-intro">
+    <h2>Nueva importación</h2>
+    <form method="post" enctype="multipart/form-data" class="form-card">
+      {{ preview_form.hidden_tag() }}
+      <div class="field">
+        {{ preview_form.file.label }}
+        {{ preview_form.file(accept=".json,.fit,.gpx,.tcx,.csv,.tsv,.txt") }}
+        <span class="help">Compatible según el contenido: JSON, FIT, GPX, TCX, CSV y TSV. El sistema no confía solo en la extensión.</span>
+        {% for error in preview_form.file.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="field">
+        {{ preview_form.requested_type.label }}
+        {{ preview_form.requested_type() }}
+        <span class="help">Conserva detección automática salvo que necesites resolver un CSV ambiguo o indicar el dominio JSON.</span>
+        {% for error in preview_form.requested_type.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+      {{ preview_form.submit(class_="button") }}
+    </form>
+    <details class="context-help">
+      <summary>Formatos y flujos avanzados</summary>
+      <p>Los backups ZIP se restauran desde <a href="{{ url_for('main.restore_account_backup') }}">Restaurar backup</a>; no se mezclan con una importación normal.</p>
+      <p>Para preparar un JSON no estándar con ayuda de una IA externa, usa la <a href="{{ url_for('main.standard_import') }}">herramienta avanzada de JSON</a>. Health Tracker no envía datos a servicios externos.</p>
+    </details>
+  </section>
+
+  {% if parse_error %}<div class="alert alert-danger" role="alert">{{ parse_error }}</div>{% endif %}
+
+  {% if preview_result %}
+    <section class="card" aria-labelledby="import-preview-title">
+      <h2 id="import-preview-title">Revisión antes de guardar</h2>
+      <dl class="metadata">
+        {% if source_file %}<dt>Archivo</dt><dd>{{ source_file.original_filename }}</dd><dt>Huella</dt><dd><code>{{ source_file.sha256[:12] }}…</code></dd>{% endif %}
+        {% if preview_result.detected_type is defined %}<dt>Tipo detectado</dt><dd>{{ preview_result.detected_type }}</dd>{% endif %}
+        <dt>Destino</dt><dd>{{ preview_result.target_type }}</dd>
+        <dt>Registros</dt><dd>{{ preview_result.plan.total }}</dd>
+      </dl>
+
+      <div class="summary-grid import-plan-summary">
+        <div class="metric"><strong>{{ preview_result.plan.inserts }}</strong><span>Nuevos</span></div>
+        <div class="metric"><strong>{{ preview_result.plan.updates }}</strong><span>Actualizaciones</span></div>
+        <div class="metric"><strong>{{ preview_result.plan.skips }}</strong><span>Ya existentes</span></div>
+        <div class="metric"><strong>{{ preview_result.plan.invalid + preview_result.plan.conflicts }}</strong><span>Requieren atención</span></div>
+      </div>
+
+      {% if preview_result.warnings is defined and preview_result.warnings %}
+        <div class="notice warning"><strong>Advertencias</strong><ul>{% for warning in preview_result.warnings %}<li>{{ warning }}</li>{% endfor %}</ul></div>
+      {% endif %}
+      {% if preview_result.plan.errors %}
+        <div class="alert alert-danger"><strong>Corrige antes de continuar</strong><ul>{% for error in preview_result.plan.errors %}<li>{{ error }}</li>{% endfor %}</ul></div>
+      {% endif %}
+
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Registro</th><th>Acción</th><th>Detalle</th></tr></thead>
+          <tbody>
+            {% for operation in preview_result.plan.operations %}
+              <tr><td>{{ loop.index }}</td><td>{{ operation.operation }}</td><td>{{ operation.label }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if preview_result.plan.total > 0 and preview_result.plan.invalid == 0 and preview_result.plan.conflicts == 0 and not commit_result %}
+        <form method="post" class="confirm-import-form">
+          {{ confirm_form.hidden_tag() }}
+          {{ confirm_form.mode() }}{{ confirm_form.payload_json() }}{{ confirm_form.source_file_id() }}
+          {{ confirm_form.requested_type() }}{{ confirm_form.target_type() }}{{ confirm_form.confirmation_token() }}
+          <p class="help">La confirmación está ligada a tu cuenta, el contenido y este plan. El lote es atómico.</p>
+          {{ confirm_form.submit(class_="button") }}
+        </form>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  {% if commit_result %}
+    <section class="card" aria-labelledby="import-result-title">
+      <h2 id="import-result-title">Resultado</h2>
+      <p><span class="status {{ 'status-success' if commit_result.committed else 'status-warning' }}">{{ 'Guardado' if commit_result.committed else 'No guardado' }}</span></p>
+      <dl class="metadata">
+        <dt>Nuevos</dt><dd>{{ commit_result.inserts }}</dd><dt>Actualizados</dt><dd>{{ commit_result.updates }}</dd>
+        <dt>Ya existentes</dt><dd>{{ commit_result.skips }}</dd><dt>Conflictos</dt><dd>{{ commit_result.conflicts }}</dd>
+      </dl>
+      <div class="page-actions">
+        {% if commit_result.audit_run_id %}<a class="button" href="{{ url_for('main.import_history_detail', run_id=commit_result.audit_run_id) }}">Ver reporte</a>{% endif %}
+        <a class="button button-secondary" href="{{ url_for('main.import_hub') }}">Importar otro archivo</a>
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="card" aria-labelledby="recent-imports-title">
+    <div class="section-heading"><h2 id="recent-imports-title">Importaciones recientes</h2><a href="{{ url_for('main.import_history') }}">Ver historial completo</a></div>
+    {% if recent_runs %}
+      <ul class="timeline-list">
+        {% for run in recent_runs %}
+          <li><a href="{{ url_for('main.import_history_detail', run_id=run.id) }}">{{ run.target_type }}</a> · {{ run.status }} · {{ run.created_at }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>Todavía no hay importaciones confirmadas. El preview no escribe datos.</p>
+    {% endif %}
+  </section>
+{% endblock %}

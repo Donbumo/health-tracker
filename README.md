@@ -1,5 +1,13 @@
 # Health Tracker
 
+## Alpha 1.0 en desarrollo: Web Daily Driver
+
+La rama `feature/alpha-1.0-web-daily-driver` parte de `d2e804a`, tag `alpha-0.9-workout-load-entry`. Añade onboarding derivado de datos reales, preferencias owner-only, dashboard centrado en hoy, rutina guiada/duplicación, agenda e historial filtrables, captura plegable, Import Hub canónico, ayuda y una PWA mínima que solo cachea assets estáticos.
+
+Empieza en `/getting-started` o consulta [la guía de usuario](docs/USER_GUIDE.md), [el flujo diario](docs/DAILY_WORKFLOW.md) y [el Import Hub](docs/IMPORT_HUB.md). Export, backup y restore siguen separados en `/account/data`. Alpha 1.0 no añade APK, reloj, integraciones vendor ni soporte offline para datos autenticados.
+
+Para QA destructiva usa un proyecto y volúmenes aislados: `docker compose --env-file <qa.env> -f docker-compose.yml -f docker-compose.qa.yml -p health-tracker-alpha10-qa up --build -d`. El override monta un volumen QA en `/data` y usa el puerto `18010` por defecto; no monta `./data`.
+
 ## Alpha 0.9 en desarrollo: captura avanzada de carga
 
 La rama `feature/workout-load-entry` añade captura por carga total, por lado, barra, máquinas, pila, mancuernas, peso corporal, asistencia y duración/distancia. El backend usa `Decimal`, conserva la unidad/componentes originales y mantiene `weight_kg` como total normalizado compatible. La sesión muestra kg y lb, última carga, copia entre series, ajustes rápidos y perfiles privados por ejercicio.

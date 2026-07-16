@@ -115,6 +115,8 @@ def test_account_export_is_strictly_isolated_by_user(app, client, user):
         "id": user,
         "email": "owner@example.test",
         "role": "user",
+        "display_name": None,
+        "timezone": None,
         "preferred_load_unit": "kg",
     }
     assert "owner-only-source" in serialized

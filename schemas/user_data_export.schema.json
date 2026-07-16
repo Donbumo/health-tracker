@@ -22,6 +22,8 @@
           ]
         },
         "role": {"type": "string", "enum": ["admin", "user"]},
+        "display_name": {"type": ["string", "null"], "maxLength": 100},
+        "timezone": {"type": ["string", "null"], "maxLength": 64},
         "preferred_load_unit": {"type": "string", "enum": ["kg", "lb"]}
       }
     },

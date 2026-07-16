@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime, time, timezone
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
 from zoneinfo import ZoneInfo
@@ -18,7 +18,9 @@ from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import PlannedWorkout, TrainingSession
+from sqlalchemy.orm import selectinload
+
+from app.models import PlannedWorkout, TrainingPlan, TrainingSession, TrainingSessionExercise
 from app.services.exporters.training_session import (
     TrainingSessionCsvExporter,
     TrainingSessionHtmlExporter,
@@ -190,12 +192,82 @@ def _actual_exercises(planned_day: PlannedDay) -> list[dict]:
 @sessions_bp.get("")
 @login_required
 def list_sessions():
+    page = _positive_int(request.args.get("page"), 1)
+    per_page = 20
+    statement = db.select(TrainingSession).where(
+        TrainingSession.user_id == current_user.id,
+        TrainingSession.deleted_at.is_(None),
+    )
+    date_from = _filter_date(request.args.get("date_from"), "fecha inicial")
+    date_to = _filter_date(request.args.get("date_to"), "fecha final")
+    timezone_name = current_user.timezone or current_app.config["APP_TIMEZONE"]
+    local_timezone = ZoneInfo(timezone_name)
+    if date_from is not None:
+        start = datetime.combine(date_from, time.min, tzinfo=local_timezone)
+        statement = statement.where(TrainingSession.performed_at >= start)
+    if date_to is not None:
+        end = datetime.combine(date_to, time.max, tzinfo=local_timezone)
+        statement = statement.where(TrainingSession.performed_at <= end)
+    plan_id = _positive_int(request.args.get("plan_id"), 0)
+    if plan_id:
+        statement = statement.where(TrainingSession.training_plan_id == plan_id)
+    exercise = (request.args.get("exercise") or "").strip()
+    if exercise:
+        statement = statement.where(
+            TrainingSession.exercises.any(
+                TrainingSessionExercise.name.ilike(f"%{exercise[:200]}%")
+            )
+        )
+    total = db.session.execute(
+        db.select(db.func.count()).select_from(statement.order_by(None).subquery())
+    ).scalar_one()
     sessions = db.session.execute(
-        db.select(TrainingSession)
-        .where(TrainingSession.user_id == current_user.id)
-        .order_by(TrainingSession.performed_at.desc())
-    ).scalars()
-    return render_template("sessions/list.html", sessions=sessions)
+        statement.options(
+            selectinload(TrainingSession.training_plan),
+            selectinload(TrainingSession.training_plan_version),
+        )
+        .order_by(TrainingSession.performed_at.desc(), TrainingSession.id.desc())
+        .limit(per_page)
+        .offset((page - 1) * per_page)
+    ).scalars().all()
+    plans = db.session.execute(
+        db.select(TrainingPlan)
+        .where(TrainingPlan.user_id == current_user.id)
+        .order_by(TrainingPlan.name)
+    ).scalars().all()
+    return render_template(
+        "sessions/list.html",
+        sessions=sessions,
+        plans=plans,
+        page=page,
+        has_previous=page > 1,
+        has_next=page * per_page < total,
+        total=total,
+        filters={
+            "date_from": request.args.get("date_from", ""),
+            "date_to": request.args.get("date_to", ""),
+            "plan_id": plan_id,
+            "exercise": exercise,
+        },
+    )
+
+
+def _positive_int(value: str | None, default: int) -> int:
+    try:
+        parsed = int(value or default)
+    except (TypeError, ValueError):
+        return default
+    return parsed if parsed >= 0 else default
+
+
+def _filter_date(value: str | None, label: str) -> date | None:
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        flash(f"La {label} no es válida y se ignoró.", "warning")
+        return None
 
 
 @sessions_bp.route("/import", methods=["GET", "POST"])

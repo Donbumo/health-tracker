@@ -2,7 +2,7 @@
 {% block title %}Dashboard diario · Health Tracker{% endblock %}
 {% block content %}
   <section class="page-heading">
-    <div><h1>Dashboard diario</h1><p>Resumen consolidado de {{ summary.date.isoformat() }}.</p></div>
+    <div><p class="eyebrow">Hoy</p><h1>Dashboard diario</h1><p>Tu siguiente paso y el resumen de {{ summary.date.isoformat() }}.</p></div>
     <form method="get" action="{{ url_for('main.dashboard') }}" class="page-actions">
       <label for="dashboard-date">Fecha</label>
       <input id="dashboard-date" type="date" name="date" value="{{ summary.date.isoformat() }}">
@@ -11,47 +11,65 @@
   </section>
 
   <div class="dashboard-flow">
-  <section class="card dashboard-intro">
-    <h2>Bienvenida a {{ alpha_release_label }}</h2>
-    <p>Esta es una alpha privada para uso personal o de un grupo de confianza en LAN/VPN. Organiza tus datos de salud, nutrición y entrenamiento, pero no sustituye atención médica.</p>
-    <p class="help">Tus registros se guardan en tu cuenta y las pantallas de usuario normal filtran por tu usuario autenticado.</p>
-    <p><a href="{{ url_for('main.privacy') }}">Leer privacidad y alcance de la alpha</a></p>
-  </section>
-
-  <section class="card onboarding-card">
-    <h2>Primeros pasos</h2>
-    <p>{{ summary.onboarding.completed_count }}/{{ summary.onboarding.total_count }} pasos listos.</p>
-    <ul class="checklist">
-      {% for item in summary.onboarding["items"] %}
-        <li class="{{ 'complete' if item.complete else 'pending' }}">
-          <span>{{ '✓' if item.complete else '○' }}</span>
-          <div>
-            <strong>{{ item.label }}</strong>
-            <p class="help">{{ item.help }}</p>
-            {% if not item.complete and item.url_endpoint %}
-              <a href="{{ url_for(item.url_endpoint) }}">Ir ahora</a>
-            {% elif item.label == 'Exportar respaldo' and item.url_endpoint %}
-              <a href="{{ url_for(item.url_endpoint) }}">Descargar respaldo JSON</a>
-            {% endif %}
-          </div>
-        </li>
-      {% endfor %}
-    </ul>
-  </section>
+  {% if summary.onboarding.show_dashboard_prompt %}
+    <section class="card onboarding-card compact-callout">
+      <div><h2>Prepara tu cuenta</h2><p>{{ summary.onboarding.completed_count }}/{{ summary.onboarding.total_count }} pasos principales listos.</p></div>
+      <a class="button" href="{{ url_for('main.getting_started') }}">Continuar primeros pasos</a>
+    </section>
+  {% endif %}
 
   <section class="card quick-actions-card">
-    <h2>Acciones rápidas de QA</h2>
+    <h2>Acciones rápidas</h2>
     <div class="quick-actions">
-      <a class="button" href="{{ url_for('wellness.manual_nutrition') }}">Capturar nutrición</a>
-      <a class="button" href="{{ url_for('wellness.manual_energy') }}">Capturar energía</a>
-      <a class="button" href="{{ url_for('main.manual_weigh_in') }}">Capturar peso</a>
-      <a class="button button-secondary" href="{{ url_for('sessions.new_session') }}">Registrar sesión</a>
-      <a class="button button-secondary" href="{{ url_for('training.import_plan') }}">Importar rutina</a>
+      <a class="button" href="{{ url_for('sessions.new_session') }}">Registrar entrenamiento</a>
+      <a class="button button-secondary" href="{{ url_for('main.manual_weigh_in') }}">Peso</a>
+      <a class="button button-secondary" href="{{ url_for('wellness.manual_nutrition') }}">Nutrición</a>
+      <a class="button button-secondary" href="{{ url_for('wellness.manual_energy') }}">Energía</a>
+      <a class="button button-secondary" href="{{ url_for('main.import_hub') }}">Importar</a>
       <a class="button button-secondary" href="{{ url_for('progress.overview') }}">Ver progreso</a>
-      <a class="button button-secondary" href="{{ url_for('medical.manual_report') }}">Capturar laboratorio</a>
-      <a class="button button-secondary" href="{{ url_for('main.real_file_import') }}">Importar FIT/GPX/TCX/CSV</a>
     </div>
   </section>
+
+  <section class="card today-workout-card">
+    <div class="page-heading">
+      <div><h2>Entrenamiento de hoy</h2><p>Planificado, borrador o sesión libre.</p></div>
+      <a class="button button-secondary" href="{{ url_for('planned.list_workouts') }}">Ver agenda</a>
+    </div>
+    {% for workout in summary.planned.today %}
+      <article class="workout-summary-row">
+        <div><span class="status status-muted">{{ workout.status }}</span><h3>{{ workout.title_snapshot }}</h3><p>{{ workout.training_plan.name }} · versión {{ workout.source_version }}</p></div>
+        {% if workout.completed_session %}
+          <a class="button button-secondary" href="{{ url_for('sessions.detail', session_id=workout.completed_session.id) }}">Ver sesión</a>
+        {% elif workout.status in ['planned', 'in_progress', 'skipped'] %}
+          <a class="button" href="{{ url_for('sessions.new_session', planned_workout_id=workout.public_id) }}">{{ 'Continuar' if workout.status == 'in_progress' else 'Empezar' }}</a>
+        {% endif %}
+      </article>
+    {% else %}
+      <div class="empty-state compact-empty"><p>No hay entrenamiento planificado para hoy.</p><a class="button" href="{{ url_for('planned.create') }}">Planear entrenamiento</a><a class="button button-secondary" href="{{ url_for('sessions.new_session') }}">Sesión libre</a></div>
+    {% endfor %}
+  </section>
+
+  {% if summary.latest_draft %}
+    <section class="card draft-card">
+      <div><span class="status status-warning">Borrador guardado</span><h2>Continuar captura</h2><p>{{ summary.latest_draft.training_plan.name if summary.latest_draft.training_plan else 'Sesión de entrenamiento' }} · actualizado {{ summary.latest_draft.updated_at.strftime('%Y-%m-%d %H:%M') }}</p></div>
+      <a class="button" href="{{ url_for('sessions.new_session', planned_workout_id=summary.latest_draft.planned_workout.public_id) if summary.latest_draft.planned_workout else url_for('sessions.new_session', plan_id=summary.latest_draft.training_plan_id) }}">Continuar borrador</a>
+    </section>
+  {% endif %}
+
+  {% if summary.recent_session %}
+    <section class="card recent-session-card">
+      <div class="page-heading"><div><h2>Última sesión</h2><p>{{ summary.recent_session.record.performed_at.strftime('%Y-%m-%d %H:%M') }} · {{ summary.recent_session.record.training_plan.name }}</p></div><a class="button button-secondary" href="{{ url_for('sessions.detail', session_id=summary.recent_session.record.id) }}">Ver detalle</a></div>
+      <dl class="metadata"><dt>Duración</dt><dd>{{ summary.recent_session.record.duration_seconds or '—' }} s</dd><dt>Volumen</dt><dd>{{ summary.recent_session.volume }} kg·reps</dd><dt>Ejercicios</dt><dd>{{ summary.recent_session.exercise_names|join(', ') }}</dd></dl>
+    </section>
+  {% endif %}
+
+  {% if summary.planned.upcoming %}
+    <section class="card upcoming-card"><h2>Próximos 7 días</h2><ul class="timeline-list">{% for workout in summary.planned.upcoming %}<li><time datetime="{{ workout.scheduled_for_date }}">{{ workout.scheduled_for_date }}</time><span>{{ workout.title_snapshot }}</span><a href="{{ url_for('sessions.new_session', planned_workout_id=workout.public_id) }}">Abrir</a></li>{% endfor %}</ul></section>
+  {% endif %}
+
+  {% if summary.attention %}
+    <section class="card attention-card"><h2>Necesita atención</h2><ul>{% for item in summary.attention %}<li>{{ item.label }} <a href="{{ url_for(item.endpoint, **item.params) }}">Revisar</a></li>{% endfor %}</ul></section>
+  {% endif %}
 
   <section class="card daily-status-card">
     <h2>Estado del día</h2>

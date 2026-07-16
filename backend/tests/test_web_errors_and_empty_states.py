@@ -20,7 +20,7 @@ def test_empty_primary_lists_offer_real_actions(client, user):
         ("/daily-energy", b"Capturar nuevo", b'href="/manual/energy"'),
         ("/daily-nutrition", b"Capturar nuevo", b'href="/manual/nutrition"'),
         ("/weigh-ins", b"Capturar nuevo", b'href="/manual/weigh-in"'),
-        ("/training-plans", b"Importar JSON", b'href="/training-plans/import"'),
+        ("/training-plans", b"Importar rutina", b'href="/imports?requested_type=training_plan"'),
         ("/training-sessions", b"Capturar nuevo", b'href="/training-sessions/new"'),
         ("/uploads", b"Seleccionar archivo", b'href="#upload-form"'),
     )

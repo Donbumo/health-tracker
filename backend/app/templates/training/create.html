@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Crear rutina · Health Tracker{% endblock %}
+{% block breadcrumb %}Crear rutina{% endblock %}
+{% block content %}
+  <section class="page-heading"><div><p class="eyebrow">Rutinas</p><h1>Crear una rutina</h1><p>Empieza con un día y un ejercicio. Después podrás crear versiones nuevas sin alterar el historial.</p></div></section>
+  <form method="post" class="card form-card narrow-form">
+    {{ form.hidden_tag() }}
+    {% for field in [form.name, form.description, form.day_name, form.exercise_name, form.set_count, form.target_reps, form.rest_seconds] %}
+      <div class="field">{{ field.label }}{{ field() }}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+    {% endfor %}
+    <details class="context-help"><summary>¿Qué es una versión de rutina?</summary><p>Una versión es un snapshot. Las sesiones conservan la versión con la que se realizaron aunque después actives otra.</p></details>
+    <div class="form-actions">{{ form.submit(class_="button") }}<a class="button button-secondary" href="{{ url_for('training.list_plans') }}">Cancelar</a></div>
+  </form>
+{% endblock %}

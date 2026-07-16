@@ -6,6 +6,7 @@ from datetime import date, datetime
 from decimal import Decimal
 import hashlib
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from flask import current_app
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
@@ -28,6 +29,7 @@ from app.models import (
     TrainingSession,
     TrainingSessionExercise,
     TrainingSet,
+    User,
     WeighIn,
 )
 from app.services.import_audit import ImportAuditService
@@ -841,10 +843,22 @@ class AccountRestoreService:
             db.session.flush()
             committed[f"exercise_load_profiles:{index}"] = profile.id
 
-        preferred_unit = (payload.get("user") or {}).get("preferred_load_unit")
+        exported_user = payload.get("user") or {}
+        destination_user = db.session.get(User, user_id)
+        preferred_unit = exported_user.get("preferred_load_unit")
         if preferred_unit in {"kg", "lb"}:
-            from app.models import User
-            db.session.get(User, user_id).preferred_load_unit = preferred_unit
+            destination_user.preferred_load_unit = preferred_unit
+        display_name = _optional_text(exported_user.get("display_name"))
+        if display_name is not None and len(display_name) <= 100:
+            destination_user.display_name = display_name
+        timezone_name = _optional_text(exported_user.get("timezone"))
+        if timezone_name is not None and len(timezone_name) <= 64:
+            try:
+                ZoneInfo(timezone_name)
+            except ZoneInfoNotFoundError:
+                pass
+            else:
+                destination_user.timezone = timezone_name
 
         return committed
 

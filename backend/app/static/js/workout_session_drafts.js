@@ -28,7 +28,7 @@
 
   const status = document.getElementById("workout-draft-status");
   const discard = document.getElementById("discard-workout-draft");
-  const submit = form.querySelector('button[type="submit"], input[type="submit"]');
+  const submits = Array.from(form.querySelectorAll('button[type="submit"], input[type="submit"]'));
   const csrf = form.querySelector('[name="csrf_token"]');
   const submission = form.querySelector('[name="client_submission_id"]');
   const maxBytes = Number(form.dataset.draftMaxBytes || 262144);
@@ -220,11 +220,11 @@
   form.addEventListener("submit", () => {
     saveLocal();
     setStatus("session_saving", "Guardando sesión…", "muted");
-    if (submit) {
+    submits.forEach((submit) => {
       submit.disabled = true;
       if (submit.tagName === "INPUT") submit.value = submit.dataset.savingLabel || "Guardando…";
       else submit.textContent = submit.dataset.savingLabel || "Guardando…";
-    }
+    });
   });
 
   if (discard) discard.addEventListener("click", async () => {

@@ -971,6 +971,12 @@ class StandardImportExecutor:
             average_heart_rate_bpm=data.get("average_heart_rate_bpm"),
             calories_burned=_decimal(data.get("calories_burned")),
             notes=data.get("notes"),
+            client_submission_id=data.get("client_submission_id"),
+            client_payload_sha256=(
+                canonical_sha256(document)
+                if data.get("client_submission_id")
+                else None
+            ),
         )
         db.session.add(session)
         db.session.flush()

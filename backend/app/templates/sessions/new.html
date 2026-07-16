@@ -8,6 +8,13 @@
     </div>
   </section>
 
+  {% if recovery_message %}
+    <div class="alert alert-warning" role="alert" data-error-code="csrf_expired_recovered">
+      {{ recovery_message }}
+      {% if request_id %}<span class="help">Referencia: {{ request_id }}</span>{% endif %}
+    </div>
+  {% endif %}
+
   <section class="card">
     <form method="get" class="inline-selection">
       {% if plan_id %}<input type="hidden" name="plan_id" value="{{ plan_id }}">{% endif %}
@@ -26,8 +33,27 @@
   </section>
 
   {% if selected_day %}
-    <form method="post" novalidate>
+    <form
+      id="workout-session-form"
+      method="post"
+      novalidate
+      data-user-public-id="{{ user_public_id }}"
+      data-plan-public-id="{{ selected_day.plan.public_id }}"
+      data-plan-version-public-id="{{ selected_day.version.public_id }}"
+      data-planned-workout-public-id="{{ planned_workout.public_id if planned_workout else '' }}"
+      data-week-number="{{ selected_day.week.week_number }}"
+      data-day-number="{{ selected_day.day.day_number }}"
+      data-form-url="{{ request.full_path.rstrip('?') }}"
+      data-draft-max-bytes="{{ draft_max_bytes }}"
+      data-draft-ttl-days="{{ draft_ttl_days }}"
+      data-server-debounce-ms="{{ draft_server_debounce_ms }}"
+      data-recovered-post="{{ 'true' if recovery_message else 'false' }}"
+    >
       {{ form.hidden_tag() }}
+      <section class="workout-draft-toolbar" aria-live="polite">
+        <span id="workout-draft-status" class="status status-muted" data-status-code="idle">Borrador listo</span>
+        <button id="discard-workout-draft" class="button button-secondary" type="button">Descartar borrador</button>
+      </section>
       <section class="card">
         <h2>{{ selected_day.label }}</h2>
         <div class="field">
@@ -98,8 +124,10 @@
       {% endfor %}
 
       <section class="form-actions">
-        {{ form.submit(class_="button") }}
+        {{ form.submit(class_="button", data_saving_label="Guardando…") }}
       </section>
     </form>
+    <script type="application/json" id="server-workout-draft">{{ server_draft|tojson }}</script>
+    <script src="{{ url_for('static', filename='js/workout_session_drafts.js') }}" defer></script>
   {% endif %}
 {% endblock %}

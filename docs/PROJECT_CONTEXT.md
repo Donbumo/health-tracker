@@ -1,5 +1,13 @@
 # Contexto del proyecto: Plataforma self-hosted de salud, nutrición, entrenamiento y dispositivos
 
+## Alpha 0.8.1 en desarrollo: Workout Session Recovery
+
+La rama `hotfix/alpha-0.8.1-workout-session-recovery` parte exactamente de `7ee865f`, tag `alpha-0.8-companion-backend`. Añade recuperación global y segura de CSRF web, borrador local y persistente owner-only, `TrainingSession.client_submission_id`, commit atómico con planned workout/Mobile Sync y cleanup dry-run/apply. La migración aditiva es `20260715_0026_workout_session_recovery.py`.
+
+`client_submission_id` pertenece al formulario web y no modifica `client_event_id` de Mobile Sync. La captura avanzada de cargas P1 (`feature/workout-load-entry`) no está implementada.
+
+Validación del hotfix: local `548 passed, 3 skipped, 1 warning`; Docker/MariaDB `550 passed, 1 skipped, 1 warning`; single head `20260715_0026`, ciclos aislados upgrade/downgrade/upgrade y check limpios en SQLite y MariaDB 11.4. QA oscuro pasó en 360/390/430/768/1024/1366 px; tema claro requiere sign-off visual externo antes del release.
+
 ## Estado verificado: Mobile Sync Foundation
 
 La Fase 7B añade `PlannedWorkout`, identidad pública/revisión para `TrainingSession`, cambios incrementales, estado de cursor por dispositivo e idempotencia persistente. API Sync 1.0 escribe únicamente planned/completed workouts. Otros dominios permanecen fuera de push.

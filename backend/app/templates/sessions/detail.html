@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Sesión {{ session.id }} · Health Tracker{% endblock %}
 {% block content %}
+  {% if saved_submission_id %}
+    <div id="completed-workout-submission" data-user-public-id="{{ user_public_id }}" data-client-submission-id="{{ saved_submission_id }}" hidden></div>
+    <script src="{{ url_for('static', filename='js/workout_session_drafts.js') }}" defer></script>
+  {% endif %}
   <section class="page-heading">
     <div>
       <h1>Sesión realizada</h1>

@@ -2,7 +2,9 @@ from pathlib import Path
 import uuid
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, g, jsonify, render_template, request, session
+from flask_login import current_user
+from flask_wtf.csrf import CSRFError
 
 from app.cli import register_commands
 from app.config import Config
@@ -26,7 +28,14 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
 
     secret_key = app.config.get("SECRET_KEY") or ""
-    if len(secret_key) < 32 or secret_key == "replace-with-a-long-random-secret":
+    insecure_secret_values = {
+        "replace-with-a-long-random-secret",
+        "changeme",
+        "change-me",
+        "secret",
+        "development",
+    }
+    if len(secret_key) < 32 or secret_key.casefold() in insecure_secret_values:
         raise RuntimeError("SECRET_KEY must be a non-placeholder value of at least 32 characters")
 
     api_signing_key = app.config.get("API_TOKEN_SIGNING_KEY") or ""
@@ -79,6 +88,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     from app.recipes import recipes_bp
     from app.api_v1 import api_v1_bp
     from app.planned import planned_bp
+    from app.workout_drafts import workout_drafts_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(activities_bp)
@@ -94,6 +104,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(exports_bp)
     app.register_blueprint(recipes_bp)
     app.register_blueprint(planned_bp)
+    app.register_blueprint(workout_drafts_bp)
     csrf.exempt(api_v1_bp)
     app.register_blueprint(api_v1_bp)
     register_commands(app)
@@ -136,6 +147,39 @@ def create_app(test_config: dict | None = None) -> Flask:
     @app.errorhandler(413)
     def request_too_large(_error):
         return render_template("413.html"), 413
+
+    @app.errorhandler(CSRFError)
+    def csrf_failed(error):
+        request_id = str(uuid.uuid4())
+        app.logger.warning(
+            "csrf_rejected request_id=%s endpoint=%s authenticated=%s",
+            request_id,
+            request.endpoint or "unknown",
+            bool(current_user.is_authenticated),
+        )
+        if request.path.startswith("/api/v1") or request.is_json:
+            return jsonify(
+                error={
+                    "code": "csrf_failed",
+                    "message": "El token de seguridad no es válido o venció.",
+                    "details": {},
+                },
+                meta={"api_version": "1", "request_id": request_id},
+            ), 403
+        if (
+            request.endpoint == "sessions.new_session"
+            and current_user.is_authenticated
+        ):
+            from app.sessions.routes import render_csrf_recovery
+
+            session.pop("csrf_token", None)
+            g.pop("csrf_token", None)
+            return render_csrf_recovery(request_id=request_id)
+        return render_template(
+            "csrf_recovery.html",
+            request_id=request_id,
+            reason=error.description,
+        ), 400
 
     return app
 

@@ -27,6 +27,10 @@
       "properties": {
         "training_plan_id": {"type": "integer", "minimum": 1},
         "training_plan_version_id": {"type": "integer", "minimum": 1},
+        "client_submission_id": {
+          "type": "string",
+          "format": "uuid"
+        },
         "performed_at": {"type": "string", "format": "date-time"},
         "planned_week_number": {"type": "integer", "minimum": 1},
         "planned_day_number": {"type": "integer", "minimum": 1, "maximum": 7},

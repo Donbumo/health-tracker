@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from sqlalchemy.engine import URL
@@ -82,6 +83,19 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = _as_bool(os.getenv("SESSION_COOKIE_SECURE"))
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=12)
+    SESSION_REFRESH_EACH_REQUEST = True
+    # Flask-WTF passes this value directly to itsdangerous, which expects
+    # seconds (not timedelta) in the versions pinned by this project.
+    WTF_CSRF_TIME_LIMIT = int(timedelta(hours=8).total_seconds())
+
+    WORKOUT_DRAFT_MAX_BYTES = int(
+        os.getenv("WORKOUT_DRAFT_MAX_BYTES", "262144")
+    )
+    WORKOUT_DRAFT_TTL_DAYS = int(os.getenv("WORKOUT_DRAFT_TTL_DAYS", "7"))
+    WORKOUT_DRAFT_SERVER_DEBOUNCE_MS = int(
+        os.getenv("WORKOUT_DRAFT_SERVER_DEBOUNCE_MS", "3000")
+    )
 
     ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")

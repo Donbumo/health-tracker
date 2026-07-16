@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Solicitud protegida · Health Tracker{% endblock %}
+{% block content %}
+  <section class="card narrow">
+    <h1>La solicitud necesita un token nuevo</h1>
+    <p>El token de seguridad venció. Vuelve a la página anterior, revisa los datos recuperados y reintenta la acción.</p>
+    <p class="help">Referencia: {{ request_id }}</p>
+    <a class="button" href="{{ url_for('main.dashboard') }}">Volver al dashboard</a>
+  </section>
+{% endblock %}

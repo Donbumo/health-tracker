@@ -34,10 +34,10 @@ def test_app_shell_has_skip_link_grouped_navigation_breadcrumbs_and_post_logout(
     assert 'class="sidebar"' in html
     assert 'class="topbar"' in html
     assert 'class="breadcrumbs" aria-label="Migas de pan"' in html
-    assert 'aria-current="page">Dashboard</a>' in html
+    assert 'aria-current="page">Resumen diario</a>' in html
     assert '<details class="mobile-menu">' in html
     assert '<details class="mobile-menu" open' not in html
-    for group in ("Inicio", "Entrenamiento", "Actividad", "Nutrición", "Salud", "Datos", "Cuenta"):
+    for group in ("Hoy", "Entrenar", "Rutinas", "Historial", "Salud y actividad", "Datos", "Cuenta", "Ayuda"):
         assert group in html
     assert html.count('action="/logout" method="post"') == 2
     assert html.count('name="csrf_token"') >= 2
@@ -140,13 +140,13 @@ def test_dashboard_operations_do_not_show_another_users_import(app, client, user
     assert "medical_lab" not in html
     assert "Estado del día" in html
     assert 'class="card quick-actions-card"' in html
-    assert 'class="card onboarding-card"' in html
+    assert 'class="card onboarding-card compact-callout"' in html
     css = (
         Path(__file__).resolve().parents[1] / "app" / "static" / "css" / "app.css"
     ).read_text(encoding="utf-8")
-    assert ".daily-status-card { order: 1; }" in css
-    assert ".quick-actions-card { order: 2; }" in css
-    assert ".onboarding-card { order: 21; }" in css
+    assert ".quick-actions-card { order: 1; }" in css
+    assert ".today-workout-card { order: 2; }" in css
+    assert ".daily-status-card { order: 7; }" in css
 
 
 def test_import_tables_use_responsive_wrappers(client, user):

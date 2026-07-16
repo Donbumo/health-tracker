@@ -13,6 +13,7 @@ Antes de modificar el proyecto, lee primero:
 - `docs/project-rules/standard-json-generator-development.md` cuando la tarea toque Fase 5B, detección, aliases, `StandardJsonGenerator`, `UniversalJsonImportAssistant` o `AssistedImportService`
 - `docs/project-rules/exporters.md` cuando la tarea toque exports, storage generated, `ExportRecord`, GPX/TCX de salida, PDF o ZWO/ERG/MRC
 - `docs/project-rules/web-ui.md` cuando la tarea toque Jinja, navegación, CSS, dashboard o flujos web
+- `docs/project-rules/web-daily-driver.md` cuando la tarea toque onboarding, Import Hub, preferencias, PWA o el flujo web cotidiano Alpha 1.0
 - `docs/project-rules/workout-load-entry.md` cuando la tarea toque cargas por serie, unidades, perfiles de ejercicio, `weight_kg` o `load_details`
 - `docs/project-rules/workout-session-recovery.md` cuando la tarea toque captura web de sesiones, CSRF recuperable, borradores o `client_submission_id`
 

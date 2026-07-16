@@ -31,6 +31,9 @@ class User(UserMixin, db.Model):
     preferred_load_unit = db.Column(
         db.String(2), nullable=False, default="kg", server_default="kg"
     )
+    display_name = db.Column(db.String(100), nullable=True)
+    timezone = db.Column(db.String(64), nullable=True)
+    onboarding_dismissed_at = db.Column(db.DateTime(timezone=True), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

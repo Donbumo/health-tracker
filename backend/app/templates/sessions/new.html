@@ -53,7 +53,10 @@
       {{ form.hidden_tag() }}
       {% if drafts_enabled %}<section class="workout-draft-toolbar" aria-live="polite">
         <span id="workout-draft-status" class="status status-muted" data-status-code="idle">Borrador listo</span>
-        <button id="discard-workout-draft" class="button button-secondary" type="button">Descartar borrador</button>
+        <div class="page-actions">
+          <button id="discard-workout-draft" class="button button-secondary" type="button">Descartar borrador</button>
+          <button class="button" type="submit" data-saving-label="Guardando…">Guardar sesión</button>
+        </div>
       </section>{% endif %}
       <section class="card">
         <h2>{{ selected_day.label }}</h2>
@@ -94,12 +97,25 @@
         </div>
       </section>
 
+      <details class="card context-help">
+        <summary>Ayuda sobre carga, RIR, RPE y borradores</summary>
+        <p>RIR son las repeticiones que sentías disponibles al terminar; RPE expresa el esfuerzo de 1 a 10. La carga conserva su unidad original y se normaliza para el progreso.</p>
+        <p>El borrador guarda los campos de esta captura en tu navegador y, cuando está disponible, en el servidor para tu usuario. Cerrar la pestaña no completa la sesión.</p>
+        <a href="{{ url_for('main.help_center') }}">Ver ayuda completa</a>
+      </details>
+
+      <nav class="exercise-jump-nav" aria-label="Ir a ejercicio">
+        {% for exercise in selected_day.day.exercises %}
+          <a href="#exercise-{{ loop.index }}">{{ loop.index }}. {{ exercise.name }}</a>
+        {% endfor %}
+      </nav>
+
       {% for exercise in selected_day.day.exercises %}
         {% set exercise_index = loop.index0 %}
         {% set exercise_default = load_defaults.get(exercise.name, {}) %}
         {% set suggested_load = exercise_default.get('profile') or exercise_default.get('last') or {} %}
-        <section class="card">
-          <h2>{{ exercise.exercise_order }}. {{ exercise.name }}</h2>
+        <details class="card workout-exercise" id="exercise-{{ loop.index }}" {% if loop.first %}open{% endif %}>
+          <summary><span>{{ exercise.exercise_order }}. {{ exercise.name }}</span><span class="help">{{ exercise.sets|length }} series</span></summary>
           {% if exercise_default.get('last') %}<p class="help load-last">Última carga: {{ exercise_default.last.normalized_total_kg|float|round(2) }} kg / {{ exercise_default.last.calculated_total_lb|float|round(2) }} lb ({{ exercise_default.last.load_mode }})</p>{% endif %}
           <div class="workout-load-actions">
             <button class="button button-secondary copy-load-sets" type="button" data-exercise-index="{{ exercise_index }}">Copiar carga a todas las series</button>
@@ -171,7 +187,7 @@
               </tbody>
             </table>
           </div>
-        </section>
+        </details>
       {% endfor %}
 
       <section class="form-actions">

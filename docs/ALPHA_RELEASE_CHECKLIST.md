@@ -1,5 +1,20 @@
 # Checklist de release alpha privada
 
+## Alpha 1.0 — Web Daily Driver
+
+- [x] Onboarding derivado, preferencias owner-only y dashboard centrado en hoy.
+- [x] Navegación consolidada, ayuda, rutina guiada/duplicación, agenda e historial filtrables.
+- [x] Captura plegable con accesos a ejercicios; drafts, CSRF, idempotencia y cargas se conservan.
+- [x] `/imports` unifica la entrada y delega en servicios existentes con preview/confirmación/auditoría.
+- [x] PWA mínima sin cache de datos autenticados y guías de usuario.
+- [x] Suite completa Docker/MariaDB después del último cambio: `579 passed, 1 skipped, 1 warning`.
+- [x] Suite completa local después del último cambio: `577 passed, 3 skipped, 1 warning`.
+- [x] Ciclo upgrade/downgrade/upgrade de `20260717_0028`, single head y `db check`.
+- [x] QA manual real oscuro en 360/390/430/768/1024/1366 px, sin overflow ni consola.
+- [ ] Sign-off visual real en tema claro; el navegador QA no ofrece emulación.
+- [x] Logs, restart/persistencia y dry-runs finales; solo permanece el warning seguro de clave API no separada.
+- [ ] Rotar la credencial cuyo material codificado apareció durante la recuperación del QA antes del release.
+
 ## Alpha 0.9 — Workout Load Entry
 
 - [x] Doce modos explícitos, `Decimal`, kg/lb mixtos y `calculation_version` canónico.

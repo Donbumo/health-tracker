@@ -5,6 +5,23 @@
   <div><p class="eyebrow">Entrenamiento</p><h1>Entrenamientos planificados</h1><p>La rutina y versión quedan congeladas al planificar.</p></div>
   <div class="page-actions"><a class="button" href="{{ url_for('planned.create') }}">Planificar entrenamiento</a></div>
 </div>
+<section class="card filter-card" aria-labelledby="planned-filters-title">
+  <h2 id="planned-filters-title">Filtrar agenda</h2>
+  <form method="get" class="filter-form">
+    <div class="form-group"><label for="date_from">Desde</label><input id="date_from" name="date_from" type="date" value="{{ filters.date_from }}"></div>
+    <div class="form-group"><label for="date_to">Hasta</label><input id="date_to" name="date_to" type="date" value="{{ filters.date_to }}"></div>
+    <div class="form-group">
+      <label for="status">Estado</label>
+      <select id="status" name="status">
+        <option value="">Todos</option>
+        {% for value, label in [('planned', 'Planificado'), ('in_progress', 'En curso'), ('completed', 'Completado'), ('skipped', 'Omitido'), ('cancelled', 'Cancelado')] %}
+          <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="page-actions"><button class="button" type="submit">Aplicar filtros</button><a class="button button-secondary" href="{{ url_for('planned.list_workouts') }}">Limpiar</a></div>
+  </form>
+</section>
 {% if records %}
   <div class="table-wrapper">
     <table>
@@ -15,7 +32,7 @@
           <td>{{ item.scheduled_for_date }}<br><small>{{ item.timezone }}</small></td>
           <td>{{ item.title_snapshot }}</td>
           <td>{{ item.training_plan.name }} · v{{ item.source_version }}</td>
-          <td><span class="status status-muted">{{ item.status }}</span></td>
+          <td><span class="status status-muted">{{ {'planned': 'Planificado', 'in_progress': 'En curso', 'completed': 'Completado', 'skipped': 'Omitido', 'cancelled': 'Cancelado'}.get(item.status, item.status) }}</span></td>
           <td>
             {% if item.status in ['planned', 'in_progress', 'skipped'] %}
               <a class="button" href="{{ url_for('sessions.new_session', planned_workout_id=item.public_id) }}">Registrar sesión</a>

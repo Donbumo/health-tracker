@@ -1,5 +1,7 @@
 # Recuperación de sesiones de entrenamiento
 
+Alpha 1.0 conserva este contrato y presenta cada ejercicio en un bloque plegable con accesos rápidos. No cambia el payload del borrador, `client_submission_id`, el momento de borrado ni la recuperación CSRF.
+
 Alpha 0.8.1 corrige la pérdida o bloqueo de formularios largos cuando vence CSRF. La captura web queda protegida por capas:
 
 1. El formulario mantiene un `client_submission_id` UUID estable.

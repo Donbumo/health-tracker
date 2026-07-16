@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ status_code }} · Health Tracker{% endblock %}
+{% block content %}
+  <section class="empty-state" role="alert">
+    <p class="eyebrow">Error {{ status_code }}</p>
+    <h1>{{ title }}</h1>
+    <p>{{ message }}</p>
+    <div class="page-actions">
+      <a class="button" href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('auth.login') }}">Volver a un lugar seguro</a>
+      {% if current_user.is_authenticated %}<a class="button button-secondary" href="{{ url_for('main.account_system') }}">Ver estado</a>{% endif %}
+    </div>
+  </section>
+{% endblock %}

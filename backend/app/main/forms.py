@@ -1,10 +1,12 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from wtforms import (
     DateTimeLocalField,
     DecimalField,
     HiddenField,
     SelectField,
+    StringField,
     SubmitField,
     TextAreaField,
 )
@@ -14,6 +16,34 @@ from wtforms.validators import DataRequired, Length, NumberRange, Optional, Vali
 def finite_decimal(_form, field) -> None:
     if field.data is not None and not field.data.is_finite():
         raise ValidationError("Ingresa un número finito.")
+
+
+def valid_iana_timezone(_form, field) -> None:
+    try:
+        ZoneInfo((field.data or "").strip())
+    except (ValueError, ZoneInfoNotFoundError):
+        raise ValidationError("Usa una zona horaria IANA válida, por ejemplo America/Mexico_City.")
+
+
+class AccountPreferencesForm(FlaskForm):
+    display_name = StringField(
+        "Nombre visible",
+        validators=[Optional(), Length(max=100)],
+    )
+    timezone = StringField(
+        "Zona horaria",
+        validators=[DataRequired(), Length(max=64), valid_iana_timezone],
+    )
+    preferred_load_unit = SelectField(
+        "Unidad de carga",
+        choices=[("kg", "Kilogramos (kg)"), ("lb", "Libras (lb)")],
+        validators=[DataRequired()],
+    )
+    submit = SubmitField("Guardar preferencias")
+
+
+class OnboardingDismissForm(FlaskForm):
+    submit = SubmitField("Ocultar primeros pasos")
 
 
 class UploadForm(FlaskForm):
@@ -139,6 +169,48 @@ class RealFileImportConfirmForm(FlaskForm):
     target_type = HiddenField(validators=[DataRequired()])
     confirmation_token = HiddenField(validators=[DataRequired()])
     submit = SubmitField("Confirmar e importar archivo")
+
+
+class ImportHubPreviewForm(FlaskForm):
+    file = FileField(
+        "Archivo",
+        validators=[
+            FileRequired(),
+            FileAllowed(
+                ["json", "fit", "gpx", "tcx", "csv", "tsv", "txt"],
+                "Selecciona JSON, FIT, GPX, TCX, CSV, TSV o TXT.",
+            ),
+        ],
+    )
+    requested_type = SelectField(
+        "Tipo de datos",
+        choices=[
+            ("", "Detectar automáticamente"),
+            ("weigh_in_batch", "Pesajes (JSON)"),
+            ("daily_energy", "Energía diaria (JSON)"),
+            ("daily_nutrition", "Nutrición diaria (JSON)"),
+            ("food_products", "Alimentos/productos (JSON)"),
+            ("recipe", "Receta (JSON)"),
+            ("recipe_bundle", "Varias recetas (JSON)"),
+            ("training_plan", "Rutina (JSON)"),
+            ("completed_workout", "Sesión completada (JSON)"),
+            ("medical_lab", "Laboratorio (JSON)"),
+            ("weigh_in_csv", "Pesajes (CSV)"),
+            ("daily_energy_csv", "Energía diaria (CSV)"),
+        ],
+        validators=[Optional()],
+    )
+    submit = SubmitField("Revisar archivo")
+
+
+class ImportHubConfirmForm(FlaskForm):
+    mode = HiddenField(validators=[DataRequired()])
+    payload_json = HiddenField()
+    source_file_id = HiddenField()
+    requested_type = HiddenField()
+    target_type = HiddenField(validators=[DataRequired()])
+    confirmation_token = HiddenField(validators=[DataRequired()])
+    submit = SubmitField("Confirmar importación")
 
 
 class WeighInForm(FlaskForm):

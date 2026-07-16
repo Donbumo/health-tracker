@@ -26,25 +26,25 @@ def test_base_template_has_mobile_viewport_and_collapsed_mobile_navigation(clien
     assert 'class="nav-actions desktop-nav"' in html
     assert '<details class="mobile-menu">' in html
     assert '<summary aria-label="Abrir o cerrar menú principal">Menú</summary>' in html
-    assert "Principal" in html
+    assert "Hoy" in html
     assert "Datos" in html
     for label in (
-        "Dashboard",
-        "Wellness",
+        "Resumen diario",
+        "Balance diario",
         "Peso",
         "Nutrici",
         "Energ",
-        "Entrenamiento",
-        "Sesiones",
+        "Mis rutinas",
+        "Sesiones realizadas",
         "Progreso",
         "Alacena",
         "Recetas",
         "Laboratorios",
         "Importar",
-        "Historial imports",
+        "Importaciones",
         "Cerrar sesi",
         "Privacidad",
-        "Alpha 0.9",
+        "Alpha 1.0",
     ):
         assert label in html
 
@@ -124,8 +124,9 @@ def test_mobile_smoke_routes_keep_forms_actions_and_responsive_wrappers(client, 
 
     dashboard = client.get("/dashboard").get_data(as_text=True)
     assert "quick-actions" in dashboard
-    assert "checklist" in dashboard
-    assert "Capturar peso" in dashboard
+    assert "Continuar primeros pasos" in dashboard
+    assert "Peso" in dashboard
+    assert client.get("/getting-started").status_code == 200
 
     standard_import = client.get("/imports/standard").get_data(as_text=True)
     assert "<form" in standard_import

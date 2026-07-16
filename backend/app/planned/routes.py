@@ -51,9 +51,19 @@ def _owned(public_id: str) -> PlannedWorkout:
 @planned_bp.get("")
 @login_required
 def list_workouts():
-    start = date.today() - timedelta(days=30)
-    end = date.today() + timedelta(days=60)
+    today = date.today()
+    start = _query_date("date_from", today - timedelta(days=30))
+    end = _query_date("date_to", today + timedelta(days=60))
+    if end < start:
+        flash("La fecha final debe ser igual o posterior a la inicial.", "warning")
+        start, end = end, start
     records = PlannedWorkoutService.list_range(current_user.id, start, end)
+    status = (request.args.get("status") or "").strip()
+    allowed_statuses = {"planned", "in_progress", "completed", "skipped", "cancelled"}
+    if status in allowed_statuses:
+        records = [record for record in records if record.status == status]
+    else:
+        status = ""
     companion_devices = db.session.execute(
         db.select(ApiDevice).join(CompanionDeviceProfile).where(
             ApiDevice.user_id == current_user.id,
@@ -67,7 +77,19 @@ def list_workouts():
         action_form=PlannedWorkoutActionForm(),
         reschedule_form=PlannedWorkoutRescheduleForm(),
         companion_devices=companion_devices,
+        filters={"date_from": start.isoformat(), "date_to": end.isoformat(), "status": status},
     )
+
+
+def _query_date(name: str, default: date) -> date:
+    raw = (request.args.get(name) or "").strip()
+    if not raw:
+        return default
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        flash(f"La fecha de {name.replace('_', ' ')} no es válida; se usó el rango predeterminado.", "warning")
+        return default
 
 
 @planned_bp.route("/new", methods=["GET", "POST"])
@@ -77,7 +99,7 @@ def create():
     form.planned_day.choices = _options(current_user.id)
     if not form.is_submitted():
         form.scheduled_for_date.data = date.today()
-        form.timezone.data = current_app.config["APP_TIMEZONE"]
+        form.timezone.data = current_user.timezone or current_app.config["APP_TIMEZONE"]
     if form.validate_on_submit():
         try:
             version_id, week_number, day_number = (

@@ -12,7 +12,39 @@
     </div>
   </section>
 
+  <section class="card filter-card" aria-labelledby="session-filters-title">
+    <h2 id="session-filters-title">Filtrar historial</h2>
+    <form method="get" class="filter-form">
+      <div class="form-group">
+        <label for="date_from">Desde</label>
+        <input id="date_from" name="date_from" type="date" value="{{ filters.date_from }}">
+      </div>
+      <div class="form-group">
+        <label for="date_to">Hasta</label>
+        <input id="date_to" name="date_to" type="date" value="{{ filters.date_to }}">
+      </div>
+      <div class="form-group">
+        <label for="plan_id">Rutina</label>
+        <select id="plan_id" name="plan_id">
+          <option value="">Todas</option>
+          {% for plan in plans %}
+            <option value="{{ plan.id }}" {% if filters.plan_id == plan.id %}selected{% endif %}>{{ plan.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="exercise">Ejercicio</label>
+        <input id="exercise" name="exercise" type="text" value="{{ filters.exercise }}" maxlength="200" placeholder="Nombre del ejercicio">
+      </div>
+      <div class="page-actions">
+        <button class="button" type="submit">Aplicar filtros</button>
+        <a class="button button-secondary" href="{{ url_for('sessions.list_sessions') }}">Limpiar</a>
+      </div>
+    </form>
+  </section>
+
   <section class="card">
+    <p class="muted-text">{{ total }} sesión{% if total != 1 %}es{% endif %} encontrada{% if total != 1 %}s{% endif %}.</p>
     {% set session_list = sessions|list %}
     {% if session_list %}
       <div class="table-wrap">
@@ -33,6 +65,17 @@
           </tbody>
         </table>
       </div>
+      {% if has_previous or has_next %}
+        <nav class="pagination" aria-label="Páginas del historial">
+          {% if has_previous %}
+            <a class="button button-secondary" href="{{ url_for('sessions.list_sessions', page=page - 1, **filters) }}">Anterior</a>
+          {% endif %}
+          <span>Página {{ page }}</span>
+          {% if has_next %}
+            <a class="button button-secondary" href="{{ url_for('sessions.list_sessions', page=page + 1, **filters) }}">Siguiente</a>
+          {% endif %}
+        </nav>
+      {% endif %}
     {% else %}
       <p>Todavía no has registrado sesiones.</p>
       <div class="page-actions">

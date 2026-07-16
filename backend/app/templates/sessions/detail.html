@@ -26,7 +26,7 @@
     <dl class="metadata">
       <dt>Fecha</dt><dd>{{ session.performed_at.strftime('%Y-%m-%d %H:%M') }}</dd>
       <dt>Semana/día planeado</dt><dd>{{ session.planned_week_number }}/{{ session.planned_day_number }}</dd>
-      <dt>Archivo fuente</dt><dd>{{ session.source_file_id }}</dd>
+      <dt>Origen</dt><dd>{{ 'Importación' if session.source_file_id else 'Captura manual' }}</dd>
       {% if session.duration_seconds is not none %}<dt>Duración</dt><dd>{{ session.duration_seconds }} segundos</dd>{% endif %}
       {% if session.average_heart_rate_bpm is not none %}<dt>FC promedio</dt><dd>{{ session.average_heart_rate_bpm }} bpm</dd>{% endif %}
       {% if session.calories_burned is not none %}<dt>Calorías</dt><dd>{{ session.calories_burned }}</dd>{% endif %}

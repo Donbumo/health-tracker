@@ -15,6 +15,7 @@ from flask import (
     render_template,
     request,
     send_file,
+    send_from_directory,
     session,
     url_for,
 )
@@ -26,11 +27,15 @@ from sqlalchemy.orm import selectinload
 from app.extensions import db
 from app.main import main_bp
 from app.main.forms import (
+    AccountPreferencesForm,
     AccountBackupCreateForm,
     AccountBackupRestoreConfirmForm,
     AccountBackupRestorePreviewForm,
     AccountRestoreConfirmForm,
     AccountRestorePreviewForm,
+    ImportHubConfirmForm,
+    ImportHubPreviewForm,
+    OnboardingDismissForm,
     RealFileImportConfirmForm,
     RealFileImportPreviewForm,
     StandardImportConfirmForm,
@@ -67,12 +72,14 @@ from app.services.importers.standard_import_executor import (
     StandardImportTokenError,
     StandardImportExecutor,
 )
+from app.services.importers.registry import ImportAdapterRegistry
 from app.services.real_file_imports import (
     RealFileImportError,
     RealFileImportService,
     RealFileImportTokenError,
 )
 from app.services.importers.import_prompt_catalog import ImportPromptCatalog
+from app.services.onboarding import getting_started_status
 from app.services.manual_json import (
     ManualJsonGenerationError,
     build_weigh_in_document,
@@ -95,6 +102,54 @@ def healthcheck():
 @main_bp.get("/privacy")
 def privacy():
     return render_template("privacy.html")
+
+
+@main_bp.get("/getting-started")
+@login_required
+def getting_started():
+    return render_template(
+        "getting_started.html",
+        onboarding=getting_started_status(current_user.id),
+        dismiss_form=OnboardingDismissForm(),
+    )
+
+
+@main_bp.post("/getting-started/dismiss")
+@login_required
+def dismiss_getting_started():
+    form = OnboardingDismissForm()
+    if not form.validate_on_submit():
+        abort(400)
+    onboarding = getting_started_status(current_user.id)
+    if not onboarding["required_complete"]:
+        flash("Completa los pasos principales antes de ocultar esta guía.", "warning")
+        return redirect(url_for("main.getting_started"))
+    current_user.onboarding_dismissed_at = datetime.now(timezone.utc)
+    db.session.commit()
+    flash("La guía seguirá disponible desde Ayuda.", "success")
+    return redirect(url_for("main.dashboard"))
+
+
+@main_bp.route("/account/preferences", methods=["GET", "POST"])
+@login_required
+def account_preferences():
+    form = AccountPreferencesForm(obj=current_user)
+    if not form.is_submitted():
+        form.timezone.data = current_user.timezone or current_app.config["APP_TIMEZONE"]
+    if form.validate_on_submit():
+        current_user.display_name = (form.display_name.data or "").strip() or None
+        current_user.timezone = form.timezone.data.strip()
+        current_user.preferred_load_unit = form.preferred_load_unit.data
+        db.session.commit()
+        flash("Preferencias guardadas.", "success")
+        return redirect(url_for("main.account_preferences"))
+    return render_template("account/preferences.html", form=form)
+
+
+@main_bp.get("/help")
+@login_required
+def help_center():
+    return render_template("help.html")
 
 
 @main_bp.get("/account/export.json")
@@ -233,6 +288,10 @@ def account_system():
         counts=counts,
         latest_backup=latest_backup,
         reconciliation_status="No persistido; disponible como dry-run por CLI.",
+        api_signing_key_separate=current_app.config.get(
+            "API_TOKEN_SIGNING_KEY_SEPARATE", False
+        ),
+        rate_limiter_scope="Por proceso",
     )
 
 
@@ -494,6 +553,238 @@ def confirm_account_restore():
         commit_result=commit_result,
         parse_error=parse_error,
     )
+
+
+@main_bp.route("/imports", methods=["GET", "POST"])
+@login_required
+def import_hub():
+    preview_form = ImportHubPreviewForm()
+    if request.method == "GET":
+        requested_type = (request.args.get("requested_type") or "").strip()
+        allowed_types = {value for value, _label in preview_form.requested_type.choices}
+        if requested_type in allowed_types:
+            preview_form.requested_type.data = requested_type
+    confirm_form = ImportHubConfirmForm()
+    preview_result = None
+    commit_result = None
+    parse_error = None
+    source_file = None
+    mode = None
+    standard_executor = StandardImportExecutor()
+    real_service = RealFileImportService()
+    adapter_specs = ImportAdapterRegistry().specs
+
+    if request.method == "POST" and "mode" in request.form:
+        if not confirm_form.validate_on_submit():
+            parse_error = "La confirmación no es válida; vuelve a revisar el archivo."
+        elif confirm_form.mode.data == "standard":
+            try:
+                payload = json.loads(confirm_form.payload_json.data or "")
+                preview_result = standard_executor.preview_payload(
+                    payload,
+                    user_id=current_user.id,
+                    target_type=confirm_form.target_type.data,
+                )
+                standard_executor.verify_confirmation_token(
+                    confirm_form.confirmation_token.data,
+                    user_id=current_user.id,
+                    target_type=preview_result["target_type"],
+                    payload=payload,
+                    plan=preview_result["plan"],
+                )
+                token_digest = _standard_import_token_digest(
+                    confirm_form.confirmation_token.data
+                )
+                used_tokens = session.setdefault("used_standard_import_tokens", [])
+                if token_digest in used_tokens:
+                    raise StandardImportTokenError("El token de confirmación ya fue usado.")
+                commit_result = standard_executor.commit_documents(
+                    preview_result["documents"],
+                    user_id=current_user.id,
+                    target_type=preview_result["target_type"],
+                    confirmed=True,
+                    audit_payload=payload,
+                    audit_metadata={
+                        "route": "/imports",
+                        "mode": "web_confirm",
+                        "requested_type": confirm_form.requested_type.data or None,
+                        "detected_type": preview_result["target_type"],
+                        "document_count": len(preview_result["documents"]),
+                        "contract_version": "confirmed-standard-import-v1",
+                    },
+                )
+                if commit_result["committed"]:
+                    used_tokens.append(token_digest)
+                    session["used_standard_import_tokens"] = used_tokens[-20:]
+                    session.modified = True
+                    flash("Datos importados correctamente.", "success")
+                else:
+                    flash("No se guardaron datos; revisa el plan y sus errores.", "warning")
+                mode = "standard"
+            except (json.JSONDecodeError, StandardImportError, StandardImportTokenError, ValueError) as error:
+                parse_error = f"No fue posible confirmar la importación: {error}"
+        elif confirm_form.mode.data == "real_file":
+            try:
+                source_file_id = int(confirm_form.source_file_id.data or 0)
+            except (TypeError, ValueError):
+                source_file_id = 0
+            source_file = db.session.execute(
+                db.select(UploadedFile).where(
+                    UploadedFile.id == source_file_id,
+                    UploadedFile.user_id == current_user.id,
+                )
+            ).scalar_one_or_none()
+            if source_file is None:
+                abort(404)
+            try:
+                preview_result = real_service.preview_uploaded_file(
+                    source_file,
+                    user_id=current_user.id,
+                    requested_type=confirm_form.requested_type.data or None,
+                )
+                token_digest = _real_file_import_token_digest(
+                    confirm_form.confirmation_token.data
+                )
+                used_tokens = session.setdefault("used_real_file_import_tokens", [])
+                if token_digest in used_tokens:
+                    raise RealFileImportTokenError("El token de confirmación ya fue usado.")
+                result = real_service.confirm_uploaded_file(
+                    source_file,
+                    user_id=current_user.id,
+                    requested_type=confirm_form.requested_type.data or None,
+                    confirmation_token=confirm_form.confirmation_token.data,
+                )
+                commit_result = result["commit_result"]
+                if commit_result["committed"]:
+                    used_tokens.append(token_digest)
+                    session["used_real_file_import_tokens"] = used_tokens[-20:]
+                    session.modified = True
+                    flash("Archivo importado correctamente.", "success")
+                else:
+                    flash("No se guardaron datos; revisa el plan y sus errores.", "warning")
+                mode = "real_file"
+            except (RealFileImportError, RealFileImportTokenError, StandardImportError, ValueError) as error:
+                parse_error = f"No fue posible confirmar el archivo: {error}"
+        else:
+            parse_error = "El modo de importación no es compatible."
+
+    elif preview_form.validate_on_submit():
+        filename = preview_form.file.data.filename or ""
+        suffix = Path(filename).suffix.casefold()
+        requested_type = preview_form.requested_type.data or None
+        if suffix == ".json":
+            if requested_type in {"weigh_in_csv", "daily_energy_csv"}:
+                parse_error = "El perfil CSV seleccionado no corresponde a un archivo JSON."
+            else:
+                try:
+                    payload = _read_json_upload(
+                        preview_form.file.data,
+                        limit_bytes=10 * 1024 * 1024,
+                    )
+                    preview_result = standard_executor.preview_payload(
+                        payload,
+                        user_id=current_user.id,
+                        requested_type=requested_type,
+                        target_type=requested_type,
+                    )
+                    mode = "standard"
+                    _prepare_import_hub_standard_confirmation(
+                        confirm_form,
+                        standard_executor,
+                        payload,
+                        requested_type,
+                        preview_result,
+                    )
+                except (StandardImportError, ValueError) as error:
+                    parse_error = f"No fue posible preparar el JSON: {error}"
+        else:
+            if requested_type and requested_type not in {"weigh_in_csv", "daily_energy_csv"}:
+                parse_error = "La selección manual indicada solo es compatible con JSON."
+            else:
+                try:
+                    source_file, duplicate = store_uploaded_file(
+                        preview_form.file.data,
+                        current_user.id,
+                    )
+                    if duplicate:
+                        flash("Este archivo ya existía; se muestra un preview idempotente.", "warning")
+                    preview_result = real_service.preview_uploaded_file(
+                        source_file,
+                        user_id=current_user.id,
+                        requested_type=requested_type,
+                    )
+                    mode = "real_file"
+                    _prepare_import_hub_real_confirmation(
+                        confirm_form,
+                        source_file,
+                        requested_type or "",
+                        preview_result,
+                    )
+                except (UploadError, RealFileImportError, StandardImportError, ValueError) as error:
+                    parse_error = f"No fue posible preparar el archivo: {error}"
+
+    return render_template(
+        "imports/hub.html",
+        preview_form=preview_form,
+        confirm_form=confirm_form,
+        preview_result=preview_result,
+        commit_result=commit_result,
+        parse_error=parse_error,
+        source_file=source_file,
+        mode=mode,
+        adapter_specs=adapter_specs,
+        recent_runs=ImportAuditService().list_runs(
+            user_id=current_user.id,
+            page=1,
+            per_page=5,
+        ),
+    )
+
+
+@main_bp.get("/service-worker.js")
+def service_worker():
+    response = send_from_directory(
+        current_app.static_folder,
+        "js/service_worker.js",
+        mimetype="application/javascript",
+    )
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
+
+
+def _prepare_import_hub_standard_confirmation(
+    form: ImportHubConfirmForm,
+    executor: StandardImportExecutor,
+    payload: dict,
+    requested_type: str | None,
+    preview_result: dict,
+) -> None:
+    form.mode.data = "standard"
+    form.payload_json.data = json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, allow_nan=False
+    )
+    form.requested_type.data = requested_type or ""
+    form.target_type.data = preview_result["target_type"]
+    form.confirmation_token.data = executor.build_confirmation_token(
+        user_id=current_user.id,
+        target_type=preview_result["target_type"],
+        payload=payload,
+        plan=preview_result["plan"],
+    )
+
+
+def _prepare_import_hub_real_confirmation(
+    form: ImportHubConfirmForm,
+    source_file: UploadedFile,
+    requested_type: str,
+    preview_result: dict,
+) -> None:
+    form.mode.data = "real_file"
+    form.source_file_id.data = str(source_file.id)
+    form.requested_type.data = requested_type
+    form.target_type.data = preview_result["target_type"]
+    form.confirmation_token.data = preview_result["confirmation_token"]
 
 
 @main_bp.route("/imports/standard", methods=["GET", "POST"])
@@ -842,7 +1133,8 @@ def dashboard():
 
 
 def _render_dashboard():
-    app_timezone = ZoneInfo(current_app.config["APP_TIMEZONE"])
+    timezone_name = current_user.timezone or current_app.config["APP_TIMEZONE"]
+    app_timezone = ZoneInfo(timezone_name)
     target_date = datetime.now(app_timezone).date()
     requested_date = request.args.get("date", "").strip()
     if requested_date:
@@ -855,7 +1147,7 @@ def _render_dashboard():
         summary=daily_health_dashboard(
             current_user.id,
             target_date,
-            current_app.config["APP_TIMEZONE"],
+            timezone_name,
         ),
     )
 
@@ -885,7 +1177,8 @@ def uploads():
 @main_bp.route("/manual/weigh-in", methods=["GET", "POST"])
 @login_required
 def manual_weigh_in():
-    app_timezone = ZoneInfo(current_app.config["APP_TIMEZONE"])
+    timezone_name = current_user.timezone or current_app.config["APP_TIMEZONE"]
+    app_timezone = ZoneInfo(timezone_name)
     form = WeighInForm()
     if not form.is_submitted():
         form.recorded_at.data = datetime.now(app_timezone).replace(
@@ -956,5 +1249,6 @@ def manual_weigh_in():
     return render_template(
         "manual/weigh_in.html",
         form=form,
-        timezone_name=current_app.config["APP_TIMEZONE"],
+        timezone_name=timezone_name,
     )
+    OnboardingDismissForm,

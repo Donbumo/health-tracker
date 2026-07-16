@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Ayuda · Health Tracker{% endblock %}
+{% block breadcrumb %}Ayuda{% endblock %}
+{% block content %}
+  <section class="page-heading">
+    <div>
+      <p class="eyebrow">Guías breves</p>
+      <h1>Ayuda</h1>
+      <p>Encuentra el siguiente paso sin conocer la arquitectura interna.</p>
+    </div>
+    <a class="button" href="{{ url_for('main.getting_started') }}">Abrir primeros pasos</a>
+  </section>
+
+  <div class="card-grid help-grid">
+    <section class="card"><h2>Rutinas</h2><p>Una versión conserva el contenido histórico. Activar otra versión no cambia sesiones anteriores.</p><a href="{{ url_for('training.list_plans') }}">Ver rutinas</a></section>
+    <section class="card"><h2>Entrenamientos planeados</h2><p>Planifica un día concreto de una rutina y empieza la captura desde ese snapshot.</p><a href="{{ url_for('planned.list_workouts') }}">Ver agenda</a></section>
+    <section class="card"><h2>Captura y recuperación</h2><p>El borrador local y el del servidor ayudan a recuperar el formulario. Solo se elimina después de guardar con éxito.</p><a href="{{ url_for('sessions.new_session') }}">Registrar sesión</a></section>
+    <section class="card"><h2>Cargas, RIR y RPE</h2><p>La carga total se normaliza a kg; puedes conservar componentes en kg o lb. RIR son repeticiones en reserva y RPE es esfuerzo percibido.</p><a href="{{ url_for('progress.overview') }}">Ver progreso</a></section>
+    <section class="card"><h2>Importar datos</h2><p>Primero revisas un preview y después confirmas. Repetir el mismo archivo no debe crear copias silenciosas.</p><a href="{{ url_for('main.import_hub') }}">Importar datos</a></section>
+    <section class="card"><h2>Exportar o restaurar</h2><p>Un export sirve para portabilidad. Un backup ZIP conserva también archivos y se restaura desde un flujo separado.</p><a href="{{ url_for('main.account_data') }}">Abrir centro de datos</a></section>
+    <section class="card"><h2>Dispositivos</h2><p>Los dispositivos API usan sesiones separadas del navegador y pueden revocarse desde tu cuenta.</p><a href="{{ url_for('main.account_devices') }}">Ver dispositivos</a></section>
+    <section class="card"><h2>Privacidad y problemas</h2><p>Esta app organiza datos y no sustituye atención médica. Para diagnóstico seguro revisa el estado homelab.</p><a href="{{ url_for('main.privacy') }}">Privacidad</a> · <a href="{{ url_for('main.account_system') }}">Estado</a></section>
+  </div>
+{% endblock %}

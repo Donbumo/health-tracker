@@ -1,3 +1,4 @@
+import copy
 from io import BytesIO
 
 from flask import abort, flash, redirect, render_template, send_file, url_for
@@ -12,6 +13,10 @@ from app.services.exporters.training_plan import (
 )
 from app.services.files import UploadError, mark_import_status, store_uploaded_file
 from app.services.importers.training_plan import import_training_plan_file
+from app.services.importers.standard_import_executor import (
+    StandardImportError,
+    StandardImportExecutor,
+)
 from app.services.training_plans import (
     TrainingPlanImportError,
     activate_training_plan_version,
@@ -23,6 +28,8 @@ from app.services.validation import JsonSchemaValidationError
 from app.training import training_bp
 from app.training.forms import (
     ActivateTrainingPlanVersionForm,
+    DuplicateTrainingPlanForm,
+    TrainingPlanCreateForm,
     TrainingPlanImportForm,
     TrainingPlanVersionForm,
 )
@@ -69,8 +76,108 @@ def list_plans():
         db.select(TrainingPlan)
         .where(TrainingPlan.user_id == current_user.id)
         .order_by(TrainingPlan.updated_at.desc())
-    ).scalars()
-    return render_template("training/list.html", plans=plans)
+    ).scalars().all()
+    return render_template(
+        "training/list.html",
+        plans=plans,
+        plan_summaries={plan.id: _plan_summary(plan) for plan in plans},
+    )
+
+
+@training_bp.route("/new", methods=["GET", "POST"])
+@login_required
+def create_plan():
+    form = TrainingPlanCreateForm()
+    if form.validate_on_submit():
+        name = form.name.data.strip()
+        existing = db.session.execute(
+            db.select(TrainingPlan).where(
+                TrainingPlan.user_id == current_user.id,
+                TrainingPlan.name == name,
+            )
+        ).scalar_one_or_none()
+        if existing is not None:
+            form.name.errors.append("Ya tienes una rutina con este nombre.")
+        else:
+            document = _guided_plan_document(form, current_user.id)
+            try:
+                result = StandardImportExecutor().commit_documents(
+                    [document],
+                    user_id=current_user.id,
+                    target_type="training_plan",
+                    confirmed=True,
+                    audit_payload=document,
+                    audit_metadata={
+                        "route": "/training-plans/new",
+                        "mode": "guided_manual",
+                        "document_count": 1,
+                    },
+                )
+            except StandardImportError as error:
+                flash(f"No fue posible crear la rutina: {error}", "danger")
+            else:
+                if result["committed"]:
+                    plan = db.session.execute(
+                        db.select(TrainingPlan).where(
+                            TrainingPlan.user_id == current_user.id,
+                            TrainingPlan.name == name,
+                        )
+                    ).scalar_one()
+                    flash("Rutina creada. Puedes añadir cambios como una nueva versión.", "success")
+                    return redirect(url_for("training.detail", plan_id=plan.id))
+                flash("La rutina no se creó; revisa los campos.", "danger")
+    return render_template("training/create.html", form=form)
+
+
+@training_bp.post("/<int:plan_id>/duplicate")
+@login_required
+def duplicate_plan(plan_id: int):
+    plan = _user_plan_or_404(plan_id)
+    form = DuplicateTrainingPlanForm()
+    if not form.validate_on_submit():
+        flash("Indica un nombre válido para la copia.", "danger")
+        return redirect(url_for("training.detail", plan_id=plan.id))
+    name = form.name.data.strip()
+    if db.session.execute(
+        db.select(TrainingPlan.id).where(
+            TrainingPlan.user_id == current_user.id,
+            TrainingPlan.name == name,
+        )
+    ).scalar_one_or_none() is not None:
+        flash("Ya tienes una rutina con ese nombre.", "danger")
+        return redirect(url_for("training.detail", plan_id=plan.id))
+    active_version = get_active_version(plan, current_user.id)
+    document = copy.deepcopy(active_version.content)
+    document["user_id"] = current_user.id
+    document["source_type"] = "manual_generated"
+    document["data"]["name"] = name
+    try:
+        result = StandardImportExecutor().commit_documents(
+            [document],
+            user_id=current_user.id,
+            target_type="training_plan",
+            confirmed=True,
+            audit_payload=document,
+            audit_metadata={
+                "route": "/training-plans/<plan>/duplicate",
+                "mode": "duplicate",
+                "document_count": 1,
+            },
+        )
+    except StandardImportError as error:
+        flash(f"No fue posible duplicar la rutina: {error}", "danger")
+        return redirect(url_for("training.detail", plan_id=plan.id))
+    if not result["committed"]:
+        flash("No fue posible duplicar la rutina.", "danger")
+        return redirect(url_for("training.detail", plan_id=plan.id))
+    duplicate = db.session.execute(
+        db.select(TrainingPlan).where(
+            TrainingPlan.user_id == current_user.id,
+            TrainingPlan.name == name,
+        )
+    ).scalar_one()
+    flash("Rutina duplicada como una copia independiente.", "success")
+    return redirect(url_for("training.detail", plan_id=duplicate.id))
 
 
 @training_bp.route("/import", methods=["GET", "POST"])
@@ -124,6 +231,8 @@ def detail(plan_id: int):
         "training/detail.html",
         plan=plan,
         active_version=active_version,
+        summary=_plan_summary(plan),
+        duplicate_form=DuplicateTrainingPlanForm(name=f"Copia de {plan.name}"),
     )
 
 
@@ -235,3 +344,67 @@ def _export_plan(plan_id: int, format_name: str):
             f"{filename_base}_v{active_version.version_number}.{artifact.extension}"
         ),
     )
+
+
+def _guided_plan_document(form: TrainingPlanCreateForm, user_id: int) -> dict:
+    planned_sets = []
+    for set_number in range(1, form.set_count.data + 1):
+        planned_set = {"set_number": set_number, "reps": form.target_reps.data}
+        if form.rest_seconds.data is not None:
+            planned_set["rest_seconds"] = form.rest_seconds.data
+        planned_sets.append(planned_set)
+    data = {
+        "name": form.name.data.strip(),
+        "weeks": [
+            {
+                "week_number": 1,
+                "days": [
+                    {
+                        "day_number": 1,
+                        "name": form.day_name.data.strip(),
+                        "exercises": [
+                            {
+                                "exercise_order": 1,
+                                "name": form.exercise_name.data.strip(),
+                                "sets": planned_sets,
+                            }
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+    if form.description.data and form.description.data.strip():
+        data["description"] = form.description.data.strip()
+    return {
+        "schema_version": "1.0",
+        "record_type": "training_plan",
+        "user_id": user_id,
+        "source_type": "manual_generated",
+        "data": data,
+    }
+
+
+def _plan_summary(plan: TrainingPlan) -> dict:
+    try:
+        version = next(
+            item for item in plan.versions
+            if item.version_number == plan.active_version_number
+        )
+    except StopIteration:
+        return {"weeks": 0, "days": 0, "exercises": 0, "exercise_names": []}
+    weeks = version.content.get("data", {}).get("weeks", [])
+    days = [day for week in weeks for day in week.get("days", [])]
+    return {
+        "weeks": len(weeks),
+        "days": len(days),
+        "exercises": sum(len(day.get("exercises", [])) for day in days),
+        "exercise_names": list(
+            dict.fromkeys(
+                exercise.get("name", "")
+                for day in days
+                for exercise in day.get("exercises", [])
+                if exercise.get("name")
+            )
+        ),
+    }

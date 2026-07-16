@@ -1,0 +1,11 @@
+{
+  "name": "Health Tracker",
+  "short_name": "Health Tracker",
+  "description": "Seguimiento privado y self-hosted de salud y entrenamiento.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f7f6",
+  "theme_color": "#1f6f5f"
+}

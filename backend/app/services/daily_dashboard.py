@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
@@ -14,12 +14,14 @@ from app.models import (
     ExportRecord,
     ImportRun,
     MedicalLabReport,
+    PlannedWorkout,
     TrainingSession,
     TrainingSessionExercise,
-    User,
     WeighIn,
+    WorkoutSessionDraft,
 )
 from app.services.daily_balance import daily_balance
+from app.services.onboarding import getting_started_status
 from app.services.overload import session_metrics
 
 
@@ -205,61 +207,108 @@ def _completion_summary(balance: dict, weight: dict, sessions: list[dict]) -> di
     }
 
 
-def _has_record(model, user_id: int) -> bool:
-    return db.session.execute(
-        db.select(model.id).where(model.user_id == user_id).limit(1)
-    ).scalar_one_or_none() is not None
-
-
-def _onboarding_checklist(user_id: int) -> dict:
-    user = db.session.get(User, user_id)
-    has_weight = _has_record(WeighIn, user_id)
-    has_energy = _has_record(DailyEnergy, user_id)
-    has_nutrition = _has_record(DailyNutrition, user_id)
-    has_any_data = has_weight or has_energy or has_nutrition
-    items = [
-        {
-            "label": "Cuenta lista",
-            "complete": user is not None and bool(user.email or user.username),
-            "help": "Tu login ya está activo.",
-            "url_endpoint": None,
-        },
-        {
-            "label": "Registrar primer peso",
-            "complete": has_weight,
-            "help": "Sirve como referencia corporal inicial.",
-            "url_endpoint": "main.manual_weigh_in",
-        },
-        {
-            "label": "Registrar energía",
-            "complete": has_energy,
-            "help": "Agrega gasto, pasos o calorías del día.",
-            "url_endpoint": "wellness.manual_energy",
-        },
-        {
-            "label": "Registrar nutrición",
-            "complete": has_nutrition,
-            "help": "Captura al menos una comida o item.",
-            "url_endpoint": "wellness.manual_nutrition",
-        },
-        {
-            "label": "Revisar dashboard",
-            "complete": has_any_data,
-            "help": "Vuelve aquí para ver tu resumen diario.",
-            "url_endpoint": "main.dashboard",
-        },
-        {
-            "label": "Exportar respaldo",
-            "complete": has_any_data,
-            "help": "Descarga tu JSON cuando tengas datos de prueba.",
-            "url_endpoint": "main.export_account_data",
-        },
-    ]
+def _planned_summary(user_id: int, target_date: date) -> dict:
+    records = db.session.execute(
+        db.select(PlannedWorkout)
+        .where(
+            PlannedWorkout.user_id == user_id,
+            PlannedWorkout.deleted_at.is_(None),
+            PlannedWorkout.scheduled_for_date.between(
+                target_date, target_date + timedelta(days=6)
+            ),
+        )
+        .options(
+            selectinload(PlannedWorkout.training_plan),
+            selectinload(PlannedWorkout.completed_session),
+        )
+        .order_by(PlannedWorkout.scheduled_for_date, PlannedWorkout.id)
+    ).scalars().all()
     return {
-        "items": items,
-        "completed_count": sum(1 for item in items if item["complete"]),
-        "total_count": len(items),
+        "today": [item for item in records if item.scheduled_for_date == target_date],
+        "upcoming": [item for item in records if item.scheduled_for_date > target_date],
     }
+
+
+def _latest_draft(user_id: int) -> WorkoutSessionDraft | None:
+    return db.session.execute(
+        db.select(WorkoutSessionDraft)
+        .where(
+            WorkoutSessionDraft.user_id == user_id,
+            WorkoutSessionDraft.expires_at > datetime.now(timezone.utc),
+        )
+        .options(
+            selectinload(WorkoutSessionDraft.training_plan),
+            selectinload(WorkoutSessionDraft.training_plan_version),
+            selectinload(WorkoutSessionDraft.planned_workout),
+        )
+        .order_by(WorkoutSessionDraft.updated_at.desc(), WorkoutSessionDraft.id.desc())
+    ).scalars().first()
+
+
+def _recent_session(user_id: int) -> dict | None:
+    record = db.session.execute(
+        db.select(TrainingSession)
+        .where(TrainingSession.user_id == user_id)
+        .options(
+            selectinload(TrainingSession.training_plan),
+            selectinload(TrainingSession.exercises).selectinload(
+                TrainingSessionExercise.sets
+            ),
+        )
+        .order_by(TrainingSession.performed_at.desc(), TrainingSession.id.desc())
+    ).scalars().first()
+    if record is None:
+        return None
+    metrics = session_metrics(record)
+    return {
+        "record": record,
+        "volume": metrics["volume"],
+        "exercise_names": [exercise.name for exercise in record.exercises],
+    }
+
+
+def _attention_items(operations: dict, draft: WorkoutSessionDraft | None) -> list[dict]:
+    items = []
+    latest_import = operations["latest_import"]
+    if latest_import is not None and latest_import.status in {"failed", "blocked"}:
+        items.append(
+            {
+                "label": "Una importación necesita revisión.",
+                "endpoint": "main.import_history_detail",
+                "params": {"run_id": latest_import.id},
+            }
+        )
+    if operations["latest_backup"] is None:
+        items.append(
+            {
+                "label": "Todavía no has creado un backup completo.",
+                "endpoint": "main.new_account_backup",
+                "params": {},
+            }
+        )
+    if operations["revoked_devices"]:
+        items.append(
+            {
+                "label": "Hay dispositivos revocados en tu cuenta; revisa si siguen siendo necesarios.",
+                "endpoint": "main.account_devices",
+                "params": {},
+            }
+        )
+    if draft is not None:
+        updated_at = draft.updated_at
+        if updated_at.tzinfo is None:
+            updated_at = updated_at.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) - updated_at > timedelta(days=1):
+            items.append(
+                {
+                    "label": "Tienes un borrador de entrenamiento de hace más de un día.",
+                    "endpoint": "sessions.new_session",
+                    "params": {"planned_workout_id": draft.planned_workout.public_id}
+                    if draft.planned_workout is not None
+                    else {},
+                }
+            )
+    return items
 
 
 def _operation_summary(user_id: int) -> dict:
@@ -290,11 +339,18 @@ def _operation_summary(user_id: int) -> dict:
             ApiDevice.revoked_at.is_(None),
         )
     ).scalar_one()
+    revoked_devices = db.session.execute(
+        db.select(func.count(ApiDevice.id)).where(
+            ApiDevice.user_id == user_id,
+            ApiDevice.revoked_at.is_not(None),
+        )
+    ).scalar_one()
     return {
         "latest_import": latest_import,
         "latest_export": latest_export,
         "latest_backup": latest_backup,
         "active_devices": active_devices,
+        "revoked_devices": revoked_devices,
     }
 
 
@@ -313,6 +369,9 @@ def daily_health_dashboard(
     sessions = _session_summaries(user_id, target_date, app_timezone)
     medical_report = _latest_medical_report(user_id, target_date)
     activity_summary = _activity_summary(user_id, target_date, app_timezone)
+    operations = _operation_summary(user_id)
+    planned = _planned_summary(user_id, target_date)
+    draft = _latest_draft(user_id)
     return {
         **balance,
         "balance_state": _balance_state(balance["balance"]),
@@ -327,6 +386,10 @@ def daily_health_dashboard(
             len(medical_report.results) if medical_report is not None else 0
         ),
         "completion": _completion_summary(balance, weight, sessions),
-        "onboarding": _onboarding_checklist(user_id),
-        "operations": _operation_summary(user_id),
+        "onboarding": getting_started_status(user_id),
+        "operations": operations,
+        "planned": planned,
+        "latest_draft": draft,
+        "recent_session": _recent_session(user_id),
+        "attention": _attention_items(operations, draft),
     }

@@ -17,17 +17,18 @@ def test_primary_navigation_exposes_health_modules(app, client, user):
     response = client.get("/dashboard")
     assert response.status_code == 200
     for label, path in (
-        ("Dashboard", "/dashboard"),
-        ("Wellness", "/daily-balance"),
+        ("Resumen diario", "/dashboard"),
+        ("Balance diario", "/daily-balance"),
         ("Peso", "/weigh-ins"),
         ("Nutrici", "/daily-nutrition"),
         ("Alacena", "/foods"),
         ("Energ", "/daily-energy"),
-        ("Entrenamiento", "/training-plans"),
-        ("Sesiones", "/training-sessions"),
+        ("Mis rutinas", "/training-plans"),
+        ("Sesiones realizadas", "/training-sessions"),
         ("Progreso", "/progress"),
         ("Laboratorios", "/medical/labs"),
-        ("Uploads", "/uploads"),
+        ("Importar datos", "/imports"),
+        ("Centro de ayuda", "/help"),
     ):
         assert label.encode() in response.data
         assert f'href="{path}"'.encode() in response.data

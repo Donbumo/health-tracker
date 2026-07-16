@@ -1,5 +1,7 @@
 # Companion workout deliveries
 
+Alpha 1.0 Web Daily Driver solo reorganiza la navegación y agenda web. No cambia negociación, package, delivery, checkpoints, completion ni capacidades; continúa sin APK, reloj o Bluetooth.
+
 Alpha 0.8.1 no cambia negociación, package, delivery ni completion Companion. El nuevo `client_submission_id` pertenece al formulario web; Companion conserva sus IDs de operación y el `client_event_id` de Mobile Sync.
 
 Estados: `prepared`, `delivered`, `acknowledged`, `started`, `completed`, `aborted`, `failed`, `expired`, `cancelled`.

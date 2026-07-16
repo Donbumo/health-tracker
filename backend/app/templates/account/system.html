@@ -25,6 +25,8 @@
         <dt>Migración</dt><dd><code>{{ migration_head }}</code></dd>
         <dt>Hora servidor</dt><dd>{{ server_time.isoformat() }}</dd>
         <dt>Web</dt><dd><span class="status status-success">Disponible</span></dd>
+        <dt>Firma de API</dt><dd>{{ 'Clave independiente configurada' if api_signing_key_separate else 'Usa la clave web validada; configura una independiente antes de exponer la API' }}</dd>
+        <dt>Rate limiter</dt><dd>{{ rate_limiter_scope }}; adecuado solo para QA privada/self-hosted</dd>
       </dl>
     </article>
     <article class="card">
@@ -46,6 +48,18 @@
     <h2>Reconciliación</h2>
     <p>{{ reconciliation_status }}</p>
     <p class="help">Esta pantalla no ejecuta reconciliación, no muestra rutas, nombres de archivos, variables, logs ni secretos.</p>
+  </section>
+
+  <section class="card">
+    <h2>Checklist de operación</h2>
+    <ul>
+      <li>Configura secretos largos y una clave de firma API independiente.</li>
+      <li>Ejecuta migraciones y comprueba el healthcheck después de actualizar.</li>
+      <li>Crea un backup y realiza un restore de prueba periódico en un entorno aislado.</li>
+      <li>Usa VPN o HTTPS con reverse proxy; el rate limiter actual no es global entre workers.</li>
+      <li>Conserva una versión anterior para rollback y revisa logs sin datos sensibles.</li>
+    </ul>
+    <a href="{{ url_for('main.help_center') }}">Abrir ayuda y solución de problemas</a>
   </section>
 
   <section class="quick-actions" aria-label="Acciones seguras">

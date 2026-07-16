@@ -39,6 +39,7 @@ def create_app(test_config: dict | None = None) -> Flask:
         raise RuntimeError("SECRET_KEY must be a non-placeholder value of at least 32 characters")
 
     api_signing_key = app.config.get("API_TOKEN_SIGNING_KEY") or ""
+    app.config["API_TOKEN_SIGNING_KEY_SEPARATE"] = bool(api_signing_key)
     if api_signing_key and (
         len(api_signing_key) < 32
         or api_signing_key == "replace-with-a-long-random-secret"
@@ -119,7 +120,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     @app.context_processor
     def inject_release_context():
         return {
-            "alpha_release_label": "Alpha 0.9",
+            "alpha_release_label": "Alpha 1.0",
         }
 
     @app.errorhandler(403)
@@ -147,6 +148,63 @@ def create_app(test_config: dict | None = None) -> Flask:
     @app.errorhandler(413)
     def request_too_large(_error):
         return render_template("413.html"), 413
+
+    @app.errorhandler(409)
+    def conflict(_error):
+        if request.path.startswith("/api/v1"):
+            return jsonify(
+                error={"code": "conflict", "message": "Conflicto de datos.", "details": {}},
+                meta={"api_version": "1", "request_id": str(uuid.uuid4())},
+            ), 409
+        return render_template(
+            "error.html",
+            status_code=409,
+            title="Conflicto de datos",
+            message="Los datos cambiaron. Vuelve a revisar la página antes de intentar de nuevo.",
+        ), 409
+
+    @app.errorhandler(422)
+    def unprocessable(_error):
+        if request.path.startswith("/api/v1"):
+            return jsonify(
+                error={"code": "unprocessable", "message": "Datos no procesables.", "details": {}},
+                meta={"api_version": "1", "request_id": str(uuid.uuid4())},
+            ), 422
+        return render_template(
+            "error.html",
+            status_code=422,
+            title="Datos no procesables",
+            message="Revisa los campos indicados y vuelve a intentar.",
+        ), 422
+
+    @app.errorhandler(429)
+    def rate_limited(_error):
+        if request.path.startswith("/api/v1"):
+            return jsonify(
+                error={"code": "rate_limited", "message": "Demasiadas solicitudes.", "details": {}},
+                meta={"api_version": "1", "request_id": str(uuid.uuid4())},
+            ), 429
+        return render_template(
+            "error.html",
+            status_code=429,
+            title="Demasiadas solicitudes",
+            message="Espera un momento antes de volver a intentar.",
+        ), 429
+
+    @app.errorhandler(500)
+    def internal_error(_error):
+        db.session.rollback()
+        if request.path.startswith("/api/v1"):
+            return jsonify(
+                error={"code": "internal_error", "message": "Error interno.", "details": {}},
+                meta={"api_version": "1", "request_id": str(uuid.uuid4())},
+            ), 500
+        return render_template(
+            "error.html",
+            status_code=500,
+            title="No fue posible completar la operación",
+            message="Tus datos no se guardaron parcialmente. Intenta de nuevo o consulta el estado homelab.",
+        ), 500
 
     @app.errorhandler(CSRFError)
     def csrf_failed(error):

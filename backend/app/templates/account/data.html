@@ -14,7 +14,7 @@
     <a class="button" href="{{ url_for('main.export_account_data') }}">Exportar respaldo</a>
     <a class="button button-secondary" href="{{ url_for('exports.history') }}">Historial de exports</a>
     <a class="button" href="{{ url_for('main.restore_account_data') }}">Restore desde export</a>
-    <a class="button button-secondary" href="{{ url_for('main.standard_import') }}">Importar JSON estándar</a>
+    <a class="button button-secondary" href="{{ url_for('main.import_hub') }}">Importar datos</a>
     <a class="button button-secondary" href="{{ url_for('main.import_history') }}">Historial imports/restores</a>
     <a class="button button-secondary" href="{{ url_for('main.account_devices') }}">Dispositivos API</a>
     <a class="button button-secondary" href="{{ url_for('main.account_system') }}">Estado homelab</a>
@@ -57,7 +57,7 @@
     <article class="card">
       <h2>Importar JSON estándar</h2>
       <p>Importa dominios concretos: peso, energía, nutrición, rutinas, sesiones, alimentos, recetas o laboratorios.</p>
-      <a class="button button-secondary" href="{{ url_for('main.standard_import') }}">Importar estándar</a>
+      <a class="button button-secondary" href="{{ url_for('main.import_hub') }}">Importar datos</a>
     </article>
     <article class="card">
       <h2>Historial de imports/restores</h2>
@@ -97,7 +97,7 @@
       <a class="button button-secondary" href="{{ url_for('main.import_history_detail', run_id=latest_run.id) }}">Ver detalle saneado</a>
     {% else %}
       <p>No hay importaciones o restores registrados todavía.</p>
-      <a class="button button-secondary" href="{{ url_for('main.standard_import') }}">Importar JSON estándar</a>
+      <a class="button button-secondary" href="{{ url_for('main.import_hub') }}">Importar datos</a>
     {% endif %}
   </section>
 {% endblock %}

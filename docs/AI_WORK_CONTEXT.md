@@ -1,5 +1,13 @@
 # Contexto operativo para agentes de IA
 
+## Bloque activo: Alpha 0.8.1 Workout Session Recovery
+
+La rama activa `hotfix/alpha-0.8.1-workout-session-recovery` parte de `7ee865f`, tag `alpha-0.8-companion-backend`. Para sesiones web, CSRF, drafts o idempotencia leer primero [`project-rules/workout-session-recovery.md`](project-rules/workout-session-recovery.md). El bloque añade la migración `20260715_0026`, sin cambiar los contratos Bearer, Mobile Sync o Companion.
+
+Estado verificado: local `548 passed, 3 skipped, 1 warning`; Docker/MariaDB `550 passed, 1 skipped, 1 warning`; single head `20260715_0026` y `db check` limpio. QA responsive real pasó en tema oscuro en seis anchos; tema claro continúa pendiente por falta de emulación disponible y no debe marcarse como realizado.
+
+P1 de captura avanzada de cargas sigue pendiente en `feature/workout-load-entry`. No confundir `client_submission_id` web con `client_event_id` móvil.
+
 ## Bloque activo: Fase 7C
 
 La rama `feature/phase-7c-companion-delivery` parte de `b0b6bb2`, tag exacto `alpha-0.7-mobile-sync`. Implementa Alpha 0.8: perfil/negociación companion, package 1.0, delivery persistente, checkpoints y completion sobre `TrainingSession`/Mobile Sync. Leer [`project-rules/companion-protocol.md`](project-rules/companion-protocol.md) y [`COMPANION_PROTOCOL_1_0.md`](COMPANION_PROTOCOL_1_0.md).

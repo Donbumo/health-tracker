@@ -1,5 +1,7 @@
 # Mobile Sync Foundation
 
+Alpha 0.8.1 añade `client_submission_id` únicamente al flujo web y a la portabilidad de `completed_workout`. No sustituye ni colisiona con `client_event_id`, no añade cookie fallback a `/api/v1` y no cambia el contrato Bearer o la idempotencia móvil.
+
 Alpha 0.7 está integrada/publicada en `b0b6bb2`, tag `alpha-0.7-mobile-sync`, con head `20260714_0023`. Incluye planned workouts, completed upload, bootstrap/pull/push/status, revisiones, tombstones, cursor por dispositivo, cleanup CLI y UI homelab mínima. Suites local/Docker y concurrencia MariaDB pasaron; el recorrido visual humano final quedó pendiente operativo.
 
 Alpha 0.8 amplía el mismo cursor con `companion_profile` y `companion_delivery`; no crea un segundo sistema de sync. Completion sigue produciendo el `completed_workout` existente.

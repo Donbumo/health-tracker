@@ -18,6 +18,7 @@
           <td><span class="status status-muted">{{ item.status }}</span></td>
           <td>
             {% if item.status in ['planned', 'in_progress', 'skipped'] %}
+              <a class="button" href="{{ url_for('sessions.new_session', planned_workout_id=item.public_id) }}">Registrar sesión</a>
               <form class="inline-form" method="post" action="{{ url_for('planned.reschedule', public_id=item.public_id) }}">
                 {{ reschedule_form.hidden_tag() }}
                 <input type="date" name="scheduled_for_date" value="{{ item.scheduled_for_date }}" aria-label="Nueva fecha">

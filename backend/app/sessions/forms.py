@@ -9,10 +9,15 @@ from wtforms import (
     TextAreaField,
 )
 from wtforms.validators import DataRequired, Length, NumberRange, Optional
+import uuid
 
 
 class TrainingSessionForm(FlaskForm):
     planned_day = HiddenField(validators=[DataRequired()])
+    planned_workout_id = HiddenField(validators=[Optional()])
+    client_submission_id = HiddenField(
+        default=lambda: str(uuid.uuid4()), validators=[DataRequired()]
+    )
     performed_at = DateTimeLocalField(
         "Fecha y hora",
         format="%Y-%m-%dT%H:%M",

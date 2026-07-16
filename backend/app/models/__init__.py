@@ -15,6 +15,7 @@ from app.models.training_session import (
 from app.models.uploaded_file import UploadedFile
 from app.models.user import User
 from app.models.weigh_in import WeighIn
+from app.models.workout_draft import WorkoutSessionDraft
 from app.models.api_auth import ApiDevice, ApiRefreshToken, ApiSession
 from app.models.mobile_sync import (
     DeviceSyncState,
@@ -53,6 +54,7 @@ __all__ = [
     "UploadedFile",
     "User",
     "WeighIn",
+    "WorkoutSessionDraft",
     "ApiDevice",
     "ApiRefreshToken",
     "ApiSession",

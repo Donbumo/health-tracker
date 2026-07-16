@@ -1,5 +1,20 @@
 # Handoff activo de Health Tracker
 
+## Actualización 2026-07-15 — Hotfix Alpha 0.8.1
+
+- Rama: `hotfix/alpha-0.8.1-workout-session-recovery`.
+- Base exacta: `7ee865f`, tag `alpha-0.8-companion-backend`.
+- Objetivo: evitar pérdida o duplicación de sesiones web por CSRF, reload, red o doble submit.
+- Implementado: recuperación CSRF con token nuevo, draft local de 500 ms, draft servidor owner-only, idempotencia UUID/hash, commit atómico, cleanup y migración aditiva `20260715_0026`.
+- Contratos conservados: API Bearer, Mobile Sync y Companion. `client_submission_id` web es independiente de `client_event_id` móvil.
+- Validación final: focal `43 passed, 3 skipped`; local `548 passed, 3 skipped, 1 warning`; Docker/MariaDB `550 passed, 1 skipped, 1 warning`. El skip Docker es únicamente `test_active_handoff.py`, porque `docs/` no se copia a la imagen.
+- Alembic: single head `20260715_0026`; ciclos aislados upgrade/downgrade/upgrade y `db check` pasaron en SQLite y MariaDB 11.4. El historial SQLite completo conserva el bloqueo preexistente de `0015`.
+- QA real: draft local/servidor, reload, persistencia tras reconstrucción, captura de todos los campos, guardado, limpieza tras éxito y responsive sin overflow pasaron a 360/390/430/768/1024/1366 px en tema oscuro. El navegador no expone emulación de tema claro; ese sign-off visual sigue pendiente.
+- Pendiente fuera de alcance: P1 `feature/workout-load-entry`.
+- Siguiente acción: sign-off visual real en tema claro; después decidir integración/release de Alpha 0.8.1. P1 continúa separado.
+
+Regla canónica: [`project-rules/workout-session-recovery.md`](project-rules/workout-session-recovery.md). Detalle: [`WORKOUT_SESSION_RECOVERY.md`](WORKOUT_SESSION_RECOVERY.md).
+
 ## Actualización 2026-07-14 — Fase 7C / Alpha 0.8
 
 - Rama: `feature/phase-7c-companion-delivery`.

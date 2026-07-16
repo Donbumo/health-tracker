@@ -104,6 +104,8 @@ code { overflow-wrap: anywhere; }
 .operations-card { order: 19; }
 .welcome-banner { display: flex; justify-content: space-between; gap: 1rem; padding: .8rem 1rem; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
 .page-actions, .form-actions, .quick-actions { display: flex; flex-wrap: wrap; align-items: end; gap: .7rem; }
+.workout-draft-toolbar { position: sticky; z-index: 20; top: 4.4rem; display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .7rem; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: color-mix(in srgb, var(--surface) 96%, transparent); box-shadow: var(--shadow-sm); }
+.workout-draft-toolbar .status { overflow-wrap: anywhere; }
 .page-actions label { align-self: center; }
 .card, .metric, .empty-state { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); }
 .card { padding: clamp(1rem, 2vw, 1.5rem); margin-bottom: 1.25rem; }
@@ -238,6 +240,8 @@ tbody tr:last-child td { border-bottom: 0; }
   .checklist li { align-items: flex-start; }
   .import-ai-helper { padding: .8rem; }
   .import-ai-metadata { grid-template-columns: 1fr; gap: .2rem; }
+  .workout-draft-toolbar { top: 3.9rem; align-items: stretch; flex-direction: column; }
+  .workout-draft-toolbar .button { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

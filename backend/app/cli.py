@@ -25,6 +25,7 @@ from app.services.demo_seed import (
 )
 from app.services.backup_reconcile import BackupReconciliationService
 from app.services.mobile_sync import canonical_hash
+from app.services.workout_drafts import cleanup_report as workout_draft_cleanup_report
 
 
 @click.command("seed-admin")
@@ -297,6 +298,36 @@ def companion_cleanup_command(apply_changes: bool) -> None:
     click.echo(f"profile_device_mismatch={len(mismatched)}")
 
 
+@click.group("workout-drafts")
+def workout_drafts_group() -> None:
+    """Inspect and safely clean recoverable workout drafts."""
+
+
+@workout_drafts_group.command("cleanup")
+@click.option(
+    "--apply",
+    "apply_changes",
+    is_flag=True,
+    help="Delete only invalid, expired or completed drafts; default is dry-run.",
+)
+@with_appcontext
+def workout_drafts_cleanup_command(apply_changes: bool) -> None:
+    """Report draft health without printing workout content."""
+    report = workout_draft_cleanup_report(apply=apply_changes)
+    for key in (
+        "mode",
+        "expired_drafts",
+        "orphaned_drafts",
+        "oversized_drafts",
+        "hash_mismatches",
+        "completed_session_drafts",
+        "old_active_drafts_report_only",
+        "records_updated",
+        "records_deleted",
+    ):
+        click.echo(f"{key}={report[key]}")
+
+
 def register_commands(app) -> None:
     app.cli.add_command(seed_admin_command)
     app.cli.add_command(seed_group)
@@ -304,3 +335,4 @@ def register_commands(app) -> None:
     app.cli.add_command(api_auth_group)
     app.cli.add_command(mobile_sync_group)
     app.cli.add_command(companion_group)
+    app.cli.add_command(workout_drafts_group)

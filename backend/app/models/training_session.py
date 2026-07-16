@@ -45,6 +45,11 @@ class TrainingSession(db.Model):
             name="uq_training_sessions_device_event",
         ),
         db.UniqueConstraint(
+            "user_id",
+            "client_submission_id",
+            name="uq_training_sessions_user_submission",
+        ),
+        db.UniqueConstraint(
             "planned_workout_id", name="uq_training_sessions_planned_workout"
         ),
         db.CheckConstraint("revision >= 1", name="ck_training_sessions_revision"),
@@ -83,6 +88,7 @@ class TrainingSession(db.Model):
         db.Integer, db.ForeignKey("api_devices.id", ondelete="SET NULL"), nullable=True
     )
     client_event_id = db.Column(db.String(36), nullable=True)
+    client_submission_id = db.Column(db.String(36), nullable=True)
     client_payload_sha256 = db.Column(db.String(64), nullable=True)
     revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")
     timezone = db.Column(db.String(64), nullable=True)

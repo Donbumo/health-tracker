@@ -2,6 +2,7 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
 from zoneinfo import ZoneInfo
+import uuid
 
 from flask import (
     abort,
@@ -17,7 +18,7 @@ from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from app.extensions import db
-from app.models import TrainingSession
+from app.models import PlannedWorkout, TrainingSession
 from app.services.exporters.training_session import (
     TrainingSessionCsvExporter,
     TrainingSessionHtmlExporter,
@@ -35,7 +36,9 @@ from app.services.workout_sessions import (
     create_manual_training_session,
     list_planned_days,
     resolve_planned_day,
+    resolve_planned_workout_day,
 )
+from app.services.workout_drafts import latest_context_draft, serialize_draft
 from app.sessions import sessions_bp
 from app.sessions.forms import CompletedWorkoutImportForm, TrainingSessionForm
 
@@ -208,23 +211,97 @@ def import_session():
     return render_template("sessions/import.html", form=form)
 
 
-@sessions_bp.route("/new", methods=["GET", "POST"])
-@login_required
-def new_session():
+def _new_session_context():
     plan_id = request.args.get("plan_id", type=int)
     options = list_planned_days(current_user.id, plan_id=plan_id)
+    planned_public_id = request.values.get("planned_workout_id", "").strip()
+    planned_workout = None
+    if planned_public_id:
+        planned_workout = db.session.execute(
+            db.select(PlannedWorkout).where(
+                PlannedWorkout.user_id == current_user.id,
+                PlannedWorkout.public_id == planned_public_id,
+                PlannedWorkout.deleted_at.is_(None),
+            )
+        ).scalar_one_or_none()
+        if planned_workout is None:
+            abort(404)
     selected_key = request.values.get("planned_day", "")
     selected_day = None
-    if selected_key:
+    if planned_workout is not None:
+        try:
+            selected_day = resolve_planned_workout_day(
+                planned_workout, current_user.id
+            )
+        except TrainingSessionError as error:
+            flash(str(error), "danger")
+    elif selected_key:
         try:
             selected_day = resolve_planned_day(selected_key, current_user.id)
         except TrainingSessionError as error:
             flash(str(error), "danger")
+    return plan_id, options, selected_day, planned_workout
+
+
+def _server_draft(selected_day, planned_workout):
+    if selected_day is None:
+        return None
+    draft = latest_context_draft(
+        user_id=current_user.id,
+        version_id=selected_day.version.id,
+        week_number=selected_day.week["week_number"],
+        day_number=selected_day.day["day_number"],
+        planned_workout_id=planned_workout.id if planned_workout else None,
+    )
+    return serialize_draft(draft, include_payload=True) if draft else None
+
+
+def _template_context(form, plan_id, options, selected_day, planned_workout):
+    return {
+        "form": form,
+        "options": options,
+        "selected_day": selected_day,
+        "planned_workout": planned_workout,
+        "plan_id": plan_id,
+        "timezone_name": current_app.config["APP_TIMEZONE"],
+        "server_draft": _server_draft(selected_day, planned_workout),
+        "user_public_id": current_user.public_id,
+        "draft_max_bytes": current_app.config["WORKOUT_DRAFT_MAX_BYTES"],
+        "draft_ttl_days": current_app.config["WORKOUT_DRAFT_TTL_DAYS"],
+        "draft_server_debounce_ms": current_app.config[
+            "WORKOUT_DRAFT_SERVER_DEBOUNCE_MS"
+        ],
+    }
+
+
+def render_csrf_recovery(*, request_id: str):
+    plan_id, options, selected_day, planned_workout = _new_session_context()
+    form = TrainingSessionForm()
+    context = _template_context(
+        form, plan_id, options, selected_day, planned_workout
+    )
+    context.update(
+        recovery_message=(
+            "El token de seguridad venció. Recuperamos todos tus datos; "
+            "vuelve a presionar Guardar."
+        ),
+        request_id=request_id,
+    )
+    return render_template("sessions/new.html", **context), 422
+
+
+@sessions_bp.route("/new", methods=["GET", "POST"])
+@login_required
+def new_session():
+    plan_id, options, selected_day, planned_workout = _new_session_context()
 
     form = TrainingSessionForm()
     if not form.is_submitted() and selected_day is not None:
         app_timezone = ZoneInfo(current_app.config["APP_TIMEZONE"])
         form.planned_day.data = selected_day.key
+        form.planned_workout_id.data = (
+            planned_workout.public_id if planned_workout else ""
+        )
         form.performed_at.data = datetime.now(app_timezone).replace(
             tzinfo=None,
             second=0,
@@ -235,6 +312,12 @@ def new_session():
         app_timezone = ZoneInfo(current_app.config["APP_TIMEZONE"])
         performed_at = form.performed_at.data.replace(tzinfo=app_timezone)
         try:
+            submitted_client_id = request.form.get("client_submission_id")
+            client_submission_id = (
+                str(uuid.UUID(submitted_client_id))
+                if submitted_client_id
+                else None
+            )
             session, duplicate = create_manual_training_session(
                 user_id=current_user.id,
                 planned_day=selected_day,
@@ -248,8 +331,11 @@ def new_session():
                 average_heart_rate_bpm=form.average_heart_rate_bpm.data,
                 calories_burned=form.calories_burned.data,
                 notes=form.notes.data,
+                client_submission_id=client_submission_id,
+                planned_workout=planned_workout,
             )
         except (
+            ValueError,
             JsonSchemaValidationError,
             ManualJsonGenerationError,
             TrainingSessionError,
@@ -257,19 +343,24 @@ def new_session():
             flash(f"No fue posible guardar la sesión: {error}", "danger")
         else:
             if duplicate:
-                flash("Esta sesión ya estaba registrada.", "warning")
+                flash(
+                    "Esta sesión ya estaba registrada; se abrió la existente.",
+                    "warning",
+                )
             else:
                 flash("Sesión registrada correctamente.", "success")
-            return redirect(url_for("sessions.detail", session_id=session.id))
+            return redirect(
+                url_for(
+                    "sessions.detail",
+                    session_id=session.id,
+                )
+            )
 
-    return render_template(
-        "sessions/new.html",
-        form=form,
-        options=options,
-        selected_day=selected_day,
-        plan_id=plan_id,
-        timezone_name=current_app.config["APP_TIMEZONE"],
+    context = _template_context(
+        form, plan_id, options, selected_day, planned_workout
     )
+    context["recovery_message"] = None
+    return render_template("sessions/new.html", **context)
 
 
 @sessions_bp.get("/<int:session_id>")
@@ -281,6 +372,8 @@ def detail(session_id: int):
         "sessions/detail.html",
         session=session,
         comparison=comparison,
+        saved_submission_id=session.client_submission_id,
+        user_public_id=current_user.public_id,
     )
 
 

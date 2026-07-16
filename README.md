@@ -1,5 +1,13 @@
 # Health Tracker
 
+## Alpha 0.8.1: recuperación de sesiones web
+
+El formulario de entrenamiento incorpora autoguardado local y servidor, recuperación específica cuando vence CSRF e idempotencia por `client_submission_id`. Un reintento idéntico abre la sesión ya creada; contenido distinto con el mismo ID produce conflicto seguro. La sesión web dura 12 horas con actividad y CSRF 8 horas, sin desactivar la protección.
+
+Operación: `flask workout-drafts cleanup` es dry-run y `flask workout-drafts cleanup --apply` elimina solo borradores inválidos, expirados o completados. Consulta [docs/WORKOUT_SESSION_RECOVERY.md](docs/WORKOUT_SESSION_RECOVERY.md), [docs/WORKOUT_DRAFTS.md](docs/WORKOUT_DRAFTS.md) y [docs/WORKOUT_SUBMISSION_IDEMPOTENCY.md](docs/WORKOUT_SUBMISSION_IDEMPOTENCY.md).
+
+La captura avanzada de cargas es P1 y sigue pendiente para `feature/workout-load-entry`.
+
 ## Alpha 0.8: Companion Delivery Protocol
 
 El backend vendor-neutral permite negociar capacidades, generar un package versionado desde un entrenamiento planificado, persistir su entrega por dispositivo, confirmar recepción, enviar checkpoints pequeños y completar la sesión con idempotencia. Reutiliza `PlannedWorkout`, `TrainingSession`, Bearer API v1 y Mobile Sync; no incluye APK, reloj, Bluetooth, telemetría continua ni FIT output.

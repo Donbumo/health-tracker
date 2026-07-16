@@ -2,6 +2,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
 from typing import Any
+import uuid
+from pathlib import Path
+
+from flask import current_app
 
 from sqlalchemy.exc import IntegrityError
 
@@ -13,6 +17,8 @@ from app.models import (
     TrainingSessionExercise,
     TrainingSet,
     UploadedFile,
+    PlannedWorkout,
+    WorkoutSessionDraft,
 )
 from app.services.manual_json import generate_standard_json
 from app.services.training_plans import get_active_version
@@ -98,6 +104,32 @@ def resolve_planned_day(key: str, user_id: int) -> PlannedDay:
     )
 
 
+def resolve_planned_workout_day(
+    planned_workout: PlannedWorkout, user_id: int
+) -> PlannedDay:
+    if planned_workout.user_id != user_id or planned_workout.deleted_at is not None:
+        raise TrainingSessionError("Planned workout does not belong to this user")
+    version = planned_workout.training_plan_version
+    if version.user_id != user_id or version.training_plan_id != planned_workout.training_plan_id:
+        raise TrainingSessionError("Planned workout plan version is invalid")
+    snapshot = planned_workout.payload_snapshot_json
+    week_number = snapshot.get("week_number")
+    day_number = snapshot.get("day_number")
+    for week_index, week in enumerate(version.content["data"]["weeks"]):
+        if week["week_number"] != week_number:
+            continue
+        for day_index, day in enumerate(week["days"]):
+            if day["day_number"] == day_number and day.get("exercises"):
+                return PlannedDay(
+                    key=f"{version.id}:{week_index}:{day_index}",
+                    plan=planned_workout.training_plan,
+                    version=version,
+                    week=week,
+                    day=day,
+                )
+    raise TrainingSessionError("Planned workout day no longer exists")
+
+
 def build_completed_workout_document(
     *,
     user_id: int,
@@ -108,6 +140,7 @@ def build_completed_workout_document(
     average_heart_rate_bpm: int | None = None,
     calories_burned: Decimal | float | int | None = None,
     notes: str | None = None,
+    client_submission_id: str | None = None,
 ) -> dict[str, Any]:
     if performed_at.tzinfo is None or performed_at.utcoffset() is None:
         raise TrainingSessionError("performed_at must include a timezone")
@@ -134,6 +167,13 @@ def build_completed_workout_document(
         data["average_heart_rate_bpm"] = average_heart_rate_bpm
     if calories_burned is not None:
         data["calories_burned"] = float(calories_burned)
+    if client_submission_id is not None:
+        try:
+            data["client_submission_id"] = str(uuid.UUID(client_submission_id))
+        except (TypeError, ValueError) as error:
+            raise TrainingSessionError(
+                "client_submission_id must be a UUID"
+            ) from error
 
     return {
         "schema_version": "1.0",
@@ -178,12 +218,35 @@ def _existing_session(source_file_id: int, user_id: int) -> TrainingSession | No
     ).scalar_one_or_none()
 
 
+def _existing_submission(
+    client_submission_id: str, user_id: int
+) -> TrainingSession | None:
+    return db.session.execute(
+        db.select(TrainingSession).where(
+            TrainingSession.client_submission_id == client_submission_id,
+            TrainingSession.user_id == user_id,
+        )
+    ).scalar_one_or_none()
+
+
 def import_completed_workout(
     document: dict[str, Any],
     source_file: UploadedFile,
     planned_day: PlannedDay,
     user_id: int,
+    *,
+    client_submission_id: str | None = None,
+    submission_payload_hash: str | None = None,
+    planned_workout: PlannedWorkout | None = None,
 ) -> tuple[TrainingSession, bool]:
+    if client_submission_id is not None:
+        existing_submission = _existing_submission(client_submission_id, user_id)
+        if existing_submission is not None:
+            if existing_submission.client_payload_sha256 == submission_payload_hash:
+                return existing_submission, True
+            raise TrainingSessionError(
+                "submission_conflict: this submission ID already has different data"
+            )
     existing = _existing_session(source_file.id, user_id)
     if existing:
         return existing, True
@@ -210,12 +273,39 @@ def import_completed_workout(
         raise TrainingSessionError("Planned day association does not match")
     _validate_completed_exercises(data["exercises"], planned_day)
 
+    locked_planned = None
+    if planned_workout is not None:
+        locked_planned = db.session.execute(
+            db.select(PlannedWorkout)
+            .where(
+                PlannedWorkout.id == planned_workout.id,
+                PlannedWorkout.user_id == user_id,
+            )
+            .with_for_update()
+        ).scalar_one_or_none()
+        if locked_planned is None:
+            raise TrainingSessionError("Planned workout does not belong to this user")
+        if (
+            locked_planned.training_plan_id != planned_day.plan.id
+            or locked_planned.training_plan_version_id != planned_day.version.id
+        ):
+            raise TrainingSessionError(
+                "Planned workout does not match the selected plan version"
+            )
+        if locked_planned.status not in {"planned", "in_progress", "skipped"}:
+            raise TrainingSessionError(
+                "submission_conflict: planned workout already finished"
+            )
+
     performed_at = datetime.fromisoformat(data["performed_at"])
     session = TrainingSession(
         user_id=user_id,
         training_plan_id=planned_day.plan.id,
         training_plan_version_id=planned_day.version.id,
         source_file_id=source_file.id,
+        planned_workout_id=locked_planned.id if locked_planned else None,
+        client_submission_id=client_submission_id,
+        client_payload_sha256=submission_payload_hash,
         performed_at=performed_at,
         planned_week_number=data["planned_week_number"],
         planned_day_number=data["planned_day_number"],
@@ -266,13 +356,75 @@ def import_completed_workout(
                         notes=set_data.get("notes"),
                     )
                 )
+        db.session.flush()
+        if locked_planned is not None:
+            from app.services.mobile_sync import (
+                PlannedWorkoutService,
+                record_sync_change,
+                serialize_completed_workout,
+            )
+
+            locked_planned.status = "completed"
+            locked_planned.completed_at = performed_at
+            PlannedWorkoutService._touch(locked_planned, None)
+            session.planned_workout = locked_planned
+        if client_submission_id is not None:
+            from app.services.mobile_sync import (
+                record_sync_change,
+                serialize_completed_workout,
+            )
+
+            db.session.flush()
+            record_sync_change(
+                user_id=user_id,
+                entity_type="completed_workout",
+                entity_public_id=session.public_id,
+                operation="upsert",
+                revision=session.revision,
+                payload=serialize_completed_workout(session),
+                device_id=None,
+            )
+            draft = db.session.execute(
+                db.select(WorkoutSessionDraft).where(
+                    WorkoutSessionDraft.user_id == user_id,
+                    WorkoutSessionDraft.client_submission_id
+                    == client_submission_id,
+                )
+            ).scalar_one_or_none()
+            if draft is not None:
+                db.session.delete(draft)
         db.session.commit()
         return session, False
     except IntegrityError:
         db.session.rollback()
-        existing = _existing_session(source_file.id, user_id)
+        existing = (
+            _existing_submission(client_submission_id, user_id)
+            if client_submission_id is not None
+            else _existing_session(source_file.id, user_id)
+        )
         if existing:
-            return existing, True
+            if (
+                client_submission_id is None
+                or existing.client_payload_sha256 == submission_payload_hash
+            ):
+                return existing, True
+            raise TrainingSessionError(
+                "submission_conflict: this submission ID already has different data"
+            )
+        if planned_workout is not None:
+            existing_planned_session = db.session.execute(
+                db.select(TrainingSession).where(
+                    TrainingSession.user_id == user_id,
+                    TrainingSession.planned_workout_id == planned_workout.id,
+                )
+            ).scalar_one_or_none()
+            if existing_planned_session is not None:
+                raise TrainingSessionError(
+                    "submission_conflict: planned workout already finished"
+                )
+        raise
+    except Exception:
+        db.session.rollback()
         raise
 
 
@@ -286,6 +438,8 @@ def create_manual_training_session(
     average_heart_rate_bpm: int | None = None,
     calories_burned: Decimal | float | int | None = None,
     notes: str | None = None,
+    client_submission_id: str | None = None,
+    planned_workout: PlannedWorkout | None = None,
 ) -> tuple[TrainingSession, bool]:
     document = build_completed_workout_document(
         user_id=user_id,
@@ -296,18 +450,67 @@ def create_manual_training_session(
         average_heart_rate_bpm=average_heart_rate_bpm,
         calories_burned=calories_burned,
         notes=notes,
+        client_submission_id=client_submission_id,
     )
+    from app.services.mobile_sync import canonical_hash
+
+    submission_payload_hash = canonical_hash(document)
+    if client_submission_id is not None:
+        existing = _existing_submission(client_submission_id, user_id)
+        if existing is not None:
+            if existing.client_payload_sha256 == submission_payload_hash:
+                draft = db.session.execute(
+                    db.select(WorkoutSessionDraft).where(
+                        WorkoutSessionDraft.user_id == user_id,
+                        WorkoutSessionDraft.client_submission_id
+                        == client_submission_id,
+                    )
+                ).scalar_one_or_none()
+                if draft is not None:
+                    db.session.delete(draft)
+                    db.session.commit()
+                return existing, True
+            raise TrainingSessionError(
+                "submission_conflict: this submission ID already has different data"
+            )
     filename = (
         f"completed_workout_plan_{planned_day.plan.id}_v{planned_day.version.version_number}_"
         f"{performed_at.strftime('%Y%m%dT%H%M%S%z')}.json"
     )
-    source_file, _file_duplicate = generate_standard_json(
+    source_file, file_duplicate = generate_standard_json(
         document=document,
         schema_name="completed_workout",
         user_id=user_id,
         original_filename=filename,
+        commit=False,
     )
-    return import_completed_workout(document, source_file, planned_day, user_id)
+    stored_filename = source_file.stored_filename
+    try:
+        return import_completed_workout(
+            document,
+            source_file,
+            planned_day,
+            user_id,
+            client_submission_id=client_submission_id,
+            submission_payload_hash=submission_payload_hash,
+            planned_workout=planned_workout,
+        )
+    except Exception:
+        db.session.rollback()
+        if not file_duplicate:
+            generated_root = Path(current_app.config["GENERATED_UPLOAD_ROOT"]).resolve()
+            candidate = (
+                generated_root
+                / f"user_{user_id}"
+                / stored_filename
+            ).resolve()
+            try:
+                candidate.relative_to(generated_root)
+            except ValueError:
+                pass
+            else:
+                candidate.unlink(missing_ok=True)
+        raise
 
 
 def _planned_day_for_session(session: TrainingSession) -> dict[str, Any]:

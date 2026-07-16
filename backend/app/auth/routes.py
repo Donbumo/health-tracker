@@ -1,6 +1,6 @@
 from urllib.parse import urlsplit
 
-from flask import flash, redirect, render_template, request, url_for
+from flask import flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_user, logout_user
 from sqlalchemy import or_
 
@@ -42,6 +42,7 @@ def login():
 
         if user and user.check_password(form.password.data):
             login_user(user, remember=form.remember.data)
+            session.permanent = True
             next_url = request.args.get("next")
             destination = next_url if _safe_next_url(next_url) else url_for("main.index")
             return redirect(destination)

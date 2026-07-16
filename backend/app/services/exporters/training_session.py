@@ -77,6 +77,8 @@ def build_completed_workout_document(
         data["average_heart_rate_bpm"] = session.average_heart_rate_bpm
     if session.calories_burned is not None:
         data["calories_burned"] = float(session.calories_burned)
+    if session.client_submission_id is not None:
+        data["client_submission_id"] = session.client_submission_id
 
     source_type = (
         session.source_file.source_type

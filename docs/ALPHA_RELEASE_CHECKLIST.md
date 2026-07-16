@@ -1,5 +1,18 @@
 # Checklist de release alpha privada
 
+## Alpha 0.8.1 — Workout Session Recovery
+
+- [x] Recuperación específica de CSRF con token nuevo y campos preservados.
+- [x] Borrador local y servidor owner-only con expiración, revisión y límites.
+- [x] `client_submission_id` y constraint único por usuario.
+- [x] Sesión, planned workout, sync y eliminación del draft forman un commit atómico.
+- [x] Export/restore conservan el identificador web sin cambiar Mobile Sync.
+- [x] Migración 0026 reversible en ciclos aislados SQLite y MariaDB 11.4; single head y db check limpios.
+- [x] Suite completa local y Docker final; concurrencia MariaDB incluida.
+- [x] QA manual móvil oscuro, reinicio, persistencia y logs.
+- [ ] Sign-off visual real en tema claro; el navegador de QA actual no ofrece emulación.
+- [ ] P1 captura avanzada de cargas (fuera de este hotfix; `feature/workout-load-entry`).
+
 ## Alpha 0.8 — Companion Backend Foundation
 
 - [x] Perfil persistente y negociación allowlisted 1.0.

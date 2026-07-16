@@ -1,5 +1,9 @@
 # Web UI Homelab
 
+## Recuperación de sesión web
+
+Alpha 0.8.1 añade a la captura de entrenamiento un indicador de borrador, restauración local/servidor, acción para descartarlo y recuperación específica ante CSRF vencido. El botón Guardar se deshabilita durante submit y el borrador local solo se elimina cuando el detalle confirma la misma submission exitosa. Validar a 360/390/430/768/1024/1366 px, claro y oscuro.
+
 ## Entrenamientos planificados
 
 La navegación autenticada incluye `Planificados`. La lista y creación son owner-only, responsive y usan POST + CSRF para reprogramar, omitir o cancelar. La UI no permite elegir otro `user_id`.

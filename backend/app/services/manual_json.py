@@ -238,6 +238,7 @@ def generate_standard_json(
     schema_name: str,
     user_id: int,
     original_filename: str,
+    commit: bool = True,
 ) -> tuple[UploadedFile, bool]:
     """Validate, serialize and persist a standard manual JSON document."""
     if document.get("user_id") != user_id:
@@ -301,7 +302,10 @@ def generate_standard_json(
             mime_type="application/json",
         )
         db.session.add(record)
-        db.session.commit()
+        if commit:
+            db.session.commit()
+        else:
+            db.session.flush()
         return record, False
     except IntegrityError:
         db.session.rollback()

@@ -1,14 +1,16 @@
 # Contexto operativo para agentes de IA
 
+> **Archivo histórico y no normativo.** Conserva el antiguo contexto maestro para trazabilidad. Algunas rutas mantienen la ubicación que tenían cuando se escribió y pueden no resolver desde `docs/history/`; no deben reinterpretarse como instrucciones actuales. Para localizar documentación vigente consulta `../DOCUMENTATION_INDEX.md`. Las reglas actuales se obtienen del `../../AGENTS.md` raíz y de los `AGENTS.md` locales aplicables.
+
 ## Bloque activo: Alpha 1.0 Web Daily Driver
 
-Rama `feature/alpha-1.0-web-daily-driver`, base exacta `d2e804a`, tag `alpha-0.9-workout-load-entry`. Leer [`project-rules/web-daily-driver.md`](project-rules/web-daily-driver.md), [`USER_GUIDE.md`](USER_GUIDE.md) e [`IMPORT_HUB.md`](IMPORT_HUB.md) para cambios web. El bloque usa la migración aditiva `20260717_0028` para nombre visible, zona horaria y ocultamiento del onboarding.
+Rama `feature/alpha-1.0-web-daily-driver`, base exacta `d2e804a`, tag `alpha-0.9-workout-load-entry`. Leer [`project-rules/web-daily-driver.md`](../project-rules/web-daily-driver.md), [`USER_GUIDE.md`](../USER_GUIDE.md) e [`IMPORT_HUB.md`](../IMPORT_HUB.md) para cambios web. El bloque usa la migración aditiva `20260717_0028` para nombre visible, zona horaria y ocultamiento del onboarding.
 
 Invariantes: `/imports` es la entrada visible, los adaptadores internos no se duplican, preview no escribe, el usuario proviene de la sesión y la PWA solo cachea `/static/`. No tocar `.env`, `/data` o el stack activo. No declarar Alpha 1.0 lista hasta tener suite local/Docker, migración y QA visual real documentados.
 
 ## Bloque activo: Alpha 0.9 Workout Load Entry
 
-La rama `feature/workout-load-entry` parte exactamente de `3d23ed1`, tag `alpha-0.8.1-workout-session-recovery`. Añade calculador Decimal, preferencia kg/lb, `ExerciseLoadProfile`, `TrainingSet.load_details_json`, formulario móvil y contratos aditivos de import/export/restore/sync. Leer [`project-rules/workout-load-entry.md`](project-rules/workout-load-entry.md) y [`WORKOUT_LOAD_ENTRY.md`](WORKOUT_LOAD_ENTRY.md).
+La rama `feature/workout-load-entry` parte exactamente de `3d23ed1`, tag `alpha-0.8.1-workout-session-recovery`. Añade calculador Decimal, preferencia kg/lb, `ExerciseLoadProfile`, `TrainingSet.load_details_json`, formulario móvil y contratos aditivos de import/export/restore/sync. Leer [`project-rules/workout-load-entry.md`](../project-rules/workout-load-entry.md) y [`WORKOUT_LOAD_ENTRY.md`](../WORKOUT_LOAD_ENTRY.md).
 
 La migración nueva `20260716_0027` solo debe probarse en bases aisladas durante este bloque. No ejecutar Docker ni migraciones persistentes mientras el usuario utiliza el sistema en gimnasio. `weight_kg` conserva su semántica de total normalizado; `load_details` es opcional. Companion declara `advanced_load_details_in_planned_package=false`; no hay APK ni reloj.
 
@@ -16,7 +18,7 @@ Validación final del bloque: local `566 passed, 3 skipped, 1 warning`; Docker/M
 
 ## Bloque activo: Alpha 0.8.1 Workout Session Recovery
 
-La rama activa `hotfix/alpha-0.8.1-workout-session-recovery` parte de `7ee865f`, tag `alpha-0.8-companion-backend`. Para sesiones web, CSRF, drafts o idempotencia leer primero [`project-rules/workout-session-recovery.md`](project-rules/workout-session-recovery.md). El bloque añade la migración `20260715_0026`, sin cambiar los contratos Bearer, Mobile Sync o Companion.
+La rama activa `hotfix/alpha-0.8.1-workout-session-recovery` parte de `7ee865f`, tag `alpha-0.8-companion-backend`. Para sesiones web, CSRF, drafts o idempotencia leer primero [`project-rules/workout-session-recovery.md`](../project-rules/workout-session-recovery.md). El bloque añade la migración `20260715_0026`, sin cambiar los contratos Bearer, Mobile Sync o Companion.
 
 Estado verificado: local `548 passed, 3 skipped, 1 warning`; Docker/MariaDB `550 passed, 1 skipped, 1 warning`; single head `20260715_0026` y `db check` limpio. QA responsive real pasó en tema oscuro en seis anchos; tema claro continúa pendiente por falta de emulación disponible y no debe marcarse como realizado.
 
@@ -24,7 +26,7 @@ P1 de captura avanzada de cargas está implementada en `feature/workout-load-ent
 
 ## Bloque activo: Fase 7C
 
-La rama `feature/phase-7c-companion-delivery` parte de `b0b6bb2`, tag exacto `alpha-0.7-mobile-sync`. Implementa Alpha 0.8: perfil/negociación companion, package 1.0, delivery persistente, checkpoints y completion sobre `TrainingSession`/Mobile Sync. Leer [`project-rules/companion-protocol.md`](project-rules/companion-protocol.md) y [`COMPANION_PROTOCOL_1_0.md`](COMPANION_PROTOCOL_1_0.md).
+La rama `feature/phase-7c-companion-delivery` parte de `b0b6bb2`, tag exacto `alpha-0.7-mobile-sync`. Implementa Alpha 0.8: perfil/negociación companion, package 1.0, delivery persistente, checkpoints y completion sobre `TrainingSession`/Mobile Sync. Leer [`project-rules/companion-protocol.md`](../project-rules/companion-protocol.md) y [`COMPANION_PROTOCOL_1_0.md`](../COMPANION_PROTOCOL_1_0.md).
 
 Estado verificado de la rama: Alembic single head `20260714_0025`; local `535 passed, 2 skipped, 1 warning`; Docker/MariaDB `536 passed, 1 skipped, 1 warning`; `db check`, QA HTTP y dry-runs operativos limpios. El sign-off visual oscuro pasó a 360/390/430/768/1024/1366 px; el tema claro sigue pendiente de una comprobación visual real.
 
@@ -32,7 +34,7 @@ Alpha 0.7 está integrada y publicada en `b0b6bb2`, tag `alpha-0.7-mobile-sync`,
 
 Limitaciones vigentes: rate limiter por proceso; tombstones y cursores obsoletos report-only; sin CRDT ni last-write-wins general; sin sync write para activity/route/body/wellness/labs; sin APK/reloj/Bluetooth/telemetría continua/FIT output/vendors. `API_TOKEN_SIGNING_KEY` independiente es recomendada en homelab y obligatoria antes de exposición pública. Persiste la incompatibilidad histórica SQLite de migración `0015`.
 
-Para tareas de sync móvil, leer también [`project-rules/mobile-sync.md`](project-rules/mobile-sync.md), [`SYNC_PROTOCOL_1_0.md`](SYNC_PROTOCOL_1_0.md) y [`SYNC_CONFLICTS.md`](SYNC_CONFLICTS.md). No confundir esta base backend con una APK implementada. Los únicos targets de push de dominio 1.0 son `planned_workout` y `completed_workout`; perfil/delivery companion son metadata del protocolo.
+Para tareas de sync móvil, leer también [`project-rules/mobile-sync.md`](../project-rules/mobile-sync.md), [`SYNC_PROTOCOL_1_0.md`](../SYNC_PROTOCOL_1_0.md) y [`SYNC_CONFLICTS.md`](../SYNC_CONFLICTS.md). No confundir esta base backend con una APK implementada. Los únicos targets de push de dominio 1.0 son `planned_workout` y `completed_workout`; perfil/delivery companion son metadata del protocolo.
 
 ## API v1
 
@@ -53,7 +55,7 @@ Estado histórico de Alpha 0.5: `feature/phase-6b-full-backup-recovery` partió 
 Antes de modificar el repositorio, leer en este orden:
 
 1. `AGENTS.md`.
-2. `docs/AI_WORK_CONTEXT.md`.
+2. `docs/history/AI_WORK_CONTEXT_ARCHIVE.md` (ruta archivada actual).
 3. `docs/PROJECT_CONTEXT.md`.
 4. `docs/project-rules/canonical-data-contract-import-update.md`.
 5. `docs/project-rules/phase-5b-universal-json-import-assistant.md`.
@@ -77,7 +79,7 @@ Si hay conflicto:
 2. Tests existentes que codifiquen el contrato esperado.
 3. Reglas canonicas en `docs/project-rules/`.
 4. `AGENTS.md`.
-5. `docs/AI_WORK_CONTEXT.md`.
+5. `docs/history/AI_WORK_CONTEXT_ARCHIVE.md` (ruta archivada actual).
 6. `docs/PROJECT_CONTEXT.md`.
 7. `docs/ACTIVE_HANDOFF.md`.
 8. Codigo actual para detalles de implementacion que no contradigan lo anterior.

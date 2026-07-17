@@ -109,7 +109,7 @@ Notas actuales de dominio:
 
 ## QA automatizado y fixtures manuales
 
-La rama `feature/overnight-backend-qa-closure` agrega cobertura enfocada para los targets que quedaban pendientes de QA profundo:
+La cobertura automatizada enfocada incluye:
 
 - `daily_energy`
 - `training_plan`

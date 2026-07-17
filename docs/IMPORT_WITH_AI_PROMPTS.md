@@ -54,4 +54,4 @@ No se afirma privacidad ni cumplimiento legal de proveedores externos. Si usas u
 - La IA puede equivocarse, omitir campos o inventar valores.
 - El preview de Health Tracker sigue siendo obligatorio antes de confirmar.
 - El catálogo de prompts debe mantenerse alineado con los schemas en `schemas/`.
-- No hay restore completo ni importación desde texto libre; el resultado final debe ser JSON.
+- Este catálogo no prepara restores completos ni importa texto libre; su resultado final debe ser JSON. El restore de cuenta y backup usa flujos separados.

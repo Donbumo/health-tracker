@@ -6,7 +6,7 @@ Guía para levantar Health Tracker como alpha privada en Windows usando Docker, 
 
 - Uso recomendado: mismo equipo, red local o VPN privada.
 - No es SaaS público.
-- No incluye restore automático.
+- Incluye restore de cuenta y backup ZIP; valida el flujo con datos ficticios antes de usarlo operativamente.
 - No uses datos reales en pruebas de Git; los datos reales viven en MariaDB, `/data` o volúmenes Docker ignorados.
 
 ## Requisitos
@@ -28,11 +28,7 @@ git checkout master
 git pull
 ```
 
-Si vas a probar una rama alpha:
-
-```powershell
-git checkout release/alpha-teammate-ready
-```
+Si vas a probar una rama distinta, confirma primero su base y alcance; este runbook no fija una rama histórica.
 
 ## Levantar la app
 
@@ -147,4 +143,4 @@ docker compose exec db mariadb-dump -u root -p health_tracker > health_tracker_b
 
 Guarda backups fuera del repo. No subas dumps a Git.
 
-Restore automático desde export JSON o dump queda para una fase futura y debe probarse por separado.
+El restore soportado de la aplicación está documentado en [ACCOUNT_RESTORE.md](ACCOUNT_RESTORE.md) y [FULL_BACKUP.md](FULL_BACKUP.md). Un dump SQL es una operación distinta y debe ensayarse en infraestructura aislada antes de depender de él.

@@ -1,14 +1,10 @@
 # Mobile Sync Foundation
 
-Alpha 1.0 Web Daily Driver no cambia Bearer API, cursores, idempotencia ni entidades sincronizables. Las preferencias web y el Import Hub no amplían Mobile Sync y no existe APK en este bloque.
+Mobile Sync 1.0 extiende Bearer API v1 con planned workouts, completed upload, bootstrap/pull/push/status, revisiones, tombstones, cursor por dispositivo e idempotencia.
 
-Alpha 0.8.1 añade `client_submission_id` únicamente al flujo web y a la portabilidad de `completed_workout`. No sustituye ni colisiona con `client_event_id`, no añade cookie fallback a `/api/v1` y no cambia el contrato Bearer o la idempotencia móvil.
+`client_submission_id` pertenece al flujo web; no sustituye ni colisiona con `client_event_id` móvil. Las preferencias web y el Import Hub tampoco amplían las entidades sincronizables.
 
-Alpha 0.7 está integrada/publicada en `b0b6bb2`, tag `alpha-0.7-mobile-sync`, con head `20260714_0023`. Incluye planned workouts, completed upload, bootstrap/pull/push/status, revisiones, tombstones, cursor por dispositivo, cleanup CLI y UI homelab mínima. Suites local/Docker y concurrencia MariaDB pasaron; el recorrido visual humano final quedó pendiente operativo.
-
-Alpha 0.8 amplía el mismo cursor con `companion_profile` y `companion_delivery`; no crea un segundo sistema de sync. Completion sigue produciendo el `completed_workout` existente.
-
-Alpha 0.7 introduce la base backend para un companion futuro. No incluye APK ni aplicación de reloj.
+Companion reutiliza el cursor con `companion_profile` y `companion_delivery`; no crea un segundo sistema de sync. Completion sigue produciendo el `completed_workout` existente. El backend no implica que exista APK ni aplicación de reloj.
 
 ## Alcance 1.0
 

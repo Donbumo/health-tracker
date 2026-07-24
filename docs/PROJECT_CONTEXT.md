@@ -64,6 +64,7 @@ Las reglas ejecutables de estos principios viven en `../AGENTS.md`, `schemas/AGE
 - Validación: JSON Schema.
 - Ejecución: Docker Compose; SQLite se usa en pruebas donde corresponde.
 - Archivos: storage local por usuario para raw, generated, exports y backups.
+- Cliente móvil: Kotlin, Jetpack Compose, Room, WorkManager y OkHttp en `../android/`.
 
 La estructura real del código manda sobre diagramas o rutas narrativas antiguas. Consulta `architecture/OVERVIEW.md` y el árbol del repositorio en vez de copiar una estructura sugerida a nuevas tareas.
 
@@ -93,7 +94,7 @@ Los exporters declaran capability, warnings y pérdidas. Los artefactos persisti
 
 ### API y companion
 
-`/api/v1` usa Bearer independiente de la sesión web, UUID públicos y contratos versionados. Mobile Sync y Companion backend soportan los dominios y operaciones expresamente documentados; no implican que exista una aplicación móvil o de reloj.
+`/api/v1` usa Bearer independiente de la sesión web, UUID públicos y contratos versionados. Mobile Sync y Companion backend soportan los dominios y operaciones expresamente documentados. El cliente Android ejecuta el protocolo desde el teléfono con cache offline, recuperación de process death, cola durable e idempotencia; no implica una aplicación de reloj ni integración con fabricantes.
 
 ## Seguridad y privacidad de producto
 
@@ -108,7 +109,7 @@ Los exporters declaran capability, warnings y pérdidas. Los artefactos persisti
 
 Salvo evidencia nueva en código y pruebas, no considerar implementados:
 
-- APK Android o app de reloj;
+- APK firmado/publicado, distribución Play Store o app de reloj;
 - Bluetooth o bridge con reloj;
 - telemetría continua;
 - FIT binario de salida;

@@ -1,5 +1,23 @@
 # Checklist de release alpha privada
 
+## Alpha 1.1 — Android Companion
+
+- [x] Proyecto Android Kotlin/Compose, wrapper fijado, variantes debug/release y CI sin publicación de artefactos.
+- [x] Login/refresh/logout/revocación, Keystore, redacción y política HTTPS con excepción local solo debug.
+- [x] Negociación 1.0, bootstrap, package SHA256, ACK/start/progress/complete/abort/fail.
+- [x] Room aislado por cuenta, drafts, cola FIFO, cursor transaccional, backoff y WorkManager.
+- [x] Package+ACK habilitan start local inmediato; start offline y cola `START → PROGRESS → COMPLETE` no requieren pull manual.
+- [x] Sesión local elegible abre cache offline; refresh temporal conserva Keystore/scope y revocación confirmada limpia la sesión.
+- [x] Autosave de campos con debounce/flush y autosync por eventos, foreground, conectividad y trabajo único coalescido.
+- [x] Ejecución desde teléfono, historial, ajustes, tema y doce modos de carga con `BigDecimal`.
+- [x] Pruebas unitarias/instrumentadas y workflow Android definidos en código.
+- [x] Compilar `lintDebug testDebugUnitTest assembleDebug` con JDK 17 y Android SDK 36; pruebas JVM repetidas sin dependencia de orden/estado.
+- [x] Compilar `compileDebugAndroidTestKotlin` con las pruebas Room/MockWebServer/Compose actuales.
+- [ ] Ejecutar pruebas instrumentadas y validar migración Room en emulador/dispositivo.
+- [ ] QA real offline/reinicio/rotación/accesibilidad/tema claro-oscuro y servidor HTTPS.
+- [ ] Revisar firma, minificación, secretos y producir APK de release mediante proceso aprobado.
+- [ ] Alpha 1.1 lista para release: **NO**, hasta cerrar los cuatro gates anteriores.
+
 ## Alpha 1.0 — Web Daily Driver
 
 - [x] Onboarding derivado, preferencias owner-only y dashboard centrado en hoy.

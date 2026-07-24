@@ -4,7 +4,7 @@ Mobile Sync 1.0 extiende Bearer API v1 con planned workouts, completed upload, b
 
 `client_submission_id` pertenece al flujo web; no sustituye ni colisiona con `client_event_id` móvil. Las preferencias web y el Import Hub tampoco amplían las entidades sincronizables.
 
-Companion reutiliza el cursor con `companion_profile` y `companion_delivery`; no crea un segundo sistema de sync. Completion sigue produciendo el `completed_workout` existente. El backend no implica que exista APK ni aplicación de reloj.
+Companion reutiliza el cursor con `companion_profile` y `companion_delivery`; no crea un segundo sistema de sync. El cliente Android persiste cada página y su cursor en una sola transacción Room, y completion sigue produciendo el `completed_workout` existente. El schema de pull admite las cuatro clases observables; solo `planned_workout` y `completed_workout` son editables por push.
 
 ## Alcance 1.0
 

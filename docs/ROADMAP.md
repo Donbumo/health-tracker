@@ -11,10 +11,10 @@ Este documento reúne trabajo futuro o no comprobado. No describe funcionalidade
 
 ## Companion móvil y reloj
 
-- APK Android con login, cache offline, ejecución desde teléfono y sincronización.
+- Completar QA manual offline/rotación/accesibilidad/temas, instrumentación en un AVD separado, revisión de integración, firma de producción y distribución del cliente Android; compilación, lint, JVM, APK y compilación androidTest ya están verdes.
 - Bridge Bluetooth/reloj y app de reloj para guiar sesiones offline.
 - Telemetría continua solo con contrato, límites, privacidad y pruebas propios.
-- Ninguna de estas capas debe presentarse como existente por el hecho de que el backend Companion ya exponga negociación y deliveries.
+- El cliente de teléfono no implica bridge, app de reloj ni soporte de fabricantes.
 
 ## Integraciones y formatos
 

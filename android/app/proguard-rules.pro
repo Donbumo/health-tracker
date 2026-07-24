@@ -1,0 +1,4 @@
+-keepattributes *Annotation*, Signature
+-keepclassmembers class **$$serializer { *; }
+-keep,includedescriptorclasses class io.healthtracker.companion.core.model.**$$serializer { *; }
+-dontwarn org.conscrypt.**

@@ -38,6 +38,7 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 - API v1: [project-rules/api-v1.md](project-rules/api-v1.md), [API_V1.md](API_V1.md), [API_AUTH.md](API_AUTH.md), [API_DEVICE_SESSIONS.md](API_DEVICE_SESSIONS.md), [API_SECURITY.md](API_SECURITY.md), [COMPANION_BOOTSTRAP.md](COMPANION_BOOTSTRAP.md).
 - Mobile Sync: [project-rules/mobile-sync.md](project-rules/mobile-sync.md), [MOBILE_SYNC.md](MOBILE_SYNC.md), [SYNC_PROTOCOL_1_0.md](SYNC_PROTOCOL_1_0.md), [SYNC_IDEMPOTENCY.md](SYNC_IDEMPOTENCY.md), [SYNC_CONFLICTS.md](SYNC_CONFLICTS.md), [PLANNED_WORKOUTS.md](PLANNED_WORKOUTS.md).
 - Companion delivery: [project-rules/companion-protocol.md](project-rules/companion-protocol.md), [COMPANION_PROTOCOL_1_0.md](COMPANION_PROTOCOL_1_0.md), [COMPANION_CAPABILITIES.md](COMPANION_CAPABILITIES.md), [COMPANION_WORKOUT_PACKAGE.md](COMPANION_WORKOUT_PACKAGE.md), [COMPANION_DELIVERY.md](COMPANION_DELIVERY.md), [COMPANION_PROGRESS.md](COMPANION_PROGRESS.md).
+- Android Companion: [project-rules/android-companion.md](project-rules/android-companion.md), [ANDROID_COMPANION.md](ANDROID_COMPANION.md), [ANDROID_SECURITY.md](ANDROID_SECURITY.md), [ANDROID_OFFLINE_SYNC.md](ANDROID_OFFLINE_SYNC.md), [ANDROID_TESTING.md](ANDROID_TESTING.md), [ANDROID_INSTALLATION.md](ANDROID_INSTALLATION.md).
 
 ## Entrenamiento web
 

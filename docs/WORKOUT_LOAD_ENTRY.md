@@ -39,8 +39,8 @@ La última carga y el perfil aparecen como ayuda. Los campos se incluyen en borr
 - `ExerciseLoadProfile` es privado por usuario y se vincula a la identidad/aliases de ejercicio.
 - El schema `completed_workout` acepta `load_details` opcional versión `1.0`.
 - JSON, export de cuenta y restore conservan detalles/perfiles. CSV aplana componentes; HTML muestra total y modo.
-- Mobile Sync conserva el bloque opcional. Companion no promete cargas avanzadas en paquetes planeados todavía.
+- Mobile Sync conserva el bloque opcional. Android calcula los doce modos con `BigDecimal`, conserva la entrada original y envía el total normalizado; Companion no promete componentes avanzados en paquetes planeados todavía.
 
 Consulta [WORKOUT_LOAD_MODES.md](WORKOUT_LOAD_MODES.md) y [WORKOUT_LOAD_CALCULATIONS.md](WORKOUT_LOAD_CALCULATIONS.md) para el contrato exacto.
 
-No se incluye APK, reloj, telemetría continua ni edición avanzada de cargas planeadas en este bloque.
+No se incluye reloj, telemetría continua ni edición avanzada de cargas planeadas en este bloque. La captura Android está documentada en [ANDROID_COMPANION.md](ANDROID_COMPANION.md).

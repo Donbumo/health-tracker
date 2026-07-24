@@ -351,6 +351,28 @@ def test_sync_bootstrap_reports_honest_companion_capabilities(app, client, user)
     assert data["companion"]["deliveries"][0]["id"] == delivery["id"]
 
 
+def test_shared_sync_cursor_schema_accepts_companion_changes(app, client, user):
+    tokens = _login(client)
+    headers = _auth(tokens["access_token"])
+    cursor = client.get("/api/v1/sync/bootstrap", headers=headers).get_json()["data"]["cursor"]
+    plan_id, version_id = _plan(app, user)
+    planned = _planned(client, headers, plan_id, version_id)
+    assert _negotiate(client, headers).status_code == 201
+    _delivery(client, headers, planned["id"])
+
+    response = client.get("/api/v1/sync/pull", headers=headers, query_string={"cursor": cursor})
+    assert response.status_code == 200
+    payload = response.get_json()["data"]
+    schema = json.loads(
+        (app.config["SCHEMA_ROOT"] / "sync_pull.schema.json").read_text(encoding="utf-8")
+    )
+    Draft202012Validator(schema, format_checker=FormatChecker()).validate(payload)
+    assert {item["entity_type"] for item in payload["changes"]} >= {
+        "companion_profile",
+        "companion_delivery",
+    }
+
+
 def test_companion_schemas_validate_generated_payloads(app, client, user):
     headers, _planned_data, delivery = _setup(client, app, user)
     payloads = {

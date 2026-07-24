@@ -52,6 +52,12 @@ from app.services.account_restore import (
     AccountRestoreTokenError,
     MAX_EXPORT_BYTES,
 )
+from app.services.api_device_deletion import (
+    ApiDeviceDeletionError,
+    ApiDeviceDeletionService,
+    ApiDeviceNotFoundError,
+    is_api_device_deletable,
+)
 from app.services.backups import (
     AccountBackupService,
     BackupError,
@@ -197,7 +203,16 @@ def account_devices():
         )
         .order_by(ApiDevice.last_seen_at.desc(), ApiDevice.created_at.desc())
     ).scalars().all()
-    return render_template("account/devices.html", devices=devices)
+    deletable_device_ids = {
+        device.public_device_id
+        for device in devices
+        if is_api_device_deletable(device)
+    }
+    return render_template(
+        "account/devices.html",
+        devices=devices,
+        deletable_device_ids=deletable_device_ids,
+    )
 
 
 @main_bp.post("/account/devices/<string:device_id>/revoke")
@@ -218,6 +233,54 @@ def revoke_account_device(device_id: str):
     db.session.commit()
     flash("Dispositivo revocado. Sus sesiones API ya no están activas.", "success")
     return redirect(url_for("main.account_devices"))
+
+
+@main_bp.post("/account/devices/<string:device_id>/delete")
+@login_required
+def delete_account_device(device_id: str):
+    confirmed = request.form.get("confirm_delete") == "yes"
+    service = ApiDeviceDeletionService()
+    try:
+        service.delete(
+            user_id=current_user.id,
+            public_device_id=device_id,
+            confirmed=confirmed,
+        )
+        db.session.commit()
+    except ApiDeviceNotFoundError:
+        db.session.rollback()
+        _audit_device_deletion(device_id, "not_found")
+        abort(404)
+    except ApiDeviceDeletionError as error:
+        db.session.rollback()
+        _audit_device_deletion(device_id, error.code)
+        flash(str(error), "warning")
+        return redirect(url_for("main.account_devices"))
+    except SQLAlchemyError:
+        db.session.rollback()
+        _audit_device_deletion(device_id, "database_error")
+        flash(
+            "No fue posible eliminar el dispositivo; no se aplicaron cambios parciales.",
+            "danger",
+        )
+        return redirect(url_for("main.account_devices"))
+
+    _audit_device_deletion(device_id, "deleted")
+    flash(
+        "Dispositivo eliminado permanentemente. Tus entrenamientos y datos de salud se conservaron.",
+        "success",
+    )
+    return redirect(url_for("main.account_devices"))
+
+
+def _audit_device_deletion(device_id: str, result: str) -> None:
+    current_app.logger.info(
+        "api_device_delete owner=%s device=%s result=%s at=%s",
+        current_user.public_id,
+        device_id,
+        result,
+        datetime.now(timezone.utc).isoformat(),
+    )
 
 
 @main_bp.get("/account/system")

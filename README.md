@@ -12,9 +12,10 @@ Base integrada actual: tag `alpha-1.0.1-runtime-security` (`1938a48`). La cronol
 - Uploads con SHA256, JSON estándar, importación asistida y archivos FIT/GPX/TCX/CSV soportados.
 - Exports por dominio, portabilidad JSON y backup/restore ZIP.
 - API v1 con Bearer/dispositivos, Mobile Sync y backend Companion.
+- Cliente Android nativo en Kotlin/Compose con ejecución desde teléfono, cache Room, cola offline y sincronización en segundo plano.
 - Interfaz Flask/Jinja responsive, Import Hub y PWA limitada a assets estáticos.
 
-No existen todavía APK Android, app de reloj, Bluetooth, telemetría continua, FIT de salida ni integraciones privadas de fabricantes. Consulta [docs/ROADMAP.md](docs/ROADMAP.md).
+El código Android existe, pero este checkout no incluye un APK publicado ni firma de producción. Tampoco incluye app de reloj, Bluetooth, telemetría continua, FIT de salida ni integraciones privadas de fabricantes. Consulta [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Arquitectura de datos
 
@@ -89,6 +90,8 @@ docker compose config --quiet
 
 Las pruebas usan fixtures ficticias. No copies archivos reales a Git ni ejecutes QA destructiva contra los volúmenes persistentes del usuario.
 
+Para el cliente Android usa JDK 17, Android SDK 36 y los comandos de [android/README.md](android/README.md). La URL debe ser HTTPS; HTTP solo se habilita explícitamente en builds debug para servidores locales.
+
 ## Documentación
 
 Empieza en el [índice por dominio](docs/DOCUMENTATION_INDEX.md): distingue reglas canónicas, guías, protocolos, roadmap e historia.
@@ -96,7 +99,7 @@ Empieza en el [índice por dominio](docs/DOCUMENTATION_INDEX.md): distingue regl
 - Uso: [primeros pasos](docs/GETTING_STARTED.md), [guía de usuario](docs/USER_GUIDE.md), [flujo diario](docs/DAILY_WORKFLOW.md).
 - Importación: [Import Hub](docs/IMPORT_HUB.md), [archivos reales](docs/REAL_FILE_IMPORTS.md).
 - Portabilidad: [data portability](docs/DATA_PORTABILITY.md), [backup integral](docs/FULL_BACKUP.md).
-- API/companion: [API v1](docs/API_V1.md), [Mobile Sync](docs/MOBILE_SYNC.md), [Companion Protocol](docs/COMPANION_PROTOCOL_1_0.md).
+- API/companion: [API v1](docs/API_V1.md), [Mobile Sync](docs/MOBILE_SYNC.md), [Companion Protocol](docs/COMPANION_PROTOCOL_1_0.md), [Android Companion](docs/ANDROID_COMPANION.md).
 - Operación: [despliegue alpha](docs/ALPHA_DEPLOYMENT.md), [checklist de release](docs/ALPHA_RELEASE_CHECKLIST.md).
 
 Para agentes de desarrollo, [`AGENTS.md`](AGENTS.md) es el router breve. [`docs/ACTIVE_HANDOFF.md`](docs/ACTIVE_HANDOFF.md) solo se lee cuando hace falta continuidad del trabajo actual; no es una historia acumulativa.

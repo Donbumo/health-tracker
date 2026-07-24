@@ -1,8 +1,8 @@
 # Companion Delivery Protocol 1.0
 
-Alpha 0.9 conserva `load_details` opcional cuando llega en un resultado completado válido. Los packages planeados aún no transportan perfiles/componentes avanzados y declaran `advanced_load_details_in_planned_package=false`; no debe inferirse soporte de APK o reloj.
+Alpha 1.1 implementa el protocolo en un cliente Android de teléfono. Alpha 0.9 conserva `load_details` opcional cuando llega en un resultado completado válido. Los packages planeados aún no transportan perfiles/componentes avanzados y declaran `advanced_load_details_in_planned_package=false`; no debe inferirse soporte de reloj.
 
-Protocolo backend vendor-neutral para preparar y ejecutar entrenamientos en un companion futuro. No incluye APK, reloj, Bluetooth ni integración de fabricante.
+Protocolo vendor-neutral para preparar y ejecutar entrenamientos. El cliente Android cubre login, negociación, package, ejecución, cola offline y completion; no incluye reloj, Bluetooth ni integración de fabricante.
 
 ## Flujo
 

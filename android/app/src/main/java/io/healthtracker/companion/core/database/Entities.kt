@@ -237,6 +237,177 @@ data class RecentSessionEntity(
     val summary: String,
 )
 
+@Entity(
+    tableName = "history_sessions",
+    primaryKeys = ["accountScope", "publicId"],
+    indices = [
+        Index(value = ["accountScope", "completedAt"]),
+        Index(value = ["accountScope", "clientEventId"], unique = true),
+    ],
+)
+data class HistorySessionEntity(
+    val accountScope: String,
+    val publicId: String,
+    val clientEventId: String,
+    val plannedWorkoutId: String?,
+    val trainingPlanId: String?,
+    val trainingPlanVersionId: String?,
+    val name: String,
+    val performedAt: String,
+    val startedAt: String?,
+    val completedAt: String,
+    val timezone: String,
+    val durationSeconds: Int?,
+    val exerciseCount: Int,
+    val setCount: Int,
+    val volumeKg: String?,
+    val volumePartial: Boolean,
+    val source: String,
+    val syncStatus: String,
+    val notes: String?,
+    val detailCached: Boolean,
+    val updatedAt: String,
+)
+
+@Entity(
+    tableName = "history_exercises",
+    primaryKeys = ["accountScope", "sessionPublicId", "exerciseOrder"],
+    foreignKeys = [ForeignKey(
+        entity = HistorySessionEntity::class,
+        parentColumns = ["accountScope", "publicId"],
+        childColumns = ["accountScope", "sessionPublicId"],
+        onDelete = ForeignKey.CASCADE,
+    )],
+    indices = [
+        Index(value = ["accountScope", "sessionPublicId"]),
+        Index(value = ["accountScope", "exercisePublicId"]),
+    ],
+)
+data class HistoryExerciseEntity(
+    val accountScope: String,
+    val sessionPublicId: String,
+    val exerciseOrder: Int,
+    val exercisePublicId: String?,
+    val name: String,
+    val notes: String?,
+)
+
+@Entity(
+    tableName = "history_sets",
+    primaryKeys = ["accountScope", "sessionPublicId", "exerciseOrder", "setNumber"],
+    foreignKeys = [ForeignKey(
+        entity = HistoryExerciseEntity::class,
+        parentColumns = ["accountScope", "sessionPublicId", "exerciseOrder"],
+        childColumns = ["accountScope", "sessionPublicId", "exerciseOrder"],
+        onDelete = ForeignKey.CASCADE,
+    )],
+    indices = [Index(value = ["accountScope", "sessionPublicId", "exerciseOrder"])],
+)
+data class HistorySetEntity(
+    val accountScope: String,
+    val sessionPublicId: String,
+    val exerciseOrder: Int,
+    val setNumber: Int,
+    val weightKg: String?,
+    val displayValue: String?,
+    val displayUnit: String?,
+    val loadMode: String,
+    val reps: Int,
+    val rir: String?,
+    val rpe: String?,
+    val restSeconds: Int?,
+    val durationSeconds: String?,
+    val distanceMeters: String?,
+    val notes: String?,
+)
+
+@Entity(tableName = "history_pages", primaryKeys = ["accountScope", "cacheKey", "sessionPublicId"])
+data class HistoryPageEntity(
+    val accountScope: String,
+    val cacheKey: String,
+    val sessionPublicId: String,
+    val position: Int,
+)
+
+@Entity(tableName = "history_query_state", primaryKeys = ["accountScope", "cacheKey"])
+data class HistoryQueryStateEntity(
+    val accountScope: String,
+    val cacheKey: String,
+    val nextCursor: String?,
+    val hasMore: Boolean,
+    val updatedAt: String,
+)
+
+@Entity(tableName = "progress_summaries", primaryKeys = ["accountScope", "range"])
+data class ProgressSummaryEntity(
+    val accountScope: String,
+    val range: String,
+    val sessions: Int,
+    val trainingDays: Int,
+    val distinctExercises: Int,
+    val completedSets: Int,
+    val totalReps: Int,
+    val volumeKg: String?,
+    val volumePartial: Boolean,
+    val durationSeconds: Int,
+    val comparisonJson: String?,
+    val updatedAt: String,
+)
+
+@Entity(
+    tableName = "progress_exercises",
+    primaryKeys = ["accountScope", "range", "publicId"],
+    indices = [Index(value = ["accountScope", "range", "lastPerformedAt"])],
+)
+data class ProgressExerciseEntity(
+    val accountScope: String,
+    val range: String,
+    val publicId: String,
+    val name: String,
+    val lastPerformedAt: String?,
+    val sessionCount: Int,
+    val setCount: Int,
+    val bestLoadKg: String?,
+    val bestReps: Int?,
+    val bestRepsWeightKg: String?,
+    val volumeKg: String?,
+    val volumePartial: Boolean,
+    val loadComparable: Boolean,
+    val loadModes: String,
+    val trend: String,
+    val updatedAt: String,
+)
+
+@Entity(tableName = "progress_points", primaryKeys = ["accountScope", "range", "exercisePublicId", "sessionPublicId"])
+data class ProgressPointEntity(
+    val accountScope: String,
+    val range: String,
+    val exercisePublicId: String,
+    val sessionPublicId: String,
+    val date: String,
+    val performedAt: String,
+    val bestLoadKg: String?,
+    val bestReps: Int?,
+    val volumeKg: String?,
+    val setCount: Int,
+    val averageRir: String?,
+    val averageRpe: String?,
+    val loadComparable: Boolean,
+)
+
+@Entity(tableName = "personal_records", primaryKeys = ["accountScope", "range", "exercisePublicId", "type"])
+data class PersonalRecordEntity(
+    val accountScope: String,
+    val range: String,
+    val exercisePublicId: String,
+    val type: String,
+    val value: String,
+    val unit: String,
+    val date: String,
+    val sessionPublicId: String,
+    val setIndex: Int?,
+)
+
 @Entity(tableName = "sync_state", primaryKeys = ["accountScope", "deviceId"])
 data class SyncStateEntity(
     val accountScope: String,

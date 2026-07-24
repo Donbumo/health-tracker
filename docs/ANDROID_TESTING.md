@@ -3,6 +3,7 @@
 ## Automatizadas
 
 - Unitarias: doce modos de carga, canonical hash, redacción, clasificación temporal/definitiva de refresh, debounce + flush de autosave, coalescing de triggers y textos de estado offline/autosave.
+- Alpha 1.2: decode de contratos, porcentaje con base cero, escala de gráfica vacía/un punto/valores iguales/múltiples, caché Room owner-scoped, paginación y reconciliación sin duplicados.
 - Instrumentación: aislamiento Room, Keystore, refresh temporal/definitivo con MockWebServer, package+ACK observable sin pull, sesión local tras process death, logout explícito, start/completion offline, autosave tardío, FIFO `START → PROGRESS → COMPLETE`, 200/409, pull repetido y single-flight manual/worker.
 - Backend contractual: pull compartido valida cambios Companion contra `sync_pull.schema.json`.
 
@@ -11,8 +12,10 @@ Set-Location android
 .\gradlew.bat lintDebug
 .\gradlew.bat testDebugUnitTest
 .\gradlew.bat assembleDebug
-.\gradlew.bat connectedDebugAndroidTest
+.\gradlew.bat compileDebugAndroidTestKotlin
 ```
+
+`connectedDebugAndroidTest` no forma parte de la validación automática Alpha 1.2: requiere un AVD separado y sigue pendiente junto con la matriz visual/accesible manual.
 
 ## QA manual requerido
 

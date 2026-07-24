@@ -4,10 +4,19 @@ import io.healthtracker.companion.core.config.ThemePreference
 import io.healthtracker.companion.core.load.LoadMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class UiFormattersTest {
+
+    @Test
+    fun chartScaleHandlesEmptySingleEqualAndMultipleValues() {
+        assertNull(chartScale(emptyList()))
+        assertEquals(1f, chartScale(listOf(5f))?.span)
+        assertEquals(1f, chartScale(listOf(5f, 5f))?.span)
+        assertEquals(7f, chartScale(listOf(3f, 10f))?.span)
+    }
     @Test fun internalStatusesBecomeHumanText() {
         assertEquals("Guardado; sincronización pendiente", humanDraftStatus("pending_sync"))
         assertEquals("Requiere intervención", humanSyncStatus("conflict"))

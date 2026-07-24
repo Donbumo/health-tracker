@@ -9,6 +9,13 @@ import io.healthtracker.companion.core.config.ThemePreference
 import io.healthtracker.companion.core.config.UnitPreference
 import io.healthtracker.companion.core.database.DraftSetEntity
 import io.healthtracker.companion.core.database.PackageExerciseEntity
+import io.healthtracker.companion.core.database.HistorySessionEntity
+import io.healthtracker.companion.core.database.HistoryExerciseEntity
+import io.healthtracker.companion.core.database.HistorySetEntity
+import io.healthtracker.companion.core.database.ProgressSummaryEntity
+import io.healthtracker.companion.core.database.ProgressExerciseEntity
+import io.healthtracker.companion.core.database.ProgressPointEntity
+import io.healthtracker.companion.core.database.PersonalRecordEntity
 import io.healthtracker.companion.core.load.LoadPreview
 import io.healthtracker.companion.core.model.AppFailure
 import io.healthtracker.companion.core.model.AuthState
@@ -17,6 +24,7 @@ import io.healthtracker.companion.core.model.SyncStatus
 import io.healthtracker.companion.core.model.UserProfile
 import io.healthtracker.companion.core.sync.SyncScheduler
 import io.healthtracker.companion.core.sync.SyncTrigger
+import io.healthtracker.companion.core.sync.HistoryFilters
 import java.time.LocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,6 +69,14 @@ class CompanionViewModel(private val container: AppContainer) : ViewModel() {
     private val mutableSetActions = MutableStateFlow<Set<String>>(emptySet())
     private val mutableMessage = MutableStateFlow<String?>(null)
     private val mutableAutosaveState = MutableStateFlow(AutosaveUiState.SAVED)
+    private val mutableHistoryFilters = MutableStateFlow(HistoryFilters())
+    private val mutableHistoryRefreshing = MutableStateFlow(false)
+    private val mutableHistoryError = MutableStateFlow<String?>(null)
+    private val mutableSelectedHistoryId = MutableStateFlow<String?>(null)
+    private val mutableProgressRange = MutableStateFlow("30")
+    private val mutableProgressRefreshing = MutableStateFlow(false)
+    private val mutableProgressError = MutableStateFlow<String?>(null)
+    private val mutableSelectedExerciseId = MutableStateFlow<String?>(null)
     private val serializer = Json { explicitNulls = false; encodeDefaults = true }
     private val autosaveController: DebouncedAutosave<AutosaveCommand>
 
@@ -76,6 +92,14 @@ class CompanionViewModel(private val container: AppContainer) : ViewModel() {
     val setActions: StateFlow<Set<String>> = mutableSetActions
     val message: StateFlow<String?> = mutableMessage
     val autosaveState: StateFlow<AutosaveUiState> = mutableAutosaveState
+    val historyFilters: StateFlow<HistoryFilters> = mutableHistoryFilters
+    val historyRefreshing: StateFlow<Boolean> = mutableHistoryRefreshing
+    val historyError: StateFlow<String?> = mutableHistoryError
+    val selectedHistoryId: StateFlow<String?> = mutableSelectedHistoryId
+    val progressRange: StateFlow<String> = mutableProgressRange
+    val progressRefreshing: StateFlow<Boolean> = mutableProgressRefreshing
+    val progressError: StateFlow<String?> = mutableProgressError
+    val selectedExerciseId: StateFlow<String?> = mutableSelectedExerciseId
     val preferences = container.preferences.values.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000),
         io.healthtracker.companion.core.config.AppPreferences(deviceId = ""),
@@ -109,9 +133,53 @@ class CompanionViewModel(private val container: AppContainer) : ViewModel() {
         if (value == null) flowOf(0) else repository.observeConflictCount(value)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
-    val history = scope.flatMapLatest { value ->
-        if (value == null) flowOf(emptyList()) else repository.observeHistory(value)
+    val history = combine(scope, mutableHistoryFilters) { account, filters -> account to filters }.flatMapLatest { (account, filters) ->
+        if (account == null) flowOf(emptyList()) else repository.observeHistory(account, filters)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val historyQueryState = combine(scope, mutableHistoryFilters) { account, filters -> account to filters }.flatMapLatest { (account, filters) ->
+        if (account == null) flowOf(null) else repository.observeHistoryState(account, filters)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val selectedHistory = combine(scope, mutableSelectedHistoryId) { account, id -> account to id }.flatMapLatest { (account, id) ->
+        if (account == null || id == null) flowOf(null) else repository.observeHistorySession(account, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val selectedHistoryExercises = combine(scope, mutableSelectedHistoryId) { account, id -> account to id }.flatMapLatest { (account, id) ->
+        if (account == null || id == null) flowOf(emptyList()) else repository.observeHistoryExercises(account, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val selectedHistorySets = combine(scope, mutableSelectedHistoryId) { account, id -> account to id }.flatMapLatest { (account, id) ->
+        if (account == null || id == null) flowOf(emptyList()) else repository.observeHistorySets(account, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val progressSummary = combine(scope, mutableProgressRange) { account, range -> account to range }.flatMapLatest { (account, range) ->
+        if (account == null) flowOf(null) else repository.observeProgressSummary(account, range)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val progressExercises = combine(scope, mutableProgressRange) { account, range -> account to range }.flatMapLatest { (account, range) ->
+        if (account == null) flowOf(emptyList()) else repository.observeProgressExercises(account, range)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val selectedProgressExercise = combine(scope, mutableProgressRange, mutableSelectedExerciseId) { account, range, id -> Triple(account, range, id) }.flatMapLatest { (account, range, id) ->
+        if (account == null || id == null) flowOf(null) else repository.observeProgressExercise(account, range, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val progressPoints = combine(scope, mutableProgressRange, mutableSelectedExerciseId) { account, range, id -> Triple(account, range, id) }.flatMapLatest { (account, range, id) ->
+        if (account == null || id == null) flowOf(emptyList()) else repository.observeProgressPoints(account, range, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val personalRecords = combine(scope, mutableProgressRange, mutableSelectedExerciseId) { account, range, id -> Triple(account, range, id) }.flatMapLatest { (account, range, id) ->
+        if (account == null || id == null) flowOf(emptyList()) else repository.observePersonalRecords(account, range, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val weeklyProgress = scope.flatMapLatest { account ->
+        if (account == null) flowOf(null) else repository.observeProgressSummary(account, "7")
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val latestPersonalRecord = scope.flatMapLatest { account ->
+        if (account == null) flowOf(null) else repository.observeLatestPersonalRecord(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val draftSets = activeDraft.flatMapLatest { draft ->
         if (draft == null) flowOf(emptyList()) else repository.observeDraftSets(draft.accountScope, draft.deliveryId)
@@ -230,6 +298,75 @@ class CompanionViewModel(private val container: AppContainer) : ViewModel() {
             mutableMessage.value = "Sincronización completada."
         }
     }
+
+    fun refreshHistory(reset: Boolean = true) {
+        if (!mutableHistoryRefreshing.compareAndSet(false, true)) return
+        viewModelScope.launch {
+            try {
+                val account = preferences.value.accountScope ?: return@launch
+                repository.refreshHistory(account, mutableHistoryFilters.value, reset)
+                mutableHistoryError.value = null
+            } catch (failure: AppFailure) {
+                mutableHistoryError.value = failure.userMessage
+            } finally {
+                mutableHistoryRefreshing.value = false
+            }
+        }
+    }
+
+    fun setHistoryFilters(dateFrom: String?, dateTo: String?, exercisePublicId: String?) {
+        mutableHistoryFilters.value = HistoryFilters(
+            dateFrom?.takeIf(String::isNotBlank), dateTo?.takeIf(String::isNotBlank),
+            exercisePublicId?.takeIf(String::isNotBlank),
+        )
+        refreshHistory(reset = true)
+    }
+
+    fun clearHistoryFilters() = setHistoryFilters(null, null, null)
+
+    fun openHistory(publicId: String) {
+        mutableSelectedHistoryId.value = publicId
+        if (connected.value) viewModelScope.launch {
+            runCatching { preferences.value.accountScope?.let { repository.refreshHistoryDetail(it, publicId) } }
+                .onFailure { if (it is AppFailure) mutableHistoryError.value = it.userMessage }
+        }
+    }
+
+    fun closeHistory() { mutableSelectedHistoryId.value = null }
+
+    fun setProgressRange(range: String) {
+        if (range !in setOf("7", "30", "90", "180", "365", "all")) return
+        mutableProgressRange.value = range
+        refreshProgress()
+    }
+
+    fun refreshProgress() {
+        if (!mutableProgressRefreshing.compareAndSet(false, true)) return
+        viewModelScope.launch {
+            try {
+                val account = preferences.value.accountScope ?: return@launch
+                repository.refreshProgress(account, mutableProgressRange.value)
+                mutableProgressError.value = null
+            } catch (failure: AppFailure) {
+                mutableProgressError.value = failure.userMessage
+            } finally {
+                mutableProgressRefreshing.value = false
+            }
+        }
+    }
+
+    fun openProgressExercise(publicId: String) {
+        mutableSelectedExerciseId.value = publicId
+        if (connected.value) viewModelScope.launch {
+            runCatching {
+                preferences.value.accountScope?.let {
+                    repository.refreshProgressExercise(it, mutableProgressRange.value, publicId)
+                }
+            }.onFailure { if (it is AppFailure) mutableProgressError.value = it.userMessage }
+        }
+    }
+
+    fun closeProgressExercise() { mutableSelectedExerciseId.value = null }
 
     fun saveSet(value: DraftSetEntity) = action(showBusy = false) { repository.saveSet(value) }
 

@@ -26,6 +26,12 @@ En Ajustes, **Cerrar sesión en este teléfono** elimina esa cuenta local, **Cer
 
 Consulta [Instalación Android](ANDROID_INSTALLATION.md) y [Android Companion](ANDROID_COMPANION.md). No hay conexión con reloj o Bluetooth.
 
+### Historial y Progreso en Android
+
+**Historial** muestra primero las sesiones guardadas, incluso sin red. Permite filtrar por fechas o ejercicio, cargar páginas anteriores y abrir un detalle read-only con ejercicios, series, carga, reps, RIR/RPE, descanso y notas propias. Una sesión terminada offline aparece como pendiente y se reconcilia sin duplicarse.
+
+**Progreso** permite elegir 7, 30, 90, 180 o 365 días, o todo el historial. Resume sesiones, días, series, volumen comparable y duración. Cada ejercicio muestra carga, volumen, tendencia y mejores marcas; las gráficas incluyen un resumen textual. “Datos insuficientes” o “no comparable” significa que la app evitó mezclar modos incompatibles, no que haya perdido la sesión.
+
 ## Datos y privacidad
 
 Cada dato pertenece al usuario autenticado. Los previews de importación no escriben en la base. Un export JSON sirve para portabilidad; un backup ZIP incluye también archivos verificables. Ninguno incluye contraseñas ni tokens.

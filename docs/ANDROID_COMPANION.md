@@ -1,4 +1,4 @@
-# Android Companion Alpha 1.1
+# Android Companion Alpha 1.2
 
 Cliente Android nativo y offline-first para el flujo `planear → descargar → ejecutar → completar → sincronizar`. El backend sigue siendo autoritativo; la app no duplica `TrainingSession`, cursor, importador ni protocolo.
 
@@ -45,6 +45,12 @@ Compose/ViewModel
 ```
 
 Room normaliza cuenta, planned workouts, packages, ejercicios, sets, deliveries, drafts, checkpoints pendientes, sesiones recientes y cursor. DataStore contiene configuración no sensible. Android Keystore cifra el refresh token; el access token permanece en memoria.
+
+Alpha 1.2 añade entidades Room estructuradas para páginas y detalle de historial, resumen por periodo, ejercicios, puntos temporales y mejores marcas. La UI observa Room; `GET /api/v1/mobile/history`, su detalle y `GET /api/v1/mobile/progress/*` solo refrescan/reconcilian la caché. La base sube a versión 2 mediante migración explícita que conserva `recent_sessions`; no existe una base paralela ni se guardan respuestas JSON opacas.
+
+La navegación principal es **Hoy · Historial · Progreso · Ajustes**. Historial ofrece cursor, fechas, ejercicio y detalle read-only. Progreso cubre 7/30/90/180/365 días o todo, comparación anterior, detalle por ejercicio, mejores marcas deterministas y gráficas Canvas con resumen textual accesible. Hoy muestra únicamente un resumen semanal, la última sesión y una marca reciente.
+
+El volumen tradicional se calcula como carga canónica por repeticiones solo para `direct_total`, `per_side`, `bar_plus_per_side`, `machine_initial_total`, `machine_initial_per_side`, `machine_external_per_side_initial_total`, `selector_stack` y `dumbbell_each`. `bodyweight`, `bodyweight_plus`, `assistance` y `duration_distance` se conservan pero no se mezclan en mejores cargas o volumen comparable.
 
 ## Estados y robustez de Alpha 1.1
 

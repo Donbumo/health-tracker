@@ -11,6 +11,7 @@ Este documento reúne trabajo futuro o no comprobado. No describe funcionalidade
 
 ## Companion móvil y reloj
 
+- Completar QA manual de Alpha 1.2 para Historial/Progreso: paginación offline, rotación, TalkBack, fuente grande, temas y gráficas en tamaños 320/360/411/600 dp; no está aprobado todavía.
 - Completar QA manual offline/rotación/accesibilidad/temas, instrumentación en un AVD separado, revisión de integración, firma de producción y distribución del cliente Android; compilación, lint, JVM, APK y compilación androidTest ya están verdes.
 - Bridge Bluetooth/reloj y app de reloj para guiar sesiones offline.
 - Telemetría continua solo con contrato, límites, privacidad y pruebas propios.

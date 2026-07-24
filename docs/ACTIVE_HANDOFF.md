@@ -1,15 +1,18 @@
 # Handoff activo
 
-Actualizado: 2026-07-23.
+Actualizado: 2026-07-24.
 
 ## Estado actual
 
-- Rama: `feature/alpha-1.1-android-companion`.
-- Base comprobada al iniciar: `6b41d1c1d51850aa523bdc12cb8b41a5b0bc639e`; `alpha-1.0.1-runtime-security` es ancestro.
-- El código fuente de Android Companion Alpha 1.1 está implementado en `../android/`: login, configuración segura de servidor, negociación, cache Room, ejecución desde teléfono, captura de cargas, cola offline, sync periódico y UI Compose.
-- No se cambió persistencia backend ni hacen falta migraciones. `sync_pull.schema.json` recibió la corrección aditiva para `companion_profile` y `companion_delivery`, que el backend ya emitía.
+- Rama: `feature/alpha-1.2-mobile-progress`.
+- Checkpoint comprobado al iniciar: `86b5f9f00104bfad5a9df655726743b0be8a93b0`, con Alpha 1.1 completo.
+- Alpha 1.2 añade API Bearer owner-only para historial paginado/detalle y progreso por periodo/ejercicio, con contratos JSON públicos y UUID persistente de `Exercise` y de cada ocurrencia histórica.
+- Android Room 2 conserva Alpha 1.1 y añade cache estructurada de páginas, detalle, resúmenes, puntos y marcas por `accountScope`; completion offline aparece pendiente y se reconcilia por `client_event_id`.
+- La navegación principal es Hoy, Historial, Progreso y Ajustes. Las gráficas Canvas de carga/volumen incluyen resumen textual y manejan cero, uno o valores iguales.
+- El código fuente de Android Companion Alpha 1.2 está implementado en `../android/`: conserva login, configuración segura de servidor, negociación, ejecución y cola offline, y suma historial/progreso local-first en Room.
+- La migración backend `20260724_0029` añade y rellena los UUID públicos sin perder registros; la migración Room 1→2 conserva las sesiones recientes y crea el cache estructurado nuevo.
 - La persistencia de start/draft/set usa `Upsert` y transacciones; el caso QA `test1` fue recuperado como activo con pendientes/conflictos en cero sin borrar datos.
-- Hoy, Entrenamiento, Historial y Ajustes representan estados humanos de conexión/sync/cola, protegen acciones repetidas y conservan la navegación hasta que complete/abort quedan durables.
+- Hoy, Historial, Progreso y Ajustes representan estados humanos de conexión/sync/cola; la ejecución conserva su ruta propia y las acciones quedan protegidas hasta que complete/abort son durables.
 - Process death sin red permite reanudar cache autorizada; al reconectar se restaura access token antes de WorkManager.
 - Package + ACK actualizan Room en una transacción y Hoy observa disponibilidad sin pull manual; start crea draft/sets/operación local aun sin red.
 - El start offline confirma en una sola transacción draft, sets, hash final, START pendiente y delivery `started_pending`; la recuperación acepta esa evidencia local sin exigir `started` remoto.
@@ -38,7 +41,7 @@ Actualizado: 2026-07-23.
 - Solo existe el AVD `Pixel_7`, reservado para QA manual; `connectedDebugAndroidTest` no se ejecutó para no borrar su identidad ni Room/DataStore.
 - Persisten como QA manual: download→modo avión→start→process death→completion→reconexión, rotación, tamaños 320/360/411/600 dp, fuente grande, TalkBack, claro/oscuro y HTTPS.
 - Lint conserva avisos no bloqueantes de versiones disponibles, KAPT/KSP y cleartext intencional exclusivo de debug. No se creó baseline ni supresión global.
-- No debe declararse Alpha 1.1 lista para release hasta ejecutar instrumentación separada, revisión de integración y proceso de firma aprobado.
+- No debe declararse Alpha 1.2 lista para release hasta ejecutar instrumentación separada, revisión de integración y proceso de firma aprobado.
 
 ## Siguiente paso
 
@@ -49,8 +52,11 @@ No se realizó commit, push, merge ni tag.
 ## Pruebas relevantes
 
 - `lintDebug`: pasa.
-- `testDebugUnitTest`: 35 tests, pasa en dos ejecuciones consecutivas.
+- `testDebugUnitTest`: 39 tests, 0 fallos, pasa en dos ejecuciones consecutivas.
 - `assembleDebug`: pasa.
 - `compileDebugAndroidTestKotlin`: pasa.
 - `connectedDebugAndroidTest`: pendiente por falta de AVD separado; no se usó el Pixel_7 manual.
-- Backend: intacto durante esta tanda; no se repitieron suites backend.
+- `python -m compileall -q app tests`: pasa.
+- Backend completo: 593 tests pasan, 3 omitidos y 2 avisos no bloqueantes en 125.83 s.
+- Migración `20260724_0029`: upgrade, backfill, restricciones únicas y downgrade pasan en SQLite aislado.
+- `docker compose config --quiet`: pasa.

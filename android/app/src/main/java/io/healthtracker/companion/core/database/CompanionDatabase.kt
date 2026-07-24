@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [
@@ -18,9 +20,18 @@ import androidx.room.RoomDatabase
         DraftSetEntity::class,
         PendingActionEntity::class,
         RecentSessionEntity::class,
+        HistorySessionEntity::class,
+        HistoryExerciseEntity::class,
+        HistorySetEntity::class,
+        HistoryPageEntity::class,
+        HistoryQueryStateEntity::class,
+        ProgressSummaryEntity::class,
+        ProgressExerciseEntity::class,
+        ProgressPointEntity::class,
+        PersonalRecordEntity::class,
         SyncStateEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class CompanionDatabase : RoomDatabase() {
@@ -31,6 +42,28 @@ abstract class CompanionDatabase : RoomDatabase() {
             context.applicationContext,
             CompanionDatabase::class.java,
             "health_tracker_companion_v1.db",
-        ).build()
+        ).addMigrations(MIGRATION_1_2).build()
+
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `history_sessions` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `clientEventId` TEXT NOT NULL, `plannedWorkoutId` TEXT, `trainingPlanId` TEXT, `trainingPlanVersionId` TEXT, `name` TEXT NOT NULL, `performedAt` TEXT NOT NULL, `startedAt` TEXT, `completedAt` TEXT NOT NULL, `timezone` TEXT NOT NULL, `durationSeconds` INTEGER, `exerciseCount` INTEGER NOT NULL, `setCount` INTEGER NOT NULL, `volumeKg` TEXT, `volumePartial` INTEGER NOT NULL, `source` TEXT NOT NULL, `syncStatus` TEXT NOT NULL, `notes` TEXT, `detailCached` INTEGER NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_history_sessions_accountScope_completedAt` ON `history_sessions` (`accountScope`, `completedAt`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_history_sessions_accountScope_clientEventId` ON `history_sessions` (`accountScope`, `clientEventId`)")
+                db.execSQL("""INSERT OR IGNORE INTO history_sessions (accountScope,publicId,clientEventId,plannedWorkoutId,trainingPlanId,trainingPlanVersionId,name,performedAt,startedAt,completedAt,timezone,durationSeconds,exerciseCount,setCount,volumeKg,volumePartial,source,syncStatus,notes,detailCached,updatedAt) SELECT accountScope,id,clientEventId,plannedWorkoutId,NULL,NULL,title,completedAt,NULL,completedAt,'UTC',durationSeconds,exerciseCount,setCount,NULL,1,origin,syncStatus,NULL,0,completedAt FROM recent_sessions""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `history_exercises` (`accountScope` TEXT NOT NULL, `sessionPublicId` TEXT NOT NULL, `exerciseOrder` INTEGER NOT NULL, `exercisePublicId` TEXT, `name` TEXT NOT NULL, `notes` TEXT, PRIMARY KEY(`accountScope`, `sessionPublicId`, `exerciseOrder`), FOREIGN KEY(`accountScope`, `sessionPublicId`) REFERENCES `history_sessions`(`accountScope`, `publicId`) ON UPDATE NO ACTION ON DELETE CASCADE)""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_history_exercises_accountScope_sessionPublicId` ON `history_exercises` (`accountScope`, `sessionPublicId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_history_exercises_accountScope_exercisePublicId` ON `history_exercises` (`accountScope`, `exercisePublicId`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `history_sets` (`accountScope` TEXT NOT NULL, `sessionPublicId` TEXT NOT NULL, `exerciseOrder` INTEGER NOT NULL, `setNumber` INTEGER NOT NULL, `weightKg` TEXT, `displayValue` TEXT, `displayUnit` TEXT, `loadMode` TEXT NOT NULL, `reps` INTEGER NOT NULL, `rir` TEXT, `rpe` TEXT, `restSeconds` INTEGER, `durationSeconds` TEXT, `distanceMeters` TEXT, `notes` TEXT, PRIMARY KEY(`accountScope`, `sessionPublicId`, `exerciseOrder`, `setNumber`), FOREIGN KEY(`accountScope`, `sessionPublicId`, `exerciseOrder`) REFERENCES `history_exercises`(`accountScope`, `sessionPublicId`, `exerciseOrder`) ON UPDATE NO ACTION ON DELETE CASCADE)""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_history_sets_accountScope_sessionPublicId_exerciseOrder` ON `history_sets` (`accountScope`, `sessionPublicId`, `exerciseOrder`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `history_pages` (`accountScope` TEXT NOT NULL, `cacheKey` TEXT NOT NULL, `sessionPublicId` TEXT NOT NULL, `position` INTEGER NOT NULL, PRIMARY KEY(`accountScope`, `cacheKey`, `sessionPublicId`))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `history_query_state` (`accountScope` TEXT NOT NULL, `cacheKey` TEXT NOT NULL, `nextCursor` TEXT, `hasMore` INTEGER NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `cacheKey`))""")
+                db.execSQL("""INSERT OR IGNORE INTO history_query_state (accountScope,cacheKey,nextCursor,hasMore,updatedAt) SELECT DISTINCT accountScope,'history:::',NULL,1,MAX(completedAt) FROM recent_sessions GROUP BY accountScope""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `progress_summaries` (`accountScope` TEXT NOT NULL, `range` TEXT NOT NULL, `sessions` INTEGER NOT NULL, `trainingDays` INTEGER NOT NULL, `distinctExercises` INTEGER NOT NULL, `completedSets` INTEGER NOT NULL, `totalReps` INTEGER NOT NULL, `volumeKg` TEXT, `volumePartial` INTEGER NOT NULL, `durationSeconds` INTEGER NOT NULL, `comparisonJson` TEXT, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `range`))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `progress_exercises` (`accountScope` TEXT NOT NULL, `range` TEXT NOT NULL, `publicId` TEXT NOT NULL, `name` TEXT NOT NULL, `lastPerformedAt` TEXT, `sessionCount` INTEGER NOT NULL, `setCount` INTEGER NOT NULL, `bestLoadKg` TEXT, `bestReps` INTEGER, `bestRepsWeightKg` TEXT, `volumeKg` TEXT, `volumePartial` INTEGER NOT NULL, `loadComparable` INTEGER NOT NULL, `loadModes` TEXT NOT NULL, `trend` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `range`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_progress_exercises_accountScope_range_lastPerformedAt` ON `progress_exercises` (`accountScope`, `range`, `lastPerformedAt`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `progress_points` (`accountScope` TEXT NOT NULL, `range` TEXT NOT NULL, `exercisePublicId` TEXT NOT NULL, `sessionPublicId` TEXT NOT NULL, `date` TEXT NOT NULL, `performedAt` TEXT NOT NULL, `bestLoadKg` TEXT, `bestReps` INTEGER, `volumeKg` TEXT, `setCount` INTEGER NOT NULL, `averageRir` TEXT, `averageRpe` TEXT, `loadComparable` INTEGER NOT NULL, PRIMARY KEY(`accountScope`, `range`, `exercisePublicId`, `sessionPublicId`))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `personal_records` (`accountScope` TEXT NOT NULL, `range` TEXT NOT NULL, `exercisePublicId` TEXT NOT NULL, `type` TEXT NOT NULL, `value` TEXT NOT NULL, `unit` TEXT NOT NULL, `date` TEXT NOT NULL, `sessionPublicId` TEXT NOT NULL, `setIndex` INTEGER, PRIMARY KEY(`accountScope`, `range`, `exercisePublicId`, `type`))""")
+            }
+        }
     }
 }

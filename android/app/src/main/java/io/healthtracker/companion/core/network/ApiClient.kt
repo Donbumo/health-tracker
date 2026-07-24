@@ -125,6 +125,35 @@ class ApiClient(
 
     suspend fun syncStatus(): SyncStatusResponse = call("/api/v1/sync/status", "GET")
 
+    suspend fun history(
+        cursor: String? = null,
+        limit: Int = 25,
+        dateFrom: String? = null,
+        dateTo: String? = null,
+        exercisePublicId: String? = null,
+    ): MobileHistoryPageDto {
+        val query = buildList {
+            add("limit=$limit")
+            cursor?.let { add("cursor=${encodeQuery(it)}") }
+            dateFrom?.let { add("date_from=${encodeQuery(it)}") }
+            dateTo?.let { add("date_to=${encodeQuery(it)}") }
+            exercisePublicId?.let { add("exercise_public_id=${encodeQuery(it)}") }
+        }.joinToString("&")
+        return call("/api/v1/mobile/history?$query", "GET")
+    }
+
+    suspend fun historyDetail(publicId: String): MobileHistoryDetailDto =
+        call("/api/v1/mobile/history/${encodeQuery(publicId)}", "GET")
+
+    suspend fun progressSummary(range: String): ProgressSummaryDto =
+        call("/api/v1/mobile/progress/summary?range=${encodeQuery(range)}", "GET")
+
+    suspend fun progressExercises(range: String): ProgressExerciseListDto =
+        call("/api/v1/mobile/progress/exercises?range=${encodeQuery(range)}", "GET")
+
+    suspend fun progressExercise(publicId: String, range: String): ProgressExerciseDetailDto =
+        call("/api/v1/mobile/progress/exercises/${encodeQuery(publicId)}?range=${encodeQuery(range)}", "GET")
+
     suspend fun push(request: PushRequest, key: String): PushResponse = call(
         "/api/v1/sync/push", "POST", json.encodeToString(request), idempotencyKey = key,
     )
@@ -242,6 +271,9 @@ class ApiClient(
                 .seconds.coerceAtLeast(0)
         }.getOrNull()
     }
+
+    private fun encodeQuery(value: String): String =
+        java.net.URLEncoder.encode(value, Charsets.UTF_8.name())
 
     private suspend fun refreshSingleFlight(base: String, failedAccess: String?) = refreshMutex.withLock {
         if (tokens.accessToken() != null && tokens.accessToken() != failedAccess) return@withLock

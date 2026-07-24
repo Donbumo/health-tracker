@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/mobile_history.schema.json",
+  "title": "Mobile history read contract 1.0",
+  "anyOf": [
+    {"$ref": "#/$defs/page"},
+    {"$ref": "#/$defs/detail"}
+  ],
+  "$defs": {
+    "summary": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["public_id", "performed_at", "completed_at", "name", "duration_seconds", "exercise_count", "set_count", "volume_kg", "volume_partial", "source", "sync_status"],
+      "properties": {
+        "public_id": {"type": "string", "format": "uuid"},
+        "performed_at": {"type": "string", "format": "date-time"},
+        "completed_at": {"type": "string", "format": "date-time"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "duration_seconds": {"type": ["integer", "null"], "minimum": 1},
+        "exercise_count": {"type": "integer", "minimum": 0},
+        "set_count": {"type": "integer", "minimum": 0},
+        "volume_kg": {"type": ["string", "null"], "pattern": "^[0-9]+(?:\\.[0-9]+)?$"},
+        "volume_partial": {"type": "boolean"},
+        "source": {"enum": ["manual", "import", "device_sync"]},
+        "sync_status": {"const": "synced"}
+      }
+    },
+    "page": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "items", "next_cursor", "has_more"],
+      "properties": {
+        "schema_version": {"const": "1.0"},
+        "items": {"type": "array", "maxItems": 100, "items": {"$ref": "#/$defs/summary"}},
+        "next_cursor": {"type": ["string", "null"]},
+        "has_more": {"type": "boolean"}
+      }
+    },
+    "detail": {
+      "allOf": [
+        {"$ref": "#/$defs/summary"},
+        {
+          "type": "object",
+          "required": ["schema_version", "started_at", "timezone", "notes", "planned_workout_id", "training_plan_id", "training_plan_version_id", "exercises"],
+          "properties": {
+            "schema_version": {"const": "1.0"},
+            "started_at": {"type": "string", "format": "date-time"},
+            "timezone": {"type": "string", "minLength": 1},
+            "notes": {"type": ["string", "null"], "maxLength": 5000},
+            "planned_workout_id": {"type": ["string", "null"], "format": "uuid"},
+            "training_plan_id": {"type": "string", "format": "uuid"},
+            "training_plan_version_id": {"type": "string", "format": "uuid"},
+            "exercises": {"type": "array", "items": {"$ref": "#/$defs/exercise"}}
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "exercise": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exercise_public_id", "exercise_order", "name", "notes", "sets"],
+      "properties": {
+        "exercise_public_id": {"type": ["string", "null"], "format": "uuid"},
+        "exercise_order": {"type": "integer", "minimum": 1},
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "notes": {"type": ["string", "null"], "maxLength": 2000},
+        "sets": {"type": "array", "items": {"$ref": "#/$defs/set"}}
+      }
+    },
+    "set": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["set_number", "weight_kg", "load_mode", "display_load", "reps", "rir", "rpe", "rest_seconds", "duration_seconds", "distance_meters", "notes"],
+      "properties": {
+        "set_number": {"type": "integer", "minimum": 1},
+        "weight_kg": {"type": "string", "pattern": "^[0-9]+(?:\\.[0-9]+)?$"},
+        "load_mode": {"type": "string"},
+        "display_load": {"type": ["object", "null"]},
+        "reps": {"type": "integer", "minimum": 1},
+        "rir": {"type": ["string", "null"]},
+        "rpe": {"type": ["string", "null"]},
+        "rest_seconds": {"type": ["integer", "null"], "minimum": 0},
+        "duration_seconds": {"type": ["string", "null"]},
+        "distance_meters": {"type": ["string", "null"]},
+        "notes": {"type": ["string", "null"], "maxLength": 2000}
+      }
+    }
+  }
+}

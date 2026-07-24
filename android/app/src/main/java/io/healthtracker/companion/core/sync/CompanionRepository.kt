@@ -37,6 +37,21 @@ import kotlinx.serialization.json.jsonPrimitive
 
 data class LoginOutcome(val accountScope: String, val profile: UserProfile)
 
+data class HistoryFilters(
+    val dateFrom: String? = null,
+    val dateTo: String? = null,
+    val exercisePublicId: String? = null,
+) {
+    val cacheKey: String
+        get() = "history:${dateFrom.orEmpty()}:${dateTo.orEmpty()}:${exercisePublicId.orEmpty()}"
+}
+
+private data class HistoryParts(
+    val session: HistorySessionEntity,
+    val exercises: List<HistoryExerciseEntity>,
+    val sets: List<HistorySetEntity>,
+)
+
 private const val DRAFT_LOG_TAG = "HealthTrackerDraft"
 
 class CompanionRepository(
@@ -143,6 +158,104 @@ class CompanionRepository(
     fun observeConflictCount(scope: String): Flow<Int> = dao.observeConflictCount(scope)
     fun observeHistory(scope: String, limit: Int = 30, offset: Int = 0): Flow<List<RecentSessionEntity>> =
         dao.observeRecent(scope, limit, offset)
+
+    fun observeHistory(scope: String, filters: HistoryFilters): Flow<List<HistorySessionEntity>> =
+        dao.observeHistoryPage(scope, filters.cacheKey)
+
+    fun observeHistoryState(scope: String, filters: HistoryFilters): Flow<HistoryQueryStateEntity?> =
+        dao.observeHistoryQueryState(scope, filters.cacheKey)
+
+    fun observeHistorySession(scope: String, publicId: String): Flow<HistorySessionEntity?> =
+        dao.observeHistorySession(scope, publicId)
+
+    fun observeHistoryExercises(scope: String, publicId: String): Flow<List<HistoryExerciseEntity>> =
+        dao.observeHistoryExercises(scope, publicId)
+
+    fun observeHistorySets(scope: String, publicId: String): Flow<List<HistorySetEntity>> =
+        dao.observeHistorySets(scope, publicId)
+
+    fun observeProgressSummary(scope: String, range: String): Flow<ProgressSummaryEntity?> =
+        dao.observeProgressSummary(scope, range)
+
+    fun observeProgressExercises(scope: String, range: String): Flow<List<ProgressExerciseEntity>> =
+        dao.observeProgressExercises(scope, range)
+
+    fun observeProgressExercise(scope: String, range: String, publicId: String): Flow<ProgressExerciseEntity?> =
+        dao.observeProgressExercise(scope, range, publicId)
+
+    fun observeProgressPoints(scope: String, range: String, publicId: String): Flow<List<ProgressPointEntity>> =
+        dao.observeProgressPoints(scope, range, publicId)
+
+    fun observePersonalRecords(scope: String, range: String, publicId: String): Flow<List<PersonalRecordEntity>> =
+        dao.observePersonalRecords(scope, range, publicId)
+
+    fun observeLatestPersonalRecord(scope: String): Flow<PersonalRecordEntity?> =
+        dao.observeLatestPersonalRecord(scope)
+
+    suspend fun refreshHistory(scope: String, filters: HistoryFilters = HistoryFilters(), reset: Boolean = true) {
+        val state = if (reset) null else dao.historyQueryState(scope, filters.cacheKey)
+        if (!reset && state?.hasMore == false) return
+        val response = api.history(
+            cursor = state?.nextCursor,
+            dateFrom = filters.dateFrom,
+            dateTo = filters.dateTo,
+            exercisePublicId = filters.exercisePublicId,
+        )
+        if (response.schemaVersion != CONTRACT_VERSION) {
+            throw AppFailure(AppErrorCode.SCHEMA_INCOMPATIBLE, "El historial usa una versión incompatible.", false)
+        }
+        database.withTransaction {
+            if (reset) dao.deleteHistoryPages(scope, filters.cacheKey)
+            val start = if (reset) 0 else dao.maxHistoryPosition(scope, filters.cacheKey) + 1
+            response.items.forEachIndexed { index, item ->
+                val existing = dao.historySession(scope, item.publicId)
+                dao.replaceHistorySession(item.toHistory(scope, existing))
+                dao.upsertHistoryPages(listOf(HistoryPageEntity(scope, filters.cacheKey, item.publicId, start + index)))
+            }
+            dao.upsertHistoryQueryState(
+                HistoryQueryStateEntity(scope, filters.cacheKey, response.nextCursor, response.hasMore, Instant.now().toString()),
+            )
+        }
+    }
+
+    suspend fun refreshHistoryDetail(scope: String, publicId: String) {
+        val response = api.historyDetail(publicId)
+        if (response.schemaVersion != CONTRACT_VERSION || response.publicId != publicId) {
+            throw AppFailure(AppErrorCode.SCHEMA_INCOMPATIBLE, "El detalle de historial no corresponde a la sesión.", false)
+        }
+        val existing = dao.historySession(scope, publicId)
+        val parts = response.toHistoryParts(scope, existing?.clientEventId ?: publicId)
+        database.withTransaction { dao.replaceHistorySession(parts.session, parts.exercises, parts.sets) }
+    }
+
+    suspend fun refreshProgress(scope: String, range: String) {
+        val summary = api.progressSummary(range)
+        val exercises = api.progressExercises(range)
+        if (summary.schemaVersion != CONTRACT_VERSION || exercises.schemaVersion != CONTRACT_VERSION ||
+            summary.range != range || exercises.range != range
+        ) throw AppFailure(AppErrorCode.SCHEMA_INCOMPATIBLE, "El progreso usa un contrato incompatible.", false)
+        val now = Instant.now().toString()
+        database.withTransaction {
+            dao.upsertProgressSummary(summary.toEntity(scope, now))
+            dao.deleteProgressExercises(scope, range)
+            dao.upsertProgressExercises(exercises.items.map { it.toEntity(scope, range, now) })
+        }
+    }
+
+    suspend fun refreshProgressExercise(scope: String, range: String, publicId: String) {
+        val detail = api.progressExercise(publicId, range)
+        if (detail.schemaVersion != CONTRACT_VERSION || detail.range != range || detail.exercise.publicId != publicId) {
+            throw AppFailure(AppErrorCode.SCHEMA_INCOMPATIBLE, "El detalle de progreso no corresponde al ejercicio.", false)
+        }
+        val now = Instant.now().toString()
+        database.withTransaction {
+            dao.replaceProgressExercise(
+                detail.exercise.toEntity(scope, range, now),
+                detail.points.map { it.toEntity(scope, range, publicId) },
+                detail.personalRecords.map { it.toEntity(scope, range, publicId) },
+            )
+        }
+    }
 
     suspend fun restoreLocalSession(): UserProfile? {
         val local = preferences.values.first()
@@ -527,6 +640,15 @@ class CompanionRepository(
             }
             enqueue(scope, "companion_complete", deliveryId, UUID.randomUUID().toString(), api.json.encodeToString(request))
             dao.upsertDraft(latest.copy(status = "completion_pending", updatedAt = completedAt.toString()))
+            val localHistory = result.toHistoryParts(
+                scope = scope,
+                title = packageEntity.title,
+                source = "companion",
+                syncStatus = "pending",
+                publicId = draft.clientEventId,
+            )
+            dao.replaceHistorySession(localHistory.session, localHistory.exercises, localHistory.sets)
+            dao.upsertHistoryPages(listOf(HistoryPageEntity(scope, HistoryFilters().cacheKey, draft.clientEventId, -1)))
             true
         }
         if (queued) SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
@@ -599,6 +721,11 @@ class CompanionRepository(
         val account = preferences.values.first()
         if (remoteStatus.schemaVersion != CONTRACT_VERSION || remoteStatus.deviceId != account.deviceId) {
             throw AppFailure(AppErrorCode.SCHEMA_INCOMPATIBLE, "El estado de sync no corresponde a este dispositivo.", false)
+        }
+        if (dao.historyQueryState(scope, HistoryFilters().cacheKey) != null) runCatching {
+            refreshHistory(scope)
+            refreshProgress(scope, "7")
+            refreshProgress(scope, "30")
         }
         preferences.setLastSyncAt(Instant.now().toString())
     }
@@ -674,6 +801,12 @@ class CompanionRepository(
                         database.withTransaction {
                             dao.upsertDelivery(listOf(response.delivery.toEntity(scope)))
                             dao.upsertRecent(listOf(response.completedWorkout.toRecent(scope, "Companion")))
+                            val history = response.completedWorkout.toHistoryParts(
+                                scope, "Entrenamiento", "companion", "synced",
+                                response.completedWorkout.id,
+                            )
+                            dao.replaceHistorySession(history.session, history.exercises, history.sets)
+                            dao.upsertHistoryPages(listOf(HistoryPageEntity(scope, HistoryFilters().cacheKey, history.session.publicId, -1)))
                             dao.deleteDraft(scope, pending.entityId)
                             dao.deletePending(pending.localId)
                         }
@@ -968,6 +1101,11 @@ class CompanionRepository(
 
     private companion object {
         val LOCAL_ACTIVE_DELIVERY_STATES = setOf("started_pending", "started")
+        val COMPARABLE_VOLUME_MODES = setOf(
+            "direct_total", "per_side", "bar_plus_per_side", "machine_initial_total",
+            "machine_initial_per_side", "machine_external_per_side_initial_total",
+            "selector_stack", "dumbbell_each",
+        )
     }
 
     private suspend fun applyBootstrap(scope: String, value: BootstrapResponse) {
@@ -976,6 +1114,17 @@ class CompanionRepository(
         dao.upsertDelivery(value.companion.deliveries.map { it.toEntity(scope) })
         value.companion.profile?.let { dao.upsertProfile(it.toEntity(scope)) }
         dao.upsertRecent(value.completedWorkouts.map { it.toRecent(scope, "Servidor") })
+        value.completedWorkouts.forEachIndexed { index, completed ->
+            val history = completed.toHistoryParts(scope, "Entrenamiento", "server", "synced", completed.id)
+            dao.replaceHistorySession(history.session, history.exercises, history.sets)
+            dao.upsertHistoryPages(listOf(HistoryPageEntity(scope, HistoryFilters().cacheKey, history.session.publicId, index)))
+        }
+        dao.upsertHistoryQueryState(
+            HistoryQueryStateEntity(
+                scope, HistoryFilters().cacheKey, null,
+                value.completedWorkouts.size >= 25, Instant.now().toString(),
+            ),
+        )
         dao.upsertSyncState(SyncStateEntity(scope, device, value.cursor, Instant.now().toString(), value.serverTime, null))
     }
 
@@ -987,7 +1136,13 @@ class CompanionRepository(
         val payload = change.payload ?: return
         when (change.entityType) {
             "planned_workout" -> dao.upsertPlanned(listOf(api.json.decodeFromJsonElement(PlannedWorkoutDto.serializer(), payload).toEntity(scope)))
-            "completed_workout" -> dao.upsertRecent(listOf(api.json.decodeFromJsonElement(CompletedWorkoutDto.serializer(), payload).toRecent(scope, "Servidor")))
+            "completed_workout" -> {
+                val completed = api.json.decodeFromJsonElement(CompletedWorkoutDto.serializer(), payload)
+                dao.upsertRecent(listOf(completed.toRecent(scope, "Servidor")))
+                val history = completed.toHistoryParts(scope, "Entrenamiento", "server", "synced", completed.id)
+                dao.replaceHistorySession(history.session, history.exercises, history.sets)
+                dao.upsertHistoryPages(listOf(HistoryPageEntity(scope, HistoryFilters().cacheKey, history.session.publicId, -1)))
+            }
             "companion_delivery" -> dao.upsertDelivery(listOf(api.json.decodeFromJsonElement(DeliveryDto.serializer(), payload).toEntity(scope)))
             "companion_profile" -> dao.upsertProfile(api.json.decodeFromJsonElement(CompanionProfileDto.serializer(), payload).toEntity(scope))
         }
@@ -1076,7 +1231,8 @@ class CompanionRepository(
     )
 
     private fun CompletedWorkoutDto.toRecent(scope: String, origin: String): RecentSessionEntity {
-        val total = exercises.flatMap { it.sets }.fold(BigDecimal.ZERO) { acc, set -> acc + set.weightKg }
+        val total = exercises.flatMap { it.sets }.mapNotNull { it.traditionalVolume() }
+            .fold(BigDecimal.ZERO, BigDecimal::add)
         val safeId = id ?: clientEventId
             ?: throw AppFailure(AppErrorCode.SCHEMA_INCOMPATIBLE, "El entrenamiento no contiene un identificador.", false)
         val localClientEventId = clientEventId ?: safeId
@@ -1087,4 +1243,117 @@ class CompanionRepository(
             exercises.joinToString(", ") { it.name }.take(500),
         )
     }
+
+    private fun MobileHistoryItemDto.toHistory(scope: String, existing: HistorySessionEntity?) = HistorySessionEntity(
+        accountScope = scope,
+        publicId = publicId,
+        clientEventId = existing?.clientEventId ?: publicId,
+        plannedWorkoutId = existing?.plannedWorkoutId,
+        trainingPlanId = existing?.trainingPlanId,
+        trainingPlanVersionId = existing?.trainingPlanVersionId,
+        name = name,
+        performedAt = performedAt,
+        startedAt = existing?.startedAt,
+        completedAt = completedAt,
+        timezone = existing?.timezone ?: "UTC",
+        durationSeconds = durationSeconds,
+        exerciseCount = exerciseCount,
+        setCount = setCount,
+        volumeKg = volumeKg,
+        volumePartial = volumePartial,
+        source = source,
+        syncStatus = syncStatus,
+        notes = existing?.notes,
+        detailCached = existing?.detailCached == true,
+        updatedAt = Instant.now().toString(),
+    )
+
+    private fun MobileHistoryDetailDto.toHistoryParts(scope: String, clientEventId: String): HistoryParts {
+        val session = HistorySessionEntity(
+            scope, publicId, clientEventId, plannedWorkoutId, trainingPlanId, trainingPlanVersionId,
+            name, performedAt, startedAt, completedAt, timezone, durationSeconds, exerciseCount,
+            setCount, volumeKg, volumePartial, source, syncStatus, notes, true, Instant.now().toString(),
+        )
+        val exerciseRows = exercises.map {
+            HistoryExerciseEntity(scope, publicId, it.exerciseOrder, it.exercisePublicId, it.name, it.notes)
+        }
+        val setRows = exercises.flatMap { exercise ->
+            exercise.sets.map { set ->
+                HistorySetEntity(
+                    scope, publicId, exercise.exerciseOrder, set.setNumber, set.weightKg,
+                    set.displayLoad?.value, set.displayLoad?.unit, set.loadMode, set.reps,
+                    set.rir, set.rpe, set.restSeconds, set.durationSeconds, set.distanceMeters, set.notes,
+                )
+            }
+        }
+        return HistoryParts(session, exerciseRows, setRows)
+    }
+
+    private fun CompletedWorkoutDto.toHistoryParts(
+        scope: String,
+        title: String,
+        source: String,
+        syncStatus: String,
+        publicId: String? = id,
+    ): HistoryParts {
+        val resolvedId = publicId ?: clientEventId
+            ?: throw AppFailure(AppErrorCode.SCHEMA_INCOMPATIBLE, "La sesión no contiene identidad.", false)
+        val eventId = clientEventId ?: resolvedId
+        val sets = exercises.flatMap { it.sets }
+        val volumes = sets.mapNotNull { it.traditionalVolume() }
+        val session = HistorySessionEntity(
+            scope, resolvedId, eventId, plannedWorkoutId, trainingPlanId, trainingPlanVersionId,
+            title, completedAt, startedAt, completedAt, timezone, durationSeconds, exercises.size,
+            sets.size, volumes.takeIf { it.isNotEmpty() }?.fold(BigDecimal.ZERO, BigDecimal::add)
+                ?.stripTrailingZeros()?.toPlainString(),
+            volumes.size != sets.size, source, syncStatus, notes, true,
+            updatedAt ?: Instant.now().toString(),
+        )
+        val exerciseRows = exercises.map {
+            HistoryExerciseEntity(scope, resolvedId, it.exerciseOrder, null, it.name, it.notes)
+        }
+        val setRows = exercises.flatMap { exercise ->
+            exercise.sets.map { set ->
+                val display = set.loadDetails?.displayTotal
+                HistorySetEntity(
+                    scope, resolvedId, exercise.exerciseOrder, set.setNumber,
+                    set.weightKg.stripTrailingZeros().toPlainString(), display?.value, display?.unit,
+                    set.loadMode(), set.reps, set.rir?.toPlainString(), set.rpe?.toPlainString(),
+                    set.restSeconds, set.durationSeconds?.toString(),
+                    set.loadDetails?.components?.get("distance_meters")?.value, set.notes,
+                )
+            }
+        }
+        return HistoryParts(session, exerciseRows, setRows)
+    }
+
+    private fun CompletedSetDto.loadMode(): String = loadDetails?.loadMode ?: "direct_total"
+
+    private fun CompletedSetDto.traditionalVolume(): BigDecimal? =
+        if (loadMode() in COMPARABLE_VOLUME_MODES && weightKg.signum() >= 0 && reps > 0) weightKg * reps.toBigDecimal()
+        else null
+
+    private fun ProgressSummaryDto.toEntity(scope: String, now: String) = ProgressSummaryEntity(
+        scope, range, metrics.sessions, metrics.trainingDays, metrics.distinctExercises,
+        metrics.completedSets, metrics.totalReps, metrics.volumeKg, metrics.volumePartial,
+        metrics.durationSeconds,
+        comparison?.let { kotlinx.serialization.json.Json.encodeToString(it) },
+        now,
+    )
+
+    private fun ProgressExerciseDto.toEntity(scope: String, range: String, now: String) = ProgressExerciseEntity(
+        scope, range, publicId, name, lastPerformedAt, sessionCount, setCount, bestLoadKg,
+        bestRepetitionSet?.reps, bestRepetitionSet?.weightKg, volumeKg, volumePartial,
+        loadComparable, loadModes.joinToString("|"), trend, now,
+    )
+
+    private fun ProgressPointDto.toEntity(scope: String, range: String, exerciseId: String) = ProgressPointEntity(
+        scope, range, exerciseId, sessionPublicId, date, performedAt, bestLoadKg, bestReps,
+        volumeKg, setCount, averageRir, averageRpe, loadComparable,
+    )
+
+    private fun PersonalRecordDto.toEntity(scope: String, range: String, exerciseId: String) = PersonalRecordEntity(
+        scope, range, exerciseId, type, value, unit, date, sessionPublicId, setIndex,
+    )
+
 }

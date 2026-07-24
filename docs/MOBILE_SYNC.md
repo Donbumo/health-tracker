@@ -21,3 +21,5 @@ Todos los endpoints requieren Bearer API v1. No aceptan cookie web, token en que
 Consulta [SYNC_PROTOCOL_1_0.md](SYNC_PROTOCOL_1_0.md), [SYNC_CONFLICTS.md](SYNC_CONFLICTS.md) y [SYNC_IDEMPOTENCY.md](SYNC_IDEMPOTENCY.md).
 
 Límites: el rate limiter es por proceso, tombstones/cursores obsoletos siguen report-only, no hay CRDT ni last-write-wins general y activity/route/body/wellness/labs no tienen sync write. `API_TOKEN_SIGNING_KEY` independiente es recomendada en homelab y obligatoria antes de exposición pública. Persiste la incompatibilidad histórica de SQLite en migración `0015`.
+
+Alpha 1.2 no añade una entidad editable ni otro cursor a Mobile Sync. Un cambio `completed_workout` actualiza la sesión estructurada de Room y marca historial/progreso para refresh mediante la misma ejecución coalescida. La lectura paginada de historial tiene su propio cursor firmado de consulta, no sustituye ni avanza el cursor incremental del dispositivo.

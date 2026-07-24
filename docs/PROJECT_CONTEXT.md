@@ -96,6 +96,8 @@ Los exporters declaran capability, warnings y pérdidas. Los artefactos persisti
 
 `/api/v1` usa Bearer independiente de la sesión web, UUID públicos y contratos versionados. Mobile Sync y Companion backend soportan los dominios y operaciones expresamente documentados. El cliente Android ejecuta el protocolo desde el teléfono con cache offline, recuperación de process death, cola durable e idempotencia; no implica una aplicación de reloj ni integración con fabricantes.
 
+Desde Alpha 1.2 el cliente también consulta historial paginado y progreso descriptivo por periodo/ejercicio desde Room. Las métricas y mejores marcas son lecturas deterministas sobre `TrainingSession`; no constituyen recomendaciones automáticas, IA ni gamificación. Los modos de carga incompatibles producen ausencia explícita en vez de una comparación fabricada.
+
 ## Seguridad y privacidad de producto
 
 - Login incluso en red local.

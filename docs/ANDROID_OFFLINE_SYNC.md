@@ -22,3 +22,9 @@ Un reinicio de proceso sin red no fuerza un falso “token vencido”: si persis
 Timeout, DNS, conexión rechazada, 429 y 5xx conservan refresh, scope, Room y borradores. Solo logout explícito, refresh definitivamente inválido, credenciales ausentes/ilegibles o revocación confirmada eliminan la sesión local. Una incompatibilidad de servidor bloquea la red, pero no se disfraza de fallo temporal.
 
 Peso, modo/unidad de carga, reps, RIR, RPE, notas, duración, distancia, descanso y resumen usan autosave Room con debounce de 400 ms. Focus loss, navegación, pausa, completion y background fuerzan flush. No se encola red por carácter. El autosave nunca revierte una serie completada, su secuencia ni estados `paused`, `pending_sync` o finales. Checkpoint + set + hash + operación pendiente se escriben atómicamente. La confirmación autoritativa aplica delivery/history/draft y elimina la cola en una transacción local.
+
+## Historial y progreso en Alpha 1.2
+
+Room 2 mantiene por `accountScope` páginas de historial, detalle normalizado de ejercicios/series, resumen de progreso, lista y puntos por ejercicio, mejores marcas y timestamps. Un timeout nunca elimina una versión anterior. El refresh reemplaza por UUID dentro de una transacción y reconcilia una sesión local pendiente por `client_event_id`, evitando duplicados cuando llega el UUID autoritativo.
+
+Foreground, completion, pull con `completed_workout`, conectividad y WorkManager comparten el single-flight existente. La sesión completada se inserta localmente antes de la red con estado pendiente; al confirmar se conserva el detalle, cambia a `synced` y se invalidan/refrescan historial y periodos frecuentes. El botón manual sigue siendo respaldo.

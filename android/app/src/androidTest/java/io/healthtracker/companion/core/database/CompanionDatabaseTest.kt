@@ -40,6 +40,40 @@ class CompanionDatabaseTest {
 
     @After fun close() = database.close()
 
+    @Test fun historyAndProgressCachesAreAccountScopedAndPaginated() = runBlocking {
+        val dao = database.companionDao()
+        val first = history("scope-a", "session-a", "event-a", "2026-07-23T00:00:00Z")
+        val second = history("scope-b", "session-b", "event-b", "2026-07-24T00:00:00Z")
+        dao.replaceHistorySession(first)
+        dao.replaceHistorySession(second)
+        dao.upsertHistoryPages(listOf(
+            HistoryPageEntity("scope-a", "history:::", first.publicId, 0),
+            HistoryPageEntity("scope-b", "history:::", second.publicId, 0),
+        ))
+        dao.upsertHistoryQueryState(HistoryQueryStateEntity("scope-a", "history:::", "cursor-a", true, "2026-07-24T00:00:00Z"))
+        dao.upsertProgressSummary(ProgressSummaryEntity("scope-a", "30", 1, 1, 1, 2, 10, "500", false, 1800, null, "2026-07-24T00:00:00Z"))
+
+        assertEquals(listOf("session-a"), dao.observeHistoryPage("scope-a", "history:::").first().map { it.publicId })
+        assertEquals(listOf("session-b"), dao.observeHistoryPage("scope-b", "history:::").first().map { it.publicId })
+        assertEquals("cursor-a", dao.historyQueryState("scope-a", "history:::")?.nextCursor)
+        assertEquals(1, dao.observeProgressSummary("scope-a", "30").first()?.sessions)
+        assertNull(dao.observeProgressSummary("scope-b", "30").first())
+    }
+
+    @Test fun authoritativeSessionReconcilesPendingClientEventWithoutDuplicate() = runBlocking {
+        val dao = database.companionDao()
+        dao.replaceHistorySession(history(TEST_SCOPE, "qa-event", "qa-event", "2026-07-24T00:00:00Z", "pending"))
+        dao.upsertHistoryPages(listOf(HistoryPageEntity(TEST_SCOPE, "history:::", "qa-event", -1)))
+
+        dao.replaceHistorySession(history(TEST_SCOPE, "server-session", "qa-event", "2026-07-24T00:00:00Z", "synced"))
+        dao.upsertHistoryPages(listOf(HistoryPageEntity(TEST_SCOPE, "history:::", "server-session", -1)))
+
+        val rows = dao.observeHistoryPage(TEST_SCOPE, "history:::").first()
+        assertEquals(1, rows.size)
+        assertEquals("server-session", rows.single().publicId)
+        assertEquals("synced", rows.single().syncStatus)
+    }
+
     @Test fun accountsAreIsolatedAndLogoutCleanupCascades() = runBlocking {
         val dao = database.companionDao()
         dao.upsertAccount(AccountEntity("scope-a", "https://a.test", "user-a", "qa-a", "device-a", "UTC", "2026-07-17T00:00:00Z"))
@@ -639,6 +673,12 @@ class CompanionDatabaseTest {
         val tokens = SecureTokenStore(context)
         return CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens))
     }
+
+    private fun history(scope: String, id: String, event: String, completedAt: String, status: String = "synced") =
+        HistorySessionEntity(
+            scope, id, event, null, null, null, "Sesión QA", completedAt, null, completedAt,
+            "UTC", 1800, 1, 2, "500", false, "qa", status, null, false, completedAt,
+        )
 
     private suspend fun seedDownload(status: String) {
         val dao = database.companionDao()

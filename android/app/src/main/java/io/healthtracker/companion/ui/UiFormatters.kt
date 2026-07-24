@@ -9,6 +9,16 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Locale
 
+internal data class ChartScale(val minimum: Float, val maximum: Float, val span: Float)
+
+internal fun chartScale(values: List<Float>): ChartScale? {
+    val finite = values.filter(Float::isFinite)
+    if (finite.isEmpty()) return null
+    val minimum = finite.min()
+    val maximum = finite.max()
+    return ChartScale(minimum, maximum, (maximum - minimum).takeIf { it > 0f } ?: 1f)
+}
+
 private val displayLocale = Locale.forLanguageTag("es-MX")
 private val dateFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", displayLocale)
 private val dateTimeFormatter = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", displayLocale)
@@ -97,6 +107,21 @@ internal fun humanTheme(value: ThemePreference): String = when (value) {
     ThemePreference.SYSTEM -> "Sistema"
     ThemePreference.LIGHT -> "Claro"
     ThemePreference.DARK -> "Oscuro"
+}
+
+internal fun humanRecordType(value: String): String = when (value) {
+    "highest_load" -> "Mayor carga"
+    "most_reps_at_comparable_load" -> "Más repeticiones"
+    "highest_set_volume" -> "Mayor volumen de serie"
+    "highest_session_volume" -> "Mayor volumen de sesión"
+    else -> "Mejor marca"
+}
+
+internal fun humanTrend(value: String): String = when (value) {
+    "up" -> "Tendencia al alza"
+    "down" -> "Tendencia a la baja"
+    "stable" -> "Tendencia estable"
+    else -> "Datos insuficientes para una tendencia"
 }
 
 internal fun humanLoadMode(value: LoadMode): String = when (value) {

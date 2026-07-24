@@ -201,6 +201,165 @@ data class CompletedSetDto(
 )
 
 @Serializable
+data class MobileHistoryPageDto(
+    @SerialName("schema_version") val schemaVersion: String,
+    val items: List<MobileHistoryItemDto>,
+    @SerialName("next_cursor") val nextCursor: String? = null,
+    @SerialName("has_more") val hasMore: Boolean,
+)
+
+@Serializable
+data class MobileHistoryItemDto(
+    @SerialName("public_id") val publicId: String,
+    @SerialName("performed_at") val performedAt: String,
+    @SerialName("completed_at") val completedAt: String,
+    val name: String,
+    @SerialName("duration_seconds") val durationSeconds: Int? = null,
+    @SerialName("exercise_count") val exerciseCount: Int,
+    @SerialName("set_count") val setCount: Int,
+    @SerialName("volume_kg") val volumeKg: String? = null,
+    @SerialName("volume_partial") val volumePartial: Boolean,
+    val source: String,
+    @SerialName("sync_status") val syncStatus: String,
+)
+
+@Serializable
+data class MobileHistoryDetailDto(
+    @SerialName("schema_version") val schemaVersion: String,
+    @SerialName("public_id") val publicId: String,
+    @SerialName("performed_at") val performedAt: String,
+    @SerialName("started_at") val startedAt: String,
+    @SerialName("completed_at") val completedAt: String,
+    val timezone: String,
+    val name: String,
+    @SerialName("duration_seconds") val durationSeconds: Int? = null,
+    @SerialName("exercise_count") val exerciseCount: Int,
+    @SerialName("set_count") val setCount: Int,
+    @SerialName("volume_kg") val volumeKg: String? = null,
+    @SerialName("volume_partial") val volumePartial: Boolean,
+    val source: String,
+    @SerialName("sync_status") val syncStatus: String,
+    val notes: String? = null,
+    @SerialName("planned_workout_id") val plannedWorkoutId: String? = null,
+    @SerialName("training_plan_id") val trainingPlanId: String? = null,
+    @SerialName("training_plan_version_id") val trainingPlanVersionId: String? = null,
+    val exercises: List<MobileHistoryExerciseDto>,
+)
+
+@Serializable
+data class MobileHistoryExerciseDto(
+    @SerialName("exercise_public_id") val exercisePublicId: String? = null,
+    @SerialName("exercise_order") val exerciseOrder: Int,
+    val name: String,
+    val notes: String? = null,
+    val sets: List<MobileHistorySetDto>,
+)
+
+@Serializable
+data class MobileHistorySetDto(
+    @SerialName("set_number") val setNumber: Int,
+    @SerialName("weight_kg") val weightKg: String? = null,
+    @SerialName("display_load") val displayLoad: WeightComponentDto? = null,
+    @SerialName("load_mode") val loadMode: String,
+    val reps: Int,
+    val rir: String? = null,
+    val rpe: String? = null,
+    @SerialName("rest_seconds") val restSeconds: Int? = null,
+    @SerialName("duration_seconds") val durationSeconds: String? = null,
+    @SerialName("distance_meters") val distanceMeters: String? = null,
+    val notes: String? = null,
+)
+
+@Serializable
+data class ProgressMetricsDto(
+    val sessions: Int,
+    @SerialName("training_days") val trainingDays: Int,
+    @SerialName("distinct_exercises") val distinctExercises: Int,
+    @SerialName("completed_sets") val completedSets: Int,
+    @SerialName("total_reps") val totalReps: Int,
+    @SerialName("volume_kg") val volumeKg: String? = null,
+    @SerialName("volume_partial") val volumePartial: Boolean,
+    @SerialName("duration_seconds") val durationSeconds: Int,
+)
+
+@Serializable
+data class ProgressComparisonDto(
+    val change: String,
+    val percent: String? = null,
+    val previous: String,
+)
+
+@Serializable
+data class ProgressSummaryDto(
+    @SerialName("schema_version") val schemaVersion: String,
+    val range: String,
+    @SerialName("generated_at") val generatedAt: String,
+    val metrics: ProgressMetricsDto,
+    val comparison: Map<String, ProgressComparisonDto>? = null,
+    @SerialName("comparable_load_modes") val comparableLoadModes: List<String>,
+)
+
+@Serializable
+data class ProgressExerciseListDto(
+    @SerialName("schema_version") val schemaVersion: String,
+    val range: String,
+    val items: List<ProgressExerciseDto>,
+)
+
+@Serializable
+data class ProgressExerciseDto(
+    @SerialName("public_id") val publicId: String,
+    val name: String,
+    @SerialName("last_performed_at") val lastPerformedAt: String? = null,
+    @SerialName("session_count") val sessionCount: Int,
+    @SerialName("set_count") val setCount: Int,
+    @SerialName("best_load_kg") val bestLoadKg: String? = null,
+    @SerialName("best_repetition_set") val bestRepetitionSet: ProgressBestSetDto? = null,
+    @SerialName("volume_kg") val volumeKg: String? = null,
+    @SerialName("volume_partial") val volumePartial: Boolean,
+    @SerialName("load_comparable") val loadComparable: Boolean,
+    @SerialName("load_modes") val loadModes: List<String>,
+    val trend: String,
+)
+
+@Serializable
+data class ProgressBestSetDto(val reps: Int, @SerialName("weight_kg") val weightKg: String)
+
+@Serializable
+data class ProgressExerciseDetailDto(
+    @SerialName("schema_version") val schemaVersion: String,
+    val range: String,
+    val exercise: ProgressExerciseDto,
+    val points: List<ProgressPointDto>,
+    @SerialName("personal_records") val personalRecords: List<PersonalRecordDto>,
+    @SerialName("recent_sessions") val recentSessions: List<MobileHistoryItemDto>,
+)
+
+@Serializable
+data class ProgressPointDto(
+    val date: String,
+    @SerialName("performed_at") val performedAt: String,
+    @SerialName("session_public_id") val sessionPublicId: String,
+    @SerialName("best_load_kg") val bestLoadKg: String? = null,
+    @SerialName("best_reps") val bestReps: Int? = null,
+    @SerialName("volume_kg") val volumeKg: String? = null,
+    @SerialName("set_count") val setCount: Int,
+    @SerialName("average_rir") val averageRir: String? = null,
+    @SerialName("average_rpe") val averageRpe: String? = null,
+    @SerialName("load_comparable") val loadComparable: Boolean,
+)
+
+@Serializable
+data class PersonalRecordDto(
+    val type: String,
+    val value: String,
+    val unit: String,
+    val date: String,
+    @SerialName("session_public_id") val sessionPublicId: String,
+    @SerialName("set_index") val setIndex: Int? = null,
+)
+
+@Serializable
 data class WeightComponentDto(val value: String, val unit: String)
 
 @Serializable

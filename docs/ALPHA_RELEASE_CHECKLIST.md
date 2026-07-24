@@ -1,5 +1,17 @@
 # Checklist de release alpha privada
 
+## Alpha 1.2 — Historial y Progreso Android
+
+- [x] API móvil owner-only con historial por cursor, filtros y detalle sin N+1.
+- [x] Resumen 7/30/90/180/365/todo, ejercicios, puntos y comparación sin porcentaje engañoso con base cero.
+- [x] Volumen y mejores marcas deterministas solo para modos de carga comparables; ausencia explícita para modos mixtos.
+- [x] Room 2 por cuenta, migración preservadora, páginas/detalle/progreso estructurados y reconciliación por evento.
+- [x] Navegación Hoy/Historial/Progreso/Ajustes, filtros, paginación, detalles y gráficas Canvas con fallback textual.
+- [x] Integración con completion, pull, foreground, conectividad, WorkManager y single-flight existentes.
+- [x] Ejecutar y registrar `lintDebug`, dos pasadas JVM (39 tests), `assembleDebug` y `compileDebugAndroidTestKotlin` finales.
+- [x] Ejecutar y registrar compileall, suite backend completa (593 pasan, 3 omitidos) y `docker compose config --quiet` finales.
+- [ ] QA manual visual, offline, accesibilidad y matriz de tamaños; no aprobado en esta rama.
+
 ## Alpha 1.1 — Android Companion
 
 - [x] Proyecto Android Kotlin/Compose, wrapper fijado, variantes debug/release y CI sin publicación de artefactos.

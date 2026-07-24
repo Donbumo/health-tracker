@@ -4,6 +4,7 @@ import android.os.Build
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.focus.onFocusChanged
@@ -49,8 +51,9 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 private enum class Destination(val route: String, val label: String, val symbol: String) {
-    TODAY("today", "Hoy", "●"), HISTORY("history", "Historial", "◷"), SETTINGS("settings", "Ajustes", "⚙"),
-    WORKOUT("workout", "Entrenamiento", "▶")
+    TODAY("today", "Hoy", "●"), HISTORY("history", "Historial", "◷"), PROGRESS("progress", "Progreso", "↗"),
+    SETTINGS("settings", "Ajustes", "⚙"), WORKOUT("workout", "Entrenamiento", "▶"),
+    HISTORY_DETAIL("history_detail", "Sesión", ""), EXERCISE_DETAIL("exercise_detail", "Ejercicio", "")
 }
 
 @Composable
@@ -112,7 +115,7 @@ private fun LoginScreen(viewModel: CompanionViewModel, snackbar: SnackbarHostSta
         ) {
             item {
                 Text("Health Tracker", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
-                Text("Android Companion Alpha 1.1", style = MaterialTheme.typography.titleMedium)
+                Text("Android Companion Alpha 1.2", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
                 Text(
                     when (auth) {
@@ -193,8 +196,8 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            if (route != Destination.WORKOUT.route) NavigationBar {
-                listOf(Destination.TODAY, Destination.HISTORY, Destination.SETTINGS).forEach { destination ->
+            if (route !in setOf(Destination.WORKOUT.route, Destination.HISTORY_DETAIL.route, Destination.EXERCISE_DETAIL.route)) NavigationBar {
+                listOf(Destination.TODAY, Destination.HISTORY, Destination.PROGRESS, Destination.SETTINGS).forEach { destination ->
                     NavigationBarItem(
                         selected = route == destination.route,
                         onClick = { nav.navigate(destination.route) { launchSingleTop = true; popUpTo(Destination.TODAY.route) { saveState = true }; restoreState = true } },
@@ -205,8 +208,23 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
         },
     ) { padding ->
         NavHost(navController = nav, startDestination = Destination.TODAY.route, modifier = Modifier.padding(padding)) {
-            composable(Destination.TODAY.route) { TodayScreen(viewModel) { nav.navigate(Destination.WORKOUT.route) } }
-            composable(Destination.HISTORY.route) { HistoryScreen(viewModel) }
+            composable(Destination.TODAY.route) { TodayScreen(
+                viewModel,
+                openWorkout = { nav.navigate(Destination.WORKOUT.route) },
+                openProgress = { nav.navigate(Destination.PROGRESS.route) },
+            ) }
+            composable(Destination.HISTORY.route) { HistoryScreen(viewModel) { id ->
+                viewModel.openHistory(id); nav.navigate(Destination.HISTORY_DETAIL.route)
+            } }
+            composable(Destination.HISTORY_DETAIL.route) { HistoryDetailScreen(viewModel) {
+                viewModel.closeHistory(); nav.popBackStack()
+            } }
+            composable(Destination.PROGRESS.route) { ProgressScreen(viewModel) { id ->
+                viewModel.openProgressExercise(id); nav.navigate(Destination.EXERCISE_DETAIL.route)
+            } }
+            composable(Destination.EXERCISE_DETAIL.route) { ExerciseDetailScreen(viewModel) {
+                viewModel.closeProgressExercise(); nav.popBackStack()
+            } }
             composable(Destination.SETTINGS.route) { SettingsScreen(viewModel) }
             composable(Destination.WORKOUT.route) { WorkoutScreen(viewModel) { nav.popBackStack() } }
         }
@@ -214,7 +232,7 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
 }
 
 @Composable
-private fun TodayScreen(viewModel: CompanionViewModel, openWorkout: () -> Unit) {
+private fun TodayScreen(viewModel: CompanionViewModel, openWorkout: () -> Unit, openProgress: () -> Unit) {
     val preferences by viewModel.preferences.collectAsState()
     val profile by viewModel.profile.collectAsState()
     val connected by viewModel.connected.collectAsState()
@@ -228,6 +246,8 @@ private fun TodayScreen(viewModel: CompanionViewModel, openWorkout: () -> Unit) 
     val draft by viewModel.activeDraft.collectAsState()
     val downloaded by viewModel.downloadedDelivery.collectAsState()
     val history by viewModel.history.collectAsState()
+    val weekly by viewModel.weeklyProgress.collectAsState()
+    val recentRecord by viewModel.latestPersonalRecord.collectAsState()
     var showDiscardCorrupt by remember { mutableStateOf(false) }
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp).testTag("today_screen"),
@@ -331,6 +351,14 @@ private fun TodayScreen(viewModel: CompanionViewModel, openWorkout: () -> Unit) 
                 Text(readableDate(workout.scheduledForDate))
             } }
         } }
+        item {
+            Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Progreso reciente", style = MaterialTheme.typography.titleMedium)
+                Text("${weekly?.sessions ?: history.count { runCatching { java.time.Instant.parse(it.completedAt).isAfter(java.time.Instant.now().minusSeconds(7 * 86400L)) }.getOrDefault(false) }} sesiones en los últimos 7 días")
+                recentRecord?.let { Text("Mejor marca reciente: ${humanRecordType(it.type)} · ${it.value} ${it.unit}") }
+                TextButton(onClick = openProgress) { Text("Ver progreso") }
+            } }
+        }
         history.firstOrNull()?.let { session -> item {
             Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) {
                 Text("Última sesión", style = MaterialTheme.typography.titleMedium)
@@ -826,47 +854,262 @@ private fun MetricField(
 }
 
 @Composable
-private fun HistoryScreen(viewModel: CompanionViewModel) {
+private fun HistoryScreen(viewModel: CompanionViewModel, openDetail: (String) -> Unit) {
     val history by viewModel.history.collectAsState()
     val connected by viewModel.connected.collectAsState()
-    val syncInProgress by viewModel.syncInProgress.collectAsState()
+    val refreshing by viewModel.historyRefreshing.collectAsState()
+    val error by viewModel.historyError.collectAsState()
     val pending by viewModel.pendingCount.collectAsState()
+    val filters by viewModel.historyFilters.collectAsState()
+    val queryState by viewModel.historyQueryState.collectAsState()
+    val exercises by viewModel.progressExercises.collectAsState()
+    var dateFrom by rememberSaveable(filters.cacheKey) { mutableStateOf(filters.dateFrom.orEmpty()) }
+    var dateTo by rememberSaveable(filters.cacheKey) { mutableStateOf(filters.dateTo.orEmpty()) }
+    var exerciseId by rememberSaveable(filters.cacheKey) { mutableStateOf(filters.exercisePublicId) }
+    LaunchedEffect(Unit) { if (connected) viewModel.refreshHistory() }
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = 20.dp).testTag("history_screen"),
         contentPadding = PaddingValues(vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        item { Text("Sesiones recientes", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() }) }
+        item { Text("Historial", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() }) }
         item {
-            Text(
-                if (connected) "Historial guardado localmente y actualizado por sincronización."
-                else "Sin conexión: se muestra la copia guardada en este dispositivo.",
-            )
+            Text(if (connected) "Room muestra la copia local mientras se actualiza." else "Sin conexión: datos guardados en este dispositivo.")
             if (pending > 0) Text("Hay cambios pendientes; el historial se actualizará al sincronizar.")
             Button(
-                onClick = viewModel::syncNow,
-                enabled = connected && !syncInProgress,
+                onClick = { viewModel.refreshHistory() }, enabled = connected && !refreshing,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp),
-            ) { Text(if (syncInProgress) "Actualizando…" else "Actualizar historial") }
+            ) { Text(if (refreshing) "Actualizando…" else "Actualizar historial") }
         }
+        item {
+            Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Filtros", style = MaterialTheme.typography.titleMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(dateFrom, { dateFrom = it.take(10) }, label = { Text("Desde (AAAA-MM-DD)") }, modifier = Modifier.weight(1f), singleLine = true)
+                    OutlinedTextField(dateTo, { dateTo = it.take(10) }, label = { Text("Hasta (AAAA-MM-DD)") }, modifier = Modifier.weight(1f), singleLine = true)
+                }
+                if (exercises.isNotEmpty()) {
+                    Text("Ejercicio", style = MaterialTheme.typography.bodySmall)
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        exercises.take(20).forEach { exercise ->
+                            FilterChip(selected = exerciseId == exercise.publicId, onClick = { exerciseId = if (exerciseId == exercise.publicId) null else exercise.publicId }, label = { Text(exercise.name) })
+                        }
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { viewModel.setHistoryFilters(dateFrom, dateTo, exerciseId) }, enabled = !refreshing) { Text("Aplicar") }
+                    TextButton(onClick = { dateFrom = ""; dateTo = ""; exerciseId = null; viewModel.clearHistoryFilters() }) { Text("Limpiar") }
+                }
+            } }
+        }
+        error?.let { message -> item { Text("No se pudo actualizar: $message. Se conserva la caché.", color = MaterialTheme.colorScheme.error) } }
         if (history.isEmpty()) item {
-            Text(if (syncInProgress) "Buscando sesiones…" else "Aún no hay sesiones recientes guardadas.")
+            Text(if (refreshing) "Buscando sesiones…" else "No hay sesiones para estos filtros.")
         }
-        items(history, key = { it.id }) { session ->
-            var expanded by remember { mutableStateOf(false) }
-            Card(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth()) {
+        items(history, key = { it.publicId }) { session ->
+            Card(onClick = { openDetail(session.publicId) }, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(session.title, style = MaterialTheme.typography.titleMedium)
+                    Text(session.name, style = MaterialTheme.typography.titleMedium)
                     Text(readableInstant(session.completedAt))
-                    Text("${session.exerciseCount} ejercicios · ${session.setCount} series · ${session.totalLoadKg} kg")
-                    Text("${session.origin} · ${humanSyncStatus(session.syncStatus)}", style = MaterialTheme.typography.bodySmall)
+                    Text("${session.exerciseCount} ejercicios · ${session.setCount} series")
+                    Text(session.volumeKg?.let { "Volumen ${it} kg${if (session.volumePartial) " (parcial)" else ""}" } ?: "Volumen no comparable")
+                    Text("${session.source} · ${humanSyncStatus(session.syncStatus)}", style = MaterialTheme.typography.bodySmall)
                     Text(humanDuration(session.durationSeconds), style = MaterialTheme.typography.bodySmall)
-                    if (expanded) Text(session.summary.ifBlank { "Sin detalle adicional" })
                 }
             }
         }
-        item { Text("La app conserva una ventana reciente; no descarga todo el historial.", style = MaterialTheme.typography.bodySmall) }
+        if (queryState?.hasMore == true) item {
+            OutlinedButton(onClick = { viewModel.refreshHistory(reset = false) }, enabled = connected && !refreshing, modifier = Modifier.fillMaxWidth()) {
+                Text(if (refreshing) "Cargando…" else "Cargar más")
+            }
+        } else if (history.isNotEmpty()) item { Text("Fin del historial disponible.", style = MaterialTheme.typography.bodySmall) }
         item { Spacer(Modifier.height(72.dp)) }
     }
+}
+
+@Composable
+private fun HistoryDetailScreen(viewModel: CompanionViewModel, close: () -> Unit) {
+    val session by viewModel.selectedHistory.collectAsState()
+    val exercises by viewModel.selectedHistoryExercises.collectAsState()
+    val sets by viewModel.selectedHistorySets.collectAsState()
+    BackHandler(onBack = close)
+    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 20.dp), contentPadding = PaddingValues(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item { TextButton(onClick = close) { Text("← Historial") } }
+        val value = session
+        if (value == null) item { Text("Cargando detalle guardado…") } else {
+            item {
+                Text(value.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
+                Text(readableInstant(value.completedAt))
+                Text(humanDuration(value.durationSeconds))
+                Text("${value.source} · ${humanSyncStatus(value.syncStatus)}")
+                value.volumeKg?.let { Text("Volumen: $it kg${if (value.volumePartial) " (parcial)" else ""}") }
+                value.notes?.let { Text("Notas: $it") }
+                value.plannedWorkoutId?.let { Text("Vinculada al entrenamiento planificado") }
+            }
+            exercises.forEach { exercise ->
+                item {
+                    Text(exercise.name, style = MaterialTheme.typography.titleLarge)
+                    exercise.notes?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                }
+                items(sets.filter { it.exerciseOrder == exercise.exerciseOrder }, key = { "${it.exerciseOrder}:${it.setNumber}" }) { set ->
+                    Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text("Serie ${set.setNumber}", style = MaterialTheme.typography.titleMedium)
+                        Text(set.displayValue?.let { "$it ${set.displayUnit}" } ?: set.weightKg?.let { "$it kg" } ?: "Carga no disponible")
+                        Text("${set.reps} reps${set.rir?.let { " · RIR $it" }.orEmpty()}${set.rpe?.let { " · RPE $it" }.orEmpty()}")
+                        set.restSeconds?.let { Text("Descanso: $it s") }
+                        set.durationSeconds?.let { Text("Duración: $it s") }
+                        set.distanceMeters?.let { Text("Distancia: $it m") }
+                        Text("Modo: ${set.loadMode}", style = MaterialTheme.typography.bodySmall)
+                        set.notes?.let { Text("Notas: $it", style = MaterialTheme.typography.bodySmall) }
+                    } }
+                }
+            }
+            if (!value.detailCached) item { Text("El resumen está disponible offline; conecta para descargar el detalle completo.") }
+        }
+        item { Spacer(Modifier.height(32.dp)) }
+    }
+}
+
+@Composable
+private fun ProgressScreen(viewModel: CompanionViewModel, openExercise: (String) -> Unit) {
+    val range by viewModel.progressRange.collectAsState()
+    val summary by viewModel.progressSummary.collectAsState()
+    val exercises by viewModel.progressExercises.collectAsState()
+    val refreshing by viewModel.progressRefreshing.collectAsState()
+    val connected by viewModel.connected.collectAsState()
+    val error by viewModel.progressError.collectAsState()
+    val recentRecord by viewModel.latestPersonalRecord.collectAsState()
+    LaunchedEffect(Unit) { if (connected) viewModel.refreshProgress() }
+    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 20.dp).testTag("progress_screen"), contentPadding = PaddingValues(vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item { Text("Progreso", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() }) }
+        item {
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("7", "30", "90", "180", "365", "all").forEach { value ->
+                    FilterChip(selected = range == value, onClick = { viewModel.setProgressRange(value) }, label = { Text(if (value == "all") "Todo" else "$value días") })
+                }
+            }
+        }
+        item {
+            Text(if (connected) "Datos locales con actualización automática." else "Sin conexión: se muestra la última actualización guardada.")
+            OutlinedButton(onClick = viewModel::refreshProgress, enabled = connected && !refreshing) { Text(if (refreshing) "Actualizando…" else "Actualizar") }
+        }
+        error?.let { message -> item { Text("Actualización temporal fallida: $message", color = MaterialTheme.colorScheme.error) } }
+        summary?.let { metrics ->
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ProgressMetricCard("Sesiones", metrics.sessions.toString(), Modifier.weight(1f))
+                        ProgressMetricCard("Días", metrics.trainingDays.toString(), Modifier.weight(1f))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ProgressMetricCard("Series", metrics.completedSets.toString(), Modifier.weight(1f))
+                        ProgressMetricCard("Duración", humanDuration(metrics.durationSeconds), Modifier.weight(1f))
+                    }
+                    ProgressMetricCard("Volumen", metrics.volumeKg?.let { "$it kg${if (metrics.volumePartial) " · parcial" else ""}" } ?: "No comparable", Modifier.fillMaxWidth())
+                    metrics.comparisonJson?.let { Text("Comparación con el periodo anterior disponible; no se muestran porcentajes con base cero.", style = MaterialTheme.typography.bodySmall) }
+                }
+            }
+        } ?: item { Text(if (refreshing) "Calculando resumen…" else "No hay resumen guardado para este periodo.") }
+        recentRecord?.let { record -> item {
+            Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp)) {
+                Text("Mejor marca reciente", style = MaterialTheme.typography.titleMedium)
+                Text("${humanRecordType(record.type)} · ${record.value} ${record.unit}")
+                Text(readableDate(record.date), style = MaterialTheme.typography.bodySmall)
+            } }
+        } }
+        item { Text("Ejercicios", style = MaterialTheme.typography.titleLarge) }
+        if (exercises.isEmpty()) item { Text("Aún no hay datos suficientes para mostrar ejercicios.") }
+        items(exercises, key = { it.publicId }) { exercise ->
+            Card(onClick = { openExercise(exercise.publicId) }, modifier = Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(exercise.name, style = MaterialTheme.typography.titleMedium)
+                Text("${exercise.sessionCount} sesiones · ${exercise.setCount} series")
+                Text(exercise.bestLoadKg?.let { "Mejor carga: $it kg" } ?: "Carga no comparable")
+                Text(exercise.volumeKg?.let { "Volumen: $it kg${if (exercise.volumePartial) " (parcial)" else ""}" } ?: "Volumen no disponible")
+                Text(humanTrend(exercise.trend), style = MaterialTheme.typography.bodySmall)
+            } }
+        }
+        item { Spacer(Modifier.height(72.dp)) }
+    }
+}
+
+@Composable
+private fun ProgressMetricCard(label: String, value: String, modifier: Modifier) {
+    Card(modifier) { Column(Modifier.padding(14.dp)) { Text(label, style = MaterialTheme.typography.bodySmall); Text(value, style = MaterialTheme.typography.titleLarge) } }
+}
+
+@Composable
+private fun ExerciseDetailScreen(viewModel: CompanionViewModel, close: () -> Unit) {
+    val exercise by viewModel.selectedProgressExercise.collectAsState()
+    val points by viewModel.progressPoints.collectAsState()
+    val records by viewModel.personalRecords.collectAsState()
+    BackHandler(onBack = close)
+    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 20.dp), contentPadding = PaddingValues(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item { TextButton(onClick = close) { Text("← Progreso") } }
+        val value = exercise
+        if (value == null) item { Text("Cargando progreso guardado…") } else {
+            item {
+                Text(value.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
+                Text(value.lastPerformedAt?.let(::readableInstant) ?: "Sin sesiones en el periodo")
+                Text("${value.sessionCount} sesiones · ${value.setCount} series")
+                Text(value.bestLoadKg?.let { "Mejor carga: $it kg" } ?: "Mejor carga no comparable")
+                value.bestReps?.let { Text("Mejor serie: $it reps${value.bestRepsWeightKg?.let { weight -> " con $weight kg" }.orEmpty()}") }
+                Text(value.volumeKg?.let { "Volumen: $it kg${if (value.volumePartial) " (parcial)" else ""}" } ?: "Volumen no disponible")
+                Text(humanTrend(value.trend))
+            }
+            item { TrendChart("Mejor carga por fecha", points, { it.bestLoadKg?.toFloatOrNull() }, "kg") }
+            item { TrendChart("Volumen por sesión", points, { it.volumeKg?.toFloatOrNull() }, "kg") }
+            if (records.isNotEmpty()) item {
+                Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text("Mejores marcas", style = MaterialTheme.typography.titleMedium)
+                    records.forEach { Text("${humanRecordType(it.type)}: ${it.value} ${it.unit} · ${readableDate(it.date)}") }
+                } }
+            }
+            item { Text("Últimas sesiones", style = MaterialTheme.typography.titleLarge) }
+            items(points.asReversed().take(10), key = { it.sessionPublicId }) { point ->
+                Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp)) {
+                    Text(readableInstant(point.performedAt))
+                    Text("${point.setCount} series · ${point.volumeKg?.let { "$it kg" } ?: "volumen no comparable"}")
+                    Text("RIR ${point.averageRir ?: "—"} · RPE ${point.averageRpe ?: "—"}", style = MaterialTheme.typography.bodySmall)
+                } }
+            }
+        }
+        item { Spacer(Modifier.height(32.dp)) }
+    }
+}
+
+@Composable
+private fun TrendChart(
+    title: String,
+    points: List<io.healthtracker.companion.core.database.ProgressPointEntity>,
+    value: (io.healthtracker.companion.core.database.ProgressPointEntity) -> Float?,
+    unit: String,
+) {
+    val plotted = points.mapNotNull { point -> value(point)?.takeIf(Float::isFinite)?.let { point to it } }
+    val color = MaterialTheme.colorScheme.primary
+    val grid = MaterialTheme.colorScheme.outlineVariant
+    Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        if (plotted.isEmpty()) Text("Datos insuficientes para esta gráfica.") else {
+            val scale = requireNotNull(chartScale(plotted.map { it.second }))
+            val minimum = scale.minimum
+            val maximum = scale.maximum
+            val span = scale.span
+            Canvas(Modifier.fillMaxWidth().height(170.dp).semantics { contentDescription = "$title: ${plotted.size} puntos, de $minimum a $maximum $unit" }) {
+                drawLine(grid, Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = 2f)
+                val coordinates = plotted.mapIndexed { index, item ->
+                    val x = if (plotted.size == 1) size.width / 2f else size.width * index / (plotted.size - 1)
+                    val y = size.height - ((item.second - minimum) / span) * (size.height - 12f) - 6f
+                    Offset(x, y)
+                }
+                coordinates.zipWithNext().forEach { (start, end) -> drawLine(color, start, end, strokeWidth = 4f) }
+                coordinates.forEach { drawCircle(color, radius = 6f, center = it) }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(readableDate(plotted.first().first.date), style = MaterialTheme.typography.labelSmall)
+                Text(readableDate(plotted.last().first.date), style = MaterialTheme.typography.labelSmall)
+            }
+            Text("Resumen: ${plotted.size} ${if (plotted.size == 1) "punto" else "puntos"}; mínimo $minimum $unit y máximo $maximum $unit.", style = MaterialTheme.typography.bodySmall)
+        }
+    } }
 }
 
 @Composable

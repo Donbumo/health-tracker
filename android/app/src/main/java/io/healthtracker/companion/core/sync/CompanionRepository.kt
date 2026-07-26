@@ -9,10 +9,12 @@ import io.healthtracker.companion.core.database.*
 import io.healthtracker.companion.core.model.*
 import io.healthtracker.companion.core.network.ApiClient
 import io.healthtracker.companion.core.network.CanonicalJson
+import io.healthtracker.companion.core.planning.protectLocalPlanningState
 import io.healthtracker.companion.core.security.SecureTokenStore
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -29,6 +31,8 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -52,6 +56,13 @@ private data class HistoryParts(
     val sets: List<HistorySetEntity>,
 )
 
+private data class PlanningParts(
+    val plan: MobilePlanEntity,
+    val workouts: List<MobilePlanWorkoutEntity>,
+    val exercises: List<MobilePlanExerciseEntity>,
+    val sets: List<MobilePlanSetEntity>,
+)
+
 private const val DRAFT_LOG_TAG = "HealthTrackerDraft"
 
 class CompanionRepository(
@@ -62,6 +73,8 @@ class CompanionRepository(
 ) {
     private val dao = database.companionDao()
     private val syncMutex = Mutex()
+    private val planningSaveMutex = Mutex()
+    private val scheduleMutationMutex = Mutex()
     private var lastSyncFailure: Throwable? = null
     private val mutableSyncStatus = MutableStateFlow(SyncStatus.IDLE)
 
@@ -151,6 +164,8 @@ class CompanionRepository(
 
     fun observePlanned(scope: String): Flow<List<PlannedWorkoutEntity>> = dao.observePlanned(scope)
 
+    fun observePackages(scope: String): Flow<List<WorkoutPackageEntity>> = dao.observePackages(scope)
+
     fun observeActiveDraft(scope: String): Flow<WorkoutDraftEntity?> = dao.observeActiveDraft(scope).map { draft ->
         draft?.let { validateRecoveredDraft(it) }
     }
@@ -191,6 +206,580 @@ class CompanionRepository(
 
     fun observeLatestPersonalRecord(scope: String): Flow<PersonalRecordEntity?> =
         dao.observeLatestPersonalRecord(scope)
+
+    fun observeExerciseCatalog(scope: String, query: String): Flow<List<ExerciseCatalogEntity>> =
+        dao.observeCatalog(scope, "%${query.trim().lowercase()}%")
+
+    fun observePlans(scope: String, status: String = "active"): Flow<List<MobilePlanEntity>> = dao.observePlans(scope, status)
+
+    fun observePlan(scope: String, publicId: String): Flow<MobilePlanEntity?> =
+        dao.observePlan(scope, publicId)
+
+    fun observePlanWorkouts(scope: String, planId: String): Flow<List<MobilePlanWorkoutEntity>> =
+        dao.observePlanWorkouts(scope, planId)
+
+    fun observePlanWorkout(scope: String, publicId: String): Flow<MobilePlanWorkoutEntity?> =
+        dao.observePlanWorkout(scope, publicId)
+
+    fun observePlanExercises(scope: String, workoutId: String): Flow<List<MobilePlanExerciseEntity>> =
+        dao.observePlanExercises(scope, workoutId)
+
+    fun observePlanSets(scope: String, workoutId: String): Flow<List<MobilePlanSetEntity>> =
+        dao.observePlanSets(scope, workoutId)
+
+    fun observePlanningConflicts(scope: String): Flow<List<PlanningConflictEntity>> =
+        dao.observePlanningConflicts(scope)
+
+    suspend fun refreshExerciseCatalog(scope: String, query: String = "", reset: Boolean = true) {
+        val cacheKey = query.trim().lowercase()
+        val state = if (reset) null else dao.catalogState(scope, cacheKey)
+        if (!reset && state?.hasMore == false) return
+        val response = api.exerciseCatalog(cacheKey, state?.nextCursor)
+        val now = Instant.now().toString()
+        database.withTransaction {
+            dao.upsertCatalog(response.items.map {
+                ExerciseCatalogEntity(
+                    scope, it.publicId, it.name, it.name.lowercase(), it.aliases.joinToString("|"),
+                    it.selectable, it.archived, it.preferredLoadMode, it.preferredUnit, now,
+                )
+            })
+            dao.upsertCatalogState(
+                PlanningCatalogStateEntity(scope, cacheKey, response.nextCursor, response.hasMore, now),
+            )
+        }
+    }
+
+    suspend fun refreshPlans(scope: String, status: String = "active") {
+        val response = api.plans(status)
+        val hasLocalPlanningWork = dao.queuedActions(scope, 1_000).any {
+            it.actionType.startsWith("planning_")
+        }
+        val refreshable = mutableListOf<String>()
+        database.withTransaction {
+            response.items.forEach { summary ->
+                val local = dao.plan(scope, summary.publicId)
+                val protected = protectLocalPlanningState(local?.syncStatus, hasLocalPlanningWork)
+                if (!protected) {
+                    dao.upsertPlans(listOf(summary.toPlanEntity(scope, "synced")))
+                    refreshable += summary.publicId
+                }
+            }
+        }
+        refreshable.forEach { refreshPlan(scope, it) }
+    }
+
+    suspend fun refreshSchedule(
+        scope: String,
+        from: LocalDate = LocalDate.now().minusDays(180),
+        to: LocalDate = LocalDate.now().plusDays(180),
+    ) {
+        val remote = api.plannedWorkouts(from.toString(), to.toString())
+        val protectedIds = dao.queuedActions(scope, 1_000)
+            .filter { it.actionType in setOf("planning_schedule", "planning_schedule_patch", "planning_cancel_schedule") }
+            .mapTo(mutableSetOf(), PendingActionEntity::entityId)
+        database.withTransaction {
+            remote.forEach { value ->
+                val local = dao.planned(scope, value.id)
+                if (value.id !in protectedIds && local?.status !in setOf("locally_pending", "syncing", "conflict")) {
+                    dao.upsertPlanned(listOf(value.toEntity(scope)))
+                }
+            }
+        }
+    }
+
+    suspend fun refreshPlan(scope: String, publicId: String) {
+        val remote = api.plan(publicId)
+        val local = dao.plan(scope, publicId)
+        if (local?.syncStatus == "pending" || local?.syncStatus == "conflict") return
+        val parts = remote.toPlanParts(scope)
+        database.withTransaction { dao.replacePlan(parts.plan, parts.workouts, parts.exercises, parts.sets) }
+    }
+
+    suspend fun createPlanOffline(scope: String, name: String, description: String?): String {
+        val id = UUID.randomUUID().toString()
+        val now = Instant.now().toString()
+        val request = PlanCreateRequest(id, name.trim(), description?.trim()?.ifBlank { null })
+        val key = UUID.randomUUID().toString()
+        database.withTransaction {
+            dao.upsertPlans(
+                listOf(MobilePlanEntity(scope, id, request.name, request.description, "active", 1, null, null, "pending", now, now, null)),
+            )
+            enqueue(scope, "planning_plan_create", id, key, api.json.encodeToString(request))
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        return id
+    }
+
+    suspend fun editPlanOffline(
+        scope: String,
+        publicId: String,
+        name: String,
+        description: String?,
+        status: String? = null,
+    ) = planningSaveMutex.withLock {
+        val current = dao.plan(scope, publicId)
+            ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "La rutina no está disponible localmente.", false)
+        val now = Instant.now().toString()
+        val pendingCreate = dao.pendingAction(scope, publicId, "planning_plan_create")
+        val existingPatch = dao.pendingAction(scope, publicId, "planning_plan_patch")
+        val baseRevision = existingPatch?.let(::queuedRequest)
+            ?.get("base_revision")?.jsonPrimitive?.intOrNull ?: current.revision
+        val payload = buildJsonObject {
+            put("base_revision", baseRevision)
+            put("name", name.trim())
+            val normalizedDescription = description?.trim()?.ifBlank { null }
+            if (normalizedDescription == null) put("description", JsonNull) else put("description", normalizedDescription)
+            status?.let { put("status", it) }
+        }
+        database.withTransaction {
+            val foldedIntoCreate = pendingCreate != null && status == null
+            dao.upsertPlans(
+                listOf(
+                    current.copy(
+                        name = name.trim(), description = description?.trim()?.ifBlank { null },
+                        status = status ?: current.status,
+                        revision = if (foldedIntoCreate || existingPatch != null) current.revision else current.revision + 1,
+                        syncStatus = "pending", updatedAt = now,
+                        archivedAt = when (status) {
+                            "archived" -> now
+                            "active" -> null
+                            else -> current.archivedAt
+                        },
+                    ),
+                ),
+            )
+            when {
+                foldedIntoCreate -> {
+                    val createPayload = buildJsonObject {
+                        put("public_id", publicId)
+                        put("name", name.trim())
+                        val normalizedDescription = description?.trim()?.ifBlank { null }
+                        if (normalizedDescription == null) put("description", JsonNull) else put("description", normalizedDescription)
+                    }.toString()
+                    dao.updatePendingEntity(pendingCreate.withUpdatedPayload(createPayload))
+                }
+                existingPatch != null -> dao.updatePendingEntity(existingPatch.withUpdatedPayload(payload.toString()))
+                else -> enqueue(scope, "planning_plan_patch", publicId, UUID.randomUUID().toString(), payload.toString())
+            }
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    suspend fun createWorkoutOffline(scope: String, planId: String, name: String): String {
+        val plan = dao.plan(scope, planId)
+            ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "La rutina no está disponible localmente.", false)
+        val id = UUID.randomUUID().toString()
+        val now = Instant.now().toString()
+        val position = dao.planWorkouts(scope, planId).size + 1
+        val payload = buildJsonObject {
+            put("public_id", id)
+            put("base_revision", plan.revision)
+            put("name", name.trim())
+            put("exercises", buildJsonArray { })
+        }
+        database.withTransaction {
+            dao.upsertPlanWorkouts(
+                listOf(MobilePlanWorkoutEntity(scope, id, planId, name.trim(), null, position, null, 1, "pending", now, now)),
+            )
+            dao.upsertPlans(listOf(plan.copy(revision = plan.revision + 1, syncStatus = "pending", updatedAt = now)))
+            enqueue(scope, "planning_workout_create", planId, UUID.randomUUID().toString(), payload.toString())
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        return id
+    }
+
+    suspend fun duplicatePlanOffline(scope: String, sourcePlanId: String, name: String): String {
+        val source = dao.plan(scope, sourcePlanId)
+            ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "La rutina no está disponible localmente.", false)
+        val targetId = createPlanOffline(scope, name, source.description)
+        for (sourceWorkout in dao.planWorkouts(scope, sourcePlanId)) {
+            val targetWorkoutId = createWorkoutOffline(scope, targetId, sourceWorkout.name)
+            val sourceExercises = dao.planExercises(scope, sourceWorkout.publicId)
+            val sourceSets = dao.planSets(scope, sourceWorkout.publicId)
+            saveWorkoutOffline(
+                scope,
+                targetWorkoutId,
+                sourceWorkout.name,
+                sourceWorkout.notes,
+                sourceExercises.map { it.copy(workoutPublicId = targetWorkoutId) },
+                sourceSets.map { it.copy(workoutPublicId = targetWorkoutId) },
+            )
+        }
+        return targetId
+    }
+
+    suspend fun duplicateWorkoutOffline(scope: String, sourceWorkoutId: String): String {
+        val source = dao.planWorkout(scope, sourceWorkoutId)
+            ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "El entrenamiento no está disponible localmente.", false)
+        val targetId = createWorkoutOffline(scope, source.planPublicId, "${source.name} (copia)")
+        saveWorkoutOffline(
+            scope,
+            targetId,
+            "${source.name} (copia)",
+            source.notes,
+            dao.planExercises(scope, sourceWorkoutId).map { it.copy(workoutPublicId = targetId) },
+            dao.planSets(scope, sourceWorkoutId).map { it.copy(workoutPublicId = targetId) },
+        )
+        return targetId
+    }
+
+    suspend fun reorderWorkoutsOffline(scope: String, planId: String, orderedIds: List<String>) {
+        val plan = dao.plan(scope, planId)
+            ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "La rutina no está disponible localmente.", false)
+        val current = dao.planWorkouts(scope, planId).associateBy { it.publicId }
+        if (orderedIds.toSet() != current.keys || orderedIds.size != current.size) {
+            throw AppFailure(AppErrorCode.VALIDATION_ERROR, "El orden de entrenamientos no es válido.", false)
+        }
+        val now = Instant.now().toString()
+        val payload = buildJsonObject {
+            put("base_revision", plan.revision)
+            put("workout_order", buildJsonArray { orderedIds.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) } })
+        }
+        database.withTransaction {
+            dao.offsetPlanWorkoutPositions(scope, planId)
+            dao.upsertPlanWorkouts(orderedIds.mapIndexed { index, id -> current.getValue(id).copy(position = index + 1, revision = current.getValue(id).revision + 1, syncStatus = "pending", updatedAt = now) })
+            dao.upsertPlans(listOf(plan.copy(revision = plan.revision + 1, syncStatus = "pending", updatedAt = now)))
+            enqueue(scope, "planning_plan_patch", planId, UUID.randomUUID().toString(), payload.toString())
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    suspend fun scheduleWorkoutOffline(scope: String, workoutId: String, date: LocalDate, timezone: String): String =
+        scheduleMutationMutex.withLock {
+            val workout = dao.planWorkout(scope, workoutId)
+                ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "El entrenamiento no está disponible localmente.", false)
+            dao.pendingActionsByType(scope, "planning_schedule").firstOrNull { pending ->
+                val (queuedWorkoutId, request) = queuedSchedule(pending)
+                queuedWorkoutId == workoutId &&
+                    request["scheduled_for_date"]?.jsonPrimitive?.content == date.toString() &&
+                    request["timezone"]?.jsonPrimitive?.content == timezone
+            }?.let { return@withLock it.entityId }
+            val id = UUID.randomUUID().toString()
+            val now = Instant.now().toString()
+            val request = buildJsonObject {
+                put("public_id", id)
+                put("scheduled_for_date", date.toString())
+                put("timezone", timezone)
+            }
+            database.withTransaction {
+                dao.upsertPlanned(listOf(PlannedWorkoutEntity(scope, id, workout.planPublicId, "pending", date.toString(), timezone, "locally_pending", workout.name, 1, now, false, workoutId)))
+                enqueue(scope, "planning_schedule", id, UUID.randomUUID().toString(), scheduleQueuePayload(workoutId, request).toString())
+            }
+            SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+            id
+        }
+
+    suspend fun cancelScheduleOffline(scope: String, scheduledId: String) = scheduleMutationMutex.withLock {
+        val planned = dao.planned(scope, scheduledId)
+            ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "La programación no está disponible localmente.", false)
+        val pendingCreate = dao.pendingAction(scope, scheduledId, "planning_schedule")
+        if (pendingCreate != null && pendingCreate.attemptCount == 0 && pendingCreate.lastErrorCode == null) {
+            database.withTransaction {
+                dao.deletePending(pendingCreate.localId)
+                dao.deletePlanned(scope, scheduledId)
+            }
+            return@withLock
+        }
+        if (dao.pendingAction(scope, scheduledId, "planning_cancel_schedule") != null) return@withLock
+        val pendingPatch = dao.pendingAction(scope, scheduledId, "planning_schedule_patch")
+        val pendingPatchBase = pendingPatch?.let(::queuedRequest)
+            ?.get("base_revision")?.jsonPrimitive?.intOrNull
+        val canDiscardPatch = pendingPatch != null && pendingPatch.attemptCount == 0 && pendingPatch.lastErrorCode == null
+        val baseRevision = when {
+            pendingPatchBase == null -> planned.revision
+            canDiscardPatch -> pendingPatchBase
+            else -> pendingPatchBase + 1
+        }
+        val payload = buildJsonObject { put("base_revision", baseRevision) }
+        database.withTransaction {
+            if (canDiscardPatch) dao.deletePending(pendingPatch.localId)
+            dao.upsertPlanned(listOf(planned.copy(status = "cancelled", updatedAt = Instant.now().toString(), deleted = false)))
+            enqueue(scope, "planning_cancel_schedule", scheduledId, UUID.randomUUID().toString(), payload.toString())
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    suspend fun rescheduleWorkoutOffline(scope: String, scheduledId: String, date: LocalDate, timezone: String): String =
+        scheduleMutationMutex.withLock {
+            val planned = dao.planned(scope, scheduledId)
+                ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "La programación no está disponible localmente.", false)
+            if (planned.status in setOf("completed", "cancelled")) {
+                throw AppFailure(AppErrorCode.REVISION_CONFLICT, "La programación ya está finalizada.", false)
+            }
+            if (planned.scheduledForDate == date.toString() && planned.timezone == timezone) return@withLock scheduledId
+            val now = Instant.now().toString()
+            val pendingCreate = dao.pendingAction(scope, scheduledId, "planning_schedule")
+            if (pendingCreate != null && pendingCreate.attemptCount == 0 && pendingCreate.lastErrorCode == null) {
+                val (workoutId, oldRequest) = queuedSchedule(pendingCreate)
+                val request = JsonObject(oldRequest.toMutableMap().apply {
+                    this["scheduled_for_date"] = JsonPrimitive(date.toString())
+                    this["timezone"] = JsonPrimitive(timezone)
+                })
+                val payload = scheduleQueuePayload(workoutId, request).toString()
+                database.withTransaction {
+                    dao.upsertPlanned(listOf(planned.copy(scheduledForDate = date.toString(), timezone = timezone, status = "locally_pending", updatedAt = now)))
+                    dao.updatePendingEntity(pendingCreate.withUpdatedPayload(payload))
+                }
+                return@withLock scheduledId
+            }
+            val existingPatch = dao.pendingAction(scope, scheduledId, "planning_schedule_patch")
+            val existingPatchBase = existingPatch?.let(::queuedRequest)
+                ?.get("base_revision")?.jsonPrimitive?.intOrNull
+            val canCoalescePatch = existingPatch != null && existingPatch.attemptCount == 0 && existingPatch.lastErrorCode == null
+            val baseRevision = when {
+                existingPatchBase == null -> planned.revision
+                canCoalescePatch -> existingPatchBase
+                else -> existingPatchBase + 1
+            }
+            val payload = buildJsonObject {
+                put("base_revision", baseRevision)
+                put("scheduled_for_date", date.toString())
+                put("timezone", timezone)
+            }.toString()
+            database.withTransaction {
+                dao.upsertPlanned(listOf(planned.copy(scheduledForDate = date.toString(), timezone = timezone, status = "locally_pending", updatedAt = now)))
+                if (existingPatch == null || !canCoalescePatch) {
+                    enqueue(scope, "planning_schedule_patch", scheduledId, UUID.randomUUID().toString(), payload)
+                } else {
+                    dao.updatePendingEntity(existingPatch.withUpdatedPayload(payload))
+                }
+            }
+            SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+            scheduledId
+        }
+
+    suspend fun saveWorkoutOffline(
+        scope: String,
+        workoutId: String,
+        name: String,
+        notes: String?,
+        exercises: List<MobilePlanExerciseEntity>,
+        sets: List<MobilePlanSetEntity>,
+    ) = planningSaveMutex.withLock {
+        saveWorkoutOfflineLocked(scope, workoutId, name, notes, exercises, sets)
+    }
+
+    suspend fun updatePlanSetOffline(value: MobilePlanSetEntity) = planningSaveMutex.withLock {
+        val workout = dao.planWorkout(value.accountScope, value.workoutPublicId)
+            ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "El entrenamiento no está disponible localmente.", false)
+        val exercises = dao.planExercises(value.accountScope, value.workoutPublicId)
+        val sets = dao.planSets(value.accountScope, value.workoutPublicId)
+        if (sets.none { it.publicId == value.publicId }) return@withLock
+        saveWorkoutOfflineLocked(
+            value.accountScope,
+            value.workoutPublicId,
+            workout.name,
+            workout.notes,
+            exercises,
+            sets.map { if (it.publicId == value.publicId) value else it },
+        )
+    }
+
+    private suspend fun saveWorkoutOfflineLocked(
+        scope: String,
+        workoutId: String,
+        name: String,
+        notes: String?,
+        exercises: List<MobilePlanExerciseEntity>,
+        sets: List<MobilePlanSetEntity>,
+    ) {
+        val workout = dao.planWorkout(scope, workoutId)
+            ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "El entrenamiento no está disponible localmente.", false)
+        val plan = dao.plan(scope, workout.planPublicId)
+            ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "La rutina no está disponible localmente.", false)
+        val orderedExercises = exercises.sortedBy { it.position }.mapIndexed { index, item ->
+            item.copy(accountScope = scope, workoutPublicId = workoutId, position = index + 1)
+        }
+        val orderedSets = orderedExercises.flatMap { exercise ->
+            sets.filter { it.exercisePublicId == exercise.publicId }.sortedBy { it.setNumber }.mapIndexed { index, item ->
+                item.copy(accountScope = scope, workoutPublicId = workoutId, setNumber = index + 1)
+            }
+        }
+        val normalizedName = name.trim()
+        val normalizedNotes = notes?.trim()?.ifBlank { null }
+        val currentExercises = dao.planExercises(scope, workoutId)
+        val setOrder = compareBy<MobilePlanSetEntity>({ it.exercisePublicId }, { it.setNumber })
+        if (
+            workout.name == normalizedName &&
+            workout.notes == normalizedNotes &&
+            currentExercises == orderedExercises &&
+            dao.planSets(scope, workoutId).sortedWith(setOrder) == orderedSets.sortedWith(setOrder)
+        ) return
+        val pendingCreate = dao.pendingActionsByType(scope, "planning_workout_create").firstOrNull { pending ->
+            queuedRequest(pending)["public_id"]?.jsonPrimitive?.content == workoutId
+        }
+        val existingPatch = dao.pendingAction(scope, workoutId, "planning_workout_patch")
+        val baseRevision = existingPatch?.let(::queuedRequest)
+            ?.get("base_revision")?.jsonPrimitive?.intOrNull ?: workout.revision
+        val payload = workoutPatchPayload(baseRevision, normalizedName, normalizedNotes, orderedExercises, orderedSets)
+        val now = Instant.now().toString()
+        database.withTransaction {
+            dao.deletePlanSets(scope, workoutId)
+            dao.deletePlanExercises(scope, workoutId)
+            dao.upsertPlanExercises(orderedExercises)
+            dao.upsertPlanSets(orderedSets)
+            dao.upsertPlanWorkouts(
+                listOf(workout.copy(
+                    name = normalizedName,
+                    notes = normalizedNotes,
+                    revision = if (pendingCreate == null && existingPatch == null) workout.revision + 1 else workout.revision,
+                    syncStatus = "pending",
+                    updatedAt = now,
+                )),
+            )
+            dao.upsertPlans(listOf(plan.copy(
+                revision = if (pendingCreate == null && existingPatch == null) plan.revision + 1 else plan.revision,
+                syncStatus = "pending",
+                updatedAt = now,
+            )))
+            when {
+                pendingCreate != null -> {
+                    val createPayload = JsonObject(payload.toMutableMap().apply {
+                        remove("base_revision")
+                        this["base_revision"] = queuedRequest(pendingCreate).getValue("base_revision")
+                        this["public_id"] = JsonPrimitive(workoutId)
+                    }).toString()
+                    dao.updatePendingEntity(pendingCreate.withUpdatedPayload(createPayload))
+                }
+                existingPatch != null -> dao.updatePendingEntity(existingPatch.withUpdatedPayload(payload.toString()))
+                else -> enqueue(scope, "planning_workout_patch", workoutId, UUID.randomUUID().toString(), payload.toString())
+            }
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    suspend fun resolvePlanningConflictKeepRemote(scope: String, entityId: String) {
+        val conflict = dao.planningConflict(scope, entityId)
+        if (conflict?.entityType == "schedule" || conflict?.entityType == "package") {
+            val remote = try {
+                api.plannedWorkout(entityId)
+            } catch (failure: AppFailure) {
+                if (failure.serverCode == "not_found") null else throw failure
+            }
+            database.withTransaction {
+                dao.deletePendingForEntity(scope, entityId)
+                dao.deletePlanningConflict(scope, entityId)
+                if (remote == null) dao.deletePlanned(scope, entityId)
+                else dao.upsertPlanned(listOf(remote.toEntity(scope)))
+            }
+            return
+        }
+        val workout = dao.planWorkout(scope, entityId)
+        val planId = workout?.planPublicId ?: entityId
+        val remote = api.plan(planId)
+        val parts = remote.toPlanParts(scope)
+        database.withTransaction {
+            dao.deletePendingForEntity(scope, entityId)
+            dao.deletePlanningConflict(scope, entityId)
+            dao.replacePlan(parts.plan, parts.workouts, parts.exercises, parts.sets)
+        }
+    }
+
+    suspend fun retryPlanningConflict(scope: String, entityId: String) {
+        val pending = dao.queuedActions(scope, 100).firstOrNull { it.entityId == entityId && it.status == "conflict" }
+            ?: return
+        val remoteRevision = when (pending.actionType) {
+            "planning_plan_patch", "planning_workout_create" -> api.plan(pending.entityId).revision
+            "planning_workout_patch" -> api.planWorkout(pending.entityId).revision
+            "planning_schedule_patch", "planning_cancel_schedule" -> api.plannedWorkout(pending.entityId).revision
+            else -> throw AppFailure(
+                AppErrorCode.SUBMISSION_CONFLICT,
+                "Esta operación no puede reintentarse sin elegir la versión remota.",
+                false,
+            )
+        }
+        val original = api.json.parseToJsonElement(pending.payloadJson) as? JsonObject
+            ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "La operación local no puede recuperarse.", false)
+        val rebasedPayload = JsonObject(original.toMutableMap().apply {
+            this["base_revision"] = JsonPrimitive(remoteRevision)
+        }).toString()
+        val localWorkout = dao.planWorkout(scope, entityId)
+        val planId = localWorkout?.planPublicId ?: entityId
+        database.withTransaction {
+            dao.updatePendingEntity(
+                pending.copy(
+                    idempotencyKey = UUID.randomUUID().toString(),
+                    payloadJson = rebasedPayload,
+                    payloadHash = CanonicalJson.sha256(api.json.parseToJsonElement(rebasedPayload)),
+                    status = "pending",
+                    attemptCount = 0,
+                    notBeforeEpochMs = 0,
+                    lastErrorCode = null,
+                ),
+            )
+            dao.deletePlanningConflict(scope, entityId)
+            localWorkout?.let { dao.upsertPlanWorkouts(listOf(it.copy(syncStatus = "pending"))) }
+            dao.plan(scope, planId)?.let { dao.upsertPlans(listOf(it.copy(syncStatus = "pending"))) }
+            dao.planned(scope, entityId)?.let { dao.upsertPlanned(listOf(it.copy(status = "locally_pending"))) }
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    suspend fun duplicatePlanningConflict(scope: String, entityId: String): String {
+        val conflict = dao.planningConflict(scope, entityId)
+            ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "El conflicto ya no está disponible.", false)
+        val duplicatedId = when (conflict.entityType) {
+            "plan" -> {
+                val source = dao.plan(scope, entityId)
+                    ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "La copia local de la rutina no está disponible.", false)
+                duplicatePlanOffline(scope, entityId, "${source.name} (copia local)")
+            }
+            "workout" -> duplicateWorkoutOffline(scope, entityId)
+            else -> throw AppFailure(
+                AppErrorCode.VALIDATION_ERROR,
+                "Este conflicto no admite duplicación.",
+                false,
+            )
+        }
+        resolvePlanningConflictKeepRemote(scope, entityId)
+        return duplicatedId
+    }
+
+    private fun workoutPatchPayload(
+        baseRevision: Int,
+        name: String,
+        notes: String?,
+        exercises: List<MobilePlanExerciseEntity>,
+        sets: List<MobilePlanSetEntity>,
+    ): JsonObject = buildJsonObject {
+        put("base_revision", baseRevision)
+        put("name", name)
+        val normalizedNotes = notes?.trim()?.ifBlank { null }
+        if (normalizedNotes == null) put("notes", JsonNull) else put("notes", normalizedNotes)
+        put("exercises", buildJsonArray {
+            exercises.sortedBy { it.position }.forEach { exercise ->
+                add(buildJsonObject {
+                    put("id", exercise.publicId)
+                    exercise.catalogExerciseId?.let { put("exercise_id", it) }
+                    put("name", exercise.name)
+                    exercise.notes?.let { put("notes", it) }
+                    put("sets", buildJsonArray {
+                        sets.filter { it.exercisePublicId == exercise.publicId }.sortedBy { it.setNumber }.forEach { set ->
+                            add(buildJsonObject {
+                                put("id", set.publicId)
+                                set.reps?.let { put("reps", it) }
+                                set.repsMin?.let { put("reps_min", it) }
+                                set.repsMax?.let { put("reps_max", it) }
+                                set.weightKg?.let { put("weight_kg", it) }
+                                set.loadValue?.let { put("load_value", it) }
+                                put("load_unit", set.loadUnit)
+                                put("load_mode", set.loadMode)
+                                set.loadDetailsJson?.let {
+                                    put("load_details", api.json.parseToJsonElement(it))
+                                }
+                                set.rir?.let { put("rir", it) }
+                                set.rpe?.let { put("rpe", it) }
+                                set.restSeconds?.let { put("rest_seconds", it) }
+                                set.durationSeconds?.let { put("duration_seconds", it) }
+                                set.distanceMeters?.let { put("distance_m", it) }
+                                set.notes?.let { put("notes", it) }
+                            })
+                        }
+                    })
+                })
+            }
+        })
+    }
 
     suspend fun refreshHistory(scope: String, filters: HistoryFilters = HistoryFilters(), reset: Boolean = true) {
         val state = if (reset) null else dao.historyQueryState(scope, filters.cacheKey)
@@ -315,11 +904,45 @@ class CompanionRepository(
     }
 
     suspend fun downloadWorkout(scope: String, plannedId: String): String {
+        var planned = dao.planned(scope, plannedId)
+            ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "La programación no está disponible localmente.", false)
+        if (planned.status in setOf("locally_pending", "syncing")) {
+            synchronize(scope)
+            planned = dao.planned(scope, plannedId)
+                ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "La programación aún no existe en el servidor.", true)
+        }
+        var stalePackageId: String? = null
         dao.packageForPlanned(scope, plannedId)?.let { existing ->
             val delivery = dao.delivery(scope, existing.deliveryId)
-            if (delivery != null && existing.expiresAt?.let { Instant.parse(it).isAfter(Instant.now()) } != false) {
+            if (
+                delivery != null && existing.revision == planned.revision &&
+                existing.expiresAt?.let { Instant.parse(it).isAfter(Instant.now()) } != false
+            ) {
                 return existing.deliveryId
             }
+            val draft = dao.draft(scope, existing.deliveryId)
+            if (draft != null && draft.status !in setOf("completion_pending", "aborted_pending", "corrupt")) {
+                dao.upsertPlanningConflict(
+                    PlanningConflictEntity(
+                        scope,
+                        plannedId,
+                        "package",
+                        existing.revision,
+                        planned.revision,
+                        "package_revision_conflict:revision",
+                        "${existing.title} · ${existing.scheduledForDate}",
+                        "${planned.title} · ${planned.scheduledForDate}",
+                        Instant.now().toString(),
+                    ),
+                )
+                dao.upsertPlanned(listOf(planned.copy(status = "conflict")))
+                throw AppFailure(
+                    AppErrorCode.REVISION_CONFLICT,
+                    "Hay una versión más reciente, pero el entrenamiento activo conserva su descarga original.",
+                    false,
+                )
+            }
+            stalePackageId = existing.packageId
         }
         val key = UUID.randomUUID().toString()
         val delivery = api.createDelivery(DeliveryCreateRequest(plannedWorkoutId = plannedId), key)
@@ -349,6 +972,14 @@ class CompanionRepository(
                     set["distance_m"]?.jsonPrimitive?.content,
                     set["rest_seconds"]?.jsonPrimitive?.intOrNull,
                     set["target"]?.toString()?.take(500),
+                    set["weight_kg"]?.jsonPrimitive?.content,
+                    set["load_value"]?.jsonPrimitive?.content,
+                    set["load_unit"]?.jsonPrimitive?.content,
+                    set["load_mode"]?.jsonPrimitive?.content,
+                    set["rir"]?.jsonPrimitive?.content,
+                    set["rpe"]?.jsonPrimitive?.content,
+                    set["notes"]?.jsonPrimitive?.content,
+                    set["load_details"]?.toString(),
                 )
             }
         }
@@ -364,12 +995,14 @@ class CompanionRepository(
             val acknowledged = api.transition(delivery.id, "ack", ack, ackKey).toEntity(scope)
             database.withTransaction {
                 dao.upsertDelivery(listOf(acknowledged))
+                stalePackageId?.let { dao.deletePackage(scope, it) }
                 dao.replacePackage(packageEntity, exercises, sets)
             }
         } catch (failure: AppFailure) {
             if (!failure.retryable) throw failure
             database.withTransaction {
                 dao.upsertDelivery(listOf(delivery.toEntity(scope).copy(status = "acknowledged_pending", revision = delivery.revision + 1)))
+                stalePackageId?.let { dao.deletePackage(scope, it) }
                 dao.replacePackage(packageEntity, exercises, sets)
                 enqueue(scope, "companion_ack", delivery.id, ackKey, api.json.encodeToString(ack))
             }
@@ -649,6 +1282,10 @@ class CompanionRepository(
             )
             dao.replaceHistorySession(localHistory.session, localHistory.exercises, localHistory.sets)
             dao.upsertHistoryPages(listOf(HistoryPageEntity(scope, HistoryFilters().cacheKey, draft.clientEventId, -1)))
+            dao.planned(scope, packageEntity.plannedWorkoutId)?.let { planned ->
+                dao.upsertPlanned(listOf(planned.copy(status = "completed", updatedAt = completedAt.toString())))
+            }
+            refreshLocalProgressSummaries(scope, completedAt)
             true
         }
         if (queued) SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
@@ -727,6 +1364,8 @@ class CompanionRepository(
             refreshProgress(scope, "7")
             refreshProgress(scope, "30")
         }
+        runCatching { refreshPlans(scope) }
+        runCatching { refreshSchedule(scope) }
         preferences.setLastSyncAt(Instant.now().toString())
     }
 
@@ -778,6 +1417,9 @@ class CompanionRepository(
             // blocks later START/PROGRESS/COMPLETE operations instead of letting the
             // SQL readiness filter skip over a required transition.
             if (pending.status == "conflict" || pending.notBeforeEpochMs > System.currentTimeMillis()) return
+            if (pending.actionType.startsWith("planning_")) {
+                markPlanningSyncStatus(scope, pending, "syncing")
+            }
             try {
                 when (pending.actionType) {
                     "companion_ack" -> applyTransitionAndConfirm(scope, pending, "ack")
@@ -811,6 +1453,67 @@ class CompanionRepository(
                             dao.deletePending(pending.localId)
                         }
                     }
+                    "planning_plan_create" -> {
+                        api.createPlan(api.json.decodeFromString(pending.payloadJson), pending.idempotencyKey)
+                        dao.deletePending(pending.localId)
+                    }
+                    "planning_plan_patch" -> {
+                        api.patchPlan(pending.entityId, api.json.parseToJsonElement(pending.payloadJson) as JsonObject, pending.idempotencyKey)
+                        dao.deletePending(pending.localId)
+                    }
+                    "planning_workout_create" -> {
+                        api.createPlanWorkout(pending.entityId, api.json.parseToJsonElement(pending.payloadJson) as JsonObject, pending.idempotencyKey)
+                        dao.deletePending(pending.localId)
+                    }
+                    "planning_workout_patch" -> {
+                        api.patchPlanWorkout(pending.entityId, api.json.parseToJsonElement(pending.payloadJson) as JsonObject, pending.idempotencyKey)
+                        dao.deletePending(pending.localId)
+                    }
+                    "planning_schedule" -> {
+                        val (workoutId, request) = queuedSchedule(pending)
+                        val response = api.schedulePlanWorkout(workoutId, request, pending.idempotencyKey)
+                        database.withTransaction {
+                            dao.planned(scope, pending.entityId)?.let { local ->
+                                dao.upsertPlanned(listOf(local.copy(
+                                    scheduledForDate = response.scheduledForDate,
+                                    timezone = response.timezone,
+                                    status = response.status,
+                                    revision = response.revision,
+                                    updatedAt = Instant.now().toString(),
+                                )))
+                            }
+                            dao.deletePending(pending.localId)
+                        }
+                    }
+                    "planning_schedule_patch" -> {
+                        val response = api.reschedulePlannedWorkout(
+                            pending.entityId,
+                            queuedRequest(pending),
+                            pending.idempotencyKey,
+                        )
+                        database.withTransaction {
+                            dao.planned(scope, pending.entityId)?.let { local ->
+                                dao.upsertPlanned(listOf(local.copy(
+                                    scheduledForDate = response.scheduledForDate,
+                                    timezone = response.timezone,
+                                    status = response.status,
+                                    revision = response.revision,
+                                    updatedAt = response.updatedAt,
+                                )))
+                            }
+                            dao.deletePending(pending.localId)
+                        }
+                    }
+                    "planning_cancel_schedule" -> {
+                        api.cancelScheduledWorkout(pending.entityId, api.json.parseToJsonElement(pending.payloadJson) as JsonObject, pending.idempotencyKey)
+                        database.withTransaction {
+                            dao.deletePlanned(scope, pending.entityId)
+                            dao.deletePending(pending.localId)
+                        }
+                    }
+                }
+                if (pending.actionType.startsWith("planning_")) {
+                    markPlanningSyncStatus(scope, pending, "synced")
                 }
             } catch (failure: AppFailure) {
                 if (
@@ -819,6 +1522,10 @@ class CompanionRepository(
                     reconcileStartedPending(scope, pending)
                 ) continue
                 if (!failure.retryable) {
+                    if (pending.actionType.startsWith("planning_")) {
+                        markPlanningConflict(scope, pending, failure)
+                        markPlanningSyncStatus(scope, pending, "conflict")
+                    }
                     dao.updatePending(pending.localId, "conflict", failure.code.name.lowercase(), Long.MAX_VALUE)
                     throw failure
                 }
@@ -826,9 +1533,87 @@ class CompanionRepository(
                 dao.updatePending(
                     pending.localId, "pending", failure.code.name.lowercase(), System.currentTimeMillis() + delay,
                 )
+                if (pending.actionType.startsWith("planning_")) {
+                    markPlanningSyncStatus(scope, pending, "pending")
+                }
                 throw failure
             }
         }
+    }
+
+    private suspend fun markPlanningSyncStatus(scope: String, pending: PendingActionEntity, status: String) {
+        when (pending.actionType) {
+            "planning_plan_create", "planning_plan_patch" -> {
+                dao.plan(scope, pending.entityId)?.let { dao.upsertPlans(listOf(it.copy(syncStatus = status))) }
+            }
+            "planning_workout_create" -> {
+                dao.plan(scope, pending.entityId)?.let { dao.upsertPlans(listOf(it.copy(syncStatus = status))) }
+                val workoutId = runCatching {
+                    (api.json.parseToJsonElement(pending.payloadJson) as JsonObject)["public_id"]?.jsonPrimitive?.content
+                }.getOrNull()
+                workoutId?.let { dao.planWorkout(scope, it) }?.let {
+                    dao.upsertPlanWorkouts(listOf(it.copy(syncStatus = status)))
+                }
+            }
+            "planning_workout_patch" -> {
+                val workout = dao.planWorkout(scope, pending.entityId)
+                workout?.let { dao.upsertPlanWorkouts(listOf(it.copy(syncStatus = status))) }
+                workout?.let { dao.plan(scope, it.planPublicId) }?.let {
+                    dao.upsertPlans(listOf(it.copy(syncStatus = status)))
+                }
+            }
+            "planning_schedule", "planning_schedule_patch", "planning_cancel_schedule" -> {
+                dao.planned(scope, pending.entityId)?.let { local ->
+                    val visibleStatus = when (status) {
+                        "syncing" -> "syncing"
+                        "conflict" -> "conflict"
+                        "synced" -> if (pending.actionType == "planning_cancel_schedule") "cancelled" else "planned"
+                        else -> if (pending.actionType == "planning_cancel_schedule") "cancelled" else "locally_pending"
+                    }
+                    dao.upsertPlanned(listOf(local.copy(status = visibleStatus)))
+                }
+            }
+        }
+    }
+
+    private suspend fun markPlanningConflict(scope: String, pending: PendingActionEntity, failure: AppFailure) {
+        val localPlan = dao.plan(scope, pending.entityId)
+        val localWorkout = dao.planWorkout(scope, pending.entityId)
+        val localSchedule = dao.planned(scope, pending.entityId)
+        val remotePlanning = runCatching {
+            when {
+                localPlan != null -> api.plan(pending.entityId).let { it.name to it.revision }
+                localWorkout != null -> api.planWorkout(pending.entityId).let { it.name to it.revision }
+                else -> null
+            }
+        }.getOrNull()
+        val remoteSchedule = if (localSchedule != null) runCatching {
+            api.plannedWorkout(pending.entityId)
+        }.getOrNull() else null
+        val conflictType = when {
+            failure.serverCode == "resource_archived" -> "archived_remote"
+            failure.serverCode == "not_found" -> "deleted_or_unavailable"
+            failure.serverCode == "active_schedules" -> "schedule_date_conflict"
+            pending.actionType == "planning_schedule_patch" -> "schedule_date_conflict"
+            else -> "revision_conflict"
+        }
+        dao.upsertPlanningConflict(
+            PlanningConflictEntity(
+                scope,
+                pending.entityId,
+                when {
+                    localSchedule != null -> "schedule"
+                    localWorkout != null -> "workout"
+                    else -> "plan"
+                },
+                localSchedule?.revision ?: localWorkout?.revision ?: localPlan?.revision ?: 1,
+                remoteSchedule?.revision ?: remotePlanning?.second,
+                if (localSchedule != null) "$conflictType:scheduled_for_date" else conflictType,
+                localSchedule?.let { "${it.title} · ${it.scheduledForDate}" } ?: localWorkout?.name ?: localPlan?.name,
+                remoteSchedule?.let { "${it.title} · ${it.scheduledForDate}" } ?: remotePlanning?.first,
+                Instant.now().toString(),
+            ),
+        )
     }
 
     private suspend fun applyTransitionAndConfirm(scope: String, pending: PendingActionEntity, action: String) {
@@ -903,6 +1688,35 @@ class CompanionRepository(
             throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "No fue posible conservar la operación pendiente.", true)
         }
     }
+
+    private fun scheduleQueuePayload(workoutId: String, request: JsonObject): JsonObject = buildJsonObject {
+        put("workout_id", workoutId)
+        put("request", request)
+    }
+
+    private fun queuedRequest(pending: PendingActionEntity): JsonObject {
+        val root = api.json.parseToJsonElement(pending.payloadJson) as? JsonObject
+            ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "La operación pendiente no puede recuperarse.", false)
+        return root["request"] as? JsonObject ?: root
+    }
+
+    private fun queuedSchedule(pending: PendingActionEntity): Pair<String, JsonObject> {
+        val root = api.json.parseToJsonElement(pending.payloadJson) as? JsonObject
+            ?: throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "La programación pendiente no puede recuperarse.", false)
+        val request = root["request"] as? JsonObject ?: root
+        val workoutId = root["workout_id"]?.jsonPrimitive?.content ?: pending.entityId
+        return workoutId to request
+    }
+
+    private fun PendingActionEntity.withUpdatedPayload(payload: String): PendingActionEntity = copy(
+        idempotencyKey = if (attemptCount > 0 || lastErrorCode != null) UUID.randomUUID().toString() else idempotencyKey,
+        payloadJson = payload,
+        payloadHash = CanonicalJson.sha256(api.json.parseToJsonElement(payload)),
+        status = "pending",
+        attemptCount = 0,
+        notBeforeEpochMs = 0,
+        lastErrorCode = null,
+    )
 
     private suspend fun packageForDelivery(scope: String, deliveryId: String): WorkoutPackageEntity {
         return dao.packageForDelivery(scope, deliveryId)
@@ -1095,8 +1909,8 @@ class CompanionRepository(
 
     private fun PackageSetEntity.toInitialDraftSet(deliveryId: String, now: String) = DraftSetEntity(
         accountScope, deliveryId, exerciseOrder, setNumber, setNumber, reps ?: repsMin ?: 1,
-        null, null, "0", null, durationSeconds, distanceMeters, restSeconds,
-        null, null, false, now,
+        prescribedRir, prescribedRpe, prescribedWeightKg ?: "0", prescribedLoadDetailsJson,
+        durationSeconds, distanceMeters, restSeconds, prescribedNotes, null, false, now,
     )
 
     private companion object {
@@ -1110,7 +1924,30 @@ class CompanionRepository(
 
     private suspend fun applyBootstrap(scope: String, value: BootstrapResponse) {
         val device = value.device.deviceId
-        dao.upsertPlanned(value.plannedWorkouts.map { it.toEntity(scope) })
+        val protectedScheduleIds = dao.queuedActions(scope, 1_000)
+            .filter { it.actionType in setOf("planning_schedule", "planning_schedule_patch", "planning_cancel_schedule") }
+            .mapTo(mutableSetOf(), PendingActionEntity::entityId)
+        value.plannedWorkouts.forEach { remote ->
+            val local = dao.planned(scope, remote.id)
+            if (remote.id in protectedScheduleIds && local != null) {
+                dao.upsertPlanningConflict(
+                    PlanningConflictEntity(
+                        scope,
+                        remote.id,
+                        "schedule",
+                        local.revision,
+                        remote.revision,
+                        if (local.scheduledForDate != remote.scheduledForDate) "schedule_date_conflict:scheduled_for_date" else "revision_conflict:revision",
+                        "${local.title} · ${local.scheduledForDate}",
+                        "${remote.title} · ${remote.scheduledForDate}",
+                        Instant.now().toString(),
+                    ),
+                )
+                dao.upsertPlanned(listOf(local.copy(status = "conflict")))
+            } else {
+                dao.upsertPlanned(listOf(remote.toEntity(scope)))
+            }
+        }
         dao.upsertDelivery(value.companion.deliveries.map { it.toEntity(scope) })
         value.companion.profile?.let { dao.upsertProfile(it.toEntity(scope)) }
         dao.upsertRecent(value.completedWorkouts.map { it.toRecent(scope, "Servidor") })
@@ -1135,7 +1972,32 @@ class CompanionRepository(
         }
         val payload = change.payload ?: return
         when (change.entityType) {
-            "planned_workout" -> dao.upsertPlanned(listOf(api.json.decodeFromJsonElement(PlannedWorkoutDto.serializer(), payload).toEntity(scope)))
+            "planned_workout" -> {
+                val remote = api.json.decodeFromJsonElement(PlannedWorkoutDto.serializer(), payload)
+                val local = dao.planned(scope, remote.id)
+                val queued = dao.queuedActions(scope, 1_000).any {
+                    it.entityId == remote.id &&
+                        it.actionType in setOf("planning_schedule", "planning_schedule_patch", "planning_cancel_schedule")
+                }
+                if (local != null && queued && local.status in setOf("locally_pending", "syncing", "conflict", "cancelled")) {
+                    dao.upsertPlanningConflict(
+                        PlanningConflictEntity(
+                            scope,
+                            remote.id,
+                            "schedule",
+                            local.revision,
+                            remote.revision,
+                            if (local.scheduledForDate != remote.scheduledForDate) "schedule_date_conflict:scheduled_for_date" else "revision_conflict:revision",
+                            "${local.title} · ${local.scheduledForDate}",
+                            "${remote.title} · ${remote.scheduledForDate}",
+                            Instant.now().toString(),
+                        ),
+                    )
+                    dao.upsertPlanned(listOf(local.copy(status = "conflict")))
+                } else {
+                    dao.upsertPlanned(listOf(remote.toEntity(scope)))
+                }
+            }
             "completed_workout" -> {
                 val completed = api.json.decodeFromJsonElement(CompletedWorkoutDto.serializer(), payload)
                 dao.upsertRecent(listOf(completed.toRecent(scope, "Servidor")))
@@ -1145,6 +2007,21 @@ class CompanionRepository(
             }
             "companion_delivery" -> dao.upsertDelivery(listOf(api.json.decodeFromJsonElement(DeliveryDto.serializer(), payload).toEntity(scope)))
             "companion_profile" -> dao.upsertProfile(api.json.decodeFromJsonElement(CompanionProfileDto.serializer(), payload).toEntity(scope))
+            "training_plan" -> {
+                val remote = api.json.decodeFromJsonElement(MobilePlanDto.serializer(), payload)
+                val local = dao.plan(scope, remote.publicId)
+                if (local?.syncStatus == "pending" || local?.syncStatus == "conflict") {
+                    dao.upsertPlanningConflict(
+                        PlanningConflictEntity(
+                            scope, remote.publicId, "plan", local.revision, remote.revision,
+                            "remote_revision", local.name, remote.name, Instant.now().toString(),
+                        ),
+                    )
+                } else {
+                    val parts = remote.toPlanParts(scope)
+                    dao.replacePlan(parts.plan, parts.workouts, parts.exercises, parts.sets)
+                }
+            }
         }
     }
 
@@ -1155,6 +2032,7 @@ class CompanionRepository(
         val required = setOf(
             "offline_sync_push", "incremental_pull", "planned_workouts", "completed_workouts",
             "companion_delivery", "capability_negotiation", "progress_checkpoints", "workout_package",
+            "mobile_planning", "exercise_catalog",
         )
         if (required.any { value.capabilities[it] != true }) {
             throw AppFailure(AppErrorCode.SERVER_INCOMPATIBLE, "El servidor no ofrece todas las capacidades Android requeridas.", false)
@@ -1216,9 +2094,54 @@ class CompanionRepository(
             })
         })
 
+    private suspend fun refreshLocalProgressSummaries(scope: String, now: Instant) {
+        val sessions = dao.historySessions(scope)
+        val exercises = dao.historyExercises(scope)
+        val sets = dao.historySets(scope)
+        listOf(7, 30, 90, 180, 365, null).forEach { days ->
+            val selected = if (days == null) sessions else {
+                val cutoff = now.minus(days.toLong(), ChronoUnit.DAYS)
+                sessions.filter { session ->
+                    runCatching { Instant.parse(session.completedAt) >= cutoff }.getOrDefault(false)
+                }
+            }
+            val selectedIds = selected.mapTo(mutableSetOf(), HistorySessionEntity::publicId)
+            val selectedExercises = exercises.filter { it.sessionPublicId in selectedIds }
+            val selectedSets = sets.filter { it.sessionPublicId in selectedIds }
+            val totalVolume = selected.mapNotNull { it.volumeKg?.toBigDecimalOrNull() }
+                .fold(BigDecimal.ZERO, BigDecimal::add)
+            val completedDays = selected.mapNotNull { session ->
+                runCatching {
+                    Instant.parse(session.completedAt)
+                        .atZone(ZoneId.of(session.timezone))
+                        .toLocalDate()
+                }.getOrNull()
+            }.toSet().size
+            dao.upsertProgressSummary(
+                ProgressSummaryEntity(
+                    accountScope = scope,
+                    range = days?.toString() ?: "all",
+                    sessions = selected.size,
+                    trainingDays = completedDays,
+                    distinctExercises = selectedExercises
+                        .map { it.exercisePublicId ?: it.name.trim().lowercase() }
+                        .toSet().size,
+                    completedSets = selectedSets.size,
+                    totalReps = selectedSets.sumOf(HistorySetEntity::reps),
+                    volumeKg = totalVolume.takeIf { it.signum() != 0 || selected.any { item -> item.volumeKg != null } }
+                        ?.stripTrailingZeros()?.toPlainString(),
+                    volumePartial = selected.any(HistorySessionEntity::volumePartial),
+                    durationSeconds = selected.sumOf { it.durationSeconds ?: 0 },
+                    comparisonJson = null,
+                    updatedAt = now.toString(),
+                ),
+            )
+        }
+    }
+
     private fun PlannedWorkoutDto.toEntity(scope: String) = PlannedWorkoutEntity(
         scope, id, trainingPlanId, trainingPlanVersionId, scheduledForDate, timezone,
-        status, title, revision, updatedAt, deleted,
+        status, title, revision, updatedAt, deleted, snapshot["workout_id"]?.jsonPrimitive?.content,
     )
 
     private fun DeliveryDto.toEntity(scope: String) = DeliveryEntity(
@@ -1355,5 +2278,41 @@ class CompanionRepository(
     private fun PersonalRecordDto.toEntity(scope: String, range: String, exerciseId: String) = PersonalRecordEntity(
         scope, range, exerciseId, type, value, unit, date, sessionPublicId, setIndex,
     )
+
+    private fun MobilePlanDto.toPlanEntity(scope: String, syncStatus: String) = MobilePlanEntity(
+        scope, publicId, name, description, status, revision, activeVersionId, activeVersion,
+        syncStatus, createdAt, updatedAt, archivedAt,
+    )
+
+    private fun MobilePlanDto.toPlanParts(scope: String): PlanningParts {
+        val workoutRows = workouts.orEmpty().map {
+            MobilePlanWorkoutEntity(
+                scope, it.publicId, publicId, it.name, it.notes, it.position,
+                it.estimatedDurationSeconds, it.revision, "synced", it.createdAt, it.updatedAt,
+            )
+        }
+        val exerciseRows = workouts.orEmpty().flatMap { workout ->
+            workout.exercises.map {
+                MobilePlanExerciseEntity(
+                    scope, workout.publicId, it.id, it.exerciseId, it.name, it.notes, it.exerciseOrder,
+                )
+            }
+        }
+        val setRows = workouts.orEmpty().flatMap { workout ->
+            workout.exercises.flatMap { exercise ->
+                exercise.sets.map {
+                    MobilePlanSetEntity(
+                        scope, workout.publicId, exercise.id, it.id, it.setNumber,
+                        it.reps, it.repsMin, it.repsMax, it.weightKg, it.loadValue,
+                        it.loadUnit, it.loadMode,
+                        it.loadDetails?.let { details -> api.json.encodeToString(LoadDetailsDto.serializer(), details) },
+                        it.rir, it.rpe, it.restSeconds,
+                        it.durationSeconds, it.distanceMeters, it.notes,
+                    )
+                }
+            }
+        }
+        return PlanningParts(toPlanEntity(scope, "synced"), workoutRows, exerciseRows, setRows)
+    }
 
 }

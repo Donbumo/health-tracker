@@ -10,6 +10,8 @@ CAPABILITIES = {
     "offline_sync_push": True,
     "incremental_pull": True,
     "planned_workouts": True,
+    "mobile_planning": True,
+    "exercise_catalog": True,
     "completed_workouts": True,
     "watch_bridge": False,
     "fit_output": False,
@@ -41,7 +43,14 @@ def active_routine(user_id: int) -> dict | None:
     # API v1 deterministically exposes the most recently updated owned plan.
     plan = db.session.execute(
         db.select(TrainingPlan)
-        .where(TrainingPlan.user_id == user_id)
+        .join(
+            TrainingPlanVersion,
+            db.and_(
+                TrainingPlanVersion.training_plan_id == TrainingPlan.id,
+                TrainingPlanVersion.version_number == TrainingPlan.active_version_number,
+            ),
+        )
+        .where(TrainingPlan.user_id == user_id, TrainingPlan.status == "active")
         .order_by(TrainingPlan.updated_at.desc(), TrainingPlan.id.desc())
         .limit(1)
     ).scalar_one_or_none()

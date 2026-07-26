@@ -21,6 +21,16 @@ class UiFormattersTest {
         assertEquals("Guardado; sincronización pendiente", humanDraftStatus("pending_sync"))
         assertEquals("Requiere intervención", humanSyncStatus("conflict"))
         assertEquals("Estado no disponible", humanWorkoutStatus("unexpected_internal_code"))
+        assertEquals("guardado local, pendiente", humanPlanningSync("pending"))
+        assertEquals("sincronizando", humanPlanningSync("syncing"))
+        assertEquals("requiere atención", humanPlanningSync("conflict"))
+    }
+
+    @Test fun planningAndConflictEnumsAreNeverShownRaw() {
+        assertEquals("Programado en este dispositivo", humanWorkoutStatus("locally_pending"))
+        assertEquals("Sincronizando", humanWorkoutStatus("syncing"))
+        assertEquals("Requiere atención", humanWorkoutStatus("conflict"))
+        assertEquals("La fecha cambió en el servidor", humanPlanningConflict("schedule_date_conflict:scheduled_for_date"))
     }
 
     @Test fun datesAndDurationsAreReadableWithoutExposingRawInvalidValues() {

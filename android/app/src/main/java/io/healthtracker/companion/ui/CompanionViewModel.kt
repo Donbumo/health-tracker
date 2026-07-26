@@ -1,9 +1,12 @@
 package io.healthtracker.companion.ui
 
 import android.os.Build
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
 import io.healthtracker.companion.AppContainer
 import io.healthtracker.companion.core.config.ThemePreference
 import io.healthtracker.companion.core.config.UnitPreference
@@ -16,7 +19,15 @@ import io.healthtracker.companion.core.database.ProgressSummaryEntity
 import io.healthtracker.companion.core.database.ProgressExerciseEntity
 import io.healthtracker.companion.core.database.ProgressPointEntity
 import io.healthtracker.companion.core.database.PersonalRecordEntity
+import io.healthtracker.companion.core.database.ExerciseCatalogEntity
+import io.healthtracker.companion.core.database.MobilePlanEntity
+import io.healthtracker.companion.core.database.MobilePlanExerciseEntity
+import io.healthtracker.companion.core.database.MobilePlanSetEntity
+import io.healthtracker.companion.core.database.MobilePlanWorkoutEntity
+import io.healthtracker.companion.core.database.PlanningConflictEntity
 import io.healthtracker.companion.core.load.LoadPreview
+import io.healthtracker.companion.core.planning.reorderedIds
+import io.healthtracker.companion.core.planning.PlanningEditorState
 import io.healthtracker.companion.core.model.AppFailure
 import io.healthtracker.companion.core.model.AuthState
 import io.healthtracker.companion.core.model.LoadDetailsDto
@@ -26,7 +37,12 @@ import io.healthtracker.companion.core.sync.SyncScheduler
 import io.healthtracker.companion.core.sync.SyncTrigger
 import io.healthtracker.companion.core.sync.HistoryFilters
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.Instant
+import java.util.UUID
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -57,8 +73,12 @@ private sealed interface AutosaveCommand {
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class CompanionViewModel(private val container: AppContainer) : ViewModel() {
+class CompanionViewModel(
+    private val container: AppContainer,
+    private val savedStateHandle: SavedStateHandle = SavedStateHandle(),
+) : ViewModel() {
     private val repository = container.repository
+    private val planningEditorState = PlanningEditorState(savedStateHandle)
     private val mutableAuth = MutableStateFlow(AuthState.SIGNED_OUT)
     private val mutableProfile = MutableStateFlow<UserProfile?>(null)
     private val mutableBusy = MutableStateFlow(false)
@@ -77,6 +97,12 @@ class CompanionViewModel(private val container: AppContainer) : ViewModel() {
     private val mutableProgressRefreshing = MutableStateFlow(false)
     private val mutableProgressError = MutableStateFlow<String?>(null)
     private val mutableSelectedExerciseId = MutableStateFlow<String?>(null)
+    private val mutableSelectedPlanId = planningEditorState.planId
+    private val mutableSelectedPlanWorkoutId = planningEditorState.workoutId
+    private val mutableCatalogQuery = MutableStateFlow("")
+    private val mutablePlanningRefreshing = MutableStateFlow(false)
+    private val mutableShowArchivedPlans = MutableStateFlow(false)
+    private var catalogSearchJob: Job? = null
     private val serializer = Json { explicitNulls = false; encodeDefaults = true }
     private val autosaveController: DebouncedAutosave<AutosaveCommand>
 
@@ -100,6 +126,11 @@ class CompanionViewModel(private val container: AppContainer) : ViewModel() {
     val progressRefreshing: StateFlow<Boolean> = mutableProgressRefreshing
     val progressError: StateFlow<String?> = mutableProgressError
     val selectedExerciseId: StateFlow<String?> = mutableSelectedExerciseId
+    val selectedPlanId: StateFlow<String?> = mutableSelectedPlanId
+    val selectedPlanWorkoutId: StateFlow<String?> = mutableSelectedPlanWorkoutId
+    val catalogQuery: StateFlow<String> = mutableCatalogQuery
+    val planningRefreshing: StateFlow<Boolean> = mutablePlanningRefreshing
+    val showArchivedPlans: StateFlow<Boolean> = mutableShowArchivedPlans
     val preferences = container.preferences.values.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000),
         io.healthtracker.companion.core.config.AppPreferences(deviceId = ""),
@@ -113,12 +144,27 @@ class CompanionViewModel(private val container: AppContainer) : ViewModel() {
         if (value == null) flowOf(emptyList()) else repository.observePlanned(value)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val today = planned.mapLatest { values ->
-        values.firstOrNull { it.scheduledForDate == LocalDate.now().toString() && it.status in setOf("planned", "in_progress") }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    val planningToday = mutableProfile.mapLatest { current ->
+        val zone = runCatching { current?.timezone?.let(ZoneId::of) ?: ZoneId.systemDefault() }
+            .getOrDefault(ZoneId.systemDefault())
+        LocalDate.now(zone)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LocalDate.now())
 
-    val nextWorkout = planned.mapLatest { values ->
-        values.firstOrNull { it.scheduledForDate > LocalDate.now().toString() && it.status == "planned" }
+    val todayWorkouts = combine(planned, planningToday) { values, operationalDate ->
+        values.filter {
+            it.scheduledForDate == operationalDate.toString() &&
+                it.status in setOf("planned", "locally_pending", "syncing", "in_progress", "completed", "conflict")
+        }.sortedBy { if (it.status == "completed") 1 else 0 }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val today = todayWorkouts.mapLatest { it.firstOrNull() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val nextWorkout = combine(planned, planningToday) { values, operationalDate ->
+        values.firstOrNull {
+            it.scheduledForDate > operationalDate.toString() &&
+                it.status in setOf("planned", "locally_pending", "syncing")
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val activeDraft = scope.flatMapLatest { value ->
@@ -180,6 +226,42 @@ class CompanionViewModel(private val container: AppContainer) : ViewModel() {
     val latestPersonalRecord = scope.flatMapLatest { account ->
         if (account == null) flowOf(null) else repository.observeLatestPersonalRecord(account)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val plans = combine(scope, mutableShowArchivedPlans) { account, archived -> account to archived }.flatMapLatest { (account, archived) ->
+        if (account == null) flowOf(emptyList()) else repository.observePlans(account, if (archived) "archived" else "active")
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val downloadedPackages = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else repository.observePackages(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val selectedPlan = combine(scope, mutableSelectedPlanId) { account, id -> account to id }.flatMapLatest { (account, id) ->
+        if (account == null || id == null) flowOf(null) else repository.observePlan(account, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val planWorkouts = combine(scope, mutableSelectedPlanId) { account, id -> account to id }.flatMapLatest { (account, id) ->
+        if (account == null || id == null) flowOf(emptyList()) else repository.observePlanWorkouts(account, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val selectedPlanWorkout = combine(scope, mutableSelectedPlanWorkoutId) { account, id -> account to id }.flatMapLatest { (account, id) ->
+        if (account == null || id == null) flowOf(null) else repository.observePlanWorkout(account, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val planExercises = combine(scope, mutableSelectedPlanWorkoutId) { account, id -> account to id }.flatMapLatest { (account, id) ->
+        if (account == null || id == null) flowOf(emptyList()) else repository.observePlanExercises(account, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val planSets = combine(scope, mutableSelectedPlanWorkoutId) { account, id -> account to id }.flatMapLatest { (account, id) ->
+        if (account == null || id == null) flowOf(emptyList()) else repository.observePlanSets(account, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val exerciseCatalog = combine(scope, mutableCatalogQuery) { account, query -> account to query }.flatMapLatest { (account, query) ->
+        if (account == null) flowOf(emptyList()) else repository.observeExerciseCatalog(account, query)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val planningConflicts = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else repository.observePlanningConflicts(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val draftSets = activeDraft.flatMapLatest { draft ->
         if (draft == null) flowOf(emptyList()) else repository.observeDraftSets(draft.accountScope, draft.deliveryId)
@@ -269,21 +351,31 @@ class CompanionViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun downloadToday() {
+        val plannedId = today.value?.id ?: return
+        downloadScheduled(plannedId)
+    }
+
+    fun downloadScheduled(plannedId: String) {
         if (!mutableDownloadInProgress.compareAndSet(expect = false, update = true)) return
         action(showBusy = false, onFinally = { mutableDownloadInProgress.value = false }) {
             val account = preferences.value.accountScope ?: return@action
-            val workout = today.value ?: return@action
-            repository.downloadWorkout(account, workout.id)
+            repository.downloadWorkout(account, plannedId)
             mutableMessage.value = "Entrenamiento descargado y verificado."
         }
     }
 
     fun startToday(onStarted: () -> Unit) {
+        val plannedId = today.value?.id ?: return
+        startScheduled(plannedId, onStarted)
+    }
+
+    fun startScheduled(plannedId: String, onStarted: () -> Unit) {
         if (!mutableStartInProgress.compareAndSet(expect = false, update = true)) return
         action(onFinally = { mutableStartInProgress.value = false }) {
             val account = preferences.value.accountScope ?: return@action
-            val delivery = downloadedDelivery.value ?: return@action
-            repository.startWorkout(account, delivery)
+            val deliveryId = downloadedPackages.value.firstOrNull { it.plannedWorkoutId == plannedId }?.deliveryId
+                ?: return@action
+            repository.startWorkout(account, deliveryId)
             mutableMessage.value = "Entrenamiento listo para uso offline."
             onStarted()
         }
@@ -367,6 +459,260 @@ class CompanionViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun closeProgressExercise() { mutableSelectedExerciseId.value = null }
+
+    fun refreshPlanning() {
+        if (!mutablePlanningRefreshing.compareAndSet(false, true)) return
+        viewModelScope.launch {
+            try {
+                val account = preferences.value.accountScope ?: return@launch
+                repository.refreshPlans(account)
+                repository.refreshSchedule(account)
+                repository.refreshExerciseCatalog(account, mutableCatalogQuery.value)
+            } catch (failure: AppFailure) {
+                mutableMessage.value = failure.userMessage
+            } finally {
+                mutablePlanningRefreshing.value = false
+            }
+        }
+    }
+
+    fun searchExercises(query: String) {
+        mutableCatalogQuery.value = query.take(120)
+        catalogSearchJob?.cancel()
+        if (connected.value) catalogSearchJob = viewModelScope.launch {
+            delay(300)
+            val requestedQuery = mutableCatalogQuery.value
+            runCatching {
+                preferences.value.accountScope?.let { repository.refreshExerciseCatalog(it, requestedQuery) }
+            }.onFailure { if (it is AppFailure) mutableMessage.value = it.userMessage }
+        }
+    }
+
+    fun loadMoreExercises() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        repository.refreshExerciseCatalog(account, mutableCatalogQuery.value, reset = false)
+    }
+
+    fun selectPlan(id: String?) { planningEditorState.selectPlan(id) }
+    fun selectPlanWorkout(id: String?) { planningEditorState.selectWorkout(id) }
+    fun showArchivedPlans(show: Boolean) {
+        mutableShowArchivedPlans.value = show
+        if (show && connected.value) viewModelScope.launch {
+            preferences.value.accountScope?.let { account ->
+                runCatching { repository.refreshPlans(account, "archived") }
+                    .onFailure { if (it is AppFailure) mutableMessage.value = it.userMessage }
+            }
+        }
+    }
+
+    fun createPlan(name: String, description: String? = null, onCreated: (String) -> Unit = {}) = action {
+        val account = preferences.value.accountScope ?: return@action
+        val id = repository.createPlanOffline(account, name, description)
+        selectPlan(id)
+        mutableMessage.value = "Rutina guardada en este dispositivo."
+        onCreated(id)
+    }
+
+    fun editSelectedPlan(name: String, description: String?) = action(showBusy = false) {
+        persistSelectedPlan(name, description)
+    }
+
+    fun flushSelectedPlan(name: String, description: String?, onFlushed: () -> Unit = {}) = action(showBusy = false) {
+        persistSelectedPlan(name, description)
+        onFlushed()
+    }
+
+    private suspend fun persistSelectedPlan(name: String, description: String?) {
+        val account = preferences.value.accountScope ?: return
+        val plan = selectedPlan.value ?: return
+        if (name.isBlank() || (name == plan.name && description?.trim()?.ifBlank { null } == plan.description)) return
+        repository.editPlanOffline(account, plan.publicId, name, description)
+    }
+
+    fun archiveSelectedPlan(onArchived: () -> Unit = {}) = action {
+        val account = preferences.value.accountScope ?: return@action
+        val plan = selectedPlan.value ?: return@action
+        if (planned.value.any { it.planId == plan.publicId && it.status in setOf("planned", "locally_pending", "syncing", "in_progress") }) {
+            throw AppFailure(
+                io.healthtracker.companion.core.model.AppErrorCode.REVISION_CONFLICT,
+                "Cancela las programaciones activas antes de archivar la rutina.",
+                false,
+            )
+        }
+        repository.editPlanOffline(account, plan.publicId, plan.name, plan.description, "archived")
+        selectPlan(null)
+        mutableMessage.value = "Rutina archivada."
+        onArchived()
+    }
+
+    fun restoreSelectedPlan() = action {
+        val account = preferences.value.accountScope ?: return@action
+        val plan = selectedPlan.value ?: return@action
+        repository.editPlanOffline(account, plan.publicId, plan.name, plan.description, "active")
+        mutableMessage.value = "Rutina restaurada."
+    }
+
+    fun duplicateSelectedPlan() = action {
+        val account = preferences.value.accountScope ?: return@action
+        val plan = selectedPlan.value ?: return@action
+        selectPlan(repository.duplicatePlanOffline(account, plan.publicId, "${plan.name} (copia)"))
+        mutableMessage.value = "Copia de la rutina guardada."
+    }
+
+    fun createPlanWorkout(name: String, onCreated: (String) -> Unit = {}) = action {
+        val account = preferences.value.accountScope ?: return@action
+        val plan = selectedPlan.value ?: return@action
+        val id = repository.createWorkoutOffline(account, plan.publicId, name)
+        selectPlanWorkout(id)
+        onCreated(id)
+    }
+
+    fun duplicateSelectedPlanWorkout() = action {
+        val account = preferences.value.accountScope ?: return@action
+        val workout = selectedPlanWorkout.value ?: return@action
+        selectPlanWorkout(repository.duplicateWorkoutOffline(account, workout.publicId))
+        mutableMessage.value = "Entrenamiento duplicado."
+    }
+
+    fun movePlanWorkout(id: String, delta: Int) = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val plan = selectedPlan.value ?: return@action
+        val ids = reorderedIds(planWorkouts.value.map { it.publicId }, id, delta) ?: return@action
+        repository.reorderWorkoutsOffline(account, plan.publicId, ids)
+    }
+
+    fun saveSelectedPlanWorkout(name: String, notes: String?) = action(showBusy = false) {
+        persistPlanWorkout(name, notes, planExercises.value, planSets.value)
+    }
+
+    fun flushSelectedPlanWorkout(name: String, notes: String?, onFlushed: () -> Unit = {}) = action(showBusy = false) {
+        persistPlanWorkout(name, notes, planExercises.value, planSets.value)
+        onFlushed()
+    }
+
+    fun addCatalogExercise(item: ExerciseCatalogEntity) = addCatalogExercises(listOf(item))
+
+    fun addCatalogExercises(items: List<ExerciseCatalogEntity>) = action(showBusy = false) {
+        val workout = selectedPlanWorkout.value ?: return@action
+        val current = planExercises.value
+        val additions = items.distinctBy { it.publicId }.filter { item ->
+            item.selectable && current.none { it.catalogExerciseId == item.publicId }
+        }
+        if (additions.isEmpty()) return@action
+        val newExercises = mutableListOf<MobilePlanExerciseEntity>()
+        val newSets = mutableListOf<MobilePlanSetEntity>()
+        additions.forEachIndexed { index, item ->
+            val exerciseId = UUID.randomUUID().toString()
+            newExercises += MobilePlanExerciseEntity(
+                workout.accountScope, workout.publicId, exerciseId, item.publicId, item.name, null, current.size + index + 1,
+            )
+            val loadMode = item.preferredLoadMode ?: "direct_total"
+            newSets += MobilePlanSetEntity(
+                workout.accountScope, workout.publicId, exerciseId, UUID.randomUUID().toString(), 1,
+                if (loadMode == "duration_distance") null else 8, null, null, null, null,
+                item.preferredUnit ?: "kg", loadMode, null, null, null, 90,
+                if (loadMode == "duration_distance") 600 else null, null, null,
+            )
+        }
+        persistPlanWorkout(workout.name, workout.notes, current + newExercises, planSets.value + newSets)
+    }
+
+    fun removePlanExercise(id: String) = action(showBusy = false) {
+        val workout = selectedPlanWorkout.value ?: return@action
+        val remaining = planExercises.value.filterNot { it.publicId == id }.mapIndexed { index, item -> item.copy(position = index + 1) }
+        persistPlanWorkout(workout.name, workout.notes, remaining, planSets.value.filterNot { it.exercisePublicId == id })
+    }
+
+    fun duplicatePlanExercise(id: String) = action(showBusy = false) {
+        val workout = selectedPlanWorkout.value ?: return@action
+        val source = planExercises.value.firstOrNull { it.publicId == id } ?: return@action
+        val newId = UUID.randomUUID().toString()
+        val copy = source.copy(publicId = newId, name = "${source.name} (copia)", position = planExercises.value.size + 1)
+        val copiedSets = planSets.value.filter { it.exercisePublicId == id }.map {
+            it.copy(exercisePublicId = newId, publicId = UUID.randomUUID().toString())
+        }
+        persistPlanWorkout(workout.name, workout.notes, planExercises.value + copy, planSets.value + copiedSets)
+    }
+
+    fun movePlanExercise(id: String, delta: Int) = action(showBusy = false) {
+        val workout = selectedPlanWorkout.value ?: return@action
+        val values = planExercises.value.toMutableList()
+        val from = values.indexOfFirst { it.publicId == id }
+        val to = from + delta
+        if (from < 0 || to !in values.indices) return@action
+        val moved = values.removeAt(from)
+        values.add(to, moved)
+        persistPlanWorkout(workout.name, workout.notes, values.mapIndexed { index, item -> item.copy(position = index + 1) }, planSets.value)
+    }
+
+    fun addPlanSet(exerciseId: String) = action(showBusy = false) {
+        val workout = selectedPlanWorkout.value ?: return@action
+        val previous = planSets.value.filter { it.exercisePublicId == exerciseId }.maxByOrNull { it.setNumber }
+        val next = previous?.copy(publicId = UUID.randomUUID().toString(), setNumber = previous.setNumber + 1)
+            ?: MobilePlanSetEntity(workout.accountScope, workout.publicId, exerciseId, UUID.randomUUID().toString(), 1, 8, null, null, null, null, "kg", "direct_total", null, null, null, 90, null, null, null)
+        persistPlanWorkout(workout.name, workout.notes, planExercises.value, planSets.value + next)
+    }
+
+    fun deletePlanSet(setId: String) = action(showBusy = false) {
+        val workout = selectedPlanWorkout.value ?: return@action
+        val target = planSets.value.firstOrNull { it.publicId == setId } ?: return@action
+        val remaining = planSets.value.filterNot { it.publicId == setId }.map {
+            if (it.exercisePublicId == target.exercisePublicId && it.setNumber > target.setNumber) it.copy(setNumber = it.setNumber - 1) else it
+        }
+        persistPlanWorkout(workout.name, workout.notes, planExercises.value, remaining)
+    }
+
+    fun updatePlanSet(value: MobilePlanSetEntity) = action(showBusy = false) {
+        repository.updatePlanSetOffline(value)
+    }
+
+    fun scheduleSelectedWorkout(date: LocalDate) = action {
+        val account = preferences.value.accountScope ?: return@action
+        val workout = selectedPlanWorkout.value ?: return@action
+        repository.scheduleWorkoutOffline(account, workout.publicId, date, planningTimezone())
+        mutableMessage.value = "Entrenamiento programado para $date."
+    }
+
+    fun cancelScheduledWorkout(id: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        repository.cancelScheduleOffline(account, id)
+        mutableMessage.value = "Programación cancelada."
+    }
+
+    fun rescheduleWorkout(id: String, date: LocalDate) = action {
+        val account = preferences.value.accountScope ?: return@action
+        repository.rescheduleWorkoutOffline(account, id, date, planningTimezone())
+        mutableMessage.value = "Programación cambiada al $date."
+    }
+
+    fun keepRemoteConflict(entityId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        repository.resolvePlanningConflictKeepRemote(account, entityId)
+    }
+
+    fun retryPlanningConflict(entityId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        repository.retryPlanningConflict(account, entityId)
+    }
+
+    fun duplicatePlanningConflict(entityId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        repository.duplicatePlanningConflict(account, entityId)
+        mutableMessage.value = "La copia local se conservó como un recurso nuevo."
+    }
+
+    private fun planningTimezone(): String = profile.value?.timezone ?: ZoneId.systemDefault().id
+
+    private suspend fun persistPlanWorkout(
+        name: String,
+        notes: String?,
+        exercises: List<MobilePlanExerciseEntity>,
+        sets: List<MobilePlanSetEntity>,
+    ) {
+        val account = preferences.value.accountScope ?: return
+        val workout = selectedPlanWorkout.value ?: return
+        repository.saveWorkoutOffline(account, workout.publicId, name, notes, exercises, sets)
+    }
 
     fun saveSet(value: DraftSetEntity) = action(showBusy = false) { repository.saveSet(value) }
 
@@ -496,6 +842,8 @@ class CompanionViewModel(private val container: AppContainer) : ViewModel() {
     fun logout(revoke: Boolean = false, localOnly: Boolean = false) = action {
         val account = preferences.value.accountScope ?: return@action
         if (localOnly) repository.clearLocal(account) else repository.logout(account, revoke)
+        selectPlanWorkout(null)
+        selectPlan(null)
         mutableProfile.value = null
         mutableAuth.value = AuthState.SIGNED_OUT
     }
@@ -503,6 +851,8 @@ class CompanionViewModel(private val container: AppContainer) : ViewModel() {
     fun logoutAll() = action {
         val account = preferences.value.accountScope ?: return@action
         repository.logoutAll(account)
+        selectPlanWorkout(null)
+        selectPlan(null)
         mutableProfile.value = null
         mutableAuth.value = AuthState.SIGNED_OUT
     }
@@ -580,5 +930,10 @@ class CompanionViewModel(private val container: AppContainer) : ViewModel() {
     class Factory(private val container: AppContainer) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T = CompanionViewModel(container) as T
+
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T =
+            CompanionViewModel(container, extras.createSavedStateHandle()) as T
     }
+
 }

@@ -70,10 +70,25 @@ internal fun humanDraftIsolationReason(code: String?): String = when (code) {
 
 internal fun humanWorkoutStatus(status: String): String = when (status) {
     "planned" -> "Programado"
+    "locally_pending" -> "Programado en este dispositivo"
+    "syncing" -> "Sincronizando"
+    "downloaded" -> "Descargado"
+    "started_pending" -> "Inicio pendiente de sincronización"
+    "active" -> "Activo"
     "in_progress" -> "En progreso"
     "completed" -> "Completado"
     "cancelled" -> "Cancelado"
+    "conflict" -> "Requiere atención"
     else -> "Estado no disponible"
+}
+
+internal fun humanPlanningConflict(value: String): String = when (value.substringBefore(':')) {
+    "revision_conflict", "revision", "remote_revision" -> "La revisión cambió en el servidor"
+    "archived_remote" -> "La rutina fue archivada en el servidor"
+    "deleted_or_unavailable" -> "El recurso ya no está disponible"
+    "schedule_date_conflict" -> "La fecha cambió en el servidor"
+    "package_revision_conflict" -> "Existe una versión más reciente del entrenamiento"
+    else -> "El cambio local requiere revisión"
 }
 
 internal fun humanSyncStatus(status: String): String = when (status) {

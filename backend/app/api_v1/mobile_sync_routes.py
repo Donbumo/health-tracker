@@ -323,7 +323,7 @@ def sync_pull():
     requested_types = {
         item.strip() for item in request.args.get("entity_types", "").split(",") if item.strip()
     }
-    if requested_types - {"planned_workout", "completed_workout", "companion_profile", "companion_delivery"}:
+    if requested_types - {"planned_workout", "completed_workout", "companion_profile", "companion_delivery", "training_plan"}:
         raise MobileSyncError("unsupported_entity", "El filtro contiene una entidad no soportada.")
     statement = db.select(SyncChange).where(
         SyncChange.user_id == g.api_user.id, SyncChange.sequence > after

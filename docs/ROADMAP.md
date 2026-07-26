@@ -11,6 +11,7 @@ Este documento reúne trabajo futuro o no comprobado. No describe funcionalidade
 
 ## Companion móvil y reloj
 
+- Completar QA manual de Alpha 1.3 para planificación: creación/edición offline, coalescing al mover o cancelar, varios eventos diarios, cambio de zona horaria, reemplazo de package sin draft y conflicto con draft activo, ciclo Hoy→Historial→Progreso, rotación, TalkBack, fuente grande y tamaños 320/360/411/600 dp; no está aprobado todavía.
 - Completar QA manual de Alpha 1.2 para Historial/Progreso: paginación offline, rotación, TalkBack, fuente grande, temas y gráficas en tamaños 320/360/411/600 dp; no está aprobado todavía.
 - Completar QA manual offline/rotación/accesibilidad/temas, instrumentación en un AVD separado, revisión de integración, firma de producción y distribución del cliente Android; compilación, lint, JVM, APK y compilación androidTest ya están verdes.
 - Bridge Bluetooth/reloj y app de reloj para guiar sesiones offline.
@@ -26,5 +27,4 @@ Este documento reúne trabajo futuro o no comprobado. No describe funcionalidade
 ## Producto
 
 - Mapping asistido reutilizable y persistente.
-- Calendario/planificador visual y edición avanzada donde exista demanda validada.
 - Nuevos dominios de salud únicamente con schema, aislamiento, trazabilidad, import/export y pruebas completos.

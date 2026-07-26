@@ -28,3 +28,17 @@ Peso, modo/unidad de carga, reps, RIR, RPE, notas, duración, distancia, descans
 Room 2 mantiene por `accountScope` páginas de historial, detalle normalizado de ejercicios/series, resumen de progreso, lista y puntos por ejercicio, mejores marcas y timestamps. Un timeout nunca elimina una versión anterior. El refresh reemplaza por UUID dentro de una transacción y reconcilia una sesión local pendiente por `client_event_id`, evitando duplicados cuando llega el UUID autoritativo.
 
 Foreground, completion, pull con `completed_workout`, conectividad y WorkManager comparten el single-flight existente. La sesión completada se inserta localmente antes de la red con estado pendiente; al confirmar se conserva el detalle, cambia a `synced` y se invalidan/refrescan historial y periodos frecuentes. El botón manual sigue siendo respaldo.
+
+## Planificación en Alpha 1.3
+
+Room 3 mantiene por `accountScope` catálogo, rutina, entrenamientos ordenados, ejercicios, series y conflictos. Crear, autosalvar, duplicar, reordenar, archivar, programar y cancelar escribe primero la vista local y después encola una `PendingAction` con UUID e idempotency key. No se hace una petición por carácter ni se avanza el cursor antes de confirmar sus cambios.
+
+La identidad del plan y entrenamiento abiertos se conserva en `SavedStateHandle`; tras recrear el proceso se recupera la misma pantalla y el contenido vuelve a observarse desde Room. Cerrar sesión elimina esa selección para no trasladarla a otro `accountScope`.
+
+El FIFO existente procesa planificación junto con Companion. Un 409 conserva la copia local y muestra dos decisiones: usar servidor o reintentar la copia local. El pull `training_plan` reemplaza una rutina solo si no hay edición local pendiente; planned workouts continúan por su entidad histórica. Logout elimina únicamente la partición de la cuenta efectiva y sus cascadas.
+
+Programar crea primero un UUID estable y una tarjeta `locally_pending`. Antes del primer intento remoto, `CREATE → RESCHEDULE` se consolida en un solo CREATE con la fecha final, `CREATE → CANCEL` elimina la entidad y la operación local, y varios RESCHEDULE conservan el último destino. Cuando una operación ya pudo alcanzar al servidor no se descarta: las dependencias posteriores mantienen FIFO, revisión e idempotency key persistidas. Un mutex limitado a mutaciones de agenda evita la doble programación sin bloquear el resto de la aplicación.
+
+Hoy observa Room por la fecha operativa de la cuenta y refleja de inmediato altas, movimientos y cancelaciones locales. Una finalización offline inserta una única sesión pendiente en Historial y recalcula los resúmenes locales de Progreso de 7, 30, 90, 180 y 365 días y todo el historial; la confirmación por `client_event_id` sustituye esa copia sin duplicarla.
+
+Un package solo se reutiliza si corresponde a la revisión vigente de la programación. Si existe una revisión nueva se reemplaza de forma transaccional antes de iniciar; un draft activo conserva su package inmutable y genera `package_revision_conflict`. Los conflictos `revision_conflict`, `archived_remote`, `deleted_or_unavailable`, `schedule_date_conflict` y `package_revision_conflict` guardan únicamente revisiones y resúmenes sanitizados. Usar servidor, reintentar con la revisión remota, duplicar cuando aplica o cancelar la copia local son decisiones explícitas; ninguna hace last-write-wins silencioso.

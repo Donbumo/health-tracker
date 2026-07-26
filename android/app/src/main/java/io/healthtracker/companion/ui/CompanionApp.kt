@@ -8,6 +8,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
@@ -40,19 +41,29 @@ import io.healthtracker.companion.core.config.ThemePreference
 import io.healthtracker.companion.core.config.UnitPreference
 import io.healthtracker.companion.core.database.DraftSetEntity
 import io.healthtracker.companion.core.database.PackageExerciseEntity
+import io.healthtracker.companion.core.database.MobilePlanSetEntity
 import io.healthtracker.companion.core.load.ComponentInput
 import io.healthtracker.companion.core.load.LoadCalculator
 import io.healthtracker.companion.core.load.LoadMode
 import io.healthtracker.companion.core.model.AuthState
 import io.healthtracker.companion.core.model.LoadDetailsDto
+import io.healthtracker.companion.core.planning.planningDateRange
+import io.healthtracker.companion.core.planning.planningMonthGrid
+import io.healthtracker.companion.core.planning.shiftedPlanningAnchor
+import io.healthtracker.companion.core.planning.validPrescription
 import java.math.BigDecimal
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.delay
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 private enum class Destination(val route: String, val label: String, val symbol: String) {
-    TODAY("today", "Hoy", "●"), HISTORY("history", "Historial", "◷"), PROGRESS("progress", "Progreso", "↗"),
+    TODAY("today", "Hoy", "●"), PLAN("plan", "Plan", "+"), HISTORY("history", "Historial", "◷"), PROGRESS("progress", "Progreso", "↗"),
     SETTINGS("settings", "Ajustes", "⚙"), WORKOUT("workout", "Entrenamiento", "▶"),
+    PLAN_DETAIL("plan_detail", "Rutina", ""), PLAN_WORKOUT("plan_workout", "Editor", ""),
     HISTORY_DETAIL("history_detail", "Sesión", ""), EXERCISE_DETAIL("exercise_detail", "Ejercicio", "")
 }
 
@@ -196,8 +207,8 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            if (route !in setOf(Destination.WORKOUT.route, Destination.HISTORY_DETAIL.route, Destination.EXERCISE_DETAIL.route)) NavigationBar {
-                listOf(Destination.TODAY, Destination.HISTORY, Destination.PROGRESS, Destination.SETTINGS).forEach { destination ->
+            if (route !in setOf(Destination.WORKOUT.route, Destination.PLAN_DETAIL.route, Destination.PLAN_WORKOUT.route, Destination.HISTORY_DETAIL.route, Destination.EXERCISE_DETAIL.route)) NavigationBar {
+                listOf(Destination.TODAY, Destination.PLAN, Destination.HISTORY, Destination.PROGRESS, Destination.SETTINGS).forEach { destination ->
                     NavigationBarItem(
                         selected = route == destination.route,
                         onClick = { nav.navigate(destination.route) { launchSingleTop = true; popUpTo(Destination.TODAY.route) { saveState = true }; restoreState = true } },
@@ -212,6 +223,18 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
                 viewModel,
                 openWorkout = { nav.navigate(Destination.WORKOUT.route) },
                 openProgress = { nav.navigate(Destination.PROGRESS.route) },
+            ) }
+            composable(Destination.PLAN.route) { PlanScreen(viewModel) { id ->
+                viewModel.selectPlan(id); nav.navigate(Destination.PLAN_DETAIL.route)
+            } }
+            composable(Destination.PLAN_DETAIL.route) { PlanDetailScreen(
+                viewModel,
+                close = { viewModel.selectPlan(null); nav.popBackStack() },
+                openWorkout = { id -> viewModel.selectPlanWorkout(id); nav.navigate(Destination.PLAN_WORKOUT.route) },
+            ) }
+            composable(Destination.PLAN_WORKOUT.route) { PlanWorkoutEditor(
+                viewModel,
+                close = { viewModel.selectPlanWorkout(null); nav.popBackStack() },
             ) }
             composable(Destination.HISTORY.route) { HistoryScreen(viewModel) { id ->
                 viewModel.openHistory(id); nav.navigate(Destination.HISTORY_DETAIL.route)
@@ -245,6 +268,8 @@ private fun TodayScreen(viewModel: CompanionViewModel, openWorkout: () -> Unit, 
     val next by viewModel.nextWorkout.collectAsState()
     val draft by viewModel.activeDraft.collectAsState()
     val downloaded by viewModel.downloadedDelivery.collectAsState()
+    val todayWorkouts by viewModel.todayWorkouts.collectAsState()
+    val downloadedPackages by viewModel.downloadedPackages.collectAsState()
     val history by viewModel.history.collectAsState()
     val weekly by viewModel.weeklyProgress.collectAsState()
     val recentRecord by viewModel.latestPersonalRecord.collectAsState()
@@ -344,6 +369,38 @@ private fun TodayScreen(viewModel: CompanionViewModel, openWorkout: () -> Unit, 
                 }
             }
         }
+        items(todayWorkouts.drop(1), key = { it.id }) { scheduled ->
+            val packageEntity = downloadedPackages.firstOrNull { it.plannedWorkoutId == scheduled.id }
+            val active = packageEntity?.deliveryId == draft?.deliveryId
+            ElevatedCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(scheduled.title, style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        humanWorkoutStatus(
+                            when {
+                                active -> "active"
+                                packageEntity != null && scheduled.status == "planned" -> "downloaded"
+                                else -> scheduled.status
+                            },
+                        ),
+                    )
+                    when {
+                        scheduled.status == "completed" -> Unit
+                        active -> Button(onClick = openWorkout, modifier = Modifier.fillMaxWidth()) { Text("Continuar") }
+                        packageEntity != null -> Button(
+                            onClick = { viewModel.startScheduled(scheduled.id, openWorkout) },
+                            enabled = !startInProgress,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text(if (startInProgress) "Iniciando…" else "Empezar") }
+                        else -> Button(
+                            onClick = { viewModel.downloadScheduled(scheduled.id) },
+                            enabled = connected && !downloadInProgress && scheduled.status != "syncing",
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text(if (downloadInProgress) "Descargando…" else "Descargar para usar offline") }
+                    }
+                }
+            }
+        }
         next?.let { workout -> item {
             Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) {
                 Text("Siguiente", style = MaterialTheme.typography.titleMedium)
@@ -377,6 +434,703 @@ private fun TodayScreen(viewModel: CompanionViewModel, openWorkout: () -> Unit, 
         requireAcknowledgement = true,
         destructive = true,
     )
+}
+
+@Composable
+private fun PlanScreen(viewModel: CompanionViewModel, openPlan: (String) -> Unit) {
+    val plans by viewModel.plans.collectAsState()
+    val planned by viewModel.planned.collectAsState()
+    val conflicts by viewModel.planningConflicts.collectAsState()
+    val connected by viewModel.connected.collectAsState()
+    val refreshing by viewModel.planningRefreshing.collectAsState()
+    val activeDraft by viewModel.activeDraft.collectAsState()
+    val downloadedPackages by viewModel.downloadedPackages.collectAsState()
+    val showArchived by viewModel.showArchivedPlans.collectAsState()
+    val planningToday by viewModel.planningToday.collectAsState()
+    var tab by rememberSaveable { mutableIntStateOf(0) }
+    var newName by rememberSaveable { mutableStateOf("") }
+    var showCreate by remember { mutableStateOf(false) }
+    val nextScheduled = planned.firstOrNull {
+        it.scheduledForDate >= planningToday.toString() &&
+            it.status in setOf("planned", "locally_pending", "syncing")
+    }
+    LaunchedEffect(Unit) { viewModel.refreshPlanning() }
+    Column(Modifier.fillMaxSize().testTag("plan_screen")) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column {
+                Text("Plan", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
+                Text(if (connected) "Sincronizado con tu servidor" else "Disponible sin conexión", style = MaterialTheme.typography.bodySmall)
+            }
+            TextButton(onClick = viewModel::refreshPlanning, enabled = connected && !refreshing) {
+                Text(if (refreshing) "Actualizando…" else "Actualizar")
+            }
+        }
+        PrimaryTabRow(selectedTabIndex = tab) {
+            Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Rutinas") })
+            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Agenda") })
+        }
+        if (tab == 0) {
+            LazyColumn(
+                Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                contentPadding = PaddingValues(vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (conflicts.isNotEmpty()) item {
+                    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Cambios que requieren atención", style = MaterialTheme.typography.titleMedium)
+                            conflicts.forEach { conflict ->
+                                Text("Local: ${conflict.localName ?: conflict.entityType} · revisión ${conflict.localRevision}")
+                                Text("Servidor: ${conflict.remoteName ?: "no disponible"}${conflict.serverRevision?.let { " · revisión $it" }.orEmpty()}", style = MaterialTheme.typography.bodySmall)
+                                Text(humanPlanningConflict(conflict.changedFields), style = MaterialTheme.typography.bodySmall)
+                                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    TextButton(onClick = { viewModel.keepRemoteConflict(conflict.entityId) }) { Text("Usar servidor") }
+                                    TextButton(onClick = { viewModel.retryPlanningConflict(conflict.entityId) }) { Text("Reintentar copia local") }
+                                    if (conflict.entityType in setOf("plan", "workout")) {
+                                        TextButton(onClick = { viewModel.duplicatePlanningConflict(conflict.entityId) }) { Text("Duplicar copia local") }
+                                    }
+                                    TextButton(onClick = { viewModel.keepRemoteConflict(conflict.entityId) }) { Text("Cancelar cambio local") }
+                                }
+                            }
+                        }
+                    }
+                }
+                item {
+                    Button(onClick = { showCreate = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp)) {
+                        Text("Crear rutina")
+                    }
+                }
+                item {
+                    FilterChip(
+                        selected = showArchived,
+                        onClick = { viewModel.showArchivedPlans(!showArchived) },
+                        label = { Text(if (showArchived) "Mostrando archivadas" else "Mostrar archivadas") },
+                    )
+                }
+                item {
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(14.dp)) {
+                            Text("Próxima programación", style = MaterialTheme.typography.titleMedium)
+                            Text(nextScheduled?.let { "${it.scheduledForDate} · ${it.title}" } ?: "Sin entrenamientos próximos")
+                        }
+                    }
+                }
+                if (plans.isEmpty()) item {
+                    Text("Aún no hay rutinas. Crea una incluso sin conexión; se sincronizará después.")
+                }
+                items(plans, key = { it.publicId }) { plan ->
+                    ElevatedCard(onClick = { openPlan(plan.publicId) }, modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(plan.name, style = MaterialTheme.typography.titleLarge)
+                            plan.description?.let { Text(it, maxLines = 2) }
+                            Text("Revisión ${plan.revision} · ${humanPlanningSync(plan.syncStatus)}", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+            }
+        } else {
+            PlanningCalendarAgenda(
+                planned,
+                activePlannedId = activeDraft?.deliveryId?.let { deliveryId ->
+                    downloadedPackages.firstOrNull { it.deliveryId == deliveryId }?.plannedWorkoutId
+                },
+                downloadedIds = downloadedPackages.mapTo(mutableSetOf()) { it.plannedWorkoutId },
+                today = planningToday,
+                onCancel = viewModel::cancelScheduledWorkout,
+                onReschedule = viewModel::rescheduleWorkout,
+            )
+        }
+    }
+    if (showCreate) AlertDialog(
+        onDismissRequest = { showCreate = false },
+        title = { Text("Nueva rutina") },
+        text = {
+            OutlinedTextField(
+                value = newName,
+                onValueChange = { newName = it.take(120) },
+                label = { Text("Nombre") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            Button(onClick = {
+                val value = newName.trim()
+                showCreate = false
+                newName = ""
+                viewModel.createPlan(value, onCreated = openPlan)
+            }, enabled = newName.isNotBlank()) { Text("Crear") }
+        },
+        dismissButton = { TextButton(onClick = { showCreate = false }) { Text("Cancelar") } },
+    )
+}
+
+@Composable
+private fun PlanningAgenda(
+    planned: List<io.healthtracker.companion.core.database.PlannedWorkoutEntity>,
+    activeToday: Boolean,
+    downloadedToday: Boolean,
+    onCancel: (String) -> Unit,
+    onReschedule: (String, LocalDate) -> Unit,
+) {
+    var monthMode by rememberSaveable { mutableStateOf(false) }
+    var anchor by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
+    var rescheduleId by rememberSaveable { mutableStateOf<String?>(null) }
+    var rescheduleDate by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
+    val anchorDate = runCatching { LocalDate.parse(anchor) }.getOrDefault(LocalDate.now())
+    val range = planningDateRange(anchorDate, monthMode)
+    val first = range.start
+    val last = range.endInclusive
+    val visible = planned.filter { it.scheduledForDate >= first.toString() && it.scheduledForDate <= last.toString() }
+        .groupBy { it.scheduledForDate }
+    LazyColumn(
+        Modifier.fillMaxSize().padding(horizontal = 20.dp).testTag("planning_agenda"),
+        contentPadding = PaddingValues(vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(onClick = { anchor = (if (monthMode) anchorDate.minusMonths(1) else anchorDate.minusWeeks(1)).toString() }) { Text("Anterior") }
+                Text(if (monthMode) YearMonth.from(anchorDate).toString() else "${first.format(shortDate)} – ${last.format(shortDate)}")
+                OutlinedButton(onClick = { anchor = (if (monthMode) anchorDate.plusMonths(1) else anchorDate.plusWeeks(1)).toString() }) { Text("Siguiente") }
+            }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = !monthMode, onClick = { monthMode = false }, label = { Text("Semana") })
+                FilterChip(selected = monthMode, onClick = { monthMode = true }, label = { Text("Mes") })
+                TextButton(onClick = { anchor = LocalDate.now().toString() }) { Text("Hoy") }
+            }
+        }
+        items((0L..java.time.temporal.ChronoUnit.DAYS.between(first, last)).map(first::plusDays)) { date ->
+            val entries = visible[date.toString()].orEmpty()
+            if (!monthMode || entries.isNotEmpty() || date == LocalDate.now()) {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(date.format(longDate), style = MaterialTheme.typography.titleMedium)
+                        if (entries.isEmpty()) Text("Sin entrenamiento", style = MaterialTheme.typography.bodySmall)
+                        entries.forEach { item ->
+                            Text(item.title)
+                            val today = item.scheduledForDate == LocalDate.now().toString()
+                            Text(
+                                when {
+                                    item.status == "completed" -> "Completado"
+                                    today && activeToday -> "Activo"
+                                    today && downloadedToday -> "Descargado"
+                                    else -> humanWorkoutStatus(item.status)
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            if (item.status in setOf("planned", "pending")) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    if (item.sourceWorkoutId != null) TextButton(onClick = {
+                                        rescheduleId = item.id
+                                        rescheduleDate = item.scheduledForDate
+                                    }) { Text("Cambiar fecha") }
+                                    TextButton(onClick = { onCancel(item.id) }) { Text("Cancelar") }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (rescheduleId != null) AlertDialog(
+        onDismissRequest = { rescheduleId = null },
+        title = { Text("Cambiar fecha") },
+        text = { OutlinedTextField(value = rescheduleDate, onValueChange = { rescheduleDate = it.take(10) }, label = { Text("Fecha (AAAA-MM-DD)") }) },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val id = rescheduleId ?: return@Button
+                    val date = runCatching { LocalDate.parse(rescheduleDate) }.getOrNull() ?: return@Button
+                    rescheduleId = null
+                    onReschedule(id, date)
+                },
+                enabled = runCatching { LocalDate.parse(rescheduleDate) }.isSuccess,
+            ) { Text("Confirmar") }
+        },
+        dismissButton = { TextButton(onClick = { rescheduleId = null }) { Text("Volver") } },
+    )
+}
+
+@Composable
+private fun PlanningCalendarAgenda(
+    planned: List<io.healthtracker.companion.core.database.PlannedWorkoutEntity>,
+    activePlannedId: String?,
+    downloadedIds: Set<String>,
+    today: LocalDate,
+    onCancel: (String) -> Unit,
+    onReschedule: (String, LocalDate) -> Unit,
+) {
+    var monthMode by rememberSaveable { mutableStateOf(false) }
+    var anchor by rememberSaveable { mutableStateOf(today.toString()) }
+    var selected by rememberSaveable { mutableStateOf(today.toString()) }
+    var rescheduleId by rememberSaveable { mutableStateOf<String?>(null) }
+    var rescheduleDate by rememberSaveable { mutableStateOf(today.toString()) }
+    var cancelId by rememberSaveable { mutableStateOf<String?>(null) }
+    val anchorDate = runCatching { LocalDate.parse(anchor) }.getOrDefault(today)
+    val selectedDate = runCatching { LocalDate.parse(selected) }.getOrDefault(today)
+    val range = planningDateRange(anchorDate, monthMode)
+    val displayDates = if (monthMode) planningMonthGrid(anchorDate) else
+        (0L..6L).map(range.start::plusDays)
+    val byDate = planned.groupBy { it.scheduledForDate }
+    val selectedEntries = byDate[selectedDate.toString()].orEmpty()
+    val weekday = DateTimeFormatter.ofPattern("EEE")
+
+    LazyColumn(
+        Modifier.fillMaxSize().padding(horizontal = 16.dp).testTag("planning_calendar"),
+        contentPadding = PaddingValues(vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                OutlinedButton(onClick = {
+                    val target = shiftedPlanningAnchor(anchorDate, monthMode, -1)
+                    anchor = target.toString()
+                    selected = target.toString()
+                }) { Text("Anterior") }
+                Text(
+                    if (monthMode) YearMonth.from(anchorDate).format(DateTimeFormatter.ofPattern("MMMM yyyy"))
+                    else "${range.start.format(shortDate)} – ${range.endInclusive.format(shortDate)}",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                OutlinedButton(onClick = {
+                    val target = shiftedPlanningAnchor(anchorDate, monthMode, 1)
+                    anchor = target.toString()
+                    selected = target.toString()
+                }) { Text("Siguiente") }
+            }
+        }
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = !monthMode, onClick = {
+                    monthMode = false
+                    anchor = selectedDate.toString()
+                }, label = { Text("Semana") })
+                FilterChip(selected = monthMode, onClick = {
+                    monthMode = true
+                    anchor = selectedDate.toString()
+                }, label = { Text("Mes") })
+                TextButton(onClick = {
+                    anchor = today.toString()
+                    selected = today.toString()
+                }) { Text(if (monthMode) "Mes actual" else "Hoy") }
+            }
+        }
+        if (monthMode) {
+            item {
+                Row(Modifier.fillMaxWidth()) {
+                    listOf("L", "M", "X", "J", "V", "S", "D").forEach { label ->
+                        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
+            items(displayDates.chunked(7)) { week ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    week.forEach { date ->
+                        val events = byDate[date.toString()].orEmpty()
+                        val inMonth = YearMonth.from(date) == YearMonth.from(anchorDate)
+                        OutlinedCard(
+                            onClick = { selected = date.toString() },
+                            modifier = Modifier.weight(1f).heightIn(min = 62.dp),
+                            colors = CardDefaults.outlinedCardColors(
+                                containerColor = if (date == selectedDate) MaterialTheme.colorScheme.secondaryContainer
+                                else MaterialTheme.colorScheme.surface,
+                            ),
+                        ) {
+                            Column(Modifier.padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(if (inMonth) date.dayOfMonth.toString() else "·${date.dayOfMonth}")
+                                if (events.isNotEmpty()) Text("●".repeat(events.size.coerceAtMost(3)), style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            item {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(displayDates) { date ->
+                        val events = byDate[date.toString()].orEmpty()
+                        FilterChip(
+                            selected = date == selectedDate,
+                            onClick = { selected = date.toString() },
+                            label = {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(date.format(weekday))
+                                    Text(date.dayOfMonth.toString())
+                                    if (events.isNotEmpty()) Text("${events.size} evento${if (events.size == 1) "" else "s"}")
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+        }
+        item {
+            Text(selectedDate.format(longDate), style = MaterialTheme.typography.titleLarge)
+        }
+        if (selectedEntries.isEmpty()) item {
+            Card(Modifier.fillMaxWidth()) {
+                Text("No hay entrenamientos programados para este día.", Modifier.padding(16.dp))
+            }
+        }
+        items(selectedEntries, key = { it.id }) { item ->
+            ElevatedCard(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(item.title, style = MaterialTheme.typography.titleMedium)
+                    val visibleStatus = when {
+                        item.id == activePlannedId -> "active"
+                        item.id in downloadedIds && item.status == "planned" -> "downloaded"
+                        else -> item.status
+                    }
+                    Text(humanWorkoutStatus(visibleStatus), style = MaterialTheme.typography.bodySmall)
+                    if (item.status in setOf("planned", "locally_pending", "syncing", "conflict")) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            TextButton(onClick = {
+                                rescheduleId = item.id
+                                rescheduleDate = item.scheduledForDate
+                            }, enabled = item.status != "syncing") { Text("Cambiar fecha") }
+                            TextButton(onClick = { cancelId = item.id }, enabled = item.status != "syncing") { Text("Cancelar") }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if (rescheduleId != null) AlertDialog(
+        onDismissRequest = { rescheduleId = null },
+        title = { Text("Cambiar fecha") },
+        text = { OutlinedTextField(value = rescheduleDate, onValueChange = { rescheduleDate = it.take(10) }, label = { Text("Fecha (AAAA-MM-DD)") }) },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val id = rescheduleId ?: return@Button
+                    val date = runCatching { LocalDate.parse(rescheduleDate) }.getOrNull() ?: return@Button
+                    rescheduleId = null
+                    selected = date.toString()
+                    anchor = date.toString()
+                    onReschedule(id, date)
+                },
+                enabled = runCatching { LocalDate.parse(rescheduleDate) }.isSuccess,
+            ) { Text("Cambiar") }
+        },
+        dismissButton = { TextButton(onClick = { rescheduleId = null }) { Text("Volver") } },
+    )
+    if (cancelId != null) ConfirmationDialog(
+        title = "¿Cancelar programación?",
+        text = "Se quitará de la agenda al confirmarse en el servidor. Si aún era solo local, se descartará sin crearla.",
+        confirm = "Cancelar programación",
+        onDismiss = { cancelId = null },
+        onConfirm = { cancelId?.let(onCancel); cancelId = null },
+        destructive = true,
+    )
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun PlanDetailScreen(viewModel: CompanionViewModel, close: () -> Unit, openWorkout: (String) -> Unit) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val plan by viewModel.selectedPlan.collectAsState()
+    val workouts by viewModel.planWorkouts.collectAsState()
+    var name by rememberSaveable(plan?.publicId) { mutableStateOf(plan?.name.orEmpty()) }
+    var description by rememberSaveable(plan?.publicId) { mutableStateOf(plan?.description.orEmpty()) }
+    var showArchive by remember { mutableStateOf(false) }
+    var showCreate by remember { mutableStateOf(false) }
+    var workoutName by rememberSaveable { mutableStateOf("") }
+    LaunchedEffect(plan?.publicId) { plan?.let { viewModel.refreshPlanning() } }
+    LaunchedEffect(name, description) {
+        delay(700)
+        if (name.isNotBlank()) viewModel.editSelectedPlan(name, description)
+    }
+    val latestName by rememberUpdatedState(name)
+    val latestDescription by rememberUpdatedState(description)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP && latestName.isNotBlank()) {
+                viewModel.flushSelectedPlan(latestName, latestDescription)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    BackHandler {
+        if (name.isNotBlank()) viewModel.flushSelectedPlan(name, description, close) else close()
+    }
+    if (plan == null) { LoadingScreen("Cargando rutina…"); return }
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Editar rutina") }, navigationIcon = { TextButton(onClick = {
+            if (name.isNotBlank()) viewModel.flushSelectedPlan(name, description, close) else close()
+        }) { Text("Atrás") } }) },
+    ) { padding ->
+        LazyColumn(
+            Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp).imePadding().testTag("plan_detail"),
+            contentPadding = PaddingValues(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                OutlinedTextField(value = name, onValueChange = { name = it.take(120) }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth())
+            }
+            item {
+                OutlinedTextField(value = description, onValueChange = { description = it.take(2000) }, label = { Text("Descripción") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+                Text("Guardado automático · ${humanPlanningSync(plan?.syncStatus.orEmpty())}", style = MaterialTheme.typography.bodySmall)
+            }
+            item {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { showCreate = true }, enabled = plan?.status == "active", modifier = Modifier.weight(1f)) { Text("Añadir entrenamiento") }
+                    OutlinedButton(onClick = viewModel::duplicateSelectedPlan, modifier = Modifier.weight(1f)) { Text("Duplicar rutina") }
+                }
+            }
+            item {
+                OutlinedButton(onClick = { name = plan?.name.orEmpty(); description = plan?.description.orEmpty() }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Descartar texto aún no guardado")
+                }
+            }
+            items(workouts, key = { it.publicId }) { workout ->
+                ElevatedCard(onClick = { openWorkout(workout.publicId) }, modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(workout.name, style = MaterialTheme.typography.titleMedium)
+                        Text("${workout.estimatedDurationSeconds?.let { "~${it / 60} min · " }.orEmpty()}${humanPlanningSync(workout.syncStatus)}")
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            TextButton(onClick = { viewModel.movePlanWorkout(workout.publicId, -1) }, enabled = workout.position > 1) { Text("Subir") }
+                            TextButton(onClick = { viewModel.movePlanWorkout(workout.publicId, 1) }, enabled = workout.position < workouts.size) { Text("Bajar") }
+                        }
+                    }
+                }
+            }
+            item {
+                if (plan?.status == "archived") {
+                    TextButton(onClick = viewModel::restoreSelectedPlan, modifier = Modifier.fillMaxWidth()) { Text("Restaurar rutina") }
+                } else {
+                    TextButton(onClick = { showArchive = true }, modifier = Modifier.fillMaxWidth()) { Text("Archivar rutina") }
+                }
+            }
+        }
+    }
+    if (showCreate) AlertDialog(
+        onDismissRequest = { showCreate = false }, title = { Text("Nuevo entrenamiento") },
+        text = { OutlinedTextField(value = workoutName, onValueChange = { workoutName = it.take(120) }, label = { Text("Nombre") }) },
+        confirmButton = { Button(onClick = { val value = workoutName.trim(); showCreate = false; workoutName = ""; viewModel.createPlanWorkout(value, openWorkout) }, enabled = workoutName.isNotBlank()) { Text("Crear") } },
+        dismissButton = { TextButton(onClick = { showCreate = false }) { Text("Cancelar") } },
+    )
+    if (showArchive) ConfirmationDialog(
+        title = "¿Archivar rutina?", text = "Se ocultará de la lista activa. Para proteger la agenda, primero debes cancelar sus programaciones activas.",
+        confirm = "Archivar", onDismiss = { showArchive = false }, onConfirm = { showArchive = false; viewModel.archiveSelectedPlan(close) }, destructive = true,
+    )
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun PlanWorkoutEditor(viewModel: CompanionViewModel, close: () -> Unit) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val workout by viewModel.selectedPlanWorkout.collectAsState()
+    val exercises by viewModel.planExercises.collectAsState()
+    val sets by viewModel.planSets.collectAsState()
+    val catalog by viewModel.exerciseCatalog.collectAsState()
+    val query by viewModel.catalogQuery.collectAsState()
+    var name by rememberSaveable(workout?.publicId) { mutableStateOf(workout?.name.orEmpty()) }
+    var notes by rememberSaveable(workout?.publicId) { mutableStateOf(workout?.notes.orEmpty()) }
+    var scheduleDate by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
+    var removeId by remember { mutableStateOf<String?>(null) }
+    val selectedCatalog = remember { mutableStateListOf<String>() }
+    LaunchedEffect(name, notes) {
+        delay(700)
+        if (name.isNotBlank()) viewModel.saveSelectedPlanWorkout(name, notes)
+    }
+    val latestName by rememberUpdatedState(name)
+    val latestNotes by rememberUpdatedState(notes)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP && latestName.isNotBlank()) {
+                viewModel.flushSelectedPlanWorkout(latestName, latestNotes)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    BackHandler {
+        if (name.isNotBlank()) viewModel.flushSelectedPlanWorkout(name, notes, close) else close()
+    }
+    if (workout == null) { LoadingScreen("Cargando entrenamiento…"); return }
+    Scaffold(topBar = {
+        TopAppBar(
+            title = { Text("Editar entrenamiento") },
+            navigationIcon = { TextButton(onClick = {
+                if (name.isNotBlank()) viewModel.flushSelectedPlanWorkout(name, notes, close) else close()
+            }) { Text("Atrás") } },
+            actions = { TextButton(onClick = viewModel::duplicateSelectedPlanWorkout) { Text("Duplicar") } },
+        )
+    }) { padding ->
+        LazyColumn(
+            Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp).imePadding().testTag("plan_workout_editor"),
+            contentPadding = PaddingValues(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                OutlinedTextField(value = name, onValueChange = { name = it.take(120) }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = notes, onValueChange = { notes = it.take(2000) }, label = { Text("Notas") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
+                Text("Guardado automático · ${humanPlanningSync(workout?.syncStatus.orEmpty())}", style = MaterialTheme.typography.bodySmall)
+                TextButton(onClick = { name = workout?.name.orEmpty(); notes = workout?.notes.orEmpty() }) { Text("Descartar texto aún no guardado") }
+            }
+            item {
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Programar", style = MaterialTheme.typography.titleMedium)
+                        OutlinedTextField(value = scheduleDate, onValueChange = { scheduleDate = it.take(10) }, label = { Text("Fecha (AAAA-MM-DD)") }, singleLine = true)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = { runCatching { LocalDate.parse(scheduleDate) }.getOrNull()?.let(viewModel::scheduleSelectedWorkout) }, enabled = runCatching { LocalDate.parse(scheduleDate) }.isSuccess) { Text("Programar") }
+                            TextButton(onClick = { scheduleDate = LocalDate.now().toString() }) { Text("Hoy") }
+                        }
+                    }
+                }
+            }
+            item {
+                Text("Añadir ejercicios", style = MaterialTheme.typography.titleLarge)
+                OutlinedTextField(
+                    value = query, onValueChange = viewModel::searchExercises, label = { Text("Buscar catálogo") },
+                    modifier = Modifier.fillMaxWidth(), singleLine = true,
+                )
+                Button(
+                    onClick = {
+                        viewModel.addCatalogExercises(catalog.filter { it.publicId in selectedCatalog })
+                        selectedCatalog.clear()
+                    },
+                    enabled = selectedCatalog.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("Añadir seleccionados (${selectedCatalog.size})") }
+            }
+            items(catalog, key = { "catalog-${it.publicId}" }) { item ->
+                ListItem(
+                    headlineContent = { Text(item.name) },
+                    supportingContent = { Text(item.aliases.replace("|", " · ").ifBlank { "Sin alias" }) },
+                    trailingContent = {
+                        val available = item.selectable && exercises.none { it.catalogExerciseId == item.publicId }
+                        Checkbox(
+                            checked = item.publicId in selectedCatalog,
+                            onCheckedChange = { checked -> if (checked) selectedCatalog.add(item.publicId) else selectedCatalog.remove(item.publicId) },
+                            enabled = available,
+                        )
+                    },
+                )
+            }
+            item {
+                OutlinedButton(onClick = viewModel::loadMoreExercises, modifier = Modifier.fillMaxWidth()) { Text("Cargar más ejercicios") }
+            }
+            item { HorizontalDivider(); Text("Ejercicios (${exercises.size})", style = MaterialTheme.typography.titleLarge) }
+            items(exercises, key = { it.publicId }) { exercise ->
+                Card(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(exercise.name, style = MaterialTheme.typography.titleMedium)
+                        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            TextButton(onClick = { viewModel.movePlanExercise(exercise.publicId, -1) }, enabled = exercise.position > 1) { Text("Subir") }
+                            TextButton(onClick = { viewModel.movePlanExercise(exercise.publicId, 1) }, enabled = exercise.position < exercises.size) { Text("Bajar") }
+                            TextButton(onClick = { viewModel.duplicatePlanExercise(exercise.publicId) }) { Text("Duplicar") }
+                            TextButton(onClick = { removeId = exercise.publicId }) { Text("Quitar") }
+                        }
+                        sets.filter { it.exercisePublicId == exercise.publicId }.forEach { set ->
+                            PlanningSetEditor(set, onSave = viewModel::updatePlanSet, onDelete = { viewModel.deletePlanSet(set.publicId) })
+                        }
+                        OutlinedButton(onClick = { viewModel.addPlanSet(exercise.publicId) }, modifier = Modifier.fillMaxWidth()) { Text("Añadir serie") }
+                    }
+                }
+            }
+        }
+    }
+    removeId?.let { id ->
+        ConfirmationDialog(
+            title = "¿Quitar ejercicio?", text = "También se quitarán sus prescripciones de esta rutina.", confirm = "Quitar",
+            onDismiss = { removeId = null }, onConfirm = { removeId = null; viewModel.removePlanExercise(id) }, destructive = true,
+        )
+    }
+}
+
+@Composable
+private fun PlanningSetEditor(set: MobilePlanSetEntity, onSave: (MobilePlanSetEntity) -> Unit, onDelete: () -> Unit) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var reps by rememberSaveable(set.publicId) { mutableStateOf(set.reps?.toString().orEmpty()) }
+    var weight by rememberSaveable(set.publicId) { mutableStateOf(set.loadValue ?: set.weightKg.orEmpty()) }
+    var mode by rememberSaveable(set.publicId) { mutableStateOf(set.loadMode) }
+    var rir by rememberSaveable(set.publicId) { mutableStateOf(set.rir.orEmpty()) }
+    var rpe by rememberSaveable(set.publicId) { mutableStateOf(set.rpe.orEmpty()) }
+    var rest by rememberSaveable(set.publicId) { mutableStateOf(set.restSeconds?.toString().orEmpty()) }
+    var duration by rememberSaveable(set.publicId) { mutableStateOf(set.durationSeconds?.toString().orEmpty()) }
+    var distance by rememberSaveable(set.publicId) { mutableStateOf(set.distanceMeters.orEmpty()) }
+    var notes by rememberSaveable(set.publicId) { mutableStateOf(set.notes.orEmpty()) }
+    var modeExpanded by remember { mutableStateOf(false) }
+    val hasTimedMetric = duration.toIntOrNull()?.let { it in 1..86400 } == true ||
+        distance.toBigDecimalOrNull()?.signum()?.let { it > 0 } == true
+    val hasRequiredMetric = if (mode == "duration_distance") hasTimedMetric else reps.toIntOrNull()?.let { it > 0 } == true || hasTimedMetric
+    val valid = validPrescription(reps, weight, rir, rpe, rest) && hasRequiredMetric
+    val draftSet = set.copy(
+        reps = reps.toIntOrNull(), loadValue = weight.takeIf(String::isNotBlank),
+        weightKg = if (set.loadUnit == "kg") weight.takeIf(String::isNotBlank) else set.weightKg,
+        loadMode = mode.trim(), rir = rir.takeIf(String::isNotBlank), rpe = rpe.takeIf(String::isNotBlank), restSeconds = rest.toIntOrNull(),
+        durationSeconds = duration.toIntOrNull(), distanceMeters = distance.takeIf(String::isNotBlank), notes = notes.trim().ifBlank { null },
+    )
+    LaunchedEffect(reps, weight, mode, rir, rpe, rest, duration, distance, notes) {
+        delay(700)
+        if (valid) onSave(draftSet)
+    }
+    val latestDraftSet by rememberUpdatedState(draftSet)
+    val latestDraftValid by rememberUpdatedState(valid)
+    DisposableEffect(lifecycleOwner, set.publicId) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP && latestDraftValid) onSave(latestDraftSet)
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            if (latestDraftValid) onSave(latestDraftSet)
+        }
+    }
+    Surface(tonalElevation = 2.dp, shape = MaterialTheme.shapes.medium) {
+        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Serie ${set.setNumber}", style = MaterialTheme.typography.titleSmall)
+                TextButton(onClick = onDelete) { Text("Eliminar") }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                OutlinedTextField(value = reps, onValueChange = { reps = it.take(6) }, label = { Text("Reps") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                OutlinedTextField(value = weight, onValueChange = { weight = decimalDraft(it) }, label = { Text("Carga ${set.loadUnit}") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+            }
+            Box(Modifier.fillMaxWidth()) {
+                OutlinedButton(onClick = { modeExpanded = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Modo de carga: $mode")
+                }
+                DropdownMenu(expanded = modeExpanded, onDismissRequest = { modeExpanded = false }) {
+                    LoadMode.entries.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option.wireName) },
+                            onClick = { mode = option.wireName; modeExpanded = false },
+                        )
+                    }
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                OutlinedTextField(value = rir, onValueChange = { rir = decimalDraft(it) }, label = { Text("RIR") }, modifier = Modifier.weight(1f))
+                OutlinedTextField(value = rpe, onValueChange = { rpe = decimalDraft(it) }, label = { Text("RPE") }, modifier = Modifier.weight(1f))
+                OutlinedTextField(value = rest, onValueChange = { rest = it.take(5) }, label = { Text("Descanso s") }, modifier = Modifier.weight(1f))
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                OutlinedTextField(value = duration, onValueChange = { duration = it.take(5) }, label = { Text("Duración s") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                OutlinedTextField(value = distance, onValueChange = { distance = decimalDraft(it) }, label = { Text("Distancia m") }, modifier = Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+            }
+            OutlinedTextField(value = notes, onValueChange = { notes = it.take(2000) }, label = { Text("Notas de la serie") }, modifier = Modifier.fillMaxWidth())
+            Text(if (valid) "Objetivo: ${reps.ifBlank { "libre" }} reps · ${weight.ifBlank { "sin carga" }} ${set.loadUnit}" else "Revisa los valores de la serie.", style = MaterialTheme.typography.bodySmall, color = if (valid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error)
+        }
+    }
+}
+
+private val shortDate: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM")
+private val longDate: DateTimeFormatter = DateTimeFormatter.ofPattern("EEE d MMM")
+internal fun humanPlanningSync(value: String) = when (value) {
+    "pending" -> "guardado local, pendiente"
+    "syncing" -> "sincronizando"
+    "conflict" -> "requiere atención"
+    else -> "sincronizado"
 }
 
 @Composable

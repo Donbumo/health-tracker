@@ -43,6 +43,7 @@ data class PlannedWorkoutEntity(
     val revision: Int,
     val updatedAt: String,
     val deleted: Boolean,
+    val sourceWorkoutId: String? = null,
 )
 
 @Entity(
@@ -113,6 +114,153 @@ data class PackageSetEntity(
     val distanceMeters: String?,
     val restSeconds: Int?,
     val target: String?,
+    val prescribedWeightKg: String? = null,
+    val prescribedLoadValue: String? = null,
+    val prescribedLoadUnit: String? = null,
+    val prescribedLoadMode: String? = null,
+    val prescribedRir: String? = null,
+    val prescribedRpe: String? = null,
+    val prescribedNotes: String? = null,
+    val prescribedLoadDetailsJson: String? = null,
+)
+
+@Entity(
+    tableName = "exercise_catalog",
+    primaryKeys = ["accountScope", "publicId"],
+    indices = [Index(value = ["accountScope", "normalizedName"])],
+)
+data class ExerciseCatalogEntity(
+    val accountScope: String,
+    val publicId: String,
+    val name: String,
+    val normalizedName: String,
+    val aliases: String,
+    val selectable: Boolean,
+    val archived: Boolean,
+    val preferredLoadMode: String?,
+    val preferredUnit: String?,
+    val updatedAt: String,
+)
+
+@Entity(tableName = "planning_catalog_state", primaryKeys = ["accountScope", "query"])
+data class PlanningCatalogStateEntity(
+    val accountScope: String,
+    val query: String,
+    val nextCursor: String?,
+    val hasMore: Boolean,
+    val updatedAt: String,
+)
+
+@Entity(
+    tableName = "mobile_plans",
+    primaryKeys = ["accountScope", "publicId"],
+    indices = [Index(value = ["accountScope", "status", "updatedAt"])],
+)
+data class MobilePlanEntity(
+    val accountScope: String,
+    val publicId: String,
+    val name: String,
+    val description: String?,
+    val status: String,
+    val revision: Int,
+    val activeVersionId: String?,
+    val activeVersion: Int?,
+    val syncStatus: String,
+    val createdAt: String,
+    val updatedAt: String,
+    val archivedAt: String?,
+)
+
+@Entity(
+    tableName = "mobile_plan_workouts",
+    primaryKeys = ["accountScope", "publicId"],
+    foreignKeys = [ForeignKey(
+        entity = MobilePlanEntity::class,
+        parentColumns = ["accountScope", "publicId"],
+        childColumns = ["accountScope", "planPublicId"],
+        onDelete = ForeignKey.CASCADE,
+    )],
+    indices = [Index(value = ["accountScope", "planPublicId", "position"], unique = true)],
+)
+data class MobilePlanWorkoutEntity(
+    val accountScope: String,
+    val publicId: String,
+    val planPublicId: String,
+    val name: String,
+    val notes: String?,
+    val position: Int,
+    val estimatedDurationSeconds: Int?,
+    val revision: Int,
+    val syncStatus: String,
+    val createdAt: String,
+    val updatedAt: String,
+)
+
+@Entity(
+    tableName = "mobile_plan_exercises",
+    primaryKeys = ["accountScope", "workoutPublicId", "publicId"],
+    foreignKeys = [ForeignKey(
+        entity = MobilePlanWorkoutEntity::class,
+        parentColumns = ["accountScope", "publicId"],
+        childColumns = ["accountScope", "workoutPublicId"],
+        onDelete = ForeignKey.CASCADE,
+    )],
+    indices = [Index(value = ["accountScope", "workoutPublicId", "position"], unique = true)],
+)
+data class MobilePlanExerciseEntity(
+    val accountScope: String,
+    val workoutPublicId: String,
+    val publicId: String,
+    val catalogExerciseId: String?,
+    val name: String,
+    val notes: String?,
+    val position: Int,
+)
+
+@Entity(
+    tableName = "mobile_plan_sets",
+    primaryKeys = ["accountScope", "workoutPublicId", "exercisePublicId", "publicId"],
+    foreignKeys = [ForeignKey(
+        entity = MobilePlanExerciseEntity::class,
+        parentColumns = ["accountScope", "workoutPublicId", "publicId"],
+        childColumns = ["accountScope", "workoutPublicId", "exercisePublicId"],
+        onDelete = ForeignKey.CASCADE,
+    )],
+    indices = [Index(value = ["accountScope", "workoutPublicId", "exercisePublicId", "setNumber"], unique = true)],
+)
+data class MobilePlanSetEntity(
+    val accountScope: String,
+    val workoutPublicId: String,
+    val exercisePublicId: String,
+    val publicId: String,
+    val setNumber: Int,
+    val reps: Int?,
+    val repsMin: Int?,
+    val repsMax: Int?,
+    val weightKg: String?,
+    val loadValue: String?,
+    val loadUnit: String,
+    val loadMode: String,
+    val loadDetailsJson: String?,
+    val rir: String?,
+    val rpe: String?,
+    val restSeconds: Int?,
+    val durationSeconds: Int?,
+    val distanceMeters: String?,
+    val notes: String?,
+)
+
+@Entity(tableName = "planning_conflicts", primaryKeys = ["accountScope", "entityId"])
+data class PlanningConflictEntity(
+    val accountScope: String,
+    val entityId: String,
+    val entityType: String,
+    val localRevision: Int,
+    val serverRevision: Int?,
+    val changedFields: String,
+    val localName: String?,
+    val remoteName: String?,
+    val createdAt: String,
 )
 
 @Entity(

@@ -1,10 +1,19 @@
 # Handoff activo
 
-Actualizado: 2026-07-24.
+## Alpha 1.3 — planificación Android (25 de julio de 2026)
 
-## Estado actual
+- Rama obligatoria: `feature/alpha-1.3-mobile-planning`; no realizar commit/push/merge/tag desde este handoff.
+- Backend: catálogo paginado por nombre/alias, agregado mutable `TrainingPlanWorkout`, versiones inmutables, CRUD/duplicación/archivo/orden, agenda acotada y schedule/move/cancel owner-only e idempotente, bloqueo seguro de archivo con programaciones activas, `training_plan` en el cursor compartido y package determinista por revisión.
+- Android: `1.3.0-alpha01`, Room 3 preservador, agenda semana/mes y Today desde la fuente local, UUID de programación estable, coalescing/FIFO, autosave/autosync, conflictos resolubles, packages protegidos ante drafts activos y completion local inmediato en Historial/Progreso.
+- Contratos: `training_plan.schema.json` ampliado de forma aditiva y nuevo read model `mobile_planning.schema.json`; no hay segundo cursor ni nuevo motor de sesiones.
+- Validación final: Android lint/49 JVM/APK/androidTest compile/49 JVM verdes; backend local `600 passed, 3 skipped` y Docker/MariaDB efímero `602 passed, 1 skipped`; compileall, 30 schemas, single head, `db check`, ciclo upgrade/downgrade/upgrade de 0030 y Compose config verdes.
+- Pendiente fuera de esta implementación: instrumentación en AVD separado y QA manual visual/offline/process death/package revision/accesible. No usar ni limpiar el AVD reservado.
 
-- Rama: `feature/alpha-1.2-mobile-progress`.
+Actualizado: 2026-07-25.
+
+## Base preservada de Alpha 1.2
+
+- La rama `feature/alpha-1.3-mobile-planning` conserva íntegramente el cierre de Alpha 1.2 descrito a continuación.
 - Checkpoint comprobado al iniciar: `86b5f9f00104bfad5a9df655726743b0be8a93b0`, con Alpha 1.1 completo.
 - Alpha 1.2 añade API Bearer owner-only para historial paginado/detalle y progreso por periodo/ejercicio, con contratos JSON públicos y UUID persistente de `Exercise` y de cada ocurrencia histórica.
 - Android Room 2 conserva Alpha 1.1 y añade cache estructurada de páginas, detalle, resúmenes, puntos y marcas por `accountScope`; completion offline aparece pendiente y se reconcilia por `client_event_id`.
@@ -22,7 +31,7 @@ Actualizado: 2026-07-24.
 
 ## Trabajo en curso
 
-- Ejecutar instrumentación únicamente en un AVD separado y completar QA manual offline, rotación, fuente grande, TalkBack y temas.
+- Ejecutar instrumentación únicamente en un AVD separado y completar QA manual de agenda, package revision, offline/process death/reconexión, rotación, fuente grande, TalkBack y temas.
 - El mapa canónico de documentos sigue siendo `DOCUMENTATION_INDEX.md`; este handoff no sustituye contratos ni historia.
 
 ## Decisiones activas
@@ -52,11 +61,11 @@ No se realizó commit, push, merge ni tag.
 ## Pruebas relevantes
 
 - `lintDebug`: pasa.
-- `testDebugUnitTest`: 39 tests, 0 fallos, pasa en dos ejecuciones consecutivas.
+- `testDebugUnitTest`: 49 tests, 0 fallos, pasa en dos ejecuciones consecutivas y forzadas.
 - `assembleDebug`: pasa.
 - `compileDebugAndroidTestKotlin`: pasa.
 - `connectedDebugAndroidTest`: pendiente por falta de AVD separado; no se usó el Pixel_7 manual.
 - `python -m compileall -q app tests`: pasa.
-- Backend completo: 593 tests pasan, 3 omitidos y 2 avisos no bloqueantes en 125.83 s.
-- Migración `20260724_0029`: upgrade, backfill, restricciones únicas y downgrade pasan en SQLite aislado.
+- Backend completo: local 600 tests pasan/3 omitidos en 127.48 s; Docker con las carreras MariaDB activas 602 pasan/1 omitido en 106.81 s. Ambas pasadas conservan 1 aviso conocido de fixture ZIP.
+- Migración `20260724_0030`: single head, `db check` y ciclo upgrade/downgrade/upgrade pasan en MariaDB 11.4 efímero con `tmpfs`; la migración Room 2→3 preserva las tablas anteriores.
 - `docker compose config --quiet`: pasa.

@@ -41,6 +41,7 @@ object ErrorMapper {
             retryable = code in setOf(AppErrorCode.RATE_LIMITED, AppErrorCode.SERVER_ERROR),
             retryAfterSeconds = retryAfter,
             requestId = error?.requestId,
+            serverCode = error?.code,
         )
     }
 

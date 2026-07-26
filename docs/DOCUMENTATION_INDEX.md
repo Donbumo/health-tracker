@@ -40,6 +40,7 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 - Companion delivery: [project-rules/companion-protocol.md](project-rules/companion-protocol.md), [COMPANION_PROTOCOL_1_0.md](COMPANION_PROTOCOL_1_0.md), [COMPANION_CAPABILITIES.md](COMPANION_CAPABILITIES.md), [COMPANION_WORKOUT_PACKAGE.md](COMPANION_WORKOUT_PACKAGE.md), [COMPANION_DELIVERY.md](COMPANION_DELIVERY.md), [COMPANION_PROGRESS.md](COMPANION_PROGRESS.md).
 - Android Companion: [project-rules/android-companion.md](project-rules/android-companion.md), [ANDROID_COMPANION.md](ANDROID_COMPANION.md), [ANDROID_SECURITY.md](ANDROID_SECURITY.md), [ANDROID_OFFLINE_SYNC.md](ANDROID_OFFLINE_SYNC.md), [ANDROID_TESTING.md](ANDROID_TESTING.md), [ANDROID_INSTALLATION.md](ANDROID_INSTALLATION.md).
 - Historial/progreso móvil Alpha 1.2: contratos `../schemas/mobile_history.schema.json` y `../schemas/mobile_progress.schema.json`; arquitectura y caché en [ANDROID_COMPANION.md](ANDROID_COMPANION.md) y [ANDROID_OFFLINE_SYNC.md](ANDROID_OFFLINE_SYNC.md).
+- Planificación móvil Alpha 1.3: `../schemas/mobile_planning.schema.json`, `../schemas/training_plan.schema.json`, matriz y agenda/Today/packages en [ANDROID_COMPANION.md](ANDROID_COMPANION.md), persistencia/coalescing/conflictos en [ANDROID_OFFLINE_SYNC.md](ANDROID_OFFLINE_SYNC.md) y recorrido de uso en [USER_GUIDE.md](USER_GUIDE.md).
 
 ## Entrenamiento web
 

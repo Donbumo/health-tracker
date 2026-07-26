@@ -529,6 +529,128 @@ data class PullResponse(
 )
 
 @Serializable
+data class ExerciseCatalogResponseDto(
+    val items: List<ExerciseCatalogItemDto>,
+    @SerialName("next_cursor") val nextCursor: String? = null,
+    @SerialName("has_more") val hasMore: Boolean,
+)
+
+@Serializable
+data class ExerciseCatalogItemDto(
+    @SerialName("public_id") val publicId: String,
+    val name: String,
+    val aliases: List<String> = emptyList(),
+    val archived: Boolean,
+    val selectable: Boolean,
+    @SerialName("preferred_load_mode") val preferredLoadMode: String? = null,
+    @SerialName("preferred_unit") val preferredUnit: String? = null,
+)
+
+@Serializable
+data class MobilePlanListDto(val items: List<MobilePlanDto>)
+
+@Serializable
+data class MobilePlanDto(
+    @SerialName("public_id") val publicId: String,
+    val name: String,
+    val description: String? = null,
+    val status: String,
+    val revision: Int,
+    @SerialName("active_version_id") val activeVersionId: String? = null,
+    @SerialName("active_version") val activeVersion: Int? = null,
+    @SerialName("workout_count") val workoutCount: Int,
+    val workouts: List<MobilePlanWorkoutDto>? = null,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    @SerialName("archived_at") val archivedAt: String? = null,
+)
+
+@Serializable
+data class MobilePlanWorkoutDto(
+    @SerialName("public_id") val publicId: String,
+    val name: String,
+    val notes: String? = null,
+    val position: Int,
+    val exercises: List<MobilePlanExerciseDto>,
+    @SerialName("estimated_duration_seconds") val estimatedDurationSeconds: Int? = null,
+    val revision: Int,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+)
+
+@Serializable
+data class MobilePlanExerciseDto(
+    val id: String,
+    @SerialName("exercise_id") val exerciseId: String? = null,
+    @SerialName("exercise_order") val exerciseOrder: Int,
+    val name: String,
+    val notes: String? = null,
+    val sets: List<MobilePlanSetDto>,
+)
+
+@Serializable
+data class MobilePlanSetDto(
+    val id: String,
+    @SerialName("set_number") val setNumber: Int,
+    val reps: Int? = null,
+    @SerialName("reps_min") val repsMin: Int? = null,
+    @SerialName("reps_max") val repsMax: Int? = null,
+    @SerialName("weight_kg") val weightKg: String? = null,
+    @SerialName("load_value") val loadValue: String? = null,
+    @SerialName("load_unit") val loadUnit: String = "kg",
+    @SerialName("load_mode") val loadMode: String = "direct_total",
+    @SerialName("load_details") val loadDetails: LoadDetailsDto? = null,
+    val rir: String? = null,
+    val rpe: String? = null,
+    @SerialName("rest_seconds") val restSeconds: Int? = null,
+    @SerialName("duration_seconds") val durationSeconds: Int? = null,
+    @SerialName("distance_m") val distanceMeters: String? = null,
+    val notes: String? = null,
+)
+
+@Serializable
+data class PlanCreateRequest(
+    @SerialName("public_id") val publicId: String,
+    val name: String,
+    val description: String? = null,
+)
+
+@Serializable
+data class PlanMutationResponse(
+    @SerialName("public_id") val publicId: String,
+    val status: String,
+    val revision: Int,
+)
+
+@Serializable
+data class WorkoutMutationResponse(
+    @SerialName("public_id") val publicId: String,
+    @SerialName("plan_id") val planId: String,
+    val position: Int,
+    val revision: Int,
+    @SerialName("plan_revision") val planRevision: Int,
+)
+
+@Serializable
+data class ScheduleMutationResponse(
+    @SerialName("public_id") val publicId: String,
+    val status: String,
+    val revision: Int,
+    @SerialName("scheduled_for_date") val scheduledForDate: String,
+    val timezone: String,
+)
+
+@Serializable
+data class ScheduledWorkoutMutationResponse(
+    val id: String,
+    val status: String,
+    val revision: Int,
+    @SerialName("scheduled_for_date") val scheduledForDate: String,
+    val timezone: String,
+    @SerialName("updated_at") val updatedAt: String,
+)
+
+@Serializable
 data class SyncStatusResponse(
     @SerialName("schema_version") val schemaVersion: String,
     @SerialName("device_id") val deviceId: String,
@@ -606,4 +728,5 @@ data class AppFailure(
     val retryable: Boolean,
     val retryAfterSeconds: Long? = null,
     val requestId: String? = null,
+    val serverCode: String? = null,
 ) : RuntimeException(userMessage)

@@ -7,7 +7,11 @@ from app.models.import_run import ImportRun
 from app.models.medical_lab import MedicalLabReport, MedicalLabResult
 from app.models.nutrition import DailyNutrition, FoodProduct, NutritionItem, NutritionMeal
 from app.models.recipe import Recipe, RecipeIngredient
-from app.models.training_plan import TrainingPlan, TrainingPlanVersion
+from app.models.training_plan import (
+    TrainingPlan,
+    TrainingPlanVersion,
+    TrainingPlanWorkout,
+)
 from app.models.training_session import (
     TrainingSession,
     TrainingSessionExercise,
@@ -50,6 +54,7 @@ __all__ = [
     "RecipeIngredient",
     "TrainingPlan",
     "TrainingPlanVersion",
+    "TrainingPlanWorkout",
     "TrainingSession",
     "TrainingSessionExercise",
     "TrainingSet",

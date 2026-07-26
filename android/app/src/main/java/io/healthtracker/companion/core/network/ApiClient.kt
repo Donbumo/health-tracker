@@ -154,6 +154,57 @@ class ApiClient(
     suspend fun progressExercise(publicId: String, range: String): ProgressExerciseDetailDto =
         call("/api/v1/mobile/progress/exercises/${encodeQuery(publicId)}?range=${encodeQuery(range)}", "GET")
 
+    suspend fun exerciseCatalog(search: String = "", cursor: String? = null, limit: Int = 50): ExerciseCatalogResponseDto {
+        val query = buildList {
+            add("limit=$limit")
+            if (search.isNotBlank()) add("search=${encodeQuery(search)}")
+            cursor?.let { add("cursor=${encodeQuery(it)}") }
+        }.joinToString("&")
+        return call("/api/v1/mobile/exercises?$query", "GET")
+    }
+
+    suspend fun plans(status: String = "active"): MobilePlanListDto =
+        call("/api/v1/mobile/plans?status=${encodeQuery(status)}", "GET")
+
+    suspend fun plan(publicId: String): MobilePlanDto =
+        call("/api/v1/mobile/plans/${encodeQuery(publicId)}", "GET")
+
+    suspend fun planWorkout(publicId: String): MobilePlanWorkoutDto =
+        call("/api/v1/mobile/workouts/${encodeQuery(publicId)}", "GET")
+
+    suspend fun createPlan(request: PlanCreateRequest, key: String): PlanMutationResponse =
+        call("/api/v1/mobile/plans", "POST", json.encodeToString(request), idempotencyKey = key)
+
+    suspend fun patchPlan(publicId: String, payload: JsonObject, key: String): PlanMutationResponse =
+        call("/api/v1/mobile/plans/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+
+    suspend fun duplicatePlan(publicId: String, payload: JsonObject, key: String): PlanMutationResponse =
+        call("/api/v1/mobile/plans/${encodeQuery(publicId)}/duplicate", "POST", payload.toString(), idempotencyKey = key)
+
+    suspend fun createPlanWorkout(planId: String, payload: JsonObject, key: String): WorkoutMutationResponse =
+        call("/api/v1/mobile/plans/${encodeQuery(planId)}/workouts", "POST", payload.toString(), idempotencyKey = key)
+
+    suspend fun patchPlanWorkout(publicId: String, payload: JsonObject, key: String): WorkoutMutationResponse =
+        call("/api/v1/mobile/workouts/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+
+    suspend fun duplicatePlanWorkout(publicId: String, payload: JsonObject, key: String): WorkoutMutationResponse =
+        call("/api/v1/mobile/workouts/${encodeQuery(publicId)}/duplicate", "POST", payload.toString(), idempotencyKey = key)
+
+    suspend fun schedulePlanWorkout(publicId: String, payload: JsonObject, key: String): ScheduleMutationResponse =
+        call("/api/v1/mobile/workouts/${encodeQuery(publicId)}/schedule", "POST", payload.toString(), idempotencyKey = key)
+
+    suspend fun cancelScheduledWorkout(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/scheduled-workouts/${encodeQuery(publicId)}", "DELETE", payload.toString(), idempotencyKey = key)
+
+    suspend fun plannedWorkouts(from: String, to: String): List<PlannedWorkoutDto> =
+        call("/api/v1/planned-workouts?from=${encodeQuery(from)}&to=${encodeQuery(to)}", "GET")
+
+    suspend fun reschedulePlannedWorkout(publicId: String, payload: JsonObject, key: String): ScheduledWorkoutMutationResponse =
+        call("/api/v1/planned-workouts/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+
+    suspend fun plannedWorkout(publicId: String): PlannedWorkoutDto =
+        call("/api/v1/planned-workouts/${encodeQuery(publicId)}", "GET")
+
     suspend fun push(request: PushRequest, key: String): PushResponse = call(
         "/api/v1/sync/push", "POST", json.encodeToString(request), idempotencyKey = key,
     )

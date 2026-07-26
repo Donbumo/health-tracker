@@ -1,4 +1,4 @@
-# Android Companion Alpha 1.2
+# Android Companion Alpha 1.3
 
 Cliente Android nativo y offline-first para el flujo `planear → descargar → ejecutar → completar → sincronizar`. El backend sigue siendo autoritativo; la app no duplica `TrainingSession`, cursor, importador ni protocolo.
 
@@ -29,6 +29,11 @@ Abreviaturas: `B` = Bearer; `I` = `Idempotency-Key`; `R` = revisión optimista; 
 | Checkpoint | `.../<id>/progress` | POST | B+I | progress 1.0 | evento | secuencia | comparte C | event UUID + I | O+device | gap/stale/conflict | Q ordenada | Sí | escalares, no telemetría | companion/MariaDB | process death |
 | Completion | `.../<id>/complete` | POST | B+I | completion + completed workout | delivery + sesión | R | emite cambio | event UUID + I | O+device | hash/revision/event conflict | Q hasta autoritativo | Sí | `weight_kg` + detalle aditivo | completion atómica | no doble submit |
 | Revocación | `/api/v1/devices/<uuid>` | DELETE | B | UUID propio | revoked | sesiones | — | repetible | O | 404/session revoked | no loop | limpia local | UUID público | API tests | UX comprensible |
+| Catálogo | `/api/v1/mobile/exercises` | GET | B | búsqueda + cursor | `mobile_planning` | — | consulta | read-only | O | filtros honestos | página | caché Room | aliases en detección | planning tests | buscar/seleccionar |
+| Rutinas | `/api/v1/mobile/plans` y `.../<id>` | GET/POST/PATCH | B+I | agregado + revisión | `mobile_planning` | R | cursor compartido | I | O | 404/409/422 | decisión | Q | `TrainingPlanVersion` | planning tests | CRUD/orden/archivo |
+| Entrenamientos | `/api/v1/mobile/plans/<id>/workouts` y `/api/v1/mobile/workouts/<id>` | POST/PATCH | B+I | agregado completo | workout read model | R | cursor compartido | I | O | límites/conflicto | FIFO | Q | doce cargas | planning tests | editor/series |
+| Crear programación | `/api/v1/mobile/workouts/<id>/schedule` | POST | B+I | fecha + timezone | planned workout 1.0 | R | cursor existente | I | O | fecha/estado | FIFO | Q | snapshot | planning/companion | agenda |
+| Agenda/mover/cancelar | `/api/v1/planned-workouts` y `.../<id>` | GET/PATCH + `POST .../cancel` | B; B+I en escritura | rango o fecha/timezone/revisión | planned workout 1.0 | R | cursor existente | I en escritura | O | 404/409/422 | FIFO | Q | UUID estable | planning/companion | semana/mes/Hoy |
 
 La auditoría detectó y corrigió una divergencia aditiva: el pull real ya emitía `companion_profile` y `companion_delivery`, pero el enum de `sync_pull.schema.json` no los declaraba. El schema y una prueba funcional ahora cubren las cuatro entidades del cursor compartido.
 
@@ -45,6 +50,14 @@ Compose/ViewModel
 ```
 
 Room normaliza cuenta, planned workouts, packages, ejercicios, sets, deliveries, drafts, checkpoints pendientes, sesiones recientes y cursor. DataStore contiene configuración no sensible. Android Keystore cifra el refresh token; el access token permanece en memoria.
+
+Alpha 1.3 agrega una proyección estructurada y owner-scoped de catálogo, rutinas, entrenamientos, ejercicios, prescripciones y conflictos en Room 3. `TrainingPlanVersion` continúa siendo el historial inmutable: cada mutación móvil publica una versión y programar crea el `PlannedWorkout`/package Companion existente. No existe un segundo cursor, calendario ni motor de ejecución.
+
+La navegación principal pasa a **Hoy · Plan · Historial · Progreso · Ajustes**. Plan separa Rutinas y Agenda; permite crear, autosalvar, duplicar y archivar rutinas, ordenar entrenamientos, buscar ejercicios por nombre o alias, editar series y cargas, y programar/cancelar por fecha local. La agenda ofrece semana o mes y acceso rápido a Hoy.
+
+Semana muestra siete días y Mes una cuadrícula simple con indicadores y lista del día seleccionado. Ambas leen Room, admiten varios eventos diarios y muestran etiquetas humanas para pendiente local, descargado, inicio pendiente, activo, completado, cancelado y conflicto. Mover conserva el UUID de la programación; cancelar y archivar requieren confirmación, y un plan con programaciones activas no se archiva. Hoy observa la misma fuente por la zona horaria de la cuenta, de modo que un movimiento local entra o sale sin refresh manual.
+
+La descarga compara la revisión del package con la programación. Una revisión nueva puede reemplazar una descarga todavía no iniciada; nunca sustituye un draft activo y en ese caso abre un conflicto visible. Completion offline crea de inmediato una sesión local pendiente y actualiza Progreso, mientras la reconciliación autoritativa conserva una sola sesión por `client_event_id`.
 
 Alpha 1.2 añade entidades Room estructuradas para páginas y detalle de historial, resumen por periodo, ejercicios, puntos temporales y mejores marcas. La UI observa Room; `GET /api/v1/mobile/history`, su detalle y `GET /api/v1/mobile/progress/*` solo refrescan/reconcilian la caché. La base sube a versión 2 mediante migración explícita que conserva `recent_sessions`; no existe una base paralela ni se guardan respuestas JSON opacas.
 
@@ -64,4 +77,4 @@ Tras process death sin red, una cuenta con refresh cifrado, scope, dispositivo y
 
 ## Alcance no soportado
 
-Reloj, Bluetooth, Health Connect, telemetría continua, FIT output, deep links, WebView, analytics, publicidad y vendors Garmin/Huawei/Magene siguen fuera de alcance. Los packages planeados no prometen `load_details` avanzados; la app los genera para el resultado realizado y conserva `weight_kg`.
+Reloj, Bluetooth, Health Connect, telemetría continua, FIT output, deep links, WebView, analytics, publicidad y vendors Garmin/Huawei/Magene siguen fuera de alcance. Los packages planeados conservan de forma aditiva carga, `load_details`, RIR, RPE y notas cuando están prescritos; clientes anteriores pueden ignorarlos.

@@ -89,6 +89,76 @@ class CompanionDatabaseTest {
         assertEquals("workout-b", dao.observeToday("scope-b", "2026-07-17").first()?.id)
     }
 
+    @Test fun planningAggregatesAreAccountScopedAndCleanupOnlyRemovesOwnedCopy() = runBlocking {
+        val dao = database.companionDao()
+        val now = "2099-07-24T00:00:00Z"
+        listOf("scope-a", "scope-b").forEach { scope ->
+            val plan = MobilePlanEntity(scope, "shared-plan", "QA $scope", null, "active", 1, null, null, "pending", now, now, null)
+            val workout = MobilePlanWorkoutEntity(scope, "workout-$scope", "shared-plan", "QA workout", null, 1, null, 1, "pending", now, now)
+            val exercise = MobilePlanExerciseEntity(scope, workout.publicId, "exercise-$scope", null, "QA squat", null, 1)
+            val set = MobilePlanSetEntity(scope, workout.publicId, exercise.publicId, "set-$scope", 1, 5, null, null, "20", "20", "kg", "direct_total", null, "2", null, 60, null, null, null)
+            dao.replacePlan(plan, listOf(workout), listOf(exercise), listOf(set))
+        }
+
+        assertEquals("QA scope-a", dao.observePlan("scope-a", "shared-plan").first()?.name)
+        assertEquals("QA scope-b", dao.observePlan("scope-b", "shared-plan").first()?.name)
+
+        dao.clearAccount("scope-a")
+
+        assertNull(dao.observePlan("scope-a", "shared-plan").first())
+        assertEquals(1, dao.observePlanWorkouts("scope-b", "shared-plan").first().size)
+        assertEquals("20", dao.observePlanSets("scope-b", "workout-scope-b").first().single().loadValue)
+    }
+
+    @Test fun offlineRescheduleKeepsStableIdentityAndCoalescesLatestDestination() = runBlocking {
+        val dao = database.companionDao()
+        val now = "2099-07-24T00:00:00Z"
+        val plan = MobilePlanEntity(TEST_SCOPE, "plan-reschedule", "QA calendar", null, "active", 1, null, null, "synced", now, now, null)
+        val workout = MobilePlanWorkoutEntity(TEST_SCOPE, "workout-reschedule", plan.publicId, "QA workout", null, 1, null, 1, "synced", now, now)
+        dao.replacePlan(plan, listOf(workout), emptyList(), emptyList())
+        dao.upsertPlanned(listOf(PlannedWorkoutEntity(TEST_SCOPE, "schedule-old", plan.publicId, "version-qa", "2099-07-24", "UTC", "planned", workout.name, 1, now, false, workout.publicId)))
+
+        val replacement = repository().rescheduleWorkoutOffline(TEST_SCOPE, "schedule-old", java.time.LocalDate.of(2099, 7, 25), "UTC")
+        val repeated = repository().rescheduleWorkoutOffline(TEST_SCOPE, "schedule-old", java.time.LocalDate.of(2099, 7, 26), "UTC")
+        SyncScheduler.cancelAll()
+
+        val visible = dao.observePlanned(TEST_SCOPE).first()
+        assertEquals("schedule-old", replacement)
+        assertEquals("schedule-old", repeated)
+        assertEquals(listOf(replacement), visible.map { it.id })
+        assertEquals("2099-07-26", visible.single().scheduledForDate)
+        assertEquals(
+            listOf("planning_schedule_patch"),
+            dao.queuedActions(TEST_SCOPE, 10).map { it.actionType },
+        )
+        assertTrue(dao.queuedActions(TEST_SCOPE, 10).single().payloadJson.contains("2099-07-26"))
+    }
+
+    @Test fun offlineCreateThenMoveCoalescesAndCreateThenCancelLeavesNoTrace() = runBlocking {
+        val dao = database.companionDao()
+        val now = "2099-07-24T00:00:00Z"
+        val plan = MobilePlanEntity(TEST_SCOPE, "plan-coalesce", "QA calendar", null, "active", 1, null, null, "synced", now, now, null)
+        val workout = MobilePlanWorkoutEntity(TEST_SCOPE, "workout-coalesce", plan.publicId, "QA workout", null, 1, null, 1, "synced", now, now)
+        dao.replacePlan(plan, listOf(workout), emptyList(), emptyList())
+
+        val scheduledId = repository().scheduleWorkoutOffline(TEST_SCOPE, workout.publicId, java.time.LocalDate.of(2099, 7, 24), "UTC")
+        val duplicateTap = repository().scheduleWorkoutOffline(TEST_SCOPE, workout.publicId, java.time.LocalDate.of(2099, 7, 24), "UTC")
+        repository().rescheduleWorkoutOffline(TEST_SCOPE, scheduledId, java.time.LocalDate.of(2099, 7, 27), "UTC")
+        SyncScheduler.cancelAll()
+
+        assertEquals(scheduledId, duplicateTap)
+        assertEquals("2099-07-27", dao.observePlanned(TEST_SCOPE).first().single().scheduledForDate)
+        val create = dao.queuedActions(TEST_SCOPE, 10).single()
+        assertEquals("planning_schedule", create.actionType)
+        assertEquals(scheduledId, create.entityId)
+        assertTrue(create.payloadJson.contains("2099-07-27"))
+
+        repository().cancelScheduleOffline(TEST_SCOPE, scheduledId)
+        SyncScheduler.cancelAll()
+        assertTrue(dao.observePlanned(TEST_SCOPE).first().isEmpty())
+        assertTrue(dao.queuedActions(TEST_SCOPE, 10).isEmpty())
+    }
+
     @Test fun plannedTombstoneOnlyRemovesTheOwnedScope() = runBlocking {
         val dao = database.companionDao()
         val sharedId = "workout-shared-public-id"
@@ -101,6 +171,22 @@ class CompanionDatabaseTest {
 
         assertNull(dao.observeToday("scope-a", "2026-07-17").first())
         assertEquals(sharedId, dao.observeToday("scope-b", "2026-07-17").first()?.id)
+    }
+
+    @Test fun roomExposesEveryWorkoutOnTheSameDayWithoutCrossAccountRows() = runBlocking {
+        val dao = database.companionDao()
+        val date = "2028-02-29"
+        dao.upsertPlanned(
+            listOf(
+                PlannedWorkoutEntity("scope-a", "schedule-a1", "plan-a", "version-a", date, "UTC", "planned", "QA A1", 1, "2028-02-01T00:00:00Z", false),
+                PlannedWorkoutEntity("scope-a", "schedule-a2", "plan-a", "version-a", date, "UTC", "locally_pending", "QA A2", 1, "2028-02-01T00:00:01Z", false),
+                PlannedWorkoutEntity("scope-b", "schedule-b", "plan-b", "version-b", date, "UTC", "planned", "QA B", 1, "2028-02-01T00:00:02Z", false),
+            ),
+        )
+
+        assertEquals(listOf("schedule-a1", "schedule-a2"), dao.observeScheduledDate("scope-a", date).first().map { it.id })
+        assertEquals(listOf("schedule-b"), dao.observeScheduledDate("scope-b", date).first().map { it.id })
+        assertTrue(dao.observeScheduledDate("scope-a", "2028-03-01").first().isEmpty())
     }
 
     @Test fun pendingAndConflictCountsRepresentDifferentStates() = runBlocking {
@@ -122,6 +208,37 @@ class CompanionDatabaseTest {
 
         assertEquals(1, dao.observePendingCount(TEST_SCOPE).first())
         assertEquals(1, dao.observeConflictCount(TEST_SCOPE).first())
+    }
+
+    @Test fun rebasingConflictKeepsItsFifoPositionAndRotatesIdempotencyKey() = runBlocking {
+        val dao = database.companionDao()
+        val firstId = dao.insertPending(
+            PendingActionEntity(
+                accountScope = TEST_SCOPE, actionType = "planning_plan_patch", entityId = "plan-qa",
+                idempotencyKey = "stale-key", payloadJson = "{\"base_revision\":1}", payloadHash = "stale-hash",
+                status = "conflict", createdAt = "2099-07-20T00:00:00Z",
+            ),
+        )
+        dao.insertPending(
+            PendingActionEntity(
+                accountScope = TEST_SCOPE, actionType = "planning_plan_patch", entityId = "plan-qa",
+                idempotencyKey = "later-key", payloadJson = "{\"base_revision\":2}", payloadHash = "later-hash",
+                createdAt = "2099-07-20T00:00:01Z",
+            ),
+        )
+
+        val stale = dao.queuedActions(TEST_SCOPE, 10).first()
+        dao.updatePendingEntity(
+            stale.copy(
+                idempotencyKey = "rebased-key", payloadJson = "{\"base_revision\":3}", payloadHash = "rebased-hash",
+                status = "pending", notBeforeEpochMs = 0, lastErrorCode = null,
+            ),
+        )
+
+        val queued = dao.queuedActions(TEST_SCOPE, 10)
+        assertEquals(firstId, queued.first().localId)
+        assertEquals("rebased-key", queued.first().idempotencyKey)
+        assertEquals("later-key", queued.last().idempotencyKey)
     }
 
     @Test fun downloadedPackageFlowUpdatesTodayImmediatelyWithoutPull() = runBlocking {
@@ -152,6 +269,14 @@ class CompanionDatabaseTest {
             server.enqueue(jsonResponse(packageEnvelope))
             server.enqueue(jsonResponse(deliveryEnvelope(deviceId, packageHash, "acknowledged", 2)))
             val repository = CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens))
+            database.companionDao().upsertPlanned(
+                listOf(
+                    PlannedWorkoutEntity(
+                        TEST_SCOPE, "qa-workout", "qa-plan", "qa-version", "2099-07-20", "UTC",
+                        "planned", "QA offline", 1, "2099-07-20T00:00:00Z", false,
+                    ),
+                ),
+            )
             val observed = async { repository.observeDownloadedDelivery(TEST_SCOPE, "qa-workout").filterNotNull().first() }
 
             val deliveryId = repository.downloadWorkout(TEST_SCOPE, "qa-workout")
@@ -396,6 +521,43 @@ class CompanionDatabaseTest {
         assertEquals("completion_pending", dao.draft(TEST_SCOPE, TEST_DELIVERY)?.status)
         assertEquals(countAfterFirstCompletion, dao.readyPending(TEST_SCOPE, System.currentTimeMillis(), 20).size)
         assertNotNull(dao.packageForDelivery(TEST_SCOPE, TEST_DELIVERY))
+        val localHistory = dao.observeHistoryPage(TEST_SCOPE, "history:::").first()
+        assertEquals(1, localHistory.size)
+        assertEquals("pending", localHistory.single().syncStatus)
+        assertEquals(1, dao.observeProgressSummary(TEST_SCOPE, "7").first()?.sessions)
+        assertEquals(5, dao.observeProgressSummary(TEST_SCOPE, "7").first()?.totalReps)
+        assertEquals(1, dao.observeProgressSummary(TEST_SCOPE, "30").first()?.completedSets)
+        listOf("90", "180", "365", "all").forEach { range ->
+            assertEquals(1, dao.observeProgressSummary(TEST_SCOPE, range).first()?.sessions)
+        }
+    }
+
+    @Test fun newerPackageRevisionNeverReplacesAnActiveDraft() = runBlocking {
+        val repository = repository()
+        seedDownload(status = "acknowledged")
+        val dao = database.companionDao()
+        dao.upsertPlanned(
+            listOf(
+                PlannedWorkoutEntity(
+                    TEST_SCOPE, "qa-workout", "qa-plan", "qa-version-new", "2099-07-20", "UTC",
+                    "planned", "QA offline actualizada", 2, "2099-07-21T00:00:00Z", false,
+                ),
+            ),
+        )
+        repository.startWorkout(TEST_SCOPE, TEST_DELIVERY)
+
+        var failed = false
+        try {
+            repository.downloadWorkout(TEST_SCOPE, "qa-workout")
+        } catch (failure: io.healthtracker.companion.core.model.AppFailure) {
+            failed = failure.code == io.healthtracker.companion.core.model.AppErrorCode.REVISION_CONFLICT
+        }
+        SyncScheduler.cancelAll()
+
+        assertTrue(failed)
+        assertEquals(TEST_PACKAGE, dao.packageForDelivery(TEST_SCOPE, TEST_DELIVERY)?.packageId)
+        assertEquals("package_revision_conflict:revision", dao.planningConflict(TEST_SCOPE, "qa-workout")?.changedFields)
+        assertEquals("conflict", dao.planned(TEST_SCOPE, "qa-workout")?.status)
     }
 
     @Test fun autosavePreservesPausedAndPendingSyncDraftStates() = runBlocking {

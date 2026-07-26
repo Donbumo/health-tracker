@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
@@ -68,10 +69,34 @@ interface CompanionDao {
     suspend fun upsertPersonalRecords(values: List<PersonalRecordEntity>)
 
     @Upsert
+    suspend fun upsertCatalog(values: List<ExerciseCatalogEntity>)
+
+    @Upsert
+    suspend fun upsertCatalogState(value: PlanningCatalogStateEntity)
+
+    @Upsert
+    suspend fun upsertPlans(values: List<MobilePlanEntity>)
+
+    @Upsert
+    suspend fun upsertPlanWorkouts(values: List<MobilePlanWorkoutEntity>)
+
+    @Upsert
+    suspend fun upsertPlanExercises(values: List<MobilePlanExerciseEntity>)
+
+    @Upsert
+    suspend fun upsertPlanSets(values: List<MobilePlanSetEntity>)
+
+    @Upsert
+    suspend fun upsertPlanningConflict(value: PlanningConflictEntity)
+
+    @Upsert
     suspend fun upsertSyncState(value: SyncStateEntity)
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertPending(value: PendingActionEntity): Long
+
+    @Update
+    suspend fun updatePendingEntity(value: PendingActionEntity)
 
     @Query("SELECT * FROM accounts WHERE scope=:scope LIMIT 1")
     suspend fun account(scope: String): AccountEntity?
@@ -82,8 +107,62 @@ interface CompanionDao {
     @Query("SELECT * FROM planned_workouts WHERE accountScope=:scope AND deleted=0 ORDER BY scheduledForDate")
     fun observePlanned(scope: String): Flow<List<PlannedWorkoutEntity>>
 
+    @Query("SELECT * FROM planned_workouts WHERE accountScope=:scope AND id=:id LIMIT 1")
+    suspend fun planned(scope: String, id: String): PlannedWorkoutEntity?
+
+    @Query("SELECT * FROM exercise_catalog WHERE accountScope=:scope AND (normalizedName LIKE :query OR lower(aliases) LIKE :query) ORDER BY normalizedName LIMIT :limit")
+    fun observeCatalog(scope: String, query: String, limit: Int = 100): Flow<List<ExerciseCatalogEntity>>
+
+    @Query("SELECT * FROM planning_catalog_state WHERE accountScope=:scope AND `query`=:query LIMIT 1")
+    suspend fun catalogState(scope: String, query: String): PlanningCatalogStateEntity?
+
+    @Query("SELECT * FROM mobile_plans WHERE accountScope=:scope AND status=:status ORDER BY updatedAt DESC,name")
+    fun observePlans(scope: String, status: String = "active"): Flow<List<MobilePlanEntity>>
+
+    @Query("SELECT * FROM mobile_plans WHERE accountScope=:scope AND publicId=:publicId LIMIT 1")
+    fun observePlan(scope: String, publicId: String): Flow<MobilePlanEntity?>
+
+    @Query("SELECT * FROM mobile_plans WHERE accountScope=:scope AND publicId=:publicId LIMIT 1")
+    suspend fun plan(scope: String, publicId: String): MobilePlanEntity?
+
+    @Query("SELECT * FROM mobile_plan_workouts WHERE accountScope=:scope AND planPublicId=:planId ORDER BY position")
+    fun observePlanWorkouts(scope: String, planId: String): Flow<List<MobilePlanWorkoutEntity>>
+
+    @Query("SELECT * FROM mobile_plan_workouts WHERE accountScope=:scope AND planPublicId=:planId ORDER BY position")
+    suspend fun planWorkouts(scope: String, planId: String): List<MobilePlanWorkoutEntity>
+
+    @Query("UPDATE mobile_plan_workouts SET position=position+1000 WHERE accountScope=:scope AND planPublicId=:planId")
+    suspend fun offsetPlanWorkoutPositions(scope: String, planId: String)
+
+    @Query("SELECT * FROM mobile_plan_workouts WHERE accountScope=:scope AND publicId=:publicId LIMIT 1")
+    fun observePlanWorkout(scope: String, publicId: String): Flow<MobilePlanWorkoutEntity?>
+
+    @Query("SELECT * FROM mobile_plan_workouts WHERE accountScope=:scope AND publicId=:publicId LIMIT 1")
+    suspend fun planWorkout(scope: String, publicId: String): MobilePlanWorkoutEntity?
+
+    @Query("SELECT * FROM mobile_plan_exercises WHERE accountScope=:scope AND workoutPublicId=:workoutId ORDER BY position")
+    fun observePlanExercises(scope: String, workoutId: String): Flow<List<MobilePlanExerciseEntity>>
+
+    @Query("SELECT * FROM mobile_plan_exercises WHERE accountScope=:scope AND workoutPublicId=:workoutId ORDER BY position")
+    suspend fun planExercises(scope: String, workoutId: String): List<MobilePlanExerciseEntity>
+
+    @Query("SELECT * FROM mobile_plan_sets WHERE accountScope=:scope AND workoutPublicId=:workoutId ORDER BY exercisePublicId,setNumber")
+    fun observePlanSets(scope: String, workoutId: String): Flow<List<MobilePlanSetEntity>>
+
+    @Query("SELECT * FROM mobile_plan_sets WHERE accountScope=:scope AND workoutPublicId=:workoutId ORDER BY exercisePublicId,setNumber")
+    suspend fun planSets(scope: String, workoutId: String): List<MobilePlanSetEntity>
+
+    @Query("SELECT * FROM planning_conflicts WHERE accountScope=:scope ORDER BY createdAt")
+    fun observePlanningConflicts(scope: String): Flow<List<PlanningConflictEntity>>
+
+    @Query("SELECT * FROM planning_conflicts WHERE accountScope=:scope AND entityId=:entityId LIMIT 1")
+    suspend fun planningConflict(scope: String, entityId: String): PlanningConflictEntity?
+
     @Query("SELECT * FROM planned_workouts WHERE accountScope=:scope AND scheduledForDate=:date AND deleted=0 LIMIT 1")
     fun observeToday(scope: String, date: String): Flow<PlannedWorkoutEntity?>
+
+    @Query("SELECT * FROM planned_workouts WHERE accountScope=:scope AND scheduledForDate=:date AND deleted=0 ORDER BY id")
+    fun observeScheduledDate(scope: String, date: String): Flow<List<PlannedWorkoutEntity>>
 
     @Query("SELECT * FROM recent_sessions WHERE accountScope=:scope ORDER BY completedAt DESC LIMIT :limit OFFSET :offset")
     fun observeRecent(scope: String, limit: Int, offset: Int): Flow<List<RecentSessionEntity>>
@@ -99,6 +178,15 @@ interface CompanionDao {
 
     @Query("SELECT * FROM history_sessions WHERE accountScope=:scope AND clientEventId=:clientEventId LIMIT 1")
     suspend fun historyByClientEvent(scope: String, clientEventId: String): HistorySessionEntity?
+
+    @Query("SELECT * FROM history_sessions WHERE accountScope=:scope")
+    suspend fun historySessions(scope: String): List<HistorySessionEntity>
+
+    @Query("SELECT * FROM history_exercises WHERE accountScope=:scope")
+    suspend fun historyExercises(scope: String): List<HistoryExerciseEntity>
+
+    @Query("SELECT * FROM history_sets WHERE accountScope=:scope")
+    suspend fun historySets(scope: String): List<HistorySetEntity>
 
     @Query("SELECT * FROM history_exercises WHERE accountScope=:scope AND sessionPublicId=:publicId ORDER BY exerciseOrder")
     fun observeHistoryExercises(scope: String, publicId: String): Flow<List<HistoryExerciseEntity>>
@@ -160,6 +248,9 @@ interface CompanionDao {
     @Query("SELECT * FROM workout_packages WHERE accountScope=:scope AND plannedWorkoutId=:plannedId LIMIT 1")
     fun observePackageForPlanned(scope: String, plannedId: String): Flow<WorkoutPackageEntity?>
 
+    @Query("SELECT * FROM workout_packages WHERE accountScope=:scope ORDER BY scheduledForDate,plannedWorkoutId")
+    fun observePackages(scope: String): Flow<List<WorkoutPackageEntity>>
+
     @Query("SELECT * FROM package_sets WHERE accountScope=:scope AND packageId=:packageId ORDER BY exerciseOrder,setNumber")
     suspend fun packageSets(scope: String, packageId: String): List<PackageSetEntity>
 
@@ -184,6 +275,12 @@ interface CompanionDao {
     @Query("SELECT * FROM pending_actions WHERE accountScope=:scope AND idempotencyKey=:key LIMIT 1")
     suspend fun pendingByKey(scope: String, key: String): PendingActionEntity?
 
+    @Query("SELECT * FROM pending_actions WHERE accountScope=:scope AND entityId=:entityId AND actionType=:actionType AND status='pending' ORDER BY localId LIMIT 1")
+    suspend fun pendingAction(scope: String, entityId: String, actionType: String): PendingActionEntity?
+
+    @Query("SELECT * FROM pending_actions WHERE accountScope=:scope AND actionType=:actionType AND status='pending' ORDER BY localId")
+    suspend fun pendingActionsByType(scope: String, actionType: String): List<PendingActionEntity>
+
     @Query("SELECT * FROM pending_actions WHERE accountScope=:scope AND entityId=:entityId AND actionType='companion_start' AND status IN ('pending','conflict') ORDER BY localId LIMIT 1")
     suspend fun pendingStart(scope: String, entityId: String): PendingActionEntity?
 
@@ -207,6 +304,9 @@ interface CompanionDao {
 
     @Query("DELETE FROM workout_drafts WHERE accountScope=:scope AND deliveryId=:deliveryId")
     suspend fun deleteDraft(scope: String, deliveryId: String)
+
+    @Query("DELETE FROM workout_packages WHERE accountScope=:scope AND packageId=:packageId")
+    suspend fun deletePackage(scope: String, packageId: String)
 
     @Query("DELETE FROM planned_workouts WHERE accountScope=:scope AND id=:id")
     suspend fun deletePlanned(scope: String, id: String)
@@ -274,6 +374,30 @@ interface CompanionDao {
     @Query("DELETE FROM personal_records WHERE accountScope=:scope")
     suspend fun deletePersonalRecordsForAccount(scope: String)
 
+    @Query("DELETE FROM exercise_catalog WHERE accountScope=:scope")
+    suspend fun deleteCatalogForAccount(scope: String)
+
+    @Query("DELETE FROM planning_catalog_state WHERE accountScope=:scope")
+    suspend fun deleteCatalogStateForAccount(scope: String)
+
+    @Query("DELETE FROM mobile_plan_sets WHERE accountScope=:scope AND workoutPublicId=:workoutId")
+    suspend fun deletePlanSets(scope: String, workoutId: String)
+
+    @Query("DELETE FROM mobile_plan_exercises WHERE accountScope=:scope AND workoutPublicId=:workoutId")
+    suspend fun deletePlanExercises(scope: String, workoutId: String)
+
+    @Query("DELETE FROM mobile_plan_workouts WHERE accountScope=:scope AND planPublicId=:planId")
+    suspend fun deletePlanWorkouts(scope: String, planId: String)
+
+    @Query("DELETE FROM mobile_plans WHERE accountScope=:scope")
+    suspend fun deletePlansForAccount(scope: String)
+
+    @Query("DELETE FROM planning_conflicts WHERE accountScope=:scope")
+    suspend fun deletePlanningConflictsForAccount(scope: String)
+
+    @Query("DELETE FROM planning_conflicts WHERE accountScope=:scope AND entityId=:entityId")
+    suspend fun deletePlanningConflict(scope: String, entityId: String)
+
     @Query("DELETE FROM sync_state WHERE accountScope=:scope")
     suspend fun deleteSyncStateForAccount(scope: String)
 
@@ -324,6 +448,26 @@ interface CompanionDao {
     }
 
     @Transaction
+    suspend fun replacePlan(
+        plan: MobilePlanEntity,
+        workouts: List<MobilePlanWorkoutEntity>,
+        exercises: List<MobilePlanExerciseEntity>,
+        sets: List<MobilePlanSetEntity>,
+    ) {
+        upsertPlans(listOf(plan))
+        val old = planWorkouts(plan.accountScope, plan.publicId)
+        old.forEach {
+            deletePlanSets(plan.accountScope, it.publicId)
+            deletePlanExercises(plan.accountScope, it.publicId)
+        }
+        deletePlanWorkouts(plan.accountScope, plan.publicId)
+        upsertPlanWorkouts(workouts)
+        upsertPlanExercises(exercises)
+        upsertPlanSets(sets)
+        deletePlanningConflict(plan.accountScope, plan.publicId)
+    }
+
+    @Transaction
     suspend fun clearAccount(scope: String) {
         deletePendingForAccount(scope)
         deleteDraftsForAccount(scope)
@@ -335,6 +479,10 @@ interface CompanionDao {
         deleteHistoryStateForAccount(scope)
         deleteHistoryForAccount(scope)
         deletePersonalRecordsForAccount(scope)
+        deletePlanningConflictsForAccount(scope)
+        deletePlansForAccount(scope)
+        deleteCatalogStateForAccount(scope)
+        deleteCatalogForAccount(scope)
         deleteProgressPointsForAccount(scope)
         deleteProgressExercisesForAccount(scope)
         deleteProgressSummariesForAccount(scope)

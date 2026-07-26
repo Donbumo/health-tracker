@@ -1,7 +1,7 @@
 import io
 import json
 import re
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from html import unescape
 
 from app.extensions import db
@@ -132,7 +132,7 @@ def test_dashboard_shows_owned_planned_workout_as_primary_action(app, client, us
                 user_id=user,
                 training_plan_id=plan.id,
                 training_plan_version_id=version.id,
-                scheduled_for_date=date.today(),
+                scheduled_for_date=datetime.now(timezone.utc).date(),
                 timezone="UTC",
                 title_snapshot="Día ficticio de hoy",
                 payload_snapshot_json={"name": "Día ficticio de hoy", "exercises": []},

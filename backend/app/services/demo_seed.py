@@ -283,6 +283,9 @@ def _seed_plan(user: User, created: dict[str, int]) -> tuple[TrainingPlan, Train
         )
         db.session.add(version)
         db.session.flush()
+        from app.services.training_plans import replace_mobile_workouts_from_document
+
+        replace_mobile_workouts_from_document(plan, document, user.id)
         created["training_plan_versions"] += 1
     return plan, version
 

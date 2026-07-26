@@ -52,6 +52,7 @@
       "properties": {
         "day_number": {"type": "integer", "minimum": 1, "maximum": 7},
         "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "notes": {"type": "string", "maxLength": 5000},
         "exercises": {
           "type": "array",
           "maxItems": 100,
@@ -64,6 +65,8 @@
       "additionalProperties": false,
       "required": ["exercise_order", "name", "sets"],
       "properties": {
+        "id": {"type": "string", "format": "uuid"},
+        "exercise_id": {"type": ["string", "null"], "format": "uuid"},
         "exercise_order": {"type": "integer", "minimum": 1},
         "name": {"type": "string", "minLength": 1, "maxLength": 200},
         "notes": {"type": "string", "maxLength": 2000},
@@ -80,12 +83,21 @@
       "additionalProperties": false,
       "required": ["set_number"],
       "properties": {
+        "id": {"type": "string", "format": "uuid"},
         "set_number": {"type": "integer", "minimum": 1},
         "reps": {"type": "integer", "minimum": 1},
         "reps_min": {"type": "integer", "minimum": 1},
         "reps_max": {"type": "integer", "minimum": 1},
         "duration_seconds": {"type": "integer", "minimum": 1},
-        "distance_m": {"type": "number", "exclusiveMinimum": 0},
+        "distance_m": {"$ref": "#/$defs/positive_decimal"},
+        "weight_kg": {"$ref": "#/$defs/non_negative_decimal"},
+        "load_value": {"$ref": "#/$defs/non_negative_decimal"},
+        "load_unit": {"enum": ["kg", "lb"]},
+        "load_mode": {"enum": ["direct_total", "per_side", "bar_plus_per_side", "machine_initial_total", "machine_initial_per_side", "machine_external_per_side_initial_total", "selector_stack", "dumbbell_each", "bodyweight", "bodyweight_plus", "assistance", "duration_distance"]},
+        "load_details": {"type": "object"},
+        "rir": {"$ref": "#/$defs/rir"},
+        "rpe": {"$ref": "#/$defs/rpe"},
+        "notes": {"type": "string", "maxLength": 2000},
         "target": {"type": "string", "maxLength": 200},
         "rest_seconds": {"type": "integer", "minimum": 0}
       },
@@ -99,6 +111,30 @@
         "reps_min": ["reps_max"],
         "reps_max": ["reps_min"]
       }
+    },
+    "non_negative_decimal": {
+      "oneOf": [
+        {"type": "number", "minimum": 0},
+        {"type": "string", "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]+)?$"}
+      ]
+    },
+    "positive_decimal": {
+      "oneOf": [
+        {"type": "number", "exclusiveMinimum": 0},
+        {"type": "string", "pattern": "^(?:0\\.[0-9]*[1-9][0-9]*|[1-9][0-9]*(?:\\.[0-9]+)?)$"}
+      ]
+    },
+    "rir": {
+      "oneOf": [
+        {"type": "number", "minimum": 0, "maximum": 20},
+        {"type": "string", "pattern": "^(?:[0-9](?:\\.[0-9]+)?|1[0-9](?:\\.[0-9]+)?|20(?:\\.0+)?)$"}
+      ]
+    },
+    "rpe": {
+      "oneOf": [
+        {"type": "number", "minimum": 0, "maximum": 10},
+        {"type": "string", "pattern": "^(?:[0-9](?:\\.[0-9]+)?|10(?:\\.0+)?)$"}
+      ]
     }
   }
 }

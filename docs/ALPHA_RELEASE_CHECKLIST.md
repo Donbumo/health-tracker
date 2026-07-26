@@ -1,5 +1,21 @@
 # Checklist de release alpha privada
 
+## Alpha 1.3 — Planificación, Rutinas y Calendario Android
+
+- [x] Catálogo owner-only paginado por nombre/alias y ausencia honesta de filtros no disponibles.
+- [x] Rutinas/entrenamientos versionados con revisión optimista, idempotencia, rollback y proyección de imports/restores.
+- [x] Programación por fecha/timezone reutiliza `PlannedWorkout`, Companion Delivery y el cursor existente.
+- [x] Agenda semanal/mensual local-first; mover conserva UUID y crear/mover/cancelar consolida operaciones seguras sin romper FIFO.
+- [x] Room 3 preservador y aislado; planificación offline-first, FIFO y conflictos sin last-write-wins.
+- [x] Navegación Hoy/Plan/Historial/Progreso/Ajustes, editores con autosave y agenda semanal/mensual.
+- [x] Prescripciones aditivas: doce modos, carga, RIR/RPE, descanso, tiempo, distancia y notas.
+- [x] Hoy refleja Room inmediatamente; completion offline aparece una vez en Historial y actualiza Progreso local antes de reconciliarse.
+- [x] Delivery/package es determinista por revisión; una descarga obsoleta puede reemplazarse sin mutar un draft activo.
+- [x] Conflictos de revisión, archivo, ausencia, fecha y package muestran resolución explícita; archivo bloqueado con programaciones activas y restauración soportada.
+- [x] Matriz final: lint sin errores, dos pasadas forzadas de 49 JVM, APK y androidTest compile; backend local 600/3 y Docker/MariaDB 602/1, compileall, 30 schemas, ciclo MariaDB 0030 y Compose config.
+- [ ] QA manual visual, offline/process death/reconexión, package revision, rotación, tamaños, fuente grande, TalkBack, claro/oscuro y HTTPS en AVD/dispositivo separado.
+- [ ] Alpha 1.3 lista para release: **NO**, hasta cerrar QA manual, instrumentación y firma aprobada.
+
 ## Alpha 1.2 — Historial y Progreso Android
 
 - [x] API móvil owner-only con historial por cursor, filtros y detalle sin N+1.

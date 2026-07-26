@@ -955,6 +955,9 @@ class StandardImportExecutor:
             content=document,
         )
         db.session.add(version)
+        from app.services.training_plans import replace_mobile_workouts_from_document
+
+        replace_mobile_workouts_from_document(plan, document, user_id)
         return plan
 
     def _apply_completed_workout(self, document: dict[str, Any], user_id: int) -> TrainingSession:

@@ -29,9 +29,16 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ProgressExerciseEntity::class,
         ProgressPointEntity::class,
         PersonalRecordEntity::class,
+        ExerciseCatalogEntity::class,
+        PlanningCatalogStateEntity::class,
+        MobilePlanEntity::class,
+        MobilePlanWorkoutEntity::class,
+        MobilePlanExerciseEntity::class,
+        MobilePlanSetEntity::class,
+        PlanningConflictEntity::class,
         SyncStateEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class CompanionDatabase : RoomDatabase() {
@@ -42,7 +49,7 @@ abstract class CompanionDatabase : RoomDatabase() {
             context.applicationContext,
             CompanionDatabase::class.java,
             "health_tracker_companion_v1.db",
-        ).addMigrations(MIGRATION_1_2).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -63,6 +70,32 @@ abstract class CompanionDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_progress_exercises_accountScope_range_lastPerformedAt` ON `progress_exercises` (`accountScope`, `range`, `lastPerformedAt`)")
                 db.execSQL("""CREATE TABLE IF NOT EXISTS `progress_points` (`accountScope` TEXT NOT NULL, `range` TEXT NOT NULL, `exercisePublicId` TEXT NOT NULL, `sessionPublicId` TEXT NOT NULL, `date` TEXT NOT NULL, `performedAt` TEXT NOT NULL, `bestLoadKg` TEXT, `bestReps` INTEGER, `volumeKg` TEXT, `setCount` INTEGER NOT NULL, `averageRir` TEXT, `averageRpe` TEXT, `loadComparable` INTEGER NOT NULL, PRIMARY KEY(`accountScope`, `range`, `exercisePublicId`, `sessionPublicId`))""")
                 db.execSQL("""CREATE TABLE IF NOT EXISTS `personal_records` (`accountScope` TEXT NOT NULL, `range` TEXT NOT NULL, `exercisePublicId` TEXT NOT NULL, `type` TEXT NOT NULL, `value` TEXT NOT NULL, `unit` TEXT NOT NULL, `date` TEXT NOT NULL, `sessionPublicId` TEXT NOT NULL, `setIndex` INTEGER, PRIMARY KEY(`accountScope`, `range`, `exercisePublicId`, `type`))""")
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `planned_workouts` ADD COLUMN `sourceWorkoutId` TEXT")
+                db.execSQL("ALTER TABLE `package_sets` ADD COLUMN `prescribedWeightKg` TEXT")
+                db.execSQL("ALTER TABLE `package_sets` ADD COLUMN `prescribedLoadValue` TEXT")
+                db.execSQL("ALTER TABLE `package_sets` ADD COLUMN `prescribedLoadUnit` TEXT")
+                db.execSQL("ALTER TABLE `package_sets` ADD COLUMN `prescribedLoadMode` TEXT")
+                db.execSQL("ALTER TABLE `package_sets` ADD COLUMN `prescribedRir` TEXT")
+                db.execSQL("ALTER TABLE `package_sets` ADD COLUMN `prescribedRpe` TEXT")
+                db.execSQL("ALTER TABLE `package_sets` ADD COLUMN `prescribedNotes` TEXT")
+                db.execSQL("ALTER TABLE `package_sets` ADD COLUMN `prescribedLoadDetailsJson` TEXT")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `exercise_catalog` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `name` TEXT NOT NULL, `normalizedName` TEXT NOT NULL, `aliases` TEXT NOT NULL, `selectable` INTEGER NOT NULL, `archived` INTEGER NOT NULL, `preferredLoadMode` TEXT, `preferredUnit` TEXT, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_exercise_catalog_accountScope_normalizedName` ON `exercise_catalog` (`accountScope`, `normalizedName`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `planning_catalog_state` (`accountScope` TEXT NOT NULL, `query` TEXT NOT NULL, `nextCursor` TEXT, `hasMore` INTEGER NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `query`))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `mobile_plans` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `status` TEXT NOT NULL, `revision` INTEGER NOT NULL, `activeVersionId` TEXT, `activeVersion` INTEGER, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, `archivedAt` TEXT, PRIMARY KEY(`accountScope`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_mobile_plans_accountScope_status_updatedAt` ON `mobile_plans` (`accountScope`, `status`, `updatedAt`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `mobile_plan_workouts` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `planPublicId` TEXT NOT NULL, `name` TEXT NOT NULL, `notes` TEXT, `position` INTEGER NOT NULL, `estimatedDurationSeconds` INTEGER, `revision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `publicId`), FOREIGN KEY(`accountScope`, `planPublicId`) REFERENCES `mobile_plans`(`accountScope`, `publicId`) ON UPDATE NO ACTION ON DELETE CASCADE)""")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_mobile_plan_workouts_accountScope_planPublicId_position` ON `mobile_plan_workouts` (`accountScope`, `planPublicId`, `position`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `mobile_plan_exercises` (`accountScope` TEXT NOT NULL, `workoutPublicId` TEXT NOT NULL, `publicId` TEXT NOT NULL, `catalogExerciseId` TEXT, `name` TEXT NOT NULL, `notes` TEXT, `position` INTEGER NOT NULL, PRIMARY KEY(`accountScope`, `workoutPublicId`, `publicId`), FOREIGN KEY(`accountScope`, `workoutPublicId`) REFERENCES `mobile_plan_workouts`(`accountScope`, `publicId`) ON UPDATE NO ACTION ON DELETE CASCADE)""")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_mobile_plan_exercises_accountScope_workoutPublicId_position` ON `mobile_plan_exercises` (`accountScope`, `workoutPublicId`, `position`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `mobile_plan_sets` (`accountScope` TEXT NOT NULL, `workoutPublicId` TEXT NOT NULL, `exercisePublicId` TEXT NOT NULL, `publicId` TEXT NOT NULL, `setNumber` INTEGER NOT NULL, `reps` INTEGER, `repsMin` INTEGER, `repsMax` INTEGER, `weightKg` TEXT, `loadValue` TEXT, `loadUnit` TEXT NOT NULL, `loadMode` TEXT NOT NULL, `loadDetailsJson` TEXT, `rir` TEXT, `rpe` TEXT, `restSeconds` INTEGER, `durationSeconds` INTEGER, `distanceMeters` TEXT, `notes` TEXT, PRIMARY KEY(`accountScope`, `workoutPublicId`, `exercisePublicId`, `publicId`), FOREIGN KEY(`accountScope`, `workoutPublicId`, `exercisePublicId`) REFERENCES `mobile_plan_exercises`(`accountScope`,`workoutPublicId`,`publicId`) ON UPDATE NO ACTION ON DELETE CASCADE)""")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_mobile_plan_sets_accountScope_workoutPublicId_exercisePublicId_setNumber` ON `mobile_plan_sets` (`accountScope`, `workoutPublicId`, `exercisePublicId`, `setNumber`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `planning_conflicts` (`accountScope` TEXT NOT NULL, `entityId` TEXT NOT NULL, `entityType` TEXT NOT NULL, `localRevision` INTEGER NOT NULL, `serverRevision` INTEGER, `changedFields` TEXT NOT NULL, `localName` TEXT, `remoteName` TEXT, `createdAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `entityId`))""")
             }
         }
     }

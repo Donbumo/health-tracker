@@ -40,6 +40,8 @@ En entrenamiento, la dirección de producto es:
 planear → exportar/entregar → ejecutar → importar resultado → comparar → ajustar
 ```
 
+El cliente móvil materializa ese ciclo con planificación offline por identidad estable, packages versionados e inmutables durante una ejecución, y reconciliación idempotente hacia una única sesión histórica. El servidor conserva la autoridad y el aislamiento por usuario; la caché local nunca crea un segundo contrato ni un segundo motor de sesiones.
+
 ## Principios permanentes
 
 1. Cada usuario tiene login y datos separados.
@@ -65,6 +67,8 @@ Las reglas ejecutables de estos principios viven en `../AGENTS.md`, `schemas/AGE
 - Ejecución: Docker Compose; SQLite se usa en pruebas donde corresponde.
 - Archivos: storage local por usuario para raw, generated, exports y backups.
 - Cliente móvil: Kotlin, Jetpack Compose, Room, WorkManager y OkHttp en `../android/`.
+
+El cliente móvil cubre planificación, ejecución, historial y progreso sin duplicar dominio: las rutinas editables publican versiones inmutables, la agenda usa planned workouts y la ejecución usa Companion Delivery/Mobile Sync.
 
 La estructura real del código manda sobre diagramas o rutas narrativas antiguas. Consulta `architecture/OVERVIEW.md` y el árbol del repositorio en vez de copiar una estructura sugerida a nuevas tareas.
 

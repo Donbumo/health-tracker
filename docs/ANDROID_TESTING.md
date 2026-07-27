@@ -8,6 +8,7 @@
 - Backend contractual: pull compartido valida cambios Companion contra `sync_pull.schema.json`.
 - Alpha 1.3: orden/prescripción, semana/mes y bisiesto, zona horaria sin mover el día, programación offline con UUID estable y coalescing, varios eventos diarios, Today inmediato, package vigente/desactualizado con draft protegido, conflictos resolubles, completion local en Historial/Progreso, account scope y migraciones backend/Room 2→3.
 - Alpha 1.4: conversión kg/lb sin deriva, macros incompletos, gráficas con cero/uno/múltiples puntos, caché diaria owner-scoped, cuerpo/nutrición/pasos offline, coalescing y doble pulsación, conflictos sanitizados/resolubles, logout aislado y migraciones Room 1/2/3→4.
+- Alpha 1.5: 31 casos con gateway/store fake para disponibilidad, actualización de proveedor, permisos parciales/revocados, peso y grasa, mapeos incompatibles, pasos agregados/origen opaco/zona, nutrición incompleta, dedupe, Changes/token expirado, borrado/detached, rollback, process death, cuentas, single-flight, background, pausa/desconexión, borrado selectivo, cola servidor y actualización observable. Las instrumentadas de migración cubren 1/2/3/4→5.
 
 ```powershell
 Set-Location android
@@ -15,11 +16,16 @@ Set-Location android
 .\gradlew.bat testDebugUnitTest
 .\gradlew.bat assembleDebug
 .\gradlew.bat compileDebugAndroidTestKotlin
+.\gradlew.bat testDebugUnitTest
 ```
 
 `connectedDebugAndroidTest` no forma parte de la validación automática Alpha 1.3: requiere un AVD separado y sigue pendiente junto con la matriz visual/accesible manual. Compilar `compileDebugAndroidTestKotlin` sí es obligatorio y no toca el AVD manual.
 
 La misma restricción aplica a Alpha 1.4: no se ejecuta instrumentación conectada sobre el AVD manual existente. Debe usarse después un AVD separado para validar process death, modo avión→reconexión, rotación, TalkBack, fuente grande, temas y 320/360/411/600 dp.
+
+Alpha 1.5 conserva esa restricción: `connectedDebugAndroidTest` no se ejecuta. El QA pendiente requiere un AVD o dispositivo separado con Health Connect y fixtures ficticias para permisos parciales/revocados, instalación/actualización del proveedor, zona horaria, background disponible/no disponible, eliminación en origen, edición detached, process death y servidor offline→reconexión. También debe inspeccionarse el merged manifest y la rationale de permisos en API 28, 33, 34 y 36.
+
+El 26 de julio de 2026 pasó la matriz final Alpha 1.5 en orden: `lintDebug`, `testDebugUnitTest`, `assembleDebug`, `compileDebugAndroidTestKotlin` y segunda invocación de `testDebugUnitTest`; una pasada adicional `--rerun-tasks` confirmó la segunda ejecución real. El resultado es 84/84 JVM, incluidos 31 casos Health Connect. Backend pasó `612 passed, 3 skipped`; MariaDB 11.4 efímera pasó upgrade/check/downgrade/re-upgrade y 3 carreras de concurrencia. `connectedDebugAndroidTest` no se ejecutó.
 
 El 26 de julio de 2026 pasaron `lintDebug`, dos ejecuciones de `testDebugUnitTest` (53/53), `assembleDebug` y `compileDebugAndroidTestKotlin`. Las pruebas instrumentadas de migración 1/2/3→4 compilan, pero no se marcarán ejecutadas hasta disponer del AVD separado.
 

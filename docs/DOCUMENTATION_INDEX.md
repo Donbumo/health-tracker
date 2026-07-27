@@ -42,6 +42,7 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 - Historial/progreso móvil Alpha 1.2: contratos `../schemas/mobile_history.schema.json` y `../schemas/mobile_progress.schema.json`; arquitectura y caché en [ANDROID_COMPANION.md](ANDROID_COMPANION.md) y [ANDROID_OFFLINE_SYNC.md](ANDROID_OFFLINE_SYNC.md).
 - Planificación móvil Alpha 1.3: `../schemas/mobile_planning.schema.json`, `../schemas/training_plan.schema.json`, matriz y agenda/Today/packages en [ANDROID_COMPANION.md](ANDROID_COMPANION.md), persistencia/coalescing/conflictos en [ANDROID_OFFLINE_SYNC.md](ANDROID_OFFLINE_SYNC.md) y recorrido de uso en [USER_GUIDE.md](USER_GUIDE.md).
 - Registro diario de salud móvil Alpha 1.4: contrato `../schemas/mobile_health.schema.json`, API/capacidades en [ANDROID_COMPANION.md](ANDROID_COMPANION.md), Room/coalescing/conflictos en [ANDROID_OFFLINE_SYNC.md](ANDROID_OFFLINE_SYNC.md), gates en [ANDROID_TESTING.md](ANDROID_TESTING.md) y recorrido en [USER_GUIDE.md](USER_GUIDE.md).
+- Health Connect Alpha 1.5: disponibilidad, permisos, tipos, mapeo y límites en [ANDROID_COMPANION.md](ANDROID_COMPANION.md); tokens, ledger, borrados y cola offline en [ANDROID_OFFLINE_SYNC.md](ANDROID_OFFLINE_SYNC.md); privacidad en [ANDROID_SECURITY.md](ANDROID_SECURITY.md); matriz/gates y QA pendiente en [ANDROID_TESTING.md](ANDROID_TESTING.md); recorrido de Ajustes en [USER_GUIDE.md](USER_GUIDE.md); contrato servidor aditivo en `../schemas/mobile_health.schema.json` y [MOBILE_SYNC.md](MOBILE_SYNC.md).
 
 ## Entrenamiento web
 

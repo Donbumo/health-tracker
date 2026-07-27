@@ -2,6 +2,7 @@ package io.healthtracker.companion.core.database
 
 import androidx.room.Entity
 import androidx.room.Index
+import androidx.room.ColumnInfo
 
 @Entity(tableName = "daily_health_summaries", primaryKeys = ["accountScope", "date"])
 data class DailyHealthSummaryEntity(
@@ -24,6 +25,8 @@ data class DailyHealthSummaryEntity(
     val completedWorkouts: Int,
     val syncStatus: String,
     val updatedAt: String?,
+    val weightSource: String? = null,
+    val stepsSource: String? = null,
 )
 
 @Entity(
@@ -49,6 +52,7 @@ data class BodyStatEntity(
     val syncStatus: String,
     val createdAt: String,
     val updatedAt: String,
+    val sourceZoneOffset: String? = null,
 )
 
 @Entity(tableName = "nutrition_days", primaryKeys = ["accountScope", "date"])
@@ -97,6 +101,7 @@ data class NutritionEntryEntity(
     val syncStatus: String,
     val createdAt: String,
     val updatedAt: String,
+    @ColumnInfo(defaultValue = "'manual'") val source: String = "manual",
 )
 
 @Entity(
@@ -178,4 +183,6 @@ data class HealthProgressPointEntity(
     val carbohydrateG: String?,
     val fatG: String?,
     val updatedAt: String,
+    val weightSource: String? = null,
+    val stepsSource: String? = null,
 )

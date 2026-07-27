@@ -68,7 +68,7 @@ Las reglas ejecutables de estos principios viven en `../AGENTS.md`, `schemas/AGE
 - Archivos: storage local por usuario para raw, generated, exports y backups.
 - Cliente móvil: Kotlin, Jetpack Compose, Room, WorkManager y OkHttp en `../android/`.
 
-El cliente móvil cubre planificación, ejecución, historial, progreso y registro diario de salud sin duplicar dominio: las rutinas editables publican versiones inmutables, la agenda usa planned workouts, la ejecución usa Companion Delivery/Mobile Sync y salud reutiliza peso, nutrición, catálogo y energía canónicos mediante endpoints owner-only.
+El cliente móvil cubre planificación, ejecución, historial, progreso, registro diario de salud e importación Health Connect de solo lectura sin duplicar dominio: las rutinas editables publican versiones inmutables, la agenda usa planned workouts, la ejecución usa Companion Delivery/Mobile Sync y salud reutiliza peso, nutrición, catálogo y energía canónicos mediante endpoints owner-only.
 
 La estructura real del código manda sobre diagramas o rutas narrativas antiguas. Consulta `architecture/OVERVIEW.md` y el árbol del repositorio en vez de copiar una estructura sugerida a nuevas tareas.
 
@@ -82,7 +82,7 @@ El sistema ofrece autenticación web, administración básica, dispositivos/API,
 
 Incluye contratos y flujos para peso/composición, nutrición, energía, alimentos, recetas y laboratorios. La aplicación conserva y muestra datos; no sustituye evaluación médica ni debe emitir diagnósticos.
 
-Android Alpha 1.4 registra offline peso/composición ya soportada, comidas manuales, alimentos personalizados y pasos. Room conserva proyecciones aisladas por cuenta y la reconciliación usa UUID, idempotencia y revisiones. No se crean objetivos inexistentes ni se fusionan fuentes de pasos potencialmente solapadas.
+Android Alpha 1.5 registra offline peso/composición ya soportada, comidas manuales, alimentos personalizados y pasos, e importa de Health Connect peso, grasa compatible, pasos diarios agregados y nutrición representable. Room conserva procedencia y ledger aislados por cuenta; la reconciliación usa IDs de origen, UUID, `client_event_id`, idempotencia, revisiones y Changes tokens. No se crean objetivos inexistentes, no se equipara masa magra con masa muscular ni masa de agua con porcentaje, y no se fusionan fuentes de pasos potencialmente solapadas.
 
 ### Entrenamiento
 
@@ -100,7 +100,7 @@ Los exporters declaran capability, warnings y pérdidas. Los artefactos persisti
 
 ### API y companion
 
-`/api/v1` usa Bearer independiente de la sesión web, UUID públicos y contratos versionados. Mobile Sync y Companion backend soportan los dominios y operaciones expresamente documentados. El cliente Android ejecuta el protocolo desde el teléfono con cache offline, recuperación de process death, cola durable e idempotencia; no implica una aplicación de reloj ni integración con fabricantes.
+`/api/v1` usa Bearer independiente de la sesión web, UUID públicos y contratos versionados. Mobile Sync y Companion backend soportan los dominios y operaciones expresamente documentados. El cliente Android ejecuta el protocolo desde el teléfono con cache offline, recuperación de process death, cola durable e idempotencia; la lectura Health Connect es un adaptador local explícito y no implica una aplicación de reloj, escritura de datos ni integración directa con fabricantes.
 
 Desde Alpha 1.2 el cliente también consulta historial paginado y progreso descriptivo por periodo/ejercicio desde Room. Las métricas y mejores marcas son lecturas deterministas sobre `TrainingSession`; no constituyen recomendaciones automáticas, IA ni gamificación. Los modos de carga incompatibles producen ausencia explícita en vez de una comparación fabricada.
 

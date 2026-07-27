@@ -22,6 +22,14 @@ En Alpha 1.3, abre **Plan** para administrar rutinas y agenda. Puedes crear o du
 
 En Alpha 1.4, **Hoy** muestra peso, nutrición, pasos y entrenamiento sin llenar la pantalla de formularios. Abre **Salud del día** o usa **Registrar peso**, **Añadir comida** y **Registrar pasos**. Puedes cambiar la fecha, editar o eliminar una medición, organizar comidas como desayuno/comida/cena/snack, buscar o crear alimentos privados, duplicar/mover entradas y corregir pasos. Los campos incompletos se indican y no se inventan macros.
 
+En Alpha 1.5, abre **Ajustes → Health Connect** para una importación opcional y de solo lectura. Elige primero peso, grasa corporal, pasos y, si lo deseas, nutrición; después pulsa **Conectar** y concede solo esos accesos. Masa magra y agua corporal permanecen deshabilitadas mientras Health Tracker no tenga campos con la misma semántica. Si falta Health Connect, la tarjeta indica si el dispositivo no es compatible o si debes instalar/actualizar el proveedor.
+
+**Sincronizar ahora** lee cambios; **Pausar** conserva datos y permisos; **Desconectar sin borrar datos** detiene la integración sin modificar Health Connect. **Administrar acceso** abre los controles del sistema. El permiso de segundo plano es separado y opcional: sin él, la app sigue importando al abrirse o al pedir una sincronización. Revocar un tipo no cierra sesión ni borra lo ya importado.
+
+Hoy y Progreso muestran la etiqueta Health Connect junto a peso o pasos. El total de pasos se calcula por día y zona sin sumar aplicaciones ni combinarlo con el total manual; si existe una corrección manual, se presenta esa y se conserva el agregado importado para auditoría. Nutrición solo se importa cuando la comida tiene fecha, tipo, nombre y nutrientes representables. Si editas un peso o una comida importados, se convierten en copia del usuario y Health Connect deja de sobrescribirlos.
+
+**Borrar datos importados** requiere una confirmación independiente y elimina solo recursos todavía vinculados a Health Connect, también encolando la eliminación del servidor. No borra registros manuales, copias editadas, sesiones, rutinas ni datos que viven en Health Connect. La primera importación revisa hasta 30 días; después usa cambios incrementales y dedupe. Los datos aparecen desde Room aunque el servidor esté offline y se envían cuando vuelve la red.
+
 Todo se guarda primero en este dispositivo. Puedes cerrar la app, abrirla sin red y continuar; al recuperar conectividad, WorkManager sincroniza automáticamente. Los estados muestran guardado local, pendiente, sincronizando, sincronizado o atención. Si hay conflicto, Salud del día permite usar servidor, reintentar, duplicar una medición/comida o cancelar el cambio. **Progreso → Salud** ofrece peso, pasos, calorías y macros con resumen textual; son tendencias descriptivas, no diagnóstico ni causalidad.
 
 Todo funciona primero sobre la copia local. **Guardado local, pendiente** significa que no se perdió el cambio; al recuperar red se envía en orden. Programar dos veces por una doble pulsación conserva una sola identidad; mover varias veces antes de sincronizar conserva la última fecha segura, y crear y cancelar antes del primer envío no deja una programación remota. Si otra edición cambió la misma revisión, Plan muestra el recurso, las revisiones y un resumen sanitizado, con acciones **Usar servidor**, **Reintentar copia local**, **Duplicar** cuando corresponde o **Cancelar cambio local** en vez de sobrescribir silenciosamente.
@@ -32,7 +40,7 @@ Hoy separa **Sin conexión**, **Guardado en este dispositivo**, **Sincronizació
 
 En Ajustes, **Cerrar sesión en este teléfono** elimina esa cuenta local, **Cerrar todas las sesiones API** revoca todas las sesiones, **Revocar este dispositivo** bloquea sus sesiones y **Borrar solo datos locales** no cambia el servidor. Las tres acciones de mayor alcance exigen confirmación adicional.
 
-Consulta [Instalación Android](ANDROID_INSTALLATION.md) y [Android Companion](ANDROID_COMPANION.md). No hay conexión con reloj o Bluetooth.
+Consulta [Instalación Android](ANDROID_INSTALLATION.md) y [Android Companion](ANDROID_COMPANION.md). No hay conexión con reloj o Bluetooth, ni escritura hacia Health Connect.
 
 ### Historial y Progreso en Android
 

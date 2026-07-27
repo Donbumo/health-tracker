@@ -13,6 +13,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import io.healthtracker.companion.HealthTrackerApplication
+import io.healthtracker.companion.core.healthconnect.HealthConnectScheduler
 import io.healthtracker.companion.core.model.AppFailure
 import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicLong
@@ -107,6 +108,7 @@ object SyncScheduler {
         val manager = contextReference?.get()?.let { WorkManager.getInstance(it) } ?: return
         manager.cancelUniqueWork(ONE_TIME)
         manager.cancelUniqueWork(PERIODIC)
+        HealthConnectScheduler.cancelAll()
     }
 
     internal fun generation(): Long = triggerGeneration.get()

@@ -39,6 +39,9 @@ class DailyEnergy(db.Model):
             name="uq_daily_energy_source_file",
         ),
         db.UniqueConstraint("public_id", name="uq_daily_energy_public_id"),
+        db.UniqueConstraint(
+            "user_id", "client_event_id", name="uq_daily_energy_user_client_event"
+        ),
         db.Index("ix_daily_energy_user_date", "user_id", "date"),
     )
 
@@ -58,6 +61,7 @@ class DailyEnergy(db.Model):
     steps = db.Column(db.BigInteger, nullable=True)
     distance_meters = db.Column(db.Numeric(12, 2), nullable=True)
     source = db.Column(db.String(32), nullable=False)
+    client_event_id = db.Column(db.String(36), nullable=True)
     source_file_id = db.Column(
         db.Integer,
         db.ForeignKey("uploaded_files.id", ondelete="SET NULL"),

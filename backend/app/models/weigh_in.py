@@ -38,7 +38,11 @@ class WeighIn(db.Model):
         db.UniqueConstraint(
             "user_id",
             "recorded_at",
-            name="uq_weigh_ins_user_recorded_at",
+            "source",
+            name="uq_weigh_ins_user_recorded_source",
+        ),
+        db.UniqueConstraint(
+            "user_id", "client_event_id", name="uq_weigh_ins_user_client_event"
         ),
         db.UniqueConstraint("source_file_id", name="uq_weigh_ins_source_file"),
         db.UniqueConstraint("public_id", name="uq_weigh_ins_public_id"),
@@ -63,6 +67,7 @@ class WeighIn(db.Model):
     bmr_kcal = db.Column(db.Numeric(10, 2), nullable=True)
     bmi = db.Column(db.Numeric(6, 3), nullable=True)
     source = db.Column(db.String(32), nullable=False)
+    client_event_id = db.Column(db.String(36), nullable=True)
     source_file_id = db.Column(
         db.Integer,
         db.ForeignKey("uploaded_files.id", ondelete="SET NULL"),

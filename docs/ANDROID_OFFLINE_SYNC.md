@@ -52,3 +52,13 @@ Las creaciones offline generan UUID e idempotency key estables. Cuerpo, nutrici�
 El resumen y Progreso se recalculan en la misma transacción que cada escritura local. Los macros incompletos permanecen nulos y solo se suman valores presentes. Los pasos manuales y los importados coexisten por fecha/fuente; la corrección manual tiene precedencia de presentación sin borrar la fuente importada.
 
 Un fallo temporal conserva la cola. Los rechazos permanentes crean un conflicto sanitizado sin payload. Desde Salud del día se puede descartar la copia local y refrescar servidor, reintentar con una nueva idempotency key, duplicar cuerpo/nutrición cuando procede o cancelar. Ninguna resolución hace merge genérico de notas.
+
+## Health Connect en Alpha 1.5
+
+La lectura Health Connect tiene su propio trabajo único, mutex y backoff; no comparte la restricción de red de la cola servidor. Conexión, permiso concedido, foreground, selección, acción manual y periodicidad de seis horas se coalescen. Sin permiso de background el trabajo periódico termina sin leer y los triggers foreground continúan disponibles. Pausar o desconectar no revoca permisos ni borra filas importadas.
+
+Room 5 persiste ajustes, permisos observados, token por tipo/generación y ledger por `accountScope`. La primera reconciliación pagina 30 días; Changes aplica upserts/borrados y avanza el token en la misma transacción. Si expira, repite la ventana con dedupe por ID. Para pasos, el token solo detecta que hubo cambios y entonces se recalculan de forma segura los 30 días con `aggregate(COUNT_TOTAL)`; si no hubo cambios solo avanza el token. Un fallo de transacción no avanza estado.
+
+Cada importación válida actualiza el recurso local y Hoy/Progreso antes de encolar `health_body_*`, `health_nutrition_*` o `health_steps_*`. Un alta nunca intentada absorbe cambios posteriores. Si el alta ya pudo alcanzar el servidor, se conserva y se añade un update durable; al confirmarse el alta se actualiza su `base_revision` antes de procesar la siguiente acción. La cola se vuelve a consultar en cada paso FIFO para que esa revisión no quede obsoleta.
+
+Un borrado del origen elimina solo el recurso todavía importado y encola el DELETE idempotente. Borrar grasa limpia ese campo sin borrar el peso asociado. Una copia `detached/user_override` permanece y pierde la asociación activa. El borrado selectivo de Ajustes recorre únicamente ledgers importados activos en una transacción; no toca registros manuales, sesiones, planes ni copias editadas.

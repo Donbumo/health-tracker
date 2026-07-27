@@ -721,6 +721,7 @@ data class MobileBodyStatDto(
     val bmi: String? = null,
     val notes: String? = null,
     val source: String,
+    @SerialName("client_event_id") val clientEventId: String? = null,
     val revision: Int,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String,
@@ -764,6 +765,8 @@ data class MobileNutritionEntryDto(
     @SerialName("sugar_g") val sugarG: String? = null,
     @SerialName("sodium_mg") val sodiumMg: String? = null,
     val notes: String? = null,
+    val source: String = "manual",
+    @SerialName("client_event_id") val clientEventId: String? = null,
     @SerialName("data_complete") val dataComplete: Boolean,
     val revision: Int,
     @SerialName("created_at") val createdAt: String,
@@ -822,6 +825,7 @@ data class MobileStepDto(
     val date: String,
     val steps: Long,
     val source: String,
+    @SerialName("client_event_id") val clientEventId: String? = null,
     val goal: Long? = null,
     val revision: Int,
     @SerialName("created_at") val createdAt: String,
@@ -879,6 +883,8 @@ data class MobileHealthPointDto(
     @SerialName("protein_g") val proteinG: String? = null,
     @SerialName("carbohydrate_g") val carbohydrateG: String? = null,
     @SerialName("fat_g") val fatG: String? = null,
+    @SerialName("weight_source") val weightSource: String? = null,
+    @SerialName("steps_source") val stepsSource: String? = null,
 )
 
 @Serializable

@@ -16,8 +16,8 @@ android {
         applicationId = "io.healthtracker.companion"
         minSdk = 26
         targetSdk = 36
-        versionCode = 14
-        versionName = "1.4.0-alpha01"
+        versionCode = 15
+        versionName = "1.5.0-alpha01"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     kapt(libs.androidx.room.compiler)
     implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.health.connect)
     implementation(libs.androidx.datastore)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)

@@ -45,9 +45,13 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         DailyStepEntity::class,
         HealthConflictEntity::class,
         HealthProgressPointEntity::class,
+        HealthConnectSettingsEntity::class,
+        HealthConnectPermissionStateEntity::class,
+        HealthConnectSyncStateEntity::class,
+        HealthConnectRecordLedgerEntity::class,
         SyncStateEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class CompanionDatabase : RoomDatabase() {
@@ -58,7 +62,7 @@ abstract class CompanionDatabase : RoomDatabase() {
             context.applicationContext,
             CompanionDatabase::class.java,
             "health_tracker_companion_v1.db",
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build()
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -123,6 +127,24 @@ abstract class CompanionDatabase : RoomDatabase() {
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_daily_steps_accountScope_date_source` ON `daily_steps` (`accountScope`, `date`, `source`)")
                 db.execSQL("""CREATE TABLE IF NOT EXISTS `health_conflicts` (`accountScope` TEXT NOT NULL, `entityId` TEXT NOT NULL, `entityType` TEXT NOT NULL, `conflictType` TEXT NOT NULL, `localRevision` INTEGER NOT NULL, `serverRevision` INTEGER, `createdAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `entityId`))""")
                 db.execSQL("""CREATE TABLE IF NOT EXISTS `health_progress_points` (`accountScope` TEXT NOT NULL, `date` TEXT NOT NULL, `weightKg` TEXT, `steps` INTEGER, `caloriesKcal` TEXT, `proteinG` TEXT, `carbohydrateG` TEXT, `fatG` TEXT, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `date`))""")
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `daily_health_summaries` ADD COLUMN `weightSource` TEXT")
+                db.execSQL("ALTER TABLE `daily_health_summaries` ADD COLUMN `stepsSource` TEXT")
+                db.execSQL("ALTER TABLE `body_stats` ADD COLUMN `sourceZoneOffset` TEXT")
+                db.execSQL("ALTER TABLE `nutrition_entries` ADD COLUMN `source` TEXT NOT NULL DEFAULT 'manual'")
+                db.execSQL("ALTER TABLE `health_progress_points` ADD COLUMN `weightSource` TEXT")
+                db.execSQL("ALTER TABLE `health_progress_points` ADD COLUMN `stepsSource` TEXT")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `health_connect_settings` (`accountScope` TEXT NOT NULL, `enabled` INTEGER NOT NULL, `paused` INTEGER NOT NULL, `selectedTypes` TEXT NOT NULL, `initialLookbackDays` INTEGER NOT NULL, `permissionGeneration` INTEGER NOT NULL, `lastAvailability` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `health_connect_permission_state` (`accountScope` TEXT NOT NULL, `recordType` TEXT NOT NULL, `selected` INTEGER NOT NULL, `granted` INTEGER NOT NULL, `backgroundGranted` INTEGER NOT NULL, `checkedAt` TEXT NOT NULL, `reasonCode` TEXT, PRIMARY KEY(`accountScope`, `recordType`))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `health_connect_sync_state` (`accountScope` TEXT NOT NULL, `recordType` TEXT NOT NULL, `token` TEXT, `tokenCreatedAt` TEXT, `lastSuccessfulReadAt` TEXT, `lastFullReconciliationAt` TEXT, `coveredTypes` TEXT NOT NULL, `permissionGeneration` INTEGER NOT NULL, `state` TEXT NOT NULL, `lastAttemptAt` TEXT, `lastImportedAt` TEXT, `importedCount` INTEGER NOT NULL, `deletedCount` INTEGER NOT NULL, `lastErrorCode` TEXT, PRIMARY KEY(`accountScope`, `recordType`))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `health_connect_record_ledger` (`accountScope` TEXT NOT NULL, `recordType` TEXT NOT NULL, `healthConnectRecordId` TEXT NOT NULL, `clientRecordId` TEXT, `dataOrigin` TEXT NOT NULL, `localResourceUuid` TEXT, `serverResourceUuid` TEXT, `lastModifiedTime` TEXT NOT NULL, `clientRecordVersion` INTEGER, `contentFingerprint` TEXT NOT NULL, `importedAt` TEXT NOT NULL, `lastSeenAt` TEXT NOT NULL, `state` TEXT NOT NULL, `detachedByUser` INTEGER NOT NULL, `deletedAt` TEXT, `sourceStartTime` TEXT NOT NULL, `sourceEndTime` TEXT, PRIMARY KEY(`accountScope`, `recordType`, `healthConnectRecordId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_record_ledger_accountScope_localResourceUuid` ON `health_connect_record_ledger` (`accountScope`, `localResourceUuid`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_record_ledger_accountScope_recordType_sourceStartTime` ON `health_connect_record_ledger` (`accountScope`, `recordType`, `sourceStartTime`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_record_ledger_accountScope_state` ON `health_connect_record_ledger` (`accountScope`, `state`)")
             }
         }
     }

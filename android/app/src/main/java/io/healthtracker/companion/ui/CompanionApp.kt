@@ -3,6 +3,7 @@ package io.healthtracker.companion.ui
 import android.os.Build
 import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.text.KeyboardOptions
@@ -45,6 +46,8 @@ import io.healthtracker.companion.core.database.MobilePlanSetEntity
 import io.healthtracker.companion.core.load.ComponentInput
 import io.healthtracker.companion.core.load.LoadCalculator
 import io.healthtracker.companion.core.load.LoadMode
+import io.healthtracker.companion.core.healthconnect.HealthConnectRecordType
+import io.healthtracker.companion.core.healthconnect.HealthConnectUiStatus
 import io.healthtracker.companion.core.model.AuthState
 import io.healthtracker.companion.core.model.LoadDetailsDto
 import io.healthtracker.companion.core.planning.planningDateRange
@@ -341,6 +344,7 @@ private fun TodayScreen(
                     Column(Modifier.padding(12.dp)) {
                         Text("Peso")
                         Text(health?.weightKg?.let { "$it kg" } ?: "—")
+                        if (health?.weightSource == "health_connect") Text("Health Connect", style = MaterialTheme.typography.labelSmall)
                         Text(humanHealthStatus(health?.syncStatus), style = MaterialTheme.typography.bodySmall)
                     }
                 }
@@ -348,6 +352,7 @@ private fun TodayScreen(
                     Column(Modifier.padding(12.dp)) {
                         Text("Pasos")
                         Text(health?.steps?.toString() ?: "—")
+                        if (health?.stepsSource == "health_connect_aggregate") Text("Health Connect", style = MaterialTheme.typography.labelSmall)
                         Text(humanHealthStatus(health?.syncStatus), style = MaterialTheme.typography.bodySmall)
                     }
                 }
@@ -1947,6 +1952,11 @@ private fun SettingsScreen(viewModel: CompanionViewModel) {
     val pending by viewModel.pendingCount.collectAsState()
     val conflicts by viewModel.conflictCount.collectAsState()
     val syncInProgress by viewModel.syncInProgress.collectAsState()
+    val healthConnect by viewModel.healthConnect.collectAsState()
+    val permissionContract = remember { viewModel.healthConnectPermissionContract() }
+    val permissionLauncher = rememberLauncherForActivityResult(permissionContract) {
+        viewModel.onHealthConnectPermissionsResult()
+    }
     var confirmation by remember { mutableStateOf<String?>(null) }
     val deviceLabel = preferences.deviceId.take(8).takeIf { it.isNotBlank() }?.let { "$it…" } ?: "Sin identificar"
     LazyColumn(
@@ -1958,6 +1968,106 @@ private fun SettingsScreen(viewModel: CompanionViewModel) {
         item { SettingsCard("Usuario", profile?.email ?: "Sin sesión") }
         item { SettingsCard("Dispositivo", "Android $deviceLabel · ${if (connected) "con red" else "offline"}") }
         item { SettingsCard("Versión", "App ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · API 1 · Sync 1.0 · Companion 1.0") }
+        item {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Health Connect", style = MaterialTheme.typography.titleLarge)
+                            Text(humanHealthConnectStatus(healthConnect.status), style = MaterialTheme.typography.bodySmall)
+                        }
+                        Switch(
+                            checked = healthConnect.status !in setOf(
+                                HealthConnectUiStatus.AVAILABLE_NOT_CONNECTED,
+                                HealthConnectUiStatus.UNAVAILABLE_DEVICE,
+                                HealthConnectUiStatus.UNAVAILABLE_PROVIDER,
+                                HealthConnectUiStatus.UPDATE_REQUIRED,
+                            ),
+                            onCheckedChange = { enabled ->
+                                if (enabled) viewModel.connectHealthConnect(permissionLauncher::launch)
+                                else viewModel.disconnectHealthConnect()
+                            },
+                            enabled = healthConnect.status !in setOf(
+                                HealthConnectUiStatus.UNAVAILABLE_DEVICE,
+                                HealthConnectUiStatus.UNAVAILABLE_PROVIDER,
+                                HealthConnectUiStatus.UPDATE_REQUIRED,
+                            ),
+                        )
+                    }
+                    Text("Importación voluntaria y de solo lectura. Primero se guarda en Room; el servidor puede estar offline.")
+                    HealthConnectRecordType.entries.forEach { type ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = type in healthConnect.selectedTypes,
+                                onCheckedChange = { viewModel.setHealthConnectType(type, it) },
+                                enabled = type.importSupported,
+                            )
+                            Column {
+                                Text(humanHealthConnectType(type))
+                                Text(
+                                    when {
+                                        !type.importSupported -> "No compatible con la semántica actual; no se solicitará permiso."
+                                        type in healthConnect.grantedTypes -> "Lectura concedida"
+                                        type in healthConnect.selectedTypes -> "Acceso insuficiente"
+                                        else -> "No seleccionado"
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
+                    }
+                    Text("Última importación: ${readableInstant(healthConnect.lastImportAt)}")
+                    Text("Importados: ${healthConnect.importedCount} · eliminaciones procesadas: ${healthConnect.deletedCount}")
+                    Text(healthConnectNextStep(healthConnect.status), style = MaterialTheme.typography.bodySmall)
+                    when (healthConnect.status) {
+                        HealthConnectUiStatus.UNAVAILABLE_PROVIDER,
+                        HealthConnectUiStatus.UPDATE_REQUIRED -> Button(
+                            onClick = { runCatching { context.startActivity(viewModel.healthConnectProviderIntent()) } },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text("Instalar o actualizar Health Connect") }
+                        HealthConnectUiStatus.AVAILABLE_NOT_CONNECTED -> Button(
+                            onClick = { viewModel.connectHealthConnect(permissionLauncher::launch) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text("Conectar") }
+                        else -> Unit
+                    }
+                    if (healthConnect.status !in setOf(HealthConnectUiStatus.UNAVAILABLE_DEVICE, HealthConnectUiStatus.UNAVAILABLE_PROVIDER)) {
+                        OutlinedButton(
+                            onClick = { runCatching { context.startActivity(viewModel.healthConnectManageAccessIntent()) } },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text("Administrar acceso") }
+                    }
+                    if (healthConnect.backgroundAvailable && !healthConnect.backgroundGranted && healthConnect.status !in setOf(HealthConnectUiStatus.AVAILABLE_NOT_CONNECTED, HealthConnectUiStatus.UNAVAILABLE_DEVICE, HealthConnectUiStatus.UNAVAILABLE_PROVIDER)) {
+                        OutlinedButton(
+                            onClick = { viewModel.requestHealthConnectBackground(permissionLauncher::launch) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text("Permitir importación en segundo plano") }
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = viewModel::syncHealthConnectNow,
+                            enabled = healthConnect.status in setOf(HealthConnectUiStatus.CONNECTED, HealthConnectUiStatus.PERMISSIONS_PARTIAL, HealthConnectUiStatus.ACCESS_REVOKED, HealthConnectUiStatus.ERROR_RECOVERABLE),
+                            modifier = Modifier.weight(1f),
+                        ) { Text("Sincronizar ahora") }
+                        OutlinedButton(
+                            onClick = { viewModel.pauseHealthConnect(healthConnect.status != HealthConnectUiStatus.PAUSED) },
+                            enabled = healthConnect.status !in setOf(HealthConnectUiStatus.AVAILABLE_NOT_CONNECTED, HealthConnectUiStatus.UNAVAILABLE_DEVICE, HealthConnectUiStatus.UNAVAILABLE_PROVIDER, HealthConnectUiStatus.UPDATE_REQUIRED),
+                            modifier = Modifier.weight(1f),
+                        ) { Text(if (healthConnect.status == HealthConnectUiStatus.PAUSED) "Reanudar" else "Pausar") }
+                    }
+                    TextButton(onClick = viewModel::disconnectHealthConnect, modifier = Modifier.fillMaxWidth()) {
+                        Text("Desconectar sin borrar datos")
+                    }
+                    TextButton(onClick = { confirmation = "delete_health_connect" }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Borrar solo datos importados")
+                    }
+                }
+            }
+        }
         item {
             Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Unidad preferida", style = MaterialTheme.typography.titleMedium)
@@ -2022,6 +2132,18 @@ private fun SettingsScreen(viewModel: CompanionViewModel) {
         item { Spacer(Modifier.height(72.dp)) }
     }
     confirmation?.let { action ->
+        if (action == "delete_health_connect") {
+            ConfirmationDialog(
+                title = "¿Borrar datos importados?",
+                text = "Se borrarán solo recursos vinculados a Health Connect y se encolarán sus eliminaciones. Los datos manuales y las copias editadas se conservarán.",
+                confirm = "Borrar importados",
+                onDismiss = { confirmation = null },
+                onConfirm = { confirmation = null; viewModel.deleteHealthConnectImportedData() },
+                requireAcknowledgement = true,
+                destructive = true,
+            )
+            return@let
+        }
         ConfirmationDialog(
             title = when (action) { "revoke" -> "¿Revocar dispositivo?"; "clear" -> "¿Borrar datos locales?"; "logout_all" -> "¿Cerrar todas las sesiones?"; else -> "¿Cerrar sesión?" },
             text = when (action) {
@@ -2039,6 +2161,38 @@ private fun SettingsScreen(viewModel: CompanionViewModel) {
             },
         )
     }
+}
+
+private fun humanHealthConnectStatus(value: HealthConnectUiStatus) = when (value) {
+    HealthConnectUiStatus.UNAVAILABLE_DEVICE -> "No disponible"
+    HealthConnectUiStatus.UNAVAILABLE_PROVIDER -> "Requiere instalación"
+    HealthConnectUiStatus.UPDATE_REQUIRED -> "Requiere instalación o actualización"
+    HealthConnectUiStatus.AVAILABLE_NOT_CONNECTED -> "Sin conectar"
+    HealthConnectUiStatus.PERMISSIONS_PARTIAL -> "Permisos parciales"
+    HealthConnectUiStatus.ACCESS_REVOKED -> "Acceso revocado"
+    HealthConnectUiStatus.CONNECTED -> "Actualizado"
+    HealthConnectUiStatus.SYNCING -> "Importando"
+    HealthConnectUiStatus.PAUSED -> "Pausado"
+    HealthConnectUiStatus.ERROR_RECOVERABLE -> "Error temporal"
+}
+
+private fun humanHealthConnectType(value: HealthConnectRecordType) = when (value) {
+    HealthConnectRecordType.WEIGHT -> "Peso"
+    HealthConnectRecordType.BODY_FAT -> "Grasa corporal"
+    HealthConnectRecordType.LEAN_BODY_MASS -> "Masa magra"
+    HealthConnectRecordType.BODY_WATER_MASS -> "Agua corporal"
+    HealthConnectRecordType.STEPS -> "Pasos"
+    HealthConnectRecordType.NUTRITION -> "Nutrición (opcional)"
+}
+
+private fun healthConnectNextStep(value: HealthConnectUiStatus) = when (value) {
+    HealthConnectUiStatus.PERMISSIONS_PARTIAL -> "Próximo paso: concede solo los tipos que quieras desde Administrar acceso."
+    HealthConnectUiStatus.ACCESS_REVOKED -> "Próximo paso: administra el acceso; los datos ya importados permanecen."
+    HealthConnectUiStatus.SYNCING -> "Próximo paso: los datos aparecerán desde Room sin bloquear esta pantalla."
+    HealthConnectUiStatus.PAUSED -> "Próximo paso: reanuda cuando quieras; lo ya importado permanece."
+    HealthConnectUiStatus.ERROR_RECOVERABLE -> "Próximo paso: vuelve a intentar; no se ha descartado la importación local."
+    HealthConnectUiStatus.CONNECTED -> "Próximo paso: se importarán cambios y eliminaciones de forma incremental."
+    else -> "Puedes conectar la integración cuando quieras."
 }
 
 @Composable

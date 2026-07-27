@@ -1,6 +1,6 @@
-# Android Companion Alpha 1.4
+# Android Companion Alpha 1.5
 
-Cliente Android nativo y offline-first para planificar, ejecutar, registrar salud diaria y sincronizar. El backend sigue siendo autoritativo; la app reutiliza los dominios canónicos de peso, nutrición, alimentos, energía y entrenamiento, sin duplicar `TrainingSession`, cursor, importador ni protocolo.
+Cliente Android nativo y offline-first para planificar, ejecutar, registrar salud diaria, importar Health Connect en modo de solo lectura y sincronizar. El backend sigue siendo autoritativo; la app reutiliza los dominios canónicos de peso, nutrición, alimentos, energía y entrenamiento, sin duplicar `TrainingSession`, cursor, importador ni protocolo.
 
 ## Salud diaria en Alpha 1.4
 
@@ -15,6 +15,18 @@ Las rutas Bearer aditivas son:
 - progreso descriptivo: `GET /api/v1/mobile/health/progress?from=&to=&timezone=`.
 
 Toda escritura exige `Idempotency-Key`, UUID público y revisión base al editar o eliminar. Un recurso ajeno responde 404. Los errores de conflicto solo conservan tipo, revisiones y estado sanitizado; nunca notas, alimentos, medidas o payloads.
+
+## Health Connect en Alpha 1.5
+
+La integración usa `androidx.health.connect:connect-client:1.1.0`, estable y compatible con `compileSdk 36`, `minSdk 26`, JDK 17 y el toolchain actual. API 26–27 queda en `unavailable_device` sin afectar login, Hoy ni el entrenamiento. En Android 13 o inferior puede requerirse instalar o actualizar el proveedor; Android 14+ usa el módulo del sistema cuando está disponible. La UI diferencia no disponible, proveedor ausente, actualización requerida, sin conectar, permisos parciales o revocados, importando, actualizado, pausado y error temporal.
+
+La tarjeta voluntaria de **Ajustes → Health Connect** permite seleccionar tipos antes de solicitar permisos, conectar, administrar acceso, sincronizar, pedir lectura en segundo plano cuando la feature existe, pausar, desconectar sin borrar y eliminar por separado solo lo importado. Los permisos se comprueban antes de cada lectura y una revocación afecta únicamente al tipo correspondiente. Peso, grasa corporal compatible y pasos están seleccionados por defecto; nutrición es opt-in. Masa magra y masa de agua se muestran deshabilitadas porque `muscle_mass_kg` y `water_percent` no son equivalentes semánticos a masa magra y masa de agua.
+
+`HealthConnectGateway` aísla el SDK; `AndroidHealthConnectGateway`, `HealthConnectManager` y `HealthConnectSyncCoordinator` implementan disponibilidad, permisos, páginas, agregados, Changes y errores sanitizados. La primera lectura reconcilia como máximo 30 días y crea un token por cuenta, tipo y generación de permisos. Las siguientes lecturas procesan upserts y borrados y solo avanzan el token dentro de la transacción Room que persistió el cambio. Un token expirado reabre la ventana segura sin vaciar primero los datos. Cambiar un permiso invalida solo el tipo afectado.
+
+El ledger usa la identidad `recordType + Health Connect record ID` y conserva, por `accountScope`, client record ID/versión, origen, UUID local/servidor, modificación, fingerprint, timestamps, estado y separación por edición. Peso y grasa preservan timestamp y zone offset; grasa solo se enlaza con un peso Health Connect del mismo instante y origen. Los pasos usan `StepsRecord.COUNT_TOTAL` con `aggregate()` por fecha/zona, sin filtro de `DataOrigin`, y guardan un total `health_connect_aggregate`; el manual conserva precedencia visual sin sumarse. Nutrición solo entra si fecha, comida, nombre y al menos un nutriente son representables; no inventa porción ni macros y marca completitud.
+
+El recorrido es Health Connect → Room/ledger → resumen Hoy/Progreso → cola servidor durable. Una repetición conserva UUID y `client_event_id`; un create ya intentado y una actualización posterior quedan en FIFO como create seguido de update rebased, por lo que el modo offline del servidor no pierde el último contenido. Si el usuario edita peso o nutrición importados, la copia pasa a `user_override`, el ledger se separa y cambios o borrados futuros del origen no la sobrescriben. No existe escritura hacia Health Connect.
 
 ## Auditoría de base
 
@@ -67,6 +79,8 @@ Room normaliza cuenta, planned workouts, packages, ejercicios, sets, deliveries,
 
 Room 4 añade resumen diario, historial corporal, día/entradas nutricionales, catálogo y estado de búsqueda, pasos por fecha/fuente, conflictos y puntos de progreso, siempre con `accountScope` en la clave. La migración explícita 3→4 se encadena desde 1, 2 o 3 y no usa migración destructiva. Las unidades se convierten una sola vez hacia kg canónicos con el factor exacto `0.45359237`; si un valor mostrado no se edita, se conserva el decimal canónico original.
 
+Room 5 añade ajustes, estado de permisos, estado incremental y ledger Health Connect, además de procedencia en Hoy/Progreso y zone offset corporal. La migración explícita 4→5 se encadena y valida desde las versiones 1, 2, 3 y 4 sin destructive migration. Tokens, selecciones, ledger y cola sobreviven a process death y se limpian únicamente con la partición de cuenta conforme a las reglas existentes.
+
 La cola durable usa acciones `health_body_*`, `health_nutrition_*`, `health_food_*` y `health_steps_*`. Un create seguido de updates mantiene un único create con el estado final; un create nunca enviado seguido de delete desaparece localmente; updates repetidos conservan el último payload. Timeout, DNS, 429 y 5xx mantienen la operación. Los conflictos distinguen revisión, recurso ausente, validación y acceso revocado, y permiten usar servidor, reintentar, duplicar cuerpo/nutrición o cancelar el cambio local.
 
 Alpha 1.3 agrega una proyección estructurada y owner-scoped de catálogo, rutinas, entrenamientos, ejercicios, prescripciones y conflictos en Room 3. `TrainingPlanVersion` continúa siendo el historial inmutable: cada mutación móvil publica una versión y programar crea el `PlannedWorkout`/package Companion existente. No existe un segundo cursor, calendario ni motor de ejecución.
@@ -95,6 +109,6 @@ Tras process death sin red, una cuenta con refresh cifrado, scope, dispositivo y
 
 ## Alcance no soportado
 
-Alpha 1.4 no integra Health Connect, Google Fit, Huawei Health, Xiaomi Home/S400, BLE, Wear OS, fotografía, OCR, IA, códigos de barras, recomendaciones ni diagnósticos. Los objetivos de nutrición o pasos permanecen ausentes cuando el backend no tiene un contrato existente; no se fabrican valores.
+Alpha 1.5 integra únicamente lectura de Health Connect para los tipos documentados. Google Fit, Huawei Health, Xiaomi Home/S400, BLE, Wear OS, fotografía, OCR, IA, códigos de barras, recomendaciones y diagnósticos siguen fuera de alcance. Los objetivos de nutrición o pasos permanecen ausentes cuando el backend no tiene un contrato existente; no se fabrican valores.
 
-Reloj, Bluetooth, Health Connect, telemetría continua, FIT output, deep links, WebView, analytics, publicidad y vendors Garmin/Huawei/Magene siguen fuera de alcance. Los packages planeados conservan de forma aditiva carga, `load_details`, RIR, RPE y notas cuando están prescritos; clientes anteriores pueden ignorarlos.
+Reloj, Bluetooth, escritura hacia Health Connect, sesiones/rutas de ejercicio, sueño, signos vitales, datos médicos, telemetría continua, FIT output, deep links, WebView, analytics, publicidad y vendors Garmin/Huawei/Magene siguen fuera de alcance. Los packages planeados conservan de forma aditiva carga, `load_details`, RIR, RPE y notas cuando están prescritos; clientes anteriores pueden ignorarlos.

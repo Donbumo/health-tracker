@@ -37,6 +37,9 @@ NUTRITION_FIELDS = (
     "sodium_mg",
 )
 MEAL_TYPES = {"breakfast", "lunch", "dinner", "snack", "extra", "other"}
+BODY_SOURCES = {"manual", "health_connect", "user_override"}
+NUTRITION_SOURCES = {"manual", "health_connect", "user_override"}
+STEP_SOURCES = {"manual", "health_connect_aggregate"}
 
 
 def _serializer(salt: str) -> URLSafeSerializer:
@@ -143,6 +146,7 @@ def serialize_body_stat(record: WeighIn) -> dict:
         "bmi": _number(record.bmi),
         "notes": record.notes,
         "source": record.source,
+        "client_event_id": record.client_event_id,
         "revision": record.revision,
         "created_at": rfc3339(record.created_at),
         "updated_at": rfc3339(record.updated_at),
@@ -153,7 +157,7 @@ def _body_values(payload: dict, *, creating: bool) -> dict:
     allowed = {
         "public_id", "recorded_at", "weight", "unit", "weight_kg", "body_fat_percent",
         "muscle_mass_kg", "water_percent", "visceral_fat", "bmr_kcal", "bmi", "notes",
-        "source", "base_revision",
+        "source", "client_event_id", "base_revision",
     }
     if set(payload) - allowed:
         raise MobileSyncError("invalid_request", "La medición contiene campos desconocidos.")
@@ -186,9 +190,17 @@ def _body_values(payload: dict, *, creating: bool) -> dict:
         values["notes"] = _text(payload["notes"], field="notes", maximum=2000)
     if creating:
         source = payload.get("source", "manual")
-        if source != "manual":
-            raise MobileSyncError("invalid_request", "La escritura móvil solo admite source=manual.")
+        if source not in BODY_SOURCES:
+            raise MobileSyncError("invalid_request", "source no es válido para una medición corporal.")
         values["source"] = source
+        if payload.get("client_event_id") is not None:
+            values["client_event_id"] = _uuid(payload["client_event_id"], "client_event_id")
+    elif "source" in payload:
+        if payload["source"] != "user_override":
+            raise MobileSyncError("invalid_request", "Solo se admite separar una copia editada.")
+        values["source"] = "user_override"
+    if not creating and payload.get("client_event_id") is not None:
+        values["client_event_id"] = _uuid(payload["client_event_id"], "client_event_id")
     return values
 
 
@@ -225,6 +237,13 @@ def list_body_stats(user_id: int, *, limit: int, cursor: str | None) -> dict:
 
 def create_body_stat(user_id: int, payload: dict) -> WeighIn:
     values = _body_values(payload, creating=True)
+    client_event_id = values.get("client_event_id")
+    if client_event_id:
+        existing = db.session.execute(db.select(WeighIn).where(
+            WeighIn.user_id == user_id, WeighIn.client_event_id == client_event_id
+        )).scalar_one_or_none()
+        if existing is not None:
+            return existing
     public_id = _uuid(payload.get("public_id") or str(uuid.uuid4()))
     if db.session.execute(db.select(WeighIn.id).where(WeighIn.public_id == public_id)).scalar_one_or_none():
         raise MobileSyncError("conflict", "El ID ya existe.", 409)
@@ -232,6 +251,7 @@ def create_body_stat(user_id: int, payload: dict) -> WeighIn:
         db.select(WeighIn.id).where(
             WeighIn.user_id == user_id,
             WeighIn.recorded_at == values["recorded_at"],
+            WeighIn.source == values["source"],
         )
     ).scalar_one_or_none()
     if duplicate:
@@ -258,6 +278,10 @@ def patch_body_stat(user_id: int, public_id: str, payload: dict) -> WeighIn:
     record = _owned_body(user_id, public_id, lock=True)
     _check_revision(record.revision, payload.get("base_revision"))
     values = _body_values(payload, creating=False)
+    if "source" in values and not (record.source == "health_connect" and values["source"] == "user_override"):
+        raise MobileSyncError("invalid_request", "La transición de procedencia no es válida.")
+    if "client_event_id" in values and record.client_event_id not in {None, values["client_event_id"]}:
+        raise MobileSyncError("conflict", "client_event_id pertenece a otra revisión.", 409)
     for field, value in values.items():
         setattr(record, field, value)
     record.revision += 1
@@ -433,7 +457,7 @@ def _nutrition_item_values(user_id: int, payload: dict, *, creating: bool) -> di
     allowed = {
         "public_id", "date", "meal_type", "meal_name", "name", "quantity", "unit", "food_id",
         "calories_kcal", "protein_g", "fat_g", "net_carbs_g", "total_carbs_g", "fiber_g",
-        "sugar_g", "sodium_mg", "notes", "base_revision",
+        "sugar_g", "sodium_mg", "notes", "source", "client_event_id", "base_revision",
     }
     if set(payload) - allowed:
         raise MobileSyncError("invalid_request", "La entrada nutricional contiene campos desconocidos.")
@@ -473,6 +497,19 @@ def _nutrition_item_values(user_id: int, payload: dict, *, creating: bool) -> di
             if food is None:
                 raise MobileSyncError("not_found", "Alimento no encontrado.", 404)
             values["food_product_id"] = food.id
+    if creating:
+        source = payload.get("source", "manual")
+        if source not in NUTRITION_SOURCES:
+            raise MobileSyncError("invalid_request", "source no es válido para nutrición.")
+        values["source"] = source
+        if payload.get("client_event_id") is not None:
+            values["client_event_id"] = _uuid(payload["client_event_id"], "client_event_id")
+    elif "source" in payload:
+        if payload["source"] != "user_override":
+            raise MobileSyncError("invalid_request", "Solo se admite separar una copia editada.")
+        values["source"] = "user_override"
+    if not creating and payload.get("client_event_id") is not None:
+        values["client_event_id"] = _uuid(payload["client_event_id"], "client_event_id")
     return values
 
 
@@ -559,6 +596,8 @@ def serialize_nutrition_item(record: NutritionItem) -> dict:
         "sugar_g": _number(record.sugar_g),
         "sodium_mg": _number(record.sodium_mg),
         "notes": record.notes,
+        "source": record.source,
+        "client_event_id": record.client_event_id,
         "data_complete": all(
             value is not None for value in (
                 record.calories, record.protein_g, record.fat_g,
@@ -601,6 +640,14 @@ def serialize_nutrition_day(user_id: int, target: date) -> dict:
 
 def create_nutrition_item(user_id: int, payload: dict) -> NutritionItem:
     values = _nutrition_item_values(user_id, payload, creating=True)
+    client_event_id = values.get("client_event_id")
+    if client_event_id:
+        existing = db.session.execute(db.select(NutritionItem).where(
+            NutritionItem.user_id == user_id,
+            NutritionItem.client_event_id == client_event_id,
+        )).scalar_one_or_none()
+        if existing is not None:
+            return _owned_item(user_id, existing.public_id)
     public_id = _uuid(payload.get("public_id") or str(uuid.uuid4()))
     if db.session.execute(db.select(NutritionItem.id).where(NutritionItem.public_id == public_id)).scalar_one_or_none():
         raise MobileSyncError("conflict", "El ID ya existe.", 409)
@@ -632,6 +679,10 @@ def patch_nutrition_item(user_id: int, public_id: str, payload: dict) -> Nutriti
     item = _owned_item(user_id, public_id, lock=True)
     _check_revision(item.revision, payload.get("base_revision"))
     values = _nutrition_item_values(user_id, payload, creating=False)
+    if "source" in values and not (item.source == "health_connect" and values["source"] == "user_override"):
+        raise MobileSyncError("invalid_request", "La transición de procedencia no es válida.")
+    if "client_event_id" in values and item.client_event_id not in {None, values["client_event_id"]}:
+        raise MobileSyncError("conflict", "client_event_id pertenece a otra revisión.", 409)
     old_meal = item.meal
     old_day = old_meal.daily_nutrition
     target_date = values.pop("date", old_day.date)
@@ -725,6 +776,7 @@ def serialize_step(record: DailyEnergy) -> dict:
         "date": record.date.isoformat(),
         "steps": record.steps,
         "source": record.source,
+        "client_event_id": record.client_event_id,
         "goal": None,
         "revision": record.revision,
         "created_at": rfc3339(record.created_at),
@@ -762,13 +814,22 @@ def _owned_step(user_id: int, public_id: str, *, lock=False) -> DailyEnergy:
 
 
 def create_steps(user_id: int, payload: dict) -> DailyEnergy:
-    if set(payload) - {"public_id", "date", "steps", "source"}:
+    if set(payload) - {"public_id", "date", "steps", "source", "client_event_id"}:
         raise MobileSyncError("invalid_request", "El registro de pasos contiene campos desconocidos.")
     target = _date(payload.get("date"))
     count = _integer(payload.get("steps"), field="steps", minimum=0, maximum=10_000_000)
     source = payload.get("source", "manual")
-    if source != "manual":
-        raise MobileSyncError("invalid_request", "La escritura móvil solo admite source=manual.")
+    if source not in STEP_SOURCES:
+        raise MobileSyncError("invalid_request", "source no es válido para pasos.")
+    client_event_id = payload.get("client_event_id")
+    if client_event_id is not None:
+        client_event_id = _uuid(client_event_id, "client_event_id")
+        existing = db.session.execute(db.select(DailyEnergy).where(
+            DailyEnergy.user_id == user_id,
+            DailyEnergy.client_event_id == client_event_id,
+        )).scalar_one_or_none()
+        if existing is not None:
+            return existing
     duplicate = db.session.execute(
         db.select(DailyEnergy).where(
             DailyEnergy.user_id == user_id, DailyEnergy.date == target, DailyEnergy.source == source
@@ -781,21 +842,29 @@ def create_steps(user_id: int, payload: dict) -> DailyEnergy:
             duplicate.updated_at = datetime.now(timezone.utc)
             db.session.flush()
             return duplicate
-        raise MobileSyncError("duplicate", "Ya existe un registro manual para ese día.", 409)
+        raise MobileSyncError("duplicate", "Ya existe esa fuente para ese día.", 409)
     public_id = _uuid(payload.get("public_id") or str(uuid.uuid4()))
     if db.session.execute(db.select(DailyEnergy.id).where(DailyEnergy.public_id == public_id)).scalar_one_or_none():
         raise MobileSyncError("conflict", "El ID ya existe.", 409)
-    record = DailyEnergy(public_id=public_id, user_id=user_id, date=target, steps=count, source=source)
+    record = DailyEnergy(
+        public_id=public_id, user_id=user_id, date=target, steps=count,
+        source=source, client_event_id=client_event_id,
+    )
     db.session.add(record)
     db.session.flush()
     return record
 
 
 def patch_steps(user_id: int, public_id: str, payload: dict) -> DailyEnergy:
-    if set(payload) - {"base_revision", "date", "steps"}:
+    if set(payload) - {"base_revision", "date", "steps", "client_event_id"}:
         raise MobileSyncError("invalid_request", "La corrección contiene campos desconocidos.")
     record = _owned_step(user_id, public_id, lock=True)
     _check_revision(record.revision, payload.get("base_revision"))
+    if payload.get("client_event_id") is not None:
+        client_event_id = _uuid(payload["client_event_id"], "client_event_id")
+        if record.client_event_id not in {None, client_event_id}:
+            raise MobileSyncError("conflict", "client_event_id pertenece a otra revisión.", 409)
+        record.client_event_id = client_event_id
     if "date" in payload:
         target = _date(payload["date"])
         duplicate = db.session.execute(
@@ -840,7 +909,11 @@ def health_today(user_id: int, target: date, timezone_name: str | None) -> dict:
     weights = db.session.execute(
         db.select(WeighIn).where(
             WeighIn.user_id == user_id, WeighIn.recorded_at < end
-        ).order_by(WeighIn.recorded_at.desc(), WeighIn.id.desc()).limit(2)
+        ).order_by(
+            WeighIn.recorded_at.desc(),
+            db.case((WeighIn.source == "manual", 0), else_=1),
+            WeighIn.id.desc(),
+        ).limit(2)
     ).scalars().all()
     nutrition = _day(user_id, target)
     energy = effective_energy_record(user_id, target)
@@ -908,7 +981,11 @@ def health_progress(user_id: int, start: date, end: date, timezone_name: str | N
             WeighIn.user_id == user_id,
             WeighIn.recorded_at >= start_at,
             WeighIn.recorded_at < end_at,
-        ).order_by(WeighIn.recorded_at, WeighIn.id)
+        ).order_by(
+            WeighIn.recorded_at,
+            db.case((WeighIn.source == "manual", 1), else_=0),
+            WeighIn.id,
+        )
     ).scalars().all()
     nutrition = db.session.execute(
         db.select(DailyNutrition).where(
@@ -948,6 +1025,8 @@ def health_progress(user_id: int, start: date, end: date, timezone_name: str | N
             "protein_g": _number(day.protein_g) if day else None,
             "carbohydrate_g": _number(day.total_carbs_g if day and day.total_carbs_g is not None else day.net_carbs_g if day else None),
             "fat_g": _number(day.fat_g) if day else None,
+            "weight_source": weight.source if weight else None,
+            "steps_source": step.source if step else None,
         })
         current += timedelta(days=1)
     return {"from": start.isoformat(), "to": end.isoformat(), "timezone": zone.key, "points": points}

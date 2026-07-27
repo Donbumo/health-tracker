@@ -1,6 +1,8 @@
 package io.healthtracker.companion.ui
 
 import android.os.Build
+import android.content.Intent
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -28,6 +30,11 @@ import io.healthtracker.companion.core.database.PlanningConflictEntity
 import io.healthtracker.companion.core.database.BodyStatEntity
 import io.healthtracker.companion.core.database.NutritionEntryEntity
 import io.healthtracker.companion.core.health.canonicalWeightKg
+import io.healthtracker.companion.core.healthconnect.HealthConnectManager
+import io.healthtracker.companion.core.healthconnect.HealthConnectRecordType
+import io.healthtracker.companion.core.healthconnect.HealthConnectScheduler
+import io.healthtracker.companion.core.healthconnect.HealthConnectTrigger
+import io.healthtracker.companion.core.healthconnect.HealthConnectUiState
 import io.healthtracker.companion.core.load.LoadPreview
 import io.healthtracker.companion.core.planning.reorderedIds
 import io.healthtracker.companion.core.planning.PlanningEditorState
@@ -82,6 +89,7 @@ class CompanionViewModel(
     private val savedStateHandle: SavedStateHandle = SavedStateHandle(),
 ) : ViewModel() {
     private val repository = container.repository
+    private val healthConnectManager: HealthConnectManager = container.healthConnectManager
     private val planningEditorState = PlanningEditorState(savedStateHandle)
     private val mutableAuth = MutableStateFlow(AuthState.SIGNED_OUT)
     private val mutableProfile = MutableStateFlow<UserProfile?>(null)
@@ -155,6 +163,10 @@ class CompanionViewModel(
         viewModelScope, SharingStarted.WhileSubscribed(5_000), false,
     )
     private val scope = preferences.mapLatest { it.accountScope }
+
+    val healthConnect = scope.flatMapLatest { account ->
+        if (account == null) flowOf(HealthConnectUiState()) else healthConnectManager.observe(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HealthConnectUiState())
 
     val planned = scope.flatMapLatest { value ->
         if (value == null) flowOf(emptyList()) else repository.observePlanned(value)
@@ -360,6 +372,7 @@ class CompanionViewModel(
                     mutableProfile.value = localProfile
                     mutableAuth.value = AuthState.AUTHENTICATED
                     SyncScheduler.schedulePeriodic()
+                    HealthConnectScheduler.schedulePeriodic()
                     if (container.connectivity.connected.first()) restoreOnline(actual.accountScope)
                 }
             } else mutableAuth.value = AuthState.SIGNED_OUT
@@ -383,6 +396,13 @@ class CompanionViewModel(
                     mutableAuth.value = if (current.serverUrl == null) AuthState.NO_SERVER else AuthState.SIGNED_OUT
                 }
             }
+        }
+        viewModelScope.launch {
+            container.preferences.values.mapLatest { it.accountScope }
+                .distinctUntilChanged()
+                .collectLatest { account ->
+                    if (account != null) runCatching { healthConnectManager.ensure(account) }
+                }
         }
         viewModelScope.launch {
             mutableFoodQuery.collectLatest { query ->
@@ -1001,6 +1021,63 @@ class CompanionViewModel(
 
     fun setTheme(value: ThemePreference) = action(showBusy = false) { container.preferences.setTheme(value) }
     fun setUnit(value: UnitPreference) = action(showBusy = false) { container.preferences.setUnit(value) }
+
+    fun healthConnectPermissionContract(): ActivityResultContract<Set<String>, Set<String>> =
+        healthConnectManager.permissionRequestContract()
+
+    fun connectHealthConnect(requestPermissions: (Set<String>) -> Unit) = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        healthConnectManager.connect(account)
+        HealthConnectScheduler.schedulePeriodic()
+        val permissions = healthConnectManager.permissionsToRequest(account)
+        if (permissions.isEmpty()) HealthConnectScheduler.enqueue(HealthConnectTrigger.INITIAL_CONNECTION)
+        else requestPermissions(permissions)
+    }
+
+    fun requestHealthConnectBackground(requestPermissions: (Set<String>) -> Unit) = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        requestPermissions(healthConnectManager.permissionsToRequest(account, includeBackground = true))
+    }
+
+    fun onHealthConnectPermissionsResult() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        healthConnectManager.permissionResult(account)
+        HealthConnectScheduler.enqueue(HealthConnectTrigger.PERMISSIONS_GRANTED)
+    }
+
+    fun setHealthConnectType(type: HealthConnectRecordType, selected: Boolean) = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        healthConnectManager.setType(account, type, selected)
+        HealthConnectScheduler.enqueue(HealthConnectTrigger.SELECTION_CHANGED)
+    }
+
+    fun syncHealthConnectNow() {
+        HealthConnectScheduler.enqueue(HealthConnectTrigger.MANUAL)
+        mutableMessage.value = "Importación de Health Connect encolada."
+    }
+
+    fun pauseHealthConnect(paused: Boolean) = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        healthConnectManager.pause(account, paused)
+        if (!paused) HealthConnectScheduler.enqueue(HealthConnectTrigger.MANUAL)
+    }
+
+    fun disconnectHealthConnect() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        healthConnectManager.disconnect(account)
+        HealthConnectScheduler.cancelAll()
+        mutableMessage.value = "Health Connect se desconectó sin borrar datos ni revocar permisos."
+    }
+
+    fun deleteHealthConnectImportedData() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val result = healthConnectManager.deleteImported(account)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Se retiraron ${result.deleted} recursos importados; las copias editadas se conservaron."
+    }
+
+    fun healthConnectManageAccessIntent(): Intent = healthConnectManager.manageAccessIntent()
+    fun healthConnectProviderIntent(): Intent = healthConnectManager.providerIntent()
 
     fun logout(revoke: Boolean = false, localOnly: Boolean = false) = action {
         val account = preferences.value.accountScope ?: return@action

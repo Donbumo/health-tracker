@@ -152,6 +152,9 @@ class NutritionItem(db.Model):
             "nutrition_meal_id",
         ),
         db.UniqueConstraint("public_id", name="uq_nutrition_items_public_id"),
+        db.UniqueConstraint(
+            "user_id", "client_event_id", name="uq_nutrition_items_user_client_event"
+        ),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -181,6 +184,8 @@ class NutritionItem(db.Model):
     sugar_g = db.Column(db.Numeric(12, 3), nullable=True)
     sodium_mg = db.Column(db.Numeric(12, 3), nullable=True)
     notes = db.Column(db.Text, nullable=True)
+    source = db.Column(db.String(32), nullable=False, default="manual", server_default="manual")
+    client_event_id = db.Column(db.String(36), nullable=True)
     revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")
     created_at = db.Column(
         db.DateTime(timezone=True),

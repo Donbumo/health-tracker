@@ -1,5 +1,22 @@
 # Checklist de release alpha privada
 
+## Alpha 1.5 — Health Connect de solo lectura
+
+- [x] Integración opt-in con disponibilidad segura en API 26–36 y proveedor instalable/actualizable donde corresponde.
+- [x] Permisos de lectura por tipo, permisos parciales/revocados, rationale, administración de acceso y background separado por feature.
+- [x] Gateway inyectable, manager/coordinator, paginación, aggregate diario, Changes tokens, recuperación de token expirado, single-flight y WorkManager coalescido.
+- [x] Room 5 owner-scoped con settings, permisos, estado incremental y ledger; migraciones explícitas 1/2/3/4→5 sin fallback destructivo.
+- [x] Peso, grasa compatible, pasos agregados y nutrición representable; masa magra/agua se rechazan honestamente por semántica actual.
+- [x] Dedupe/UUID/client event estables, updates y deletes, precedencia manual y preservación `detached/user_override`.
+- [x] Room primero y cola servidor durable separada; backend aditivo con fuentes, `client_event_id`, coexistencia e idempotencia owner-only.
+- [x] Ajustes, procedencia en Hoy/Progreso, pausa, desconexión y borrado selectivo confirmado.
+- [x] 31 escenarios unitarios Health Connect y androidTest de migraciones compilables.
+- [x] Matriz final: Android lint/84 JVM dos veces/APK/androidTest compile; backend `612 passed, 3 skipped`; MariaDB efímera migración+carreras; 36 JSON, manifest, Compose config y `git diff --check` verdes.
+- [ ] QA manual con Health Connect real, servidor offline, process death, permisos/revocación, zona, background, accesibilidad y tamaños en dispositivo/AVD separado.
+- [ ] Ejecutar `connectedDebugAndroidTest` únicamente en AVD de pruebas separado; no forma parte del gate automático de esta rama.
+- [ ] Revisión de integración, firma y decisión formal de release.
+- [ ] Alpha 1.5 lista para release: **NO**, hasta cerrar QA manual, instrumentación y firma aprobada.
+
 ## Alpha 1.4 — Registro Diario de Salud Android
 
 - [x] Resumen diario local-first con fecha/zona, peso, nutrición, pasos y entrenamiento.

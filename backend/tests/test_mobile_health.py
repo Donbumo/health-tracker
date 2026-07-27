@@ -387,6 +387,7 @@ def test_complete_today_progress_timezone_and_bounded_query_count(app, client, u
         "date": DAY, "weight_kg": "72", "steps": 6200,
         "calories_kcal": "300", "protein_g": "12",
         "carbohydrate_g": "48", "fat_g": "7",
+        "weight_source": "manual", "steps_source": "manual",
     }
     _validator(app).validate(progress.get_json()["data"])
 
@@ -432,6 +433,99 @@ def test_public_ids_are_unique_and_schema_is_current(app, client, user):
         assert first.revision == 1
 
 
+def test_health_connect_sources_coexist_are_idempotent_and_can_detach(app, client, user):
+    token = _token(client)
+    timestamp = "2026-07-26T08:15:00-06:00"
+    manual = client.post(
+        "/api/v1/mobile/body-stats",
+        json=_body_payload(recorded_at=timestamp, weight_kg="70", source="manual"),
+        headers=_headers(token, "hc-manual-weight"),
+    )
+    assert manual.status_code == 201
+
+    body_event = str(uuid.uuid4())
+    imported_payload = _body_payload(
+        public_id=str(uuid.uuid4()), recorded_at=timestamp, weight_kg="70.5",
+        source="health_connect", client_event_id=body_event,
+    )
+    imported = client.post(
+        "/api/v1/mobile/body-stats", json=imported_payload,
+        headers=_headers(token, "hc-weight-create"),
+    )
+    replay = client.post(
+        "/api/v1/mobile/body-stats",
+        json={**imported_payload, "public_id": str(uuid.uuid4())},
+        headers=_headers(token, "hc-weight-replay-new-key"),
+    )
+    assert imported.status_code == replay.status_code == 201
+    assert imported.get_json()["data"]["id"] == replay.get_json()["data"]["id"]
+    assert imported.get_json()["data"]["client_event_id"] == body_event
+    listed = client.get("/api/v1/mobile/body-stats", headers=_headers(token)).get_json()["data"]["items"]
+    assert {(item["source"], item["weight_kg"]) for item in listed} == {
+        ("manual", "70"), ("health_connect", "70.5")
+    }
+    detached_body = client.patch(
+        f"/api/v1/mobile/body-stats/{imported.get_json()['data']['id']}",
+        json={"base_revision": 1, "source": "user_override", "weight_kg": "70.7"},
+        headers=_headers(token, "hc-weight-detach"),
+    )
+    assert detached_body.status_code == 200
+    assert detached_body.get_json()["data"]["source"] == "user_override"
+
+    offline_override = client.post(
+        "/api/v1/mobile/body-stats",
+        json=_body_payload(
+            public_id=str(uuid.uuid4()), recorded_at="2026-07-26T09:15:00-06:00",
+            weight_kg="71", source="user_override", client_event_id=str(uuid.uuid4()),
+        ),
+        headers=_headers(token, "hc-weight-detached-before-first-sync"),
+    )
+    assert offline_override.status_code == 201
+    assert offline_override.get_json()["data"]["source"] == "user_override"
+
+    nutrition_event = str(uuid.uuid4())
+    nutrition = client.post(
+        "/api/v1/mobile/nutrition/entries",
+        json=_nutrition_payload(
+            public_id=str(uuid.uuid4()), source="health_connect",
+            client_event_id=nutrition_event, quantity=None, unit=None,
+        ),
+        headers=_headers(token, "hc-nutrition-create"),
+    )
+    assert nutrition.status_code == 201
+    nutrition_data = nutrition.get_json()["data"]
+    assert nutrition_data["source"] == "health_connect"
+    detached = client.patch(
+        f"/api/v1/mobile/nutrition/entries/{nutrition_data['id']}",
+        json={"base_revision": 1, "source": "user_override", "name": "Copia QA editada"},
+        headers=_headers(token, "hc-nutrition-detach"),
+    )
+    assert detached.status_code == 200
+    assert detached.get_json()["data"]["source"] == "user_override"
+
+    steps_event = str(uuid.uuid4())
+    manual_steps = client.post(
+        "/api/v1/mobile/steps",
+        json={"public_id": str(uuid.uuid4()), "date": DAY, "steps": 5000, "source": "manual"},
+        headers=_headers(token, "hc-manual-steps"),
+    )
+    imported_steps = client.post(
+        "/api/v1/mobile/steps",
+        json={
+            "public_id": str(uuid.uuid4()), "date": DAY, "steps": 6500,
+            "source": "health_connect_aggregate", "client_event_id": steps_event,
+        },
+        headers=_headers(token, "hc-imported-steps"),
+    )
+    assert manual_steps.status_code == imported_steps.status_code == 201
+    today = client.get(
+        f"/api/v1/mobile/health/today?date={DAY}&timezone=America%2FMexico_City",
+        headers=_headers(token),
+    ).get_json()["data"]
+    assert today["steps"]["value"] == 5000
+    assert today["steps"]["source"] == "manual"
+
+
 def test_health_identity_migration_upgrade_and_downgrade_are_reversible(tmp_path):
     migration_path = Path(__file__).parents[1] / "migrations" / "versions" / "20260726_0031_mobile_health_logging.py"
     spec = importlib.util.spec_from_file_location("mobile_health_migration", migration_path)
@@ -472,4 +566,52 @@ def test_health_identity_migration_upgrade_and_downgrade_are_reversible(tmp_path
     inspector = sa.inspect(engine)
     assert "public_id" not in {item["name"] for item in inspector.get_columns("weigh_ins")}
     assert any(item["column_names"] == ["user_id", "date"] for item in inspector.get_unique_constraints("daily_energy"))
+    engine.dispose()
+
+
+def test_health_connect_migration_adds_provenance_and_restores_old_weight_constraint(tmp_path):
+    migration_path = Path(__file__).parents[1] / "migrations" / "versions" / "20260726_0032_health_connect_read_import.py"
+    spec = importlib.util.spec_from_file_location("health_connect_migration", migration_path)
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    engine = sa.create_engine(f"sqlite:///{tmp_path / 'health-connect-migration.db'}")
+    metadata = sa.MetaData()
+    sa.Table(
+        "weigh_ins", metadata,
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("user_id", sa.Integer(), nullable=False),
+        sa.Column("recorded_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("source", sa.String(32), nullable=False),
+        sa.UniqueConstraint("user_id", "recorded_at", name="uq_weigh_ins_user_recorded_at"),
+    )
+    sa.Table(
+        "daily_energy", metadata,
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("user_id", sa.Integer(), nullable=False),
+    )
+    sa.Table(
+        "nutrition_items", metadata,
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("user_id", sa.Integer(), nullable=False),
+    )
+    metadata.create_all(engine)
+    with engine.begin() as connection:
+        with Operations.context(MigrationContext.configure(connection)):
+            migration.upgrade()
+    inspector = sa.inspect(engine)
+    assert "client_event_id" in {item["name"] for item in inspector.get_columns("weigh_ins")}
+    assert {"source", "client_event_id"} <= {item["name"] for item in inspector.get_columns("nutrition_items")}
+    assert any(
+        item["column_names"] == ["user_id", "recorded_at", "source"]
+        for item in inspector.get_unique_constraints("weigh_ins")
+    )
+    with engine.begin() as connection:
+        with Operations.context(MigrationContext.configure(connection)):
+            migration.downgrade()
+    inspector = sa.inspect(engine)
+    assert "client_event_id" not in {item["name"] for item in inspector.get_columns("weigh_ins")}
+    assert any(
+        item["column_names"] == ["user_id", "recorded_at"]
+        for item in inspector.get_unique_constraints("weigh_ins")
+    )
     engine.dispose()

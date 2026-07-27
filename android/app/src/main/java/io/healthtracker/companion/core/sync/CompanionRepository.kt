@@ -139,6 +139,7 @@ class CompanionRepository(
                 }
                 preferences.setOfflineSessionEligible(true)
                 SyncScheduler.schedulePeriodic()
+                io.healthtracker.companion.core.healthconnect.HealthConnectScheduler.schedulePeriodic()
                 SyncScheduler.enqueueNow(SyncTrigger.LOGIN_BOOTSTRAP)
                 LoginOutcome(scope, profile)
             },
@@ -356,8 +357,15 @@ class CompanionRepository(
 
     suspend fun updateBodyStatOffline(value: BodyStatEntity) {
         requireDecimal(value.weightKg, "El peso", BigDecimal("0.001"), BigDecimal("1000"))
-        val updated = value.copy(localRevision = value.localRevision + 1, syncStatus = "pending", updatedAt = Instant.now().toString())
+        val now = Instant.now().toString()
+        val updated = value.copy(
+            source = if (value.source == "health_connect") "user_override" else value.source,
+            localRevision = value.localRevision + 1,
+            syncStatus = "pending",
+            updatedAt = now,
+        )
         database.withTransaction {
+            if (value.source == "health_connect") dao.detachHealthConnectLedgers(value.accountScope, value.publicId, now)
             dao.upsertBodyStats(listOf(updated))
             coalesceHealthWrite(scope = value.accountScope, createType = "health_body_create", updateType = "health_body_update", entityId = value.publicId, payload = bodyPayload(updated, creating = value.revision == 0))
             recalculateLocalDayForInstantLocked(value.accountScope, value.recordedAt)
@@ -416,8 +424,15 @@ class CompanionRepository(
     }
 
     suspend fun updateNutritionEntryOffline(value: NutritionEntryEntity) {
-        val updated = value.copy(localRevision = value.localRevision + 1, syncStatus = "pending", updatedAt = Instant.now().toString())
+        val now = Instant.now().toString()
+        val updated = value.copy(
+            source = if (value.source == "health_connect") "user_override" else value.source,
+            localRevision = value.localRevision + 1,
+            syncStatus = "pending",
+            updatedAt = now,
+        )
         database.withTransaction {
+            if (value.source == "health_connect") dao.detachHealthConnectLedgers(value.accountScope, value.publicId, now)
             dao.upsertNutritionEntries(listOf(updated))
             coalesceHealthWrite(value.accountScope, "health_nutrition_create", "health_nutrition_update", value.publicId, nutritionPayload(updated, updated.revision == 0))
             recalculateNutritionDayLocked(value.accountScope, LocalDate.parse(value.date))
@@ -1756,7 +1771,8 @@ class CompanionRepository(
     }
 
     private suspend fun processPending(scope: String) {
-        for (pending in dao.queuedActions(scope, 100)) {
+        repeat(100) {
+            val pending = dao.queuedActions(scope, 1).firstOrNull() ?: return
             // The local queue is strict FIFO. A conflicted or backed-off predecessor
             // blocks later START/PROGRESS/COMPLETE operations instead of letting the
             // SQL readiness filter skip over a required transition.
@@ -1861,11 +1877,19 @@ class CompanionRepository(
                     "health_body_create" -> {
                         val response = api.createBodyStat(queuedRequest(pending), pending.idempotencyKey)
                         database.withTransaction {
-                            if (response.id != pending.entityId) dao.deleteBodyStat(scope, pending.entityId)
-                            dao.upsertBodyStats(listOf(response.toEntity(scope)))
+                            val hasFollowUp = rebasePendingHealthUpdateLocked(
+                                scope, pending.entityId, "health_body_update", response.revision,
+                            )
+                            val local = dao.bodyStat(scope, pending.entityId)
+                            if (hasFollowUp && local != null) {
+                                dao.upsertBodyStats(listOf(local.copy(revision = response.revision, syncStatus = "pending")))
+                            } else {
+                                if (response.id != pending.entityId) dao.deleteBodyStat(scope, pending.entityId)
+                                dao.upsertBodyStats(listOf(response.toEntity(scope)))
+                            }
                             dao.deleteHealthConflict(scope, pending.entityId)
                             dao.deletePending(pending.localId)
-                            recalculateLocalDayForInstantLocked(scope, response.recordedAt)
+                            recalculateLocalDayForInstantLocked(scope, local?.recordedAt ?: response.recordedAt)
                         }
                     }
                     "health_body_update" -> {
@@ -1884,11 +1908,19 @@ class CompanionRepository(
                     "health_nutrition_create" -> {
                         val response = api.createNutritionEntry(queuedRequest(pending), pending.idempotencyKey)
                         database.withTransaction {
-                            if (response.id != pending.entityId) dao.deleteNutritionEntry(scope, pending.entityId)
-                            dao.upsertNutritionEntries(listOf(response.toEntity(scope)))
+                            val hasFollowUp = rebasePendingHealthUpdateLocked(
+                                scope, pending.entityId, "health_nutrition_update", response.revision,
+                            )
+                            val local = dao.nutritionEntry(scope, pending.entityId)
+                            if (hasFollowUp && local != null) {
+                                dao.upsertNutritionEntries(listOf(local.copy(revision = response.revision, syncStatus = "pending")))
+                            } else {
+                                if (response.id != pending.entityId) dao.deleteNutritionEntry(scope, pending.entityId)
+                                dao.upsertNutritionEntries(listOf(response.toEntity(scope)))
+                            }
                             dao.deleteHealthConflict(scope, pending.entityId)
                             dao.deletePending(pending.localId)
-                            val day = LocalDate.parse(response.date)
+                            val day = LocalDate.parse(local?.date ?: response.date)
                             recalculateNutritionDayLocked(scope, day)
                             recalculateLocalDayLocked(scope, day, dao.account(scope)?.timezone ?: "UTC")
                         }
@@ -1920,11 +1952,19 @@ class CompanionRepository(
                     "health_steps_create" -> {
                         val response = api.createSteps(queuedRequest(pending), pending.idempotencyKey)
                         database.withTransaction {
-                            if (response.id != pending.entityId) dao.deleteDailyStep(scope, pending.entityId)
-                            dao.upsertDailySteps(listOf(response.toEntity(scope)))
+                            val hasFollowUp = rebasePendingHealthUpdateLocked(
+                                scope, pending.entityId, "health_steps_update", response.revision,
+                            )
+                            val local = dao.dailyStep(scope, pending.entityId)
+                            if (hasFollowUp && local != null) {
+                                dao.upsertDailySteps(listOf(local.copy(revision = response.revision, syncStatus = "pending")))
+                            } else {
+                                if (response.id != pending.entityId) dao.deleteDailyStep(scope, pending.entityId)
+                                dao.upsertDailySteps(listOf(response.toEntity(scope)))
+                            }
                             dao.deleteHealthConflict(scope, pending.entityId)
                             dao.deletePending(pending.localId)
-                            recalculateLocalDayLocked(scope, LocalDate.parse(response.date), dao.account(scope)?.timezone ?: "UTC")
+                            recalculateLocalDayLocked(scope, LocalDate.parse(local?.date ?: response.date), dao.account(scope)?.timezone ?: "UTC")
                         }
                     }
                     "health_steps_update" -> {
@@ -1944,7 +1984,7 @@ class CompanionRepository(
                 if (pending.actionType.startsWith("planning_")) {
                     markPlanningSyncStatus(scope, pending, "synced")
                 }
-                if (pending.actionType.startsWith("health_")) {
+                if (pending.actionType.startsWith("health_") && dao.pendingActionForEntity(scope, pending.entityId) == null) {
                     markHealthSyncStatus(scope, pending, "synced")
                 }
             } catch (failure: AppFailure) {
@@ -1952,7 +1992,7 @@ class CompanionRepository(
                     pending.actionType == "companion_start" &&
                     failure.code == AppErrorCode.REVISION_CONFLICT &&
                     reconcileStartedPending(scope, pending)
-                ) continue
+                ) return@repeat
                 if (!failure.retryable) {
                     if (pending.actionType.startsWith("planning_")) {
                         markPlanningConflict(scope, pending, failure)
@@ -2188,6 +2228,24 @@ class CompanionRepository(
         return workoutId to request
     }
 
+    private suspend fun rebasePendingHealthUpdateLocked(
+        scope: String,
+        entityId: String,
+        actionType: String,
+        serverRevision: Int,
+    ): Boolean {
+        val pending = dao.pendingAction(scope, entityId, actionType) ?: return false
+        val current = api.json.parseToJsonElement(pending.payloadJson) as JsonObject
+        val rebased = buildJsonObject {
+            current.forEach { (key, value) ->
+                if (key !in setOf("public_id", "base_revision")) put(key, value)
+            }
+            put("base_revision", serverRevision)
+        }
+        dao.updatePendingEntity(pending.withUpdatedPayload(rebased.toString()))
+        return true
+    }
+
     private fun PendingActionEntity.withUpdatedPayload(payload: String): PendingActionEntity = copy(
         idempotencyKey = if (attemptCount > 0 || lastErrorCode != null) UUID.randomUUID().toString() else idempotencyKey,
         payloadJson = payload,
@@ -2218,7 +2276,7 @@ class CompanionRepository(
         value.bmrKcal?.let { put("bmr_kcal", it) }
         value.bmi?.let { put("bmi", it) }
         value.notes?.let { put("notes", it) }
-        if (creating) put("source", "manual")
+        if (creating || value.source == "user_override") put("source", value.source)
     }
 
     private fun nutritionPayload(value: NutritionEntryEntity, creating: Boolean) = buildJsonObject {
@@ -2231,6 +2289,7 @@ class CompanionRepository(
         value.totalCarbsG?.let { put("total_carbs_g", it) }; value.fiberG?.let { put("fiber_g", it) }
         value.sugarG?.let { put("sugar_g", it) }; value.sodiumMg?.let { put("sodium_mg", it) }
         value.notes?.let { put("notes", it) }
+        if (creating || value.source == "user_override") put("source", value.source)
     }
 
     private suspend fun coalesceHealthWrite(
@@ -2307,15 +2366,17 @@ class CompanionRepository(
                 step?.publicId, step?.steps, step?.goal,
                 existing?.scheduledWorkouts ?: 0, existing?.completedWorkouts ?: 0,
                 status, Instant.now().toString(),
+                body?.source, step?.source,
             ),
         )
-        val exactWeight = if (exactBody) body?.weightKg else null
+        val exactWeight = if (exactBody) body.weightKg else null
         dao.upsertHealthProgressPoints(
             listOf(
                 HealthProgressPointEntity(
                     scope, date.toString(), exactWeight, step?.steps, nutrition?.caloriesKcal,
                     nutrition?.proteinG, nutrition?.totalCarbsG ?: nutrition?.netCarbsG,
                     nutrition?.fatG, Instant.now().toString(),
+                    if (exactBody) body.source else null, step?.source,
                 ),
             ),
         )
@@ -2926,7 +2987,7 @@ class CompanionRepository(
     private fun MobileNutritionEntryDto.toEntity(scope: String) = NutritionEntryEntity(
         scope, id, date, mealType, mealName, name, quantity, unit, foodId, caloriesKcal,
         proteinG, fatG, netCarbsG, totalCarbsG, fiberG, sugarG, sodiumMg, notes,
-        dataComplete, revision, revision.toLong(), "synced", createdAt, updatedAt,
+        dataComplete, revision, revision.toLong(), "synced", createdAt, updatedAt, source,
     )
 
     private fun MobileNutritionDayDto.toEntity(scope: String) = NutritionDayEntity(
@@ -2954,12 +3015,13 @@ class CompanionRepository(
             totals.optionalText("calories_kcal"), totals.optionalText("protein_g"),
             totals.optionalText("carbohydrate_g"), totals.optionalText("fat_g"),
             totals.optionalText("fiber_g"), null, steps.entryId, steps.value, steps.goal,
-            training.scheduled, training.completed, "synced", updatedAt,
+            training.scheduled, training.completed, "synced", updatedAt, weight?.source, steps.source,
         )
     }
 
     private fun MobileHealthPointDto.toEntity(scope: String) = HealthProgressPointEntity(
         scope, date, weightKg, steps, caloriesKcal, proteinG, carbohydrateG, fatG, Instant.now().toString(),
+        weightSource, stepsSource,
     )
 
 }

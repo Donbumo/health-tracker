@@ -117,6 +117,18 @@ interface CompanionDao {
     suspend fun upsertHealthProgressPoints(values: List<HealthProgressPointEntity>)
 
     @Upsert
+    suspend fun upsertHealthConnectSettings(value: HealthConnectSettingsEntity)
+
+    @Upsert
+    suspend fun upsertHealthConnectPermissions(values: List<HealthConnectPermissionStateEntity>)
+
+    @Upsert
+    suspend fun upsertHealthConnectSyncState(value: HealthConnectSyncStateEntity)
+
+    @Upsert
+    suspend fun upsertHealthConnectLedger(values: List<HealthConnectRecordLedgerEntity>)
+
+    @Upsert
     suspend fun upsertSyncState(value: SyncStateEntity)
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
@@ -145,6 +157,12 @@ interface CompanionDao {
 
     @Query("SELECT * FROM body_stats WHERE accountScope=:scope AND publicId=:publicId LIMIT 1")
     suspend fun bodyStat(scope: String, publicId: String): BodyStatEntity?
+
+    @Query("SELECT * FROM body_stats WHERE accountScope=:scope AND recordedAt=:recordedAt AND source='health_connect' LIMIT 1")
+    suspend fun healthConnectBodyStatAt(scope: String, recordedAt: String): BodyStatEntity?
+
+    @Query("""SELECT body_stats.* FROM body_stats INNER JOIN health_connect_record_ledger AS ledger ON ledger.accountScope=body_stats.accountScope AND ledger.localResourceUuid=body_stats.publicId WHERE body_stats.accountScope=:scope AND ledger.recordType='weight' AND ledger.sourceStartTime=:recordedAt AND ledger.dataOrigin=:dataOrigin AND ledger.state='active' LIMIT 1""")
+    suspend fun healthConnectBodyStatAtOrigin(scope: String, recordedAt: String, dataOrigin: String): BodyStatEntity?
 
     @Query("SELECT * FROM nutrition_days WHERE accountScope=:scope AND date=:date LIMIT 1")
     fun observeNutritionDay(scope: String, date: String): Flow<NutritionDayEntity?>
@@ -178,6 +196,42 @@ interface CompanionDao {
 
     @Query("SELECT * FROM daily_steps WHERE accountScope=:scope AND publicId=:publicId LIMIT 1")
     suspend fun dailyStep(scope: String, publicId: String): DailyStepEntity?
+
+    @Query("SELECT * FROM daily_steps WHERE accountScope=:scope AND date=:date AND source=:source LIMIT 1")
+    suspend fun dailyStepBySource(scope: String, date: String, source: String): DailyStepEntity?
+
+    @Query("SELECT * FROM health_connect_settings WHERE accountScope=:scope LIMIT 1")
+    fun observeHealthConnectSettings(scope: String): Flow<HealthConnectSettingsEntity?>
+
+    @Query("SELECT * FROM health_connect_settings WHERE accountScope=:scope LIMIT 1")
+    suspend fun healthConnectSettings(scope: String): HealthConnectSettingsEntity?
+
+    @Query("SELECT * FROM health_connect_permission_state WHERE accountScope=:scope ORDER BY recordType")
+    fun observeHealthConnectPermissions(scope: String): Flow<List<HealthConnectPermissionStateEntity>>
+
+    @Query("SELECT * FROM health_connect_permission_state WHERE accountScope=:scope ORDER BY recordType")
+    suspend fun healthConnectPermissions(scope: String): List<HealthConnectPermissionStateEntity>
+
+    @Query("SELECT * FROM health_connect_sync_state WHERE accountScope=:scope ORDER BY recordType")
+    fun observeHealthConnectSyncStates(scope: String): Flow<List<HealthConnectSyncStateEntity>>
+
+    @Query("SELECT * FROM health_connect_sync_state WHERE accountScope=:scope AND recordType=:recordType LIMIT 1")
+    suspend fun healthConnectSyncState(scope: String, recordType: String): HealthConnectSyncStateEntity?
+
+    @Query("SELECT * FROM health_connect_record_ledger WHERE accountScope=:scope AND recordType=:recordType AND healthConnectRecordId=:recordId LIMIT 1")
+    suspend fun healthConnectLedger(scope: String, recordType: String, recordId: String): HealthConnectRecordLedgerEntity?
+
+    @Query("SELECT * FROM health_connect_record_ledger WHERE accountScope=:scope AND localResourceUuid=:resourceId")
+    suspend fun healthConnectLedgersForResource(scope: String, resourceId: String): List<HealthConnectRecordLedgerEntity>
+
+    @Query("SELECT * FROM health_connect_record_ledger WHERE accountScope=:scope AND recordType=:recordType AND sourceStartTime>=:from AND state='active'")
+    suspend fun activeHealthConnectLedgersSince(scope: String, recordType: String, from: String): List<HealthConnectRecordLedgerEntity>
+
+    @Query("SELECT * FROM health_connect_record_ledger WHERE accountScope=:scope AND state='active'")
+    suspend fun activeHealthConnectLedgers(scope: String): List<HealthConnectRecordLedgerEntity>
+
+    @Query("UPDATE health_connect_record_ledger SET detachedByUser=1,state='detached',localResourceUuid=NULL,lastSeenAt=:now WHERE accountScope=:scope AND localResourceUuid=:resourceId")
+    suspend fun detachHealthConnectLedgers(scope: String, resourceId: String, now: String)
 
     @Query("SELECT * FROM health_conflicts WHERE accountScope=:scope ORDER BY createdAt")
     fun observeHealthConflicts(scope: String): Flow<List<HealthConflictEntity>>
@@ -527,6 +581,18 @@ interface CompanionDao {
     @Query("DELETE FROM health_progress_points WHERE accountScope=:scope")
     suspend fun deleteHealthProgressForAccount(scope: String)
 
+    @Query("DELETE FROM health_connect_record_ledger WHERE accountScope=:scope")
+    suspend fun deleteHealthConnectLedgerForAccount(scope: String)
+
+    @Query("DELETE FROM health_connect_sync_state WHERE accountScope=:scope")
+    suspend fun deleteHealthConnectSyncForAccount(scope: String)
+
+    @Query("DELETE FROM health_connect_permission_state WHERE accountScope=:scope")
+    suspend fun deleteHealthConnectPermissionsForAccount(scope: String)
+
+    @Query("DELETE FROM health_connect_settings WHERE accountScope=:scope")
+    suspend fun deleteHealthConnectSettingsForAccount(scope: String)
+
     @Query("DELETE FROM sync_state WHERE accountScope=:scope")
     suspend fun deleteSyncStateForAccount(scope: String)
 
@@ -599,6 +665,10 @@ interface CompanionDao {
     @Transaction
     suspend fun clearAccount(scope: String) {
         deletePendingForAccount(scope)
+        deleteHealthConnectLedgerForAccount(scope)
+        deleteHealthConnectSyncForAccount(scope)
+        deleteHealthConnectPermissionsForAccount(scope)
+        deleteHealthConnectSettingsForAccount(scope)
         deleteHealthConflictsForAccount(scope)
         deleteHealthProgressForAccount(scope)
         deleteDailyStepsForAccount(scope)

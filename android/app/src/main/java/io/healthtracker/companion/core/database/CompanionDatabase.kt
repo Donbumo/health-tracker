@@ -36,9 +36,18 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         MobilePlanExerciseEntity::class,
         MobilePlanSetEntity::class,
         PlanningConflictEntity::class,
+        DailyHealthSummaryEntity::class,
+        BodyStatEntity::class,
+        NutritionDayEntity::class,
+        NutritionEntryEntity::class,
+        FoodCatalogEntity::class,
+        FoodCatalogStateEntity::class,
+        DailyStepEntity::class,
+        HealthConflictEntity::class,
+        HealthProgressPointEntity::class,
         SyncStateEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class CompanionDatabase : RoomDatabase() {
@@ -49,7 +58,7 @@ abstract class CompanionDatabase : RoomDatabase() {
             context.applicationContext,
             CompanionDatabase::class.java,
             "health_tracker_companion_v1.db",
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -96,6 +105,24 @@ abstract class CompanionDatabase : RoomDatabase() {
                 db.execSQL("""CREATE TABLE IF NOT EXISTS `mobile_plan_sets` (`accountScope` TEXT NOT NULL, `workoutPublicId` TEXT NOT NULL, `exercisePublicId` TEXT NOT NULL, `publicId` TEXT NOT NULL, `setNumber` INTEGER NOT NULL, `reps` INTEGER, `repsMin` INTEGER, `repsMax` INTEGER, `weightKg` TEXT, `loadValue` TEXT, `loadUnit` TEXT NOT NULL, `loadMode` TEXT NOT NULL, `loadDetailsJson` TEXT, `rir` TEXT, `rpe` TEXT, `restSeconds` INTEGER, `durationSeconds` INTEGER, `distanceMeters` TEXT, `notes` TEXT, PRIMARY KEY(`accountScope`, `workoutPublicId`, `exercisePublicId`, `publicId`), FOREIGN KEY(`accountScope`, `workoutPublicId`, `exercisePublicId`) REFERENCES `mobile_plan_exercises`(`accountScope`,`workoutPublicId`,`publicId`) ON UPDATE NO ACTION ON DELETE CASCADE)""")
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_mobile_plan_sets_accountScope_workoutPublicId_exercisePublicId_setNumber` ON `mobile_plan_sets` (`accountScope`, `workoutPublicId`, `exercisePublicId`, `setNumber`)")
                 db.execSQL("""CREATE TABLE IF NOT EXISTS `planning_conflicts` (`accountScope` TEXT NOT NULL, `entityId` TEXT NOT NULL, `entityType` TEXT NOT NULL, `localRevision` INTEGER NOT NULL, `serverRevision` INTEGER, `changedFields` TEXT NOT NULL, `localName` TEXT, `remoteName` TEXT, `createdAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `entityId`))""")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `daily_health_summaries` (`accountScope` TEXT NOT NULL, `date` TEXT NOT NULL, `timezone` TEXT NOT NULL, `weightId` TEXT, `weightKg` TEXT, `weightIsExactDate` INTEGER NOT NULL, `caloriesKcal` TEXT, `proteinG` TEXT, `carbohydrateG` TEXT, `fatG` TEXT, `fiberG` TEXT, `nutritionTargetKcal` TEXT, `stepsEntryId` TEXT, `steps` INTEGER, `stepsGoal` INTEGER, `scheduledWorkouts` INTEGER NOT NULL, `completedWorkouts` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `updatedAt` TEXT, PRIMARY KEY(`accountScope`, `date`))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `body_stats` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `recordedAt` TEXT NOT NULL, `weightKg` TEXT NOT NULL, `bodyFatPercent` TEXT, `muscleMassKg` TEXT, `waterPercent` TEXT, `visceralFat` TEXT, `bmrKcal` TEXT, `bmi` TEXT, `notes` TEXT, `source` TEXT NOT NULL, `revision` INTEGER NOT NULL, `localRevision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_body_stats_accountScope_recordedAt` ON `body_stats` (`accountScope`, `recordedAt`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `nutrition_days` (`accountScope` TEXT NOT NULL, `date` TEXT NOT NULL, `caloriesKcal` TEXT, `proteinG` TEXT, `fatG` TEXT, `netCarbsG` TEXT, `totalCarbsG` TEXT, `fiberG` TEXT, `sugarG` TEXT, `sodiumMg` TEXT, `targetCaloriesKcal` TEXT, `updatedAt` TEXT, PRIMARY KEY(`accountScope`, `date`))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `nutrition_entries` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `date` TEXT NOT NULL, `mealType` TEXT NOT NULL, `mealName` TEXT, `name` TEXT NOT NULL, `quantity` TEXT, `unit` TEXT, `foodId` TEXT, `caloriesKcal` TEXT, `proteinG` TEXT, `fatG` TEXT, `netCarbsG` TEXT, `totalCarbsG` TEXT, `fiberG` TEXT, `sugarG` TEXT, `sodiumMg` TEXT, `notes` TEXT, `dataComplete` INTEGER NOT NULL, `revision` INTEGER NOT NULL, `localRevision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_nutrition_entries_accountScope_date_mealType_updatedAt` ON `nutrition_entries` (`accountScope`, `date`, `mealType`, `updatedAt`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `food_catalog` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `name` TEXT NOT NULL, `normalizedName` TEXT NOT NULL, `brand` TEXT, `servingSizeG` TEXT, `servingLabel` TEXT, `caloriesPer100g` TEXT, `proteinGPer100g` TEXT, `fatGPer100g` TEXT, `carbsGPer100g` TEXT, `netCarbsGPer100g` TEXT, `fiberGPer100g` TEXT, `sodiumMgPer100g` TEXT, `notes` TEXT, `custom` INTEGER NOT NULL, `archived` INTEGER NOT NULL, `dataComplete` INTEGER NOT NULL, `revision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_food_catalog_accountScope_normalizedName` ON `food_catalog` (`accountScope`, `normalizedName`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `food_catalog_state` (`accountScope` TEXT NOT NULL, `query` TEXT NOT NULL, `nextCursor` TEXT, `hasMore` INTEGER NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `query`))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `daily_steps` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `date` TEXT NOT NULL, `steps` INTEGER NOT NULL, `source` TEXT NOT NULL, `goal` INTEGER, `revision` INTEGER NOT NULL, `localRevision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `publicId`))""")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_daily_steps_accountScope_date_source` ON `daily_steps` (`accountScope`, `date`, `source`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `health_conflicts` (`accountScope` TEXT NOT NULL, `entityId` TEXT NOT NULL, `entityType` TEXT NOT NULL, `conflictType` TEXT NOT NULL, `localRevision` INTEGER NOT NULL, `serverRevision` INTEGER, `createdAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `entityId`))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `health_progress_points` (`accountScope` TEXT NOT NULL, `date` TEXT NOT NULL, `weightKg` TEXT, `steps` INTEGER, `caloriesKcal` TEXT, `proteinG` TEXT, `carbohydrateG` TEXT, `fatG` TEXT, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `date`))""")
             }
         }
     }

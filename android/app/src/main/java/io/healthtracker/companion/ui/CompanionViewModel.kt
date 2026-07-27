@@ -25,6 +25,9 @@ import io.healthtracker.companion.core.database.MobilePlanExerciseEntity
 import io.healthtracker.companion.core.database.MobilePlanSetEntity
 import io.healthtracker.companion.core.database.MobilePlanWorkoutEntity
 import io.healthtracker.companion.core.database.PlanningConflictEntity
+import io.healthtracker.companion.core.database.BodyStatEntity
+import io.healthtracker.companion.core.database.NutritionEntryEntity
+import io.healthtracker.companion.core.health.canonicalWeightKg
 import io.healthtracker.companion.core.load.LoadPreview
 import io.healthtracker.companion.core.planning.reorderedIds
 import io.healthtracker.companion.core.planning.PlanningEditorState
@@ -48,6 +51,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
@@ -102,6 +106,12 @@ class CompanionViewModel(
     private val mutableCatalogQuery = MutableStateFlow("")
     private val mutablePlanningRefreshing = MutableStateFlow(false)
     private val mutableShowArchivedPlans = MutableStateFlow(false)
+    private val mutableHealthDate = MutableStateFlow(LocalDate.now())
+    private val mutableHealthRefreshing = MutableStateFlow(false)
+    private val mutableFoodQuery = MutableStateFlow("")
+    private val mutableFoodHasMore = MutableStateFlow(false)
+    private val mutableFoodLoading = MutableStateFlow(false)
+    private val mutableProgressSection = MutableStateFlow("training")
     private var catalogSearchJob: Job? = null
     private val serializer = Json { explicitNulls = false; encodeDefaults = true }
     private val autosaveController: DebouncedAutosave<AutosaveCommand>
@@ -131,6 +141,12 @@ class CompanionViewModel(
     val catalogQuery: StateFlow<String> = mutableCatalogQuery
     val planningRefreshing: StateFlow<Boolean> = mutablePlanningRefreshing
     val showArchivedPlans: StateFlow<Boolean> = mutableShowArchivedPlans
+    val healthDate: StateFlow<LocalDate> = mutableHealthDate
+    val healthRefreshing: StateFlow<Boolean> = mutableHealthRefreshing
+    val foodQuery: StateFlow<String> = mutableFoodQuery
+    val foodHasMore: StateFlow<Boolean> = mutableFoodHasMore
+    val foodLoading: StateFlow<Boolean> = mutableFoodLoading
+    val progressSection: StateFlow<String> = mutableProgressSection
     val preferences = container.preferences.values.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000),
         io.healthtracker.companion.core.config.AppPreferences(deviceId = ""),
@@ -149,6 +165,39 @@ class CompanionViewModel(
             .getOrDefault(ZoneId.systemDefault())
         LocalDate.now(zone)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LocalDate.now())
+
+    val dailyHealth = combine(scope, mutableHealthDate) { account, date -> account to date }.flatMapLatest { (account, date) ->
+        if (account == null) flowOf(null) else repository.observeDailyHealth(account, date)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val bodyStats = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else repository.observeBodyStats(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val nutritionDay = combine(scope, mutableHealthDate) { account, date -> account to date }.flatMapLatest { (account, date) ->
+        if (account == null) flowOf(null) else repository.observeNutritionDay(account, date)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val nutritionEntries = combine(scope, mutableHealthDate) { account, date -> account to date }.flatMapLatest { (account, date) ->
+        if (account == null) flowOf(emptyList()) else repository.observeNutritionEntries(account, date)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val foodCatalog = combine(scope, mutableFoodQuery) { account, query -> account to query }.flatMapLatest { (account, query) ->
+        if (account == null) flowOf(emptyList()) else repository.observeFoodCatalog(account, query)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val stepHistory = combine(scope, mutableHealthDate) { account, date -> account to date }.flatMapLatest { (account, date) ->
+        if (account == null) flowOf(emptyList()) else repository.observeDailySteps(account, date.minusDays(29), date)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val healthConflicts = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else repository.observeHealthConflicts(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val healthProgress = combine(scope, planningToday, mutableProgressRange) { account, today, range -> Triple(account, today, range) }.flatMapLatest { (account, today, range) ->
+        val days = range.toLongOrNull()?.coerceAtMost(365) ?: 365
+        if (account == null) flowOf(emptyList()) else repository.observeHealthProgress(account, today.minusDays(days - 1), today)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val todayWorkouts = combine(planned, planningToday) { values, operationalDate ->
         values.filter {
@@ -335,6 +384,17 @@ class CompanionViewModel(
                 }
             }
         }
+        viewModelScope.launch {
+            mutableFoodQuery.collectLatest { query ->
+                delay(350)
+                if (query == mutableFoodQuery.value && connected.value) {
+                    preferences.value.accountScope?.let { account ->
+                        runCatching { repository.refreshFoods(account, query) }
+                            .onSuccess { mutableFoodHasMore.value = it }
+                    }
+                }
+            }
+        }
     }
 
     fun login(url: String, localHttp: Boolean, email: String, password: String, deviceName: String) = action {
@@ -438,6 +498,9 @@ class CompanionViewModel(
             try {
                 val account = preferences.value.accountScope ?: return@launch
                 repository.refreshProgress(account, mutableProgressRange.value)
+                val today = planningToday.value
+                val days = mutableProgressRange.value.toLongOrNull()?.coerceAtMost(365) ?: 365
+                repository.refreshHealthProgress(account, today.minusDays(days - 1), today, mutableProfile.value?.timezone ?: "UTC")
                 mutableProgressError.value = null
             } catch (failure: AppFailure) {
                 mutableProgressError.value = failure.userMessage
@@ -459,6 +522,106 @@ class CompanionViewModel(
     }
 
     fun closeProgressExercise() { mutableSelectedExerciseId.value = null }
+
+    fun setProgressSection(value: String) {
+        if (value in setOf("training", "health")) mutableProgressSection.value = value
+    }
+
+    fun setHealthDate(value: LocalDate) { mutableHealthDate.value = value }
+
+    fun shiftHealthDate(days: Long) { mutableHealthDate.value = mutableHealthDate.value.plusDays(days) }
+
+    fun setFoodQuery(value: String) {
+        mutableFoodHasMore.value = false
+        mutableFoodQuery.value = value.take(200)
+    }
+
+    fun loadMoreFoods() {
+        if (!connected.value || !mutableFoodHasMore.value || !mutableFoodLoading.compareAndSet(false, true)) return
+        viewModelScope.launch {
+            try {
+                val account = preferences.value.accountScope ?: return@launch
+                mutableFoodHasMore.value = repository.refreshFoods(account, mutableFoodQuery.value, reset = false)
+            } catch (failure: AppFailure) {
+                mutableMessage.value = failure.userMessage
+            } finally {
+                mutableFoodLoading.value = false
+            }
+        }
+    }
+
+    fun refreshHealth() {
+        if (!mutableHealthRefreshing.compareAndSet(false, true)) return
+        viewModelScope.launch {
+            try {
+                val account = preferences.value.accountScope ?: return@launch
+                repository.refreshHealth(account, mutableHealthDate.value, mutableProfile.value?.timezone ?: "UTC")
+            } catch (failure: AppFailure) {
+                mutableMessage.value = failure.userMessage
+            } finally {
+                mutableHealthRefreshing.value = false
+            }
+        }
+    }
+
+    fun recordWeight(value: String, unit: String, bodyFat: String?, notes: String?) = healthAction("Medición guardada en este dispositivo.") { account ->
+        val kilograms = canonicalWeightKg(value, unit)
+            ?: throw AppFailure(io.healthtracker.companion.core.model.AppErrorCode.VALIDATION_ERROR, "El peso o la unidad no son válidos.", false)
+        val zone = runCatching { ZoneId.of(mutableProfile.value?.timezone ?: "UTC") }.getOrDefault(ZoneId.of("UTC"))
+        val recordedAt = if (mutableHealthDate.value == LocalDate.now(zone)) Instant.now().toString()
+        else mutableHealthDate.value.atTime(12, 0).atZone(zone).toInstant().toString()
+        repository.createBodyStatOffline(account, recordedAt, kilograms, bodyFat?.takeIf(String::isNotBlank), notes)
+    }
+
+    fun updateBodyStat(value: BodyStatEntity) = healthAction("Cambio corporal guardado localmente.") { repository.updateBodyStatOffline(value) }
+
+    fun deleteBodyStat(publicId: String) = healthAction("Medición eliminada localmente.") { repository.deleteBodyStatOffline(it, publicId) }
+
+    fun addNutritionEntry(
+        mealType: String, name: String, quantity: String?, unit: String?, calories: String?,
+        protein: String?, carbs: String?, fat: String?, fiber: String?, foodId: String?, notes: String?,
+    ) = healthAction("Comida guardada en este dispositivo.") { account ->
+        repository.createNutritionEntryOffline(
+            account, mutableHealthDate.value, mealType, name, quantity?.takeIf(String::isNotBlank),
+            unit?.takeIf(String::isNotBlank), calories?.takeIf(String::isNotBlank), protein?.takeIf(String::isNotBlank),
+            carbs?.takeIf(String::isNotBlank), fat?.takeIf(String::isNotBlank), fiber?.takeIf(String::isNotBlank), foodId,
+            notes?.takeIf(String::isNotBlank),
+        )
+    }
+
+    fun updateNutritionEntry(value: NutritionEntryEntity) = healthAction("Entrada actualizada localmente.") { repository.updateNutritionEntryOffline(value) }
+
+    fun duplicateNutritionEntry(publicId: String) = healthAction("Entrada duplicada localmente.") { repository.duplicateNutritionEntryOffline(it, publicId) }
+
+    fun deleteNutritionEntry(publicId: String) = healthAction("Entrada eliminada localmente.") { repository.deleteNutritionEntryOffline(it, publicId) }
+
+    fun registerSteps(value: String) = healthAction("Pasos guardados en este dispositivo.") { account ->
+        val count = value.toLongOrNull()
+            ?: throw AppFailure(io.healthtracker.companion.core.model.AppErrorCode.VALIDATION_ERROR, "Los pasos no son válidos.", false)
+        repository.setStepsOffline(account, mutableHealthDate.value, count)
+    }
+
+    fun deleteSteps(publicId: String) = healthAction("Registro de pasos eliminado localmente.") { repository.deleteStepsOffline(it, publicId) }
+
+    fun createFood(name: String, servingSize: String?, calories: String?, protein: String?, carbs: String?, fat: String?) =
+        healthAction("Alimento guardado en el catálogo local.") { account ->
+            repository.createFoodOffline(account, name, servingSize?.takeIf(String::isNotBlank), calories?.takeIf(String::isNotBlank), protein?.takeIf(String::isNotBlank), carbs?.takeIf(String::isNotBlank), fat?.takeIf(String::isNotBlank))
+        }
+
+    fun useServerHealthConflict(entityId: String) = healthAction("Se descartó el cambio local en conflicto.") { account ->
+        repository.resolveHealthConflictUseServer(account, entityId)
+        if (connected.value) repository.refreshHealth(account, mutableHealthDate.value, mutableProfile.value?.timezone ?: "UTC")
+    }
+
+    fun retryHealthConflict(entityId: String) = healthAction("El cambio volverá a sincronizarse.") { account ->
+        repository.retryHealthConflict(account, entityId)
+    }
+
+    fun duplicateHealthConflict(entityId: String) = healthAction("Se creó una copia local nueva.") { account ->
+        repository.duplicateHealthConflict(account, entityId)
+    }
+
+    fun cancelHealthConflict(entityId: String) = useServerHealthConflict(entityId)
 
     fun refreshPlanning() {
         if (!mutablePlanningRefreshing.compareAndSet(false, true)) return
@@ -890,6 +1053,21 @@ class CompanionViewModel(
 
     private fun releaseSetAction(key: String) = synchronized(mutableSetActions) {
         mutableSetActions.value = mutableSetActions.value - key
+    }
+
+    private fun healthAction(successMessage: String, block: suspend (String) -> Unit) {
+        action(showBusy = false) {
+            mutableAutosaveState.value = AutosaveUiState.SAVING
+            try {
+                val account = preferences.value.accountScope ?: return@action
+                block(account)
+                mutableAutosaveState.value = if (connected.value) AutosaveUiState.SAVED else AutosaveUiState.SAVED_LOCAL
+                mutableMessage.value = successMessage
+            } catch (error: Exception) {
+                mutableAutosaveState.value = AutosaveUiState.ERROR
+                throw error
+            }
+        }
     }
 
     private fun action(

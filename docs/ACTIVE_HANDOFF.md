@@ -1,6 +1,16 @@
 # Handoff activo
 
-## Alpha 1.3 — planificación Android (25 de julio de 2026)
+## Alpha 1.4 — registro diario de salud Android (26 de julio de 2026)
+
+- Rama obligatoria: `feature/alpha-1.4-mobile-health-logging`; no realizar commit/push/merge/tag desde este handoff.
+- Backend: endpoints Bearer owner-only para resumen/progreso, cuerpo, nutrición, catálogo privado y pasos; UUID/revisiones añadidos a los modelos existentes mediante migración `20260726_0031`. `daily_energy` permite coexistencia por fecha/fuente y la lectura efectiva prioriza `manual` sin sumar fuentes.
+- Android: `1.4.0-alpha01`, Room 4 preservador, tarjetas de salud en Hoy, pantallas anidadas, registro offline, UUID/idempotencia, coalescing, autosync, conflictos visibles/resolubles y Progreso Salud con alternativa textual.
+- Validación: backend `612 passed, 1 skipped` en Python 3.13 + MariaDB 11.4 efímera; schema JSON, compileall, Compose config, single head `0031`, `db check` y ciclo upgrade/downgrade/upgrade verdes. Android lint, dos pasadas JVM (53/53), APK y compilación androidTest verdes.
+- No se ejecutó `connectedDebugAndroidTest`; continúan pendientes QA manual visual/accesible, modo avión→process death→reconexión y verificación web↔Android en AVD/dispositivo separado.
+
+## Base preservada de Alpha 1.3
+
+### Alpha 1.3 — planificación Android (25 de julio de 2026)
 
 - Rama obligatoria: `feature/alpha-1.3-mobile-planning`; no realizar commit/push/merge/tag desde este handoff.
 - Backend: catálogo paginado por nombre/alias, agregado mutable `TrainingPlanWorkout`, versiones inmutables, CRUD/duplicación/archivo/orden, agenda acotada y schedule/move/cancel owner-only e idempotente, bloqueo seguro de archivo con programaciones activas, `training_plan` en el cursor compartido y package determinista por revisión.

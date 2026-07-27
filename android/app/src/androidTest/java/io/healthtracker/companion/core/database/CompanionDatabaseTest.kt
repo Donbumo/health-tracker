@@ -20,6 +20,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -827,6 +828,130 @@ class CompanionDatabaseTest {
 
         assertEquals("corrupt", recovered?.status)
         assertEquals("draft_package_content_missing", recovered?.corruptReasonCode)
+    }
+
+    @Test fun healthCacheIsAccountScopedAndLogoutDoesNotTouchAnotherAccount() = runBlocking {
+        val dao = database.companionDao()
+        val now = "2026-07-26T12:00:00Z"
+        dao.upsertDailyHealthSummary(DailyHealthSummaryEntity("scope-a", "2026-07-26", "UTC", null, "70", true, "300", "20", "40", "8", "5", null, null, 5000, null, 0, 0, "cached", now))
+        dao.upsertDailyHealthSummary(DailyHealthSummaryEntity("scope-b", "2026-07-26", "UTC", null, "80", true, null, null, null, null, null, null, null, 9000, null, 0, 0, "cached", now))
+        dao.upsertHealthProgressPoints(
+            listOf(
+                HealthProgressPointEntity("scope-a", "2026-07-26", "70", 5000, "300", "20", "40", "8", now),
+                HealthProgressPointEntity("scope-b", "2026-07-26", "80", 9000, null, null, null, null, now),
+            ),
+        )
+
+        assertEquals("70", dao.observeDailyHealthSummary("scope-a", "2026-07-26").first()?.weightKg)
+        assertEquals("80", dao.observeDailyHealthSummary("scope-b", "2026-07-26").first()?.weightKg)
+        dao.clearAccount("scope-a")
+        assertNull(dao.observeDailyHealthSummary("scope-a", "2026-07-26").first())
+        assertTrue(dao.observeHealthProgress("scope-a", "2026-07-01", "2026-07-31").first().isEmpty())
+        assertEquals(9000, dao.observeDailyHealthSummary("scope-b", "2026-07-26").first()?.steps)
+    }
+
+    @Test fun offlineBodyCreateUpdateAndDeleteCoalesceWithoutDuplicate() = runBlocking {
+        val repository = repository()
+        val dao = database.companionDao()
+        val id = repository.createBodyStatOffline(TEST_SCOPE, "2026-07-26T08:00:00Z", "70", "20", "QA")
+        val original = dao.bodyStat(TEST_SCOPE, id)!!
+        repository.updateBodyStatOffline(original.copy(weightKg = "70.5"))
+        SyncScheduler.cancelAll()
+
+        assertEquals("70.5", dao.bodyStat(TEST_SCOPE, id)?.weightKg)
+        assertEquals(listOf("health_body_create"), dao.queuedActions(TEST_SCOPE, 10).map { it.actionType })
+        assertTrue(dao.queuedActions(TEST_SCOPE, 10).single().payloadJson.contains("70.5"))
+        assertEquals(id, dao.observeBodyStats(TEST_SCOPE).first().single().publicId)
+
+        repository.deleteBodyStatOffline(TEST_SCOPE, id)
+        SyncScheduler.cancelAll()
+        assertNull(dao.bodyStat(TEST_SCOPE, id))
+        assertTrue(dao.queuedActions(TEST_SCOPE, 10).isEmpty())
+    }
+
+    @Test fun offlineNutritionTotalsDuplicateMoveAndDeleteAreImmediatelyVisible() = runBlocking {
+        val repository = repository()
+        val dao = database.companionDao()
+        val day = java.time.LocalDate.of(2026, 7, 26)
+        val id = repository.createNutritionEntryOffline(
+            TEST_SCOPE, day, "breakfast", "Avena QA", "80", "g", "300", "12", "48", "7", "6",
+        )
+        val duplicate = repository.duplicateNutritionEntryOffline(TEST_SCOPE, id)
+        val moved = dao.nutritionEntry(TEST_SCOPE, duplicate)!!.copy(mealType = "dinner", caloriesKcal = "310")
+        repository.updateNutritionEntryOffline(moved)
+        SyncScheduler.cancelAll()
+
+        val entries = dao.observeNutritionEntries(TEST_SCOPE, day.toString()).first()
+        assertEquals(2, entries.size)
+        assertEquals(setOf("breakfast", "dinner"), entries.map { it.mealType }.toSet())
+        assertEquals("610", dao.observeNutritionDay(TEST_SCOPE, day.toString()).first()?.caloriesKcal)
+        assertEquals(2, dao.queuedActions(TEST_SCOPE, 10).count { it.actionType == "health_nutrition_create" })
+
+        repository.deleteNutritionEntryOffline(TEST_SCOPE, duplicate)
+        SyncScheduler.cancelAll()
+        assertEquals(listOf(id), dao.observeNutritionEntries(TEST_SCOPE, day.toString()).first().map { it.publicId })
+        assertEquals("300", dao.observeNutritionDay(TEST_SCOPE, day.toString()).first()?.caloriesKcal)
+    }
+
+    @Test fun repeatedOfflineStepsUseStableIdentityAndLatestValue() = runBlocking {
+        val repository = repository()
+        val dao = database.companionDao()
+        val day = java.time.LocalDate.of(2026, 7, 26)
+        val firstId = repository.setStepsOffline(TEST_SCOPE, day, 5000)
+        val secondId = repository.setStepsOffline(TEST_SCOPE, day, 7500)
+        SyncScheduler.cancelAll()
+
+        assertEquals(firstId, secondId)
+        assertEquals(7500, dao.dailyStep(TEST_SCOPE, firstId)?.steps)
+        assertEquals(listOf("health_steps_create"), dao.queuedActions(TEST_SCOPE, 10).map { it.actionType })
+        assertTrue(dao.queuedActions(TEST_SCOPE, 10).single().payloadJson.contains("7500"))
+        assertEquals(7500, dao.observeDailyHealthSummary(TEST_SCOPE, day.toString()).first()?.steps)
+
+        repository.deleteStepsOffline(TEST_SCOPE, firstId)
+        SyncScheduler.cancelAll()
+        assertNull(dao.dailyStep(TEST_SCOPE, firstId))
+        assertTrue(dao.queuedActions(TEST_SCOPE, 10).isEmpty())
+    }
+
+    @Test fun cachedFoodSearchAndSanitizedHealthConflictRemainLocal() = runBlocking {
+        val dao = database.companionDao()
+        val now = "2026-07-26T12:00:00Z"
+        dao.upsertFoodCatalog(
+            listOf(
+                FoodCatalogEntity(TEST_SCOPE, "food-a", "Avena QA", "avena qa", null, "100", "100 g", "380", "13", "7", "68", null, "10", null, null, true, false, true, 1, "synced", now),
+                FoodCatalogEntity(TEST_SCOPE, "food-b", "Arroz QA", "arroz qa", null, "100", "100 g", "130", "3", "1", "28", null, null, null, null, true, false, true, 1, "synced", now),
+            ),
+        )
+        dao.upsertHealthConflict(HealthConflictEntity(TEST_SCOPE, "food-a", "food", "revision_conflict", 2, 3, now))
+
+        assertEquals(listOf("Avena QA"), dao.observeFoodCatalog(TEST_SCOPE, "%ave%").first().map { it.name })
+        val conflict = dao.observeHealthConflicts(TEST_SCOPE).first().single()
+        assertEquals("revision_conflict", conflict.conflictType)
+        assertFalse(conflict.toString().contains("380"))
+    }
+
+    @Test fun healthConflictCanRetryOrDiscardWithoutExposingPayload() = runBlocking {
+        val repository = repository()
+        val dao = database.companionDao()
+        val id = repository.createBodyStatOffline(TEST_SCOPE, "2026-07-26T08:00:00Z", "70", null, null)
+        SyncScheduler.cancelAll()
+        val pending = dao.queuedActions(TEST_SCOPE, 10).single()
+        dao.updatePending(pending.localId, "conflict", "revision_conflict", 0)
+        dao.upsertHealthConflict(HealthConflictEntity(TEST_SCOPE, id, "body_stat", "revision_conflict", 1, 2, "2026-07-26T12:00:00Z"))
+
+        repository.retryHealthConflict(TEST_SCOPE, id)
+        SyncScheduler.cancelAll()
+        val retried = dao.queuedActions(TEST_SCOPE, 10).single()
+        assertEquals("pending", retried.status)
+        assertFalse(retried.idempotencyKey == pending.idempotencyKey)
+        assertTrue(dao.observeHealthConflicts(TEST_SCOPE).first().isEmpty())
+
+        dao.updatePending(retried.localId, "conflict", "validation_rejected", 0)
+        dao.upsertHealthConflict(HealthConflictEntity(TEST_SCOPE, id, "body_stat", "validation_rejected", 1, null, "2026-07-26T12:00:01Z"))
+        repository.resolveHealthConflictUseServer(TEST_SCOPE, id)
+        assertNull(dao.bodyStat(TEST_SCOPE, id))
+        assertTrue(dao.queuedActions(TEST_SCOPE, 10).isEmpty())
+        assertTrue(dao.observeHealthConflicts(TEST_SCOPE).first().isEmpty())
     }
 
     private fun repository(): CompanionRepository {

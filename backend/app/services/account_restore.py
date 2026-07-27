@@ -640,12 +640,15 @@ class AccountRestoreService:
                 )
             ).scalar_one_or_none()
         if section == "daily_energy":
-            return db.session.execute(
-                db.select(DailyEnergy).where(
-                    DailyEnergy.user_id == user_id,
-                    DailyEnergy.date == date.fromisoformat(item["data"]["date"]),
+            statement = db.select(DailyEnergy).where(
+                DailyEnergy.user_id == user_id,
+                DailyEnergy.date == date.fromisoformat(item["data"]["date"]),
+            )
+            if item["data"].get("source"):
+                statement = statement.where(
+                    DailyEnergy.source == item["data"]["source"].strip()
                 )
-            ).scalar_one_or_none()
+            return db.session.execute(statement).scalar_one_or_none()
         if section == "daily_nutrition":
             return db.session.execute(
                 db.select(DailyNutrition).where(

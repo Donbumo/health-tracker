@@ -205,6 +205,65 @@ class ApiClient(
     suspend fun plannedWorkout(publicId: String): PlannedWorkoutDto =
         call("/api/v1/planned-workouts/${encodeQuery(publicId)}", "GET")
 
+    suspend fun healthToday(date: String, timezone: String): MobileHealthTodayDto =
+        call("/api/v1/mobile/health/today?date=${encodeQuery(date)}&timezone=${encodeQuery(timezone)}", "GET")
+
+    suspend fun healthProgress(from: String, to: String, timezone: String): MobileHealthProgressDto =
+        call("/api/v1/mobile/health/progress?from=${encodeQuery(from)}&to=${encodeQuery(to)}&timezone=${encodeQuery(timezone)}", "GET")
+
+    suspend fun bodyStats(cursor: String? = null, limit: Int = 50): MobileBodyStatsPageDto {
+        val query = buildList {
+            add("limit=$limit")
+            cursor?.let { add("cursor=${encodeQuery(it)}") }
+        }.joinToString("&")
+        return call("/api/v1/mobile/body-stats?$query", "GET")
+    }
+
+    suspend fun createBodyStat(payload: JsonObject, key: String): MobileBodyStatDto =
+        call("/api/v1/mobile/body-stats", "POST", payload.toString(), idempotencyKey = key)
+
+    suspend fun patchBodyStat(publicId: String, payload: JsonObject, key: String): MobileBodyStatDto =
+        call("/api/v1/mobile/body-stats/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+
+    suspend fun deleteBodyStat(publicId: String, payload: JsonObject, key: String): MobileDeleteResponse =
+        call("/api/v1/mobile/body-stats/${encodeQuery(publicId)}", "DELETE", payload.toString(), idempotencyKey = key)
+
+    suspend fun nutritionDay(date: String): MobileNutritionDayDto =
+        call("/api/v1/mobile/nutrition/days/${encodeQuery(date)}", "GET")
+
+    suspend fun createNutritionEntry(payload: JsonObject, key: String): MobileNutritionEntryDto =
+        call("/api/v1/mobile/nutrition/entries", "POST", payload.toString(), idempotencyKey = key)
+
+    suspend fun patchNutritionEntry(publicId: String, payload: JsonObject, key: String): MobileNutritionEntryDto =
+        call("/api/v1/mobile/nutrition/entries/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+
+    suspend fun deleteNutritionEntry(publicId: String, payload: JsonObject, key: String): MobileDeleteResponse =
+        call("/api/v1/mobile/nutrition/entries/${encodeQuery(publicId)}", "DELETE", payload.toString(), idempotencyKey = key)
+
+    suspend fun foods(search: String = "", cursor: String? = null, limit: Int = 50): MobileFoodPageDto {
+        val query = buildList {
+            add("limit=$limit")
+            if (search.isNotBlank()) add("search=${encodeQuery(search)}")
+            cursor?.let { add("cursor=${encodeQuery(it)}") }
+        }.joinToString("&")
+        return call("/api/v1/mobile/foods?$query", "GET")
+    }
+
+    suspend fun createFood(payload: JsonObject, key: String): MobileFoodDto =
+        call("/api/v1/mobile/foods", "POST", payload.toString(), idempotencyKey = key)
+
+    suspend fun steps(from: String, to: String, limit: Int = 100): MobileStepsPageDto =
+        call("/api/v1/mobile/steps?from=${encodeQuery(from)}&to=${encodeQuery(to)}&limit=$limit", "GET")
+
+    suspend fun createSteps(payload: JsonObject, key: String): MobileStepDto =
+        call("/api/v1/mobile/steps", "POST", payload.toString(), idempotencyKey = key)
+
+    suspend fun patchSteps(publicId: String, payload: JsonObject, key: String): MobileStepDto =
+        call("/api/v1/mobile/steps/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+
+    suspend fun deleteSteps(publicId: String, payload: JsonObject, key: String): MobileDeleteResponse =
+        call("/api/v1/mobile/steps/${encodeQuery(publicId)}", "DELETE", payload.toString(), idempotencyKey = key)
+
     suspend fun push(request: PushRequest, key: String): PushResponse = call(
         "/api/v1/sync/push", "POST", json.encodeToString(request), idempotencyKey = key,
     )

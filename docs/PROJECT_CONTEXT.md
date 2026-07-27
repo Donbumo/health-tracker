@@ -68,7 +68,7 @@ Las reglas ejecutables de estos principios viven en `../AGENTS.md`, `schemas/AGE
 - Archivos: storage local por usuario para raw, generated, exports y backups.
 - Cliente móvil: Kotlin, Jetpack Compose, Room, WorkManager y OkHttp en `../android/`.
 
-El cliente móvil cubre planificación, ejecución, historial y progreso sin duplicar dominio: las rutinas editables publican versiones inmutables, la agenda usa planned workouts y la ejecución usa Companion Delivery/Mobile Sync.
+El cliente móvil cubre planificación, ejecución, historial, progreso y registro diario de salud sin duplicar dominio: las rutinas editables publican versiones inmutables, la agenda usa planned workouts, la ejecución usa Companion Delivery/Mobile Sync y salud reutiliza peso, nutrición, catálogo y energía canónicos mediante endpoints owner-only.
 
 La estructura real del código manda sobre diagramas o rutas narrativas antiguas. Consulta `architecture/OVERVIEW.md` y el árbol del repositorio en vez de copiar una estructura sugerida a nuevas tareas.
 
@@ -81,6 +81,8 @@ El sistema ofrece autenticación web, administración básica, dispositivos/API,
 ### Bienestar y salud
 
 Incluye contratos y flujos para peso/composición, nutrición, energía, alimentos, recetas y laboratorios. La aplicación conserva y muestra datos; no sustituye evaluación médica ni debe emitir diagnósticos.
+
+Android Alpha 1.4 registra offline peso/composición ya soportada, comidas manuales, alimentos personalizados y pasos. Room conserva proyecciones aisladas por cuenta y la reconciliación usa UUID, idempotencia y revisiones. No se crean objetivos inexistentes ni se fusionan fuentes de pasos potencialmente solapadas.
 
 ### Entrenamiento
 

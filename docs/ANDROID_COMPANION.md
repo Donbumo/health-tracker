@@ -1,6 +1,20 @@
-# Android Companion Alpha 1.3
+# Android Companion Alpha 1.4
 
-Cliente Android nativo y offline-first para el flujo `planear → descargar → ejecutar → completar → sincronizar`. El backend sigue siendo autoritativo; la app no duplica `TrainingSession`, cursor, importador ni protocolo.
+Cliente Android nativo y offline-first para planificar, ejecutar, registrar salud diaria y sincronizar. El backend sigue siendo autoritativo; la app reutiliza los dominios canónicos de peso, nutrición, alimentos, energía y entrenamiento, sin duplicar `TrainingSession`, cursor, importador ni protocolo.
+
+## Salud diaria en Alpha 1.4
+
+Hoy conserva sus cinco destinos principales y añade tarjetas compactas de peso, nutrición, pasos y entrenamiento, con acciones rápidas que abren pantallas anidadas. `Salud del día` emite primero `daily_health_summaries` desde Room y después reconcilia, si hay red, `GET /api/v1/mobile/health/today?date=&timezone=`. La fecha seleccionada es un `LocalDate`; el servidor aplica la zona IANA recibida para evitar mover mediciones entre días.
+
+Las rutas Bearer aditivas son:
+
+- cuerpo: `GET/POST /api/v1/mobile/body-stats` y `PATCH/DELETE /api/v1/mobile/body-stats/<uuid>`;
+- nutrición: `GET /api/v1/mobile/nutrition/days/<date>`, `POST /api/v1/mobile/nutrition/entries`, `PATCH/DELETE /api/v1/mobile/nutrition/entries/<uuid>` y `POST .../<uuid>/duplicate`;
+- catálogo privado: `GET/POST /api/v1/mobile/foods` y `PATCH /api/v1/mobile/foods/<uuid>` para edición o archivado;
+- pasos: `GET/POST /api/v1/mobile/steps` y `PATCH/DELETE /api/v1/mobile/steps/<uuid>`;
+- progreso descriptivo: `GET /api/v1/mobile/health/progress?from=&to=&timezone=`.
+
+Toda escritura exige `Idempotency-Key`, UUID público y revisión base al editar o eliminar. Un recurso ajeno responde 404. Los errores de conflicto solo conservan tipo, revisiones y estado sanitizado; nunca notas, alimentos, medidas o payloads.
 
 ## Auditoría de base
 
@@ -51,6 +65,10 @@ Compose/ViewModel
 
 Room normaliza cuenta, planned workouts, packages, ejercicios, sets, deliveries, drafts, checkpoints pendientes, sesiones recientes y cursor. DataStore contiene configuración no sensible. Android Keystore cifra el refresh token; el access token permanece en memoria.
 
+Room 4 añade resumen diario, historial corporal, día/entradas nutricionales, catálogo y estado de búsqueda, pasos por fecha/fuente, conflictos y puntos de progreso, siempre con `accountScope` en la clave. La migración explícita 3→4 se encadena desde 1, 2 o 3 y no usa migración destructiva. Las unidades se convierten una sola vez hacia kg canónicos con el factor exacto `0.45359237`; si un valor mostrado no se edita, se conserva el decimal canónico original.
+
+La cola durable usa acciones `health_body_*`, `health_nutrition_*`, `health_food_*` y `health_steps_*`. Un create seguido de updates mantiene un único create con el estado final; un create nunca enviado seguido de delete desaparece localmente; updates repetidos conservan el último payload. Timeout, DNS, 429 y 5xx mantienen la operación. Los conflictos distinguen revisión, recurso ausente, validación y acceso revocado, y permiten usar servidor, reintentar, duplicar cuerpo/nutrición o cancelar el cambio local.
+
 Alpha 1.3 agrega una proyección estructurada y owner-scoped de catálogo, rutinas, entrenamientos, ejercicios, prescripciones y conflictos en Room 3. `TrainingPlanVersion` continúa siendo el historial inmutable: cada mutación móvil publica una versión y programar crea el `PlannedWorkout`/package Companion existente. No existe un segundo cursor, calendario ni motor de ejecución.
 
 La navegación principal pasa a **Hoy · Plan · Historial · Progreso · Ajustes**. Plan separa Rutinas y Agenda; permite crear, autosalvar, duplicar y archivar rutinas, ordenar entrenamientos, buscar ejercicios por nombre o alias, editar series y cargas, y programar/cancelar por fecha local. La agenda ofrece semana o mes y acceso rápido a Hoy.
@@ -76,5 +94,7 @@ Sync manual, WorkManager y triggers automáticos comparten single-flight por rep
 Tras process death sin red, una cuenta con refresh cifrado, scope, dispositivo y registro Room coherentes abre su cache antes de intentar red y puede reanudar un draft verificado. Los campos válidos se autosalvan a los 400 ms y se fuerzan al perder foco, navegar o ir a background. Al volver la conexión se restaura primero el access token, se revalida bootstrap/negociación cuando corresponde y después se sincroniza. Solo revocación o refresh definitivamente inválido limpian la sesión; fallos temporales nunca borran credenciales ni corrompen drafts.
 
 ## Alcance no soportado
+
+Alpha 1.4 no integra Health Connect, Google Fit, Huawei Health, Xiaomi Home/S400, BLE, Wear OS, fotografía, OCR, IA, códigos de barras, recomendaciones ni diagnósticos. Los objetivos de nutrición o pasos permanecen ausentes cuando el backend no tiene un contrato existente; no se fabrican valores.
 
 Reloj, Bluetooth, Health Connect, telemetría continua, FIT output, deep links, WebView, analytics, publicidad y vendors Garmin/Huawei/Magene siguen fuera de alcance. Los packages planeados conservan de forma aditiva carga, `load_details`, RIR, RPE y notas cuando están prescritos; clientes anteriores pueden ignorarlos.

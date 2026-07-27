@@ -42,3 +42,13 @@ Programar crea primero un UUID estable y una tarjeta `locally_pending`. Antes de
 Hoy observa Room por la fecha operativa de la cuenta y refleja de inmediato altas, movimientos y cancelaciones locales. Una finalización offline inserta una única sesión pendiente en Historial y recalcula los resúmenes locales de Progreso de 7, 30, 90, 180 y 365 días y todo el historial; la confirmación por `client_event_id` sustituye esa copia sin duplicarla.
 
 Un package solo se reutiliza si corresponde a la revisión vigente de la programación. Si existe una revisión nueva se reemplaza de forma transaccional antes de iniciar; un draft activo conserva su package inmutable y genera `package_revision_conflict`. Los conflictos `revision_conflict`, `archived_remote`, `deleted_or_unavailable`, `schedule_date_conflict` y `package_revision_conflict` guardan únicamente revisiones y resúmenes sanitizados. Usar servidor, reintentar con la revisión remota, duplicar cuando aplica o cancelar la copia local son decisiones explícitas; ninguna hace last-write-wins silencioso.
+
+## Registro de salud en Alpha 1.4
+
+Room 4 es la fuente inmediata de resumen diario, cuerpo, nutrición, alimentos, pasos, conflictos y tendencias. Todas las tablas nuevas incluyen `accountScope`; `clearAccount` elimina únicamente esa cuenta y logout continúa siendo el único borrado automático. Cerrar el proceso no borra filas ni operaciones pendientes.
+
+Las creaciones offline generan UUID e idempotency key estables. Cuerpo, nutrición y pasos mantienen una revisión local monotónica y un estado discreto (`pending`, `syncing`, `synced` o `conflict`). La cola hace coalescing solo cuando no rompe dependencias: create→update compacta el estado final, create→delete nunca enviado elimina ambos, y updates sucesivos conservan el último estado. WorkManager reutiliza el trabajo único con `NetworkType.CONNECTED`, backoff y single-flight; no existe polling.
+
+El resumen y Progreso se recalculan en la misma transacción que cada escritura local. Los macros incompletos permanecen nulos y solo se suman valores presentes. Los pasos manuales y los importados coexisten por fecha/fuente; la corrección manual tiene precedencia de presentación sin borrar la fuente importada.
+
+Un fallo temporal conserva la cola. Los rechazos permanentes crean un conflicto sanitizado sin payload. Desde Salud del día se puede descartar la copia local y refrescar servidor, reintentar con una nueva idempotency key, duplicar cuerpo/nutrición cuando procede o cancelar. Ninguna resolución hace merge genérico de notas.

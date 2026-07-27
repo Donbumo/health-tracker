@@ -90,6 +90,33 @@ interface CompanionDao {
     suspend fun upsertPlanningConflict(value: PlanningConflictEntity)
 
     @Upsert
+    suspend fun upsertDailyHealthSummary(value: DailyHealthSummaryEntity)
+
+    @Upsert
+    suspend fun upsertBodyStats(values: List<BodyStatEntity>)
+
+    @Upsert
+    suspend fun upsertNutritionDay(value: NutritionDayEntity)
+
+    @Upsert
+    suspend fun upsertNutritionEntries(values: List<NutritionEntryEntity>)
+
+    @Upsert
+    suspend fun upsertFoodCatalog(values: List<FoodCatalogEntity>)
+
+    @Upsert
+    suspend fun upsertFoodCatalogState(value: FoodCatalogStateEntity)
+
+    @Upsert
+    suspend fun upsertDailySteps(values: List<DailyStepEntity>)
+
+    @Upsert
+    suspend fun upsertHealthConflict(value: HealthConflictEntity)
+
+    @Upsert
+    suspend fun upsertHealthProgressPoints(values: List<HealthProgressPointEntity>)
+
+    @Upsert
     suspend fun upsertSyncState(value: SyncStateEntity)
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
@@ -103,6 +130,60 @@ interface CompanionDao {
 
     @Query("SELECT * FROM local_profiles WHERE accountScope=:scope LIMIT 1")
     suspend fun localProfile(scope: String): LocalProfileEntity?
+
+    @Query("SELECT * FROM daily_health_summaries WHERE accountScope=:scope AND date=:date LIMIT 1")
+    fun observeDailyHealthSummary(scope: String, date: String): Flow<DailyHealthSummaryEntity?>
+
+    @Query("SELECT * FROM daily_health_summaries WHERE accountScope=:scope AND date=:date LIMIT 1")
+    suspend fun dailyHealthSummary(scope: String, date: String): DailyHealthSummaryEntity?
+
+    @Query("SELECT * FROM body_stats WHERE accountScope=:scope ORDER BY recordedAt DESC LIMIT :limit")
+    fun observeBodyStats(scope: String, limit: Int = 100): Flow<List<BodyStatEntity>>
+
+    @Query("SELECT * FROM body_stats WHERE accountScope=:scope ORDER BY recordedAt DESC")
+    suspend fun bodyStats(scope: String): List<BodyStatEntity>
+
+    @Query("SELECT * FROM body_stats WHERE accountScope=:scope AND publicId=:publicId LIMIT 1")
+    suspend fun bodyStat(scope: String, publicId: String): BodyStatEntity?
+
+    @Query("SELECT * FROM nutrition_days WHERE accountScope=:scope AND date=:date LIMIT 1")
+    fun observeNutritionDay(scope: String, date: String): Flow<NutritionDayEntity?>
+
+    @Query("SELECT * FROM nutrition_days WHERE accountScope=:scope AND date=:date LIMIT 1")
+    suspend fun nutritionDay(scope: String, date: String): NutritionDayEntity?
+
+    @Query("SELECT * FROM nutrition_entries WHERE accountScope=:scope AND date=:date ORDER BY mealType,updatedAt,publicId")
+    fun observeNutritionEntries(scope: String, date: String): Flow<List<NutritionEntryEntity>>
+
+    @Query("SELECT * FROM nutrition_entries WHERE accountScope=:scope AND date=:date ORDER BY mealType,updatedAt,publicId")
+    suspend fun nutritionEntries(scope: String, date: String): List<NutritionEntryEntity>
+
+    @Query("SELECT * FROM nutrition_entries WHERE accountScope=:scope AND publicId=:publicId LIMIT 1")
+    suspend fun nutritionEntry(scope: String, publicId: String): NutritionEntryEntity?
+
+    @Query("SELECT * FROM food_catalog WHERE accountScope=:scope AND archived=0 AND (normalizedName LIKE :query OR lower(COALESCE(brand,'')) LIKE :query) ORDER BY normalizedName LIMIT :limit")
+    fun observeFoodCatalog(scope: String, query: String, limit: Int = 100): Flow<List<FoodCatalogEntity>>
+
+    @Query("SELECT * FROM food_catalog WHERE accountScope=:scope AND publicId=:publicId LIMIT 1")
+    suspend fun food(scope: String, publicId: String): FoodCatalogEntity?
+
+    @Query("SELECT * FROM food_catalog_state WHERE accountScope=:scope AND `query`=:query LIMIT 1")
+    suspend fun foodCatalogState(scope: String, query: String): FoodCatalogStateEntity?
+
+    @Query("SELECT * FROM daily_steps WHERE accountScope=:scope AND date BETWEEN :from AND :to ORDER BY date DESC,source")
+    fun observeDailySteps(scope: String, from: String, to: String): Flow<List<DailyStepEntity>>
+
+    @Query("SELECT * FROM daily_steps WHERE accountScope=:scope AND date=:date ORDER BY CASE WHEN source='manual' THEN 0 ELSE 1 END,updatedAt DESC")
+    suspend fun dailyStepsForDate(scope: String, date: String): List<DailyStepEntity>
+
+    @Query("SELECT * FROM daily_steps WHERE accountScope=:scope AND publicId=:publicId LIMIT 1")
+    suspend fun dailyStep(scope: String, publicId: String): DailyStepEntity?
+
+    @Query("SELECT * FROM health_conflicts WHERE accountScope=:scope ORDER BY createdAt")
+    fun observeHealthConflicts(scope: String): Flow<List<HealthConflictEntity>>
+
+    @Query("SELECT * FROM health_progress_points WHERE accountScope=:scope AND date BETWEEN :from AND :to ORDER BY date")
+    fun observeHealthProgress(scope: String, from: String, to: String): Flow<List<HealthProgressPointEntity>>
 
     @Query("SELECT * FROM planned_workouts WHERE accountScope=:scope AND deleted=0 ORDER BY scheduledForDate")
     fun observePlanned(scope: String): Flow<List<PlannedWorkoutEntity>>
@@ -278,6 +359,9 @@ interface CompanionDao {
     @Query("SELECT * FROM pending_actions WHERE accountScope=:scope AND entityId=:entityId AND actionType=:actionType AND status='pending' ORDER BY localId LIMIT 1")
     suspend fun pendingAction(scope: String, entityId: String, actionType: String): PendingActionEntity?
 
+    @Query("SELECT * FROM pending_actions WHERE accountScope=:scope AND entityId=:entityId AND status IN ('pending','conflict') ORDER BY localId LIMIT 1")
+    suspend fun pendingActionForEntity(scope: String, entityId: String): PendingActionEntity?
+
     @Query("SELECT * FROM pending_actions WHERE accountScope=:scope AND actionType=:actionType AND status='pending' ORDER BY localId")
     suspend fun pendingActionsByType(scope: String, actionType: String): List<PendingActionEntity>
 
@@ -398,6 +482,51 @@ interface CompanionDao {
     @Query("DELETE FROM planning_conflicts WHERE accountScope=:scope AND entityId=:entityId")
     suspend fun deletePlanningConflict(scope: String, entityId: String)
 
+    @Query("DELETE FROM body_stats WHERE accountScope=:scope AND publicId=:publicId")
+    suspend fun deleteBodyStat(scope: String, publicId: String)
+
+    @Query("DELETE FROM nutrition_entries WHERE accountScope=:scope AND publicId=:publicId")
+    suspend fun deleteNutritionEntry(scope: String, publicId: String)
+
+    @Query("DELETE FROM food_catalog WHERE accountScope=:scope AND publicId=:publicId")
+    suspend fun deleteFood(scope: String, publicId: String)
+
+    @Query("DELETE FROM nutrition_entries WHERE accountScope=:scope AND date=:date AND syncStatus='synced'")
+    suspend fun deleteSyncedNutritionEntriesForDate(scope: String, date: String)
+
+    @Query("DELETE FROM daily_steps WHERE accountScope=:scope AND publicId=:publicId")
+    suspend fun deleteDailyStep(scope: String, publicId: String)
+
+    @Query("DELETE FROM health_conflicts WHERE accountScope=:scope AND entityId=:entityId")
+    suspend fun deleteHealthConflict(scope: String, entityId: String)
+
+    @Query("DELETE FROM daily_health_summaries WHERE accountScope=:scope")
+    suspend fun deleteDailyHealthSummariesForAccount(scope: String)
+
+    @Query("DELETE FROM body_stats WHERE accountScope=:scope")
+    suspend fun deleteBodyStatsForAccount(scope: String)
+
+    @Query("DELETE FROM nutrition_entries WHERE accountScope=:scope")
+    suspend fun deleteNutritionEntriesForAccount(scope: String)
+
+    @Query("DELETE FROM nutrition_days WHERE accountScope=:scope")
+    suspend fun deleteNutritionDaysForAccount(scope: String)
+
+    @Query("DELETE FROM food_catalog WHERE accountScope=:scope")
+    suspend fun deleteFoodCatalogForAccount(scope: String)
+
+    @Query("DELETE FROM food_catalog_state WHERE accountScope=:scope")
+    suspend fun deleteFoodCatalogStateForAccount(scope: String)
+
+    @Query("DELETE FROM daily_steps WHERE accountScope=:scope")
+    suspend fun deleteDailyStepsForAccount(scope: String)
+
+    @Query("DELETE FROM health_conflicts WHERE accountScope=:scope")
+    suspend fun deleteHealthConflictsForAccount(scope: String)
+
+    @Query("DELETE FROM health_progress_points WHERE accountScope=:scope")
+    suspend fun deleteHealthProgressForAccount(scope: String)
+
     @Query("DELETE FROM sync_state WHERE accountScope=:scope")
     suspend fun deleteSyncStateForAccount(scope: String)
 
@@ -470,6 +599,15 @@ interface CompanionDao {
     @Transaction
     suspend fun clearAccount(scope: String) {
         deletePendingForAccount(scope)
+        deleteHealthConflictsForAccount(scope)
+        deleteHealthProgressForAccount(scope)
+        deleteDailyStepsForAccount(scope)
+        deleteFoodCatalogStateForAccount(scope)
+        deleteFoodCatalogForAccount(scope)
+        deleteNutritionEntriesForAccount(scope)
+        deleteNutritionDaysForAccount(scope)
+        deleteBodyStatsForAccount(scope)
+        deleteDailyHealthSummariesForAccount(scope)
         deleteDraftsForAccount(scope)
         deleteDeliveriesForAccount(scope)
         deletePackagesForAccount(scope)

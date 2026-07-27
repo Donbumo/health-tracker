@@ -7,6 +7,7 @@
 - Instrumentación: aislamiento Room, Keystore, refresh temporal/definitivo con MockWebServer, package+ACK observable sin pull, sesión local tras process death, logout explícito, start/completion offline, autosave tardío, FIFO `START → PROGRESS → COMPLETE`, 200/409, pull repetido y single-flight manual/worker.
 - Backend contractual: pull compartido valida cambios Companion contra `sync_pull.schema.json`.
 - Alpha 1.3: orden/prescripción, semana/mes y bisiesto, zona horaria sin mover el día, programación offline con UUID estable y coalescing, varios eventos diarios, Today inmediato, package vigente/desactualizado con draft protegido, conflictos resolubles, completion local en Historial/Progreso, account scope y migraciones backend/Room 2→3.
+- Alpha 1.4: conversión kg/lb sin deriva, macros incompletos, gráficas con cero/uno/múltiples puntos, caché diaria owner-scoped, cuerpo/nutrición/pasos offline, coalescing y doble pulsación, conflictos sanitizados/resolubles, logout aislado y migraciones Room 1/2/3→4.
 
 ```powershell
 Set-Location android
@@ -17,6 +18,10 @@ Set-Location android
 ```
 
 `connectedDebugAndroidTest` no forma parte de la validación automática Alpha 1.3: requiere un AVD separado y sigue pendiente junto con la matriz visual/accesible manual. Compilar `compileDebugAndroidTestKotlin` sí es obligatorio y no toca el AVD manual.
+
+La misma restricción aplica a Alpha 1.4: no se ejecuta instrumentación conectada sobre el AVD manual existente. Debe usarse después un AVD separado para validar process death, modo avión→reconexión, rotación, TalkBack, fuente grande, temas y 320/360/411/600 dp.
+
+El 26 de julio de 2026 pasaron `lintDebug`, dos ejecuciones de `testDebugUnitTest` (53/53), `assembleDebug` y `compileDebugAndroidTestKotlin`. Las pruebas instrumentadas de migración 1/2/3→4 compilan, pero no se marcarán ejecutadas hasta disponer del AVD separado.
 
 ## QA manual requerido
 

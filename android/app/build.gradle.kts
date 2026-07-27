@@ -16,8 +16,8 @@ android {
         applicationId = "io.healthtracker.companion"
         minSdk = 26
         targetSdk = 36
-        versionCode = 13
-        versionName = "1.3.0-alpha01"
+        versionCode = 14
+        versionName = "1.4.0-alpha01"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }

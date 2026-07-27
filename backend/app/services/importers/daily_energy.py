@@ -51,10 +51,11 @@ def import_daily_energy_file(
         db.select(DailyEnergy).where(
             DailyEnergy.user_id == user_id,
             DailyEnergy.date == record_date,
+            DailyEnergy.source == source,
         )
     ).scalar_one_or_none()
     if same_date is not None:
-        raise DailyEnergyImportError("Daily energy already exists for this date")
+        raise DailyEnergyImportError("Daily energy already exists for this date and source")
 
     def decimal_value(field: str) -> Decimal | None:
         value = data.get(field)

@@ -64,6 +64,7 @@ private data class PlanningParts(
 )
 
 private const val DRAFT_LOG_TAG = "HealthTrackerDraft"
+private val HEALTH_MEAL_TYPES = setOf("breakfast", "lunch", "dinner", "snack", "extra", "other")
 
 class CompanionRepository(
     private val database: CompanionDatabase,
@@ -163,6 +164,343 @@ class CompanionRepository(
         dao.observeToday(scope, date.toString())
 
     fun observePlanned(scope: String): Flow<List<PlannedWorkoutEntity>> = dao.observePlanned(scope)
+
+    fun observeDailyHealth(scope: String, date: LocalDate): Flow<DailyHealthSummaryEntity?> =
+        dao.observeDailyHealthSummary(scope, date.toString())
+
+    fun observeBodyStats(scope: String): Flow<List<BodyStatEntity>> = dao.observeBodyStats(scope)
+
+    fun observeNutritionDay(scope: String, date: LocalDate): Flow<NutritionDayEntity?> =
+        dao.observeNutritionDay(scope, date.toString())
+
+    fun observeNutritionEntries(scope: String, date: LocalDate): Flow<List<NutritionEntryEntity>> =
+        dao.observeNutritionEntries(scope, date.toString())
+
+    fun observeFoodCatalog(scope: String, query: String): Flow<List<FoodCatalogEntity>> =
+        dao.observeFoodCatalog(scope, "%${query.trim().lowercase()}%")
+
+    fun observeDailySteps(scope: String, from: LocalDate, to: LocalDate): Flow<List<DailyStepEntity>> =
+        dao.observeDailySteps(scope, from.toString(), to.toString())
+
+    fun observeHealthConflicts(scope: String): Flow<List<HealthConflictEntity>> =
+        dao.observeHealthConflicts(scope)
+
+    suspend fun resolveHealthConflictUseServer(scope: String, entityId: String) {
+        val body = dao.bodyStat(scope, entityId)
+        val nutrition = dao.nutritionEntry(scope, entityId)
+        val steps = dao.dailyStep(scope, entityId)
+        val food = dao.food(scope, entityId)
+        database.withTransaction {
+            dao.deletePendingForEntity(scope, entityId)
+            dao.deleteHealthConflict(scope, entityId)
+            body?.let {
+                dao.deleteBodyStat(scope, entityId)
+                recalculateLocalDayForInstantLocked(scope, it.recordedAt)
+            }
+            nutrition?.let {
+                val day = LocalDate.parse(it.date)
+                dao.deleteNutritionEntry(scope, entityId)
+                recalculateNutritionDayLocked(scope, day)
+                recalculateLocalDayLocked(scope, day, dao.account(scope)?.timezone ?: "UTC")
+            }
+            steps?.let {
+                dao.deleteDailyStep(scope, entityId)
+                recalculateLocalDayLocked(scope, LocalDate.parse(it.date), dao.account(scope)?.timezone ?: "UTC")
+            }
+            food?.let { dao.deleteFood(scope, entityId) }
+        }
+    }
+
+    suspend fun retryHealthConflict(scope: String, entityId: String) {
+        val pending = dao.pendingActionForEntity(scope, entityId)
+            ?: throw AppFailure(AppErrorCode.VALIDATION_ERROR, "El cambio pendiente ya no está disponible.", false)
+        database.withTransaction {
+            dao.updatePendingEntity(
+                pending.copy(
+                    idempotencyKey = UUID.randomUUID().toString(), status = "pending",
+                    attemptCount = 0, notBeforeEpochMs = 0, lastErrorCode = null,
+                ),
+            )
+            dao.deleteHealthConflict(scope, entityId)
+            markHealthSyncStatus(scope, pending, "pending")
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    suspend fun duplicateHealthConflict(scope: String, entityId: String): String {
+        val body = dao.bodyStat(scope, entityId)
+        if (body != null) {
+            val copyId = createBodyStatOffline(scope, body.recordedAt, body.weightKg, body.bodyFatPercent, body.notes)
+            resolveHealthConflictUseServer(scope, entityId)
+            return copyId
+        }
+        val nutrition = dao.nutritionEntry(scope, entityId)
+            ?: throw AppFailure(AppErrorCode.VALIDATION_ERROR, "Este tipo de cambio no se puede duplicar.", false)
+        val copyId = createNutritionEntryOffline(
+            scope, LocalDate.parse(nutrition.date), nutrition.mealType, nutrition.name,
+            nutrition.quantity, nutrition.unit, nutrition.caloriesKcal, nutrition.proteinG,
+            nutrition.totalCarbsG ?: nutrition.netCarbsG, nutrition.fatG, nutrition.fiberG,
+            nutrition.foodId, nutrition.notes,
+        )
+        resolveHealthConflictUseServer(scope, entityId)
+        return copyId
+    }
+
+    fun observeHealthProgress(scope: String, from: LocalDate, to: LocalDate): Flow<List<HealthProgressPointEntity>> =
+        dao.observeHealthProgress(scope, from.toString(), to.toString())
+
+    suspend fun refreshHealth(scope: String, date: LocalDate, timezone: String) {
+        val today = api.healthToday(date.toString(), timezone)
+        val nutrition = api.nutritionDay(date.toString())
+        val steps = api.steps(date.toString(), date.toString())
+        val body = api.bodyStats(limit = 50)
+        database.withTransaction {
+            body.items.forEach { remote ->
+                val local = dao.bodyStat(scope, remote.id)
+                if (local == null || local.syncStatus == "synced") dao.upsertBodyStats(listOf(remote.toEntity(scope)))
+            }
+            val remoteEntries = nutrition.meals.flatMap { it.items }
+            dao.deleteSyncedNutritionEntriesForDate(scope, nutrition.date)
+            dao.upsertNutritionEntries(remoteEntries.map { it.toEntity(scope) })
+            dao.upsertNutritionDay(nutrition.toEntity(scope))
+            steps.items.forEach { remote ->
+                val local = dao.dailyStep(scope, remote.id)
+                if (local == null || local.syncStatus == "synced") dao.upsertDailySteps(listOf(remote.toEntity(scope)))
+            }
+            dao.upsertDailyHealthSummary(today.toEntity(scope))
+            recalculateLocalDayLocked(scope, date, timezone)
+        }
+    }
+
+    suspend fun refreshBodyStats(scope: String) {
+        var cursor: String? = null
+        var pages = 0
+        do {
+            val page = api.bodyStats(cursor, 100)
+            database.withTransaction {
+                page.items.forEach { remote ->
+                    val local = dao.bodyStat(scope, remote.id)
+                    if (local == null || local.syncStatus == "synced") dao.upsertBodyStats(listOf(remote.toEntity(scope)))
+                }
+            }
+            cursor = page.nextCursor
+            pages++
+        } while (page.hasMore && cursor != null && pages < 10)
+    }
+
+    suspend fun refreshNutritionDay(scope: String, date: LocalDate) {
+        val remote = api.nutritionDay(date.toString())
+        database.withTransaction {
+            dao.deleteSyncedNutritionEntriesForDate(scope, date.toString())
+            dao.upsertNutritionEntries(remote.meals.flatMap { it.items }.map { it.toEntity(scope) })
+            dao.upsertNutritionDay(remote.toEntity(scope))
+            recalculateLocalDayLocked(scope, date, dao.account(scope)?.timezone ?: "UTC")
+        }
+    }
+
+    suspend fun refreshFoods(scope: String, query: String = "", reset: Boolean = true): Boolean {
+        val normalized = query.trim().lowercase()
+        val cursor = if (reset) null else dao.foodCatalogState(scope, normalized)?.nextCursor
+        val page = api.foods(query.trim(), cursor, 100)
+        database.withTransaction {
+            page.items.forEach { remote ->
+                val local = dao.food(scope, remote.id)
+                if (local == null || local.syncStatus == "synced") dao.upsertFoodCatalog(listOf(remote.toEntity(scope)))
+            }
+            dao.upsertFoodCatalogState(
+                FoodCatalogStateEntity(scope, normalized, page.nextCursor, page.hasMore, Instant.now().toString()),
+            )
+        }
+        return page.hasMore
+    }
+
+    suspend fun refreshSteps(scope: String, from: LocalDate, to: LocalDate) {
+        val page = api.steps(from.toString(), to.toString(), 500)
+        database.withTransaction {
+            page.items.forEach { remote ->
+                val local = dao.dailyStep(scope, remote.id)
+                if (local == null || local.syncStatus == "synced") dao.upsertDailySteps(listOf(remote.toEntity(scope)))
+            }
+        }
+    }
+
+    suspend fun refreshHealthProgress(scope: String, from: LocalDate, to: LocalDate, timezone: String) {
+        val response = api.healthProgress(from.toString(), to.toString(), timezone)
+        dao.upsertHealthProgressPoints(response.points.map { it.toEntity(scope) })
+    }
+
+    suspend fun createBodyStatOffline(
+        scope: String,
+        recordedAt: String,
+        weightKg: String,
+        bodyFatPercent: String? = null,
+        notes: String? = null,
+    ): String {
+        requireDecimal(weightKg, "El peso", BigDecimal("0.001"), BigDecimal("1000"))
+        bodyFatPercent?.let { requireDecimal(it, "La grasa corporal", BigDecimal.ZERO, BigDecimal("100")) }
+        val id = UUID.randomUUID().toString()
+        val now = Instant.now().toString()
+        val entity = BodyStatEntity(
+            scope, id, recordedAt, weightKg, bodyFatPercent, null, null, null, null, null,
+            notes?.trim()?.takeIf { it.isNotEmpty() }?.take(2000), "manual", 0, 1, "pending", now, now,
+        )
+        val payload = bodyPayload(entity, creating = true)
+        database.withTransaction {
+            dao.upsertBodyStats(listOf(entity))
+            enqueue(scope, "health_body_create", id, UUID.randomUUID().toString(), payload.toString())
+            recalculateLocalDayForInstantLocked(scope, recordedAt)
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        return id
+    }
+
+    suspend fun updateBodyStatOffline(value: BodyStatEntity) {
+        requireDecimal(value.weightKg, "El peso", BigDecimal("0.001"), BigDecimal("1000"))
+        val updated = value.copy(localRevision = value.localRevision + 1, syncStatus = "pending", updatedAt = Instant.now().toString())
+        database.withTransaction {
+            dao.upsertBodyStats(listOf(updated))
+            coalesceHealthWrite(scope = value.accountScope, createType = "health_body_create", updateType = "health_body_update", entityId = value.publicId, payload = bodyPayload(updated, creating = value.revision == 0))
+            recalculateLocalDayForInstantLocked(value.accountScope, value.recordedAt)
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    suspend fun deleteBodyStatOffline(scope: String, publicId: String) {
+        val value = dao.bodyStat(scope, publicId) ?: return
+        database.withTransaction {
+            if (!discardNeverSyncedCreate(scope, "health_body_create", publicId)) {
+                enqueue(scope, "health_body_delete", publicId, UUID.randomUUID().toString(), buildJsonObject { put("base_revision", value.revision) }.toString())
+            }
+            dao.deleteBodyStat(scope, publicId)
+            dao.deleteHealthConflict(scope, publicId)
+            recalculateLocalDayForInstantLocked(scope, value.recordedAt)
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    suspend fun createNutritionEntryOffline(
+        scope: String,
+        date: LocalDate,
+        mealType: String,
+        name: String,
+        quantity: String?,
+        unit: String?,
+        caloriesKcal: String?,
+        proteinG: String?,
+        totalCarbsG: String?,
+        fatG: String?,
+        fiberG: String?,
+        foodId: String? = null,
+        notes: String? = null,
+    ): String {
+        if (mealType !in HEALTH_MEAL_TYPES || name.isBlank() || name.length > 200) throw AppFailure(AppErrorCode.VALIDATION_ERROR, "Revisa la comida y el nombre del alimento.", false)
+        listOf(quantity, caloriesKcal, proteinG, totalCarbsG, fatG, fiberG).filterNotNull().forEach {
+            requireDecimal(it, "El valor nutricional", BigDecimal.ZERO, BigDecimal("1000000"))
+        }
+        val id = UUID.randomUUID().toString()
+        val now = Instant.now().toString()
+        val complete = listOf(caloriesKcal, proteinG, totalCarbsG, fatG).all { it != null }
+        val entity = NutritionEntryEntity(
+            scope, id, date.toString(), mealType, null, name.trim(), quantity, unit?.trim(), foodId,
+            caloriesKcal, proteinG, fatG, null, totalCarbsG, fiberG, null, null,
+            notes?.trim()?.takeIf { it.isNotEmpty() }?.take(2000), complete, 0, 1, "pending", now, now,
+        )
+        database.withTransaction {
+            dao.upsertNutritionEntries(listOf(entity))
+            enqueue(scope, "health_nutrition_create", id, UUID.randomUUID().toString(), nutritionPayload(entity, true).toString())
+            recalculateNutritionDayLocked(scope, date)
+            recalculateLocalDayLocked(scope, date, dao.account(scope)?.timezone ?: "UTC")
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        return id
+    }
+
+    suspend fun updateNutritionEntryOffline(value: NutritionEntryEntity) {
+        val updated = value.copy(localRevision = value.localRevision + 1, syncStatus = "pending", updatedAt = Instant.now().toString())
+        database.withTransaction {
+            dao.upsertNutritionEntries(listOf(updated))
+            coalesceHealthWrite(value.accountScope, "health_nutrition_create", "health_nutrition_update", value.publicId, nutritionPayload(updated, updated.revision == 0))
+            recalculateNutritionDayLocked(value.accountScope, LocalDate.parse(value.date))
+            recalculateLocalDayLocked(value.accountScope, LocalDate.parse(value.date), dao.account(value.accountScope)?.timezone ?: "UTC")
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    suspend fun duplicateNutritionEntryOffline(scope: String, publicId: String): String {
+        val source = dao.nutritionEntry(scope, publicId)
+            ?: throw AppFailure(AppErrorCode.VALIDATION_ERROR, "La entrada ya no está disponible.", false)
+        return createNutritionEntryOffline(
+            scope, LocalDate.parse(source.date), source.mealType, source.name, source.quantity, source.unit,
+            source.caloriesKcal, source.proteinG, source.totalCarbsG ?: source.netCarbsG, source.fatG,
+            source.fiberG, source.foodId, source.notes,
+        )
+    }
+
+    suspend fun deleteNutritionEntryOffline(scope: String, publicId: String) {
+        val value = dao.nutritionEntry(scope, publicId) ?: return
+        val date = LocalDate.parse(value.date)
+        database.withTransaction {
+            if (!discardNeverSyncedCreate(scope, "health_nutrition_create", publicId)) {
+                enqueue(scope, "health_nutrition_delete", publicId, UUID.randomUUID().toString(), buildJsonObject { put("base_revision", value.revision) }.toString())
+            }
+            dao.deleteNutritionEntry(scope, publicId)
+            dao.deleteHealthConflict(scope, publicId)
+            recalculateNutritionDayLocked(scope, date)
+            recalculateLocalDayLocked(scope, date, dao.account(scope)?.timezone ?: "UTC")
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    suspend fun createFoodOffline(scope: String, name: String, servingSizeG: String?, calories: String?, protein: String?, carbs: String?, fat: String?): String {
+        if (name.isBlank() || name.length > 200) throw AppFailure(AppErrorCode.VALIDATION_ERROR, "El nombre del alimento no es válido.", false)
+        listOf(servingSizeG, calories, protein, carbs, fat).filterNotNull().forEach { requireDecimal(it, "El valor del alimento", BigDecimal.ZERO, BigDecimal("1000000")) }
+        val id = UUID.randomUUID().toString()
+        val now = Instant.now().toString()
+        val entity = FoodCatalogEntity(scope, id, name.trim(), name.trim().lowercase(), null, servingSizeG, null, calories, protein, fat, carbs, null, null, null, null, true, false, listOf(calories, protein, carbs, fat).all { it != null }, 0, "pending", now)
+        val payload = buildJsonObject {
+            put("public_id", id); put("name", entity.name)
+            servingSizeG?.let { put("serving_size_g", it) }; calories?.let { put("calories_per_100g", it) }
+            protein?.let { put("protein_g_per_100g", it) }; carbs?.let { put("carbs_g_per_100g", it) }; fat?.let { put("fat_g_per_100g", it) }
+        }
+        database.withTransaction {
+            dao.upsertFoodCatalog(listOf(entity))
+            enqueue(scope, "health_food_create", id, UUID.randomUUID().toString(), payload.toString())
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        return id
+    }
+
+    suspend fun setStepsOffline(scope: String, date: LocalDate, steps: Long): String {
+        if (steps !in 0..10_000_000) throw AppFailure(AppErrorCode.VALIDATION_ERROR, "Los pasos deben estar entre 0 y 10 000 000.", false)
+        val existing = dao.dailyStepsForDate(scope, date.toString()).firstOrNull { it.source == "manual" }
+        val now = Instant.now().toString()
+        val entity = existing?.copy(steps = steps, localRevision = existing.localRevision + 1, syncStatus = "pending", updatedAt = now)
+            ?: DailyStepEntity(scope, UUID.randomUUID().toString(), date.toString(), steps, "manual", null, 0, 1, "pending", now, now)
+        database.withTransaction {
+            dao.upsertDailySteps(listOf(entity))
+            val payload = buildJsonObject {
+                if (entity.revision == 0) put("public_id", entity.publicId) else put("base_revision", entity.revision)
+                put("date", entity.date); put("steps", entity.steps); if (entity.revision == 0) put("source", "manual")
+            }
+            coalesceHealthWrite(scope, "health_steps_create", "health_steps_update", entity.publicId, payload)
+            recalculateLocalDayLocked(scope, date, dao.account(scope)?.timezone ?: "UTC")
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        return entity.publicId
+    }
+
+    suspend fun deleteStepsOffline(scope: String, publicId: String) {
+        val value = dao.dailyStep(scope, publicId) ?: return
+        database.withTransaction {
+            if (!discardNeverSyncedCreate(scope, "health_steps_create", publicId)) {
+                enqueue(scope, "health_steps_delete", publicId, UUID.randomUUID().toString(), buildJsonObject { put("base_revision", value.revision) }.toString())
+            }
+            dao.deleteDailyStep(scope, publicId)
+            dao.deleteHealthConflict(scope, publicId)
+            recalculateLocalDayLocked(scope, LocalDate.parse(value.date), dao.account(scope)?.timezone ?: "UTC")
+        }
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
 
     fun observePackages(scope: String): Flow<List<WorkoutPackageEntity>> = dao.observePackages(scope)
 
@@ -1366,6 +1704,12 @@ class CompanionRepository(
         }
         runCatching { refreshPlans(scope) }
         runCatching { refreshSchedule(scope) }
+        dao.account(scope)?.let { account ->
+            val zone = runCatching { ZoneId.of(account.timezone) }.getOrDefault(ZoneOffset.UTC)
+            val today = LocalDate.now(zone)
+            runCatching { refreshHealth(scope, today, zone.id) }
+            runCatching { refreshHealthProgress(scope, today.minusDays(29), today, zone.id) }
+        }
         preferences.setLastSyncAt(Instant.now().toString())
     }
 
@@ -1419,6 +1763,9 @@ class CompanionRepository(
             if (pending.status == "conflict" || pending.notBeforeEpochMs > System.currentTimeMillis()) return
             if (pending.actionType.startsWith("planning_")) {
                 markPlanningSyncStatus(scope, pending, "syncing")
+            }
+            if (pending.actionType.startsWith("health_")) {
+                markHealthSyncStatus(scope, pending, "syncing")
             }
             try {
                 when (pending.actionType) {
@@ -1511,9 +1858,94 @@ class CompanionRepository(
                             dao.deletePending(pending.localId)
                         }
                     }
+                    "health_body_create" -> {
+                        val response = api.createBodyStat(queuedRequest(pending), pending.idempotencyKey)
+                        database.withTransaction {
+                            if (response.id != pending.entityId) dao.deleteBodyStat(scope, pending.entityId)
+                            dao.upsertBodyStats(listOf(response.toEntity(scope)))
+                            dao.deleteHealthConflict(scope, pending.entityId)
+                            dao.deletePending(pending.localId)
+                            recalculateLocalDayForInstantLocked(scope, response.recordedAt)
+                        }
+                    }
+                    "health_body_update" -> {
+                        val response = api.patchBodyStat(pending.entityId, queuedRequest(pending), pending.idempotencyKey)
+                        database.withTransaction {
+                            dao.upsertBodyStats(listOf(response.toEntity(scope)))
+                            dao.deleteHealthConflict(scope, pending.entityId)
+                            dao.deletePending(pending.localId)
+                            recalculateLocalDayForInstantLocked(scope, response.recordedAt)
+                        }
+                    }
+                    "health_body_delete" -> {
+                        api.deleteBodyStat(pending.entityId, queuedRequest(pending), pending.idempotencyKey)
+                        database.withTransaction { dao.deleteHealthConflict(scope, pending.entityId); dao.deletePending(pending.localId) }
+                    }
+                    "health_nutrition_create" -> {
+                        val response = api.createNutritionEntry(queuedRequest(pending), pending.idempotencyKey)
+                        database.withTransaction {
+                            if (response.id != pending.entityId) dao.deleteNutritionEntry(scope, pending.entityId)
+                            dao.upsertNutritionEntries(listOf(response.toEntity(scope)))
+                            dao.deleteHealthConflict(scope, pending.entityId)
+                            dao.deletePending(pending.localId)
+                            val day = LocalDate.parse(response.date)
+                            recalculateNutritionDayLocked(scope, day)
+                            recalculateLocalDayLocked(scope, day, dao.account(scope)?.timezone ?: "UTC")
+                        }
+                    }
+                    "health_nutrition_update" -> {
+                        val response = api.patchNutritionEntry(pending.entityId, queuedRequest(pending), pending.idempotencyKey)
+                        database.withTransaction {
+                            dao.upsertNutritionEntries(listOf(response.toEntity(scope)))
+                            dao.deleteHealthConflict(scope, pending.entityId)
+                            dao.deletePending(pending.localId)
+                            val day = LocalDate.parse(response.date)
+                            recalculateNutritionDayLocked(scope, day)
+                            recalculateLocalDayLocked(scope, day, dao.account(scope)?.timezone ?: "UTC")
+                        }
+                    }
+                    "health_nutrition_delete" -> {
+                        api.deleteNutritionEntry(pending.entityId, queuedRequest(pending), pending.idempotencyKey)
+                        database.withTransaction { dao.deleteHealthConflict(scope, pending.entityId); dao.deletePending(pending.localId) }
+                    }
+                    "health_food_create" -> {
+                        val response = api.createFood(queuedRequest(pending), pending.idempotencyKey)
+                        database.withTransaction {
+                            if (response.id != pending.entityId) dao.deleteFood(scope, pending.entityId)
+                            dao.upsertFoodCatalog(listOf(response.toEntity(scope)))
+                            dao.deleteHealthConflict(scope, pending.entityId)
+                            dao.deletePending(pending.localId)
+                        }
+                    }
+                    "health_steps_create" -> {
+                        val response = api.createSteps(queuedRequest(pending), pending.idempotencyKey)
+                        database.withTransaction {
+                            if (response.id != pending.entityId) dao.deleteDailyStep(scope, pending.entityId)
+                            dao.upsertDailySteps(listOf(response.toEntity(scope)))
+                            dao.deleteHealthConflict(scope, pending.entityId)
+                            dao.deletePending(pending.localId)
+                            recalculateLocalDayLocked(scope, LocalDate.parse(response.date), dao.account(scope)?.timezone ?: "UTC")
+                        }
+                    }
+                    "health_steps_update" -> {
+                        val response = api.patchSteps(pending.entityId, queuedRequest(pending), pending.idempotencyKey)
+                        database.withTransaction {
+                            dao.upsertDailySteps(listOf(response.toEntity(scope)))
+                            dao.deleteHealthConflict(scope, pending.entityId)
+                            dao.deletePending(pending.localId)
+                            recalculateLocalDayLocked(scope, LocalDate.parse(response.date), dao.account(scope)?.timezone ?: "UTC")
+                        }
+                    }
+                    "health_steps_delete" -> {
+                        api.deleteSteps(pending.entityId, queuedRequest(pending), pending.idempotencyKey)
+                        database.withTransaction { dao.deleteHealthConflict(scope, pending.entityId); dao.deletePending(pending.localId) }
+                    }
                 }
                 if (pending.actionType.startsWith("planning_")) {
                     markPlanningSyncStatus(scope, pending, "synced")
+                }
+                if (pending.actionType.startsWith("health_")) {
+                    markHealthSyncStatus(scope, pending, "synced")
                 }
             } catch (failure: AppFailure) {
                 if (
@@ -1526,6 +1958,10 @@ class CompanionRepository(
                         markPlanningConflict(scope, pending, failure)
                         markPlanningSyncStatus(scope, pending, "conflict")
                     }
+                    if (pending.actionType.startsWith("health_")) {
+                        markHealthConflict(scope, pending, failure)
+                        markHealthSyncStatus(scope, pending, "conflict")
+                    }
                     dao.updatePending(pending.localId, "conflict", failure.code.name.lowercase(), Long.MAX_VALUE)
                     throw failure
                 }
@@ -1535,6 +1971,9 @@ class CompanionRepository(
                 )
                 if (pending.actionType.startsWith("planning_")) {
                     markPlanningSyncStatus(scope, pending, "pending")
+                }
+                if (pending.actionType.startsWith("health_")) {
+                    markHealthSyncStatus(scope, pending, "pending")
                 }
                 throw failure
             }
@@ -1574,6 +2013,47 @@ class CompanionRepository(
                 }
             }
         }
+    }
+
+    private suspend fun markHealthSyncStatus(scope: String, pending: PendingActionEntity, status: String) {
+        when {
+            pending.actionType.startsWith("health_body_") -> dao.bodyStat(scope, pending.entityId)?.let {
+                dao.upsertBodyStats(listOf(it.copy(syncStatus = status)))
+            }
+            pending.actionType.startsWith("health_nutrition_") -> dao.nutritionEntry(scope, pending.entityId)?.let {
+                dao.upsertNutritionEntries(listOf(it.copy(syncStatus = status)))
+            }
+            pending.actionType.startsWith("health_food_") -> dao.food(scope, pending.entityId)?.let {
+                dao.upsertFoodCatalog(listOf(it.copy(syncStatus = status)))
+            }
+            pending.actionType.startsWith("health_steps_") -> dao.dailyStep(scope, pending.entityId)?.let {
+                dao.upsertDailySteps(listOf(it.copy(syncStatus = status)))
+            }
+        }
+    }
+
+    private suspend fun markHealthConflict(scope: String, pending: PendingActionEntity, failure: AppFailure) {
+        val type = when {
+            pending.actionType.startsWith("health_body_") -> "body_stat"
+            pending.actionType.startsWith("health_nutrition_") -> "nutrition_entry"
+            pending.actionType.startsWith("health_food_") -> "food"
+            else -> "steps"
+        }
+        val localRevision = when (type) {
+            "body_stat" -> dao.bodyStat(scope, pending.entityId)?.localRevision
+            "nutrition_entry" -> dao.nutritionEntry(scope, pending.entityId)?.localRevision
+            "steps" -> dao.dailyStep(scope, pending.entityId)?.localRevision
+            else -> dao.food(scope, pending.entityId)?.revision?.toLong()
+        } ?: 0
+        val conflictType = when (failure.serverCode) {
+            "not_found" -> "deleted_or_unavailable"
+            "invalid_request", "invalid_date", "invalid_datetime", "duplicate" -> "validation_rejected"
+            "session_revoked", "device_revoked" -> "access_revoked"
+            else -> "revision_conflict"
+        }
+        dao.upsertHealthConflict(
+            HealthConflictEntity(scope, pending.entityId, type, conflictType, localRevision, null, Instant.now().toString()),
+        )
     }
 
     private suspend fun markPlanningConflict(scope: String, pending: PendingActionEntity, failure: AppFailure) {
@@ -1717,6 +2197,129 @@ class CompanionRepository(
         notBeforeEpochMs = 0,
         lastErrorCode = null,
     )
+
+    private fun requireDecimal(value: String, label: String, minimum: BigDecimal, maximum: BigDecimal): BigDecimal {
+        val parsed = value.toBigDecimalOrNull()
+            ?: throw AppFailure(AppErrorCode.VALIDATION_ERROR, "$label no es válido.", false)
+        if (parsed < minimum || parsed > maximum) {
+            throw AppFailure(AppErrorCode.VALIDATION_ERROR, "$label está fuera de rango.", false)
+        }
+        return parsed
+    }
+
+    private fun bodyPayload(value: BodyStatEntity, creating: Boolean) = buildJsonObject {
+        if (creating) put("public_id", value.publicId) else put("base_revision", value.revision)
+        put("recorded_at", value.recordedAt)
+        put("weight_kg", value.weightKg)
+        value.bodyFatPercent?.let { put("body_fat_percent", it) }
+        value.muscleMassKg?.let { put("muscle_mass_kg", it) }
+        value.waterPercent?.let { put("water_percent", it) }
+        value.visceralFat?.let { put("visceral_fat", it) }
+        value.bmrKcal?.let { put("bmr_kcal", it) }
+        value.bmi?.let { put("bmi", it) }
+        value.notes?.let { put("notes", it) }
+        if (creating) put("source", "manual")
+    }
+
+    private fun nutritionPayload(value: NutritionEntryEntity, creating: Boolean) = buildJsonObject {
+        if (creating) put("public_id", value.publicId) else put("base_revision", value.revision)
+        put("date", value.date); put("meal_type", value.mealType); put("name", value.name)
+        value.mealName?.let { put("meal_name", it) }; value.quantity?.let { put("quantity", it) }
+        value.unit?.let { put("unit", it) }; value.foodId?.let { put("food_id", it) }
+        value.caloriesKcal?.let { put("calories_kcal", it) }; value.proteinG?.let { put("protein_g", it) }
+        value.fatG?.let { put("fat_g", it) }; value.netCarbsG?.let { put("net_carbs_g", it) }
+        value.totalCarbsG?.let { put("total_carbs_g", it) }; value.fiberG?.let { put("fiber_g", it) }
+        value.sugarG?.let { put("sugar_g", it) }; value.sodiumMg?.let { put("sodium_mg", it) }
+        value.notes?.let { put("notes", it) }
+    }
+
+    private suspend fun coalesceHealthWrite(
+        scope: String,
+        createType: String,
+        updateType: String,
+        entityId: String,
+        payload: JsonObject,
+    ) {
+        val create = dao.pendingAction(scope, entityId, createType)
+        if (create != null && create.attemptCount == 0 && create.lastErrorCode == null) {
+            dao.updatePendingEntity(create.withUpdatedPayload(payload.toString()))
+            return
+        }
+        val update = dao.pendingAction(scope, entityId, updateType)
+        if (update != null) {
+            dao.updatePendingEntity(update.withUpdatedPayload(payload.toString()))
+            return
+        }
+        enqueue(scope, if ("public_id" in payload) createType else updateType, entityId, UUID.randomUUID().toString(), payload.toString())
+    }
+
+    private suspend fun discardNeverSyncedCreate(scope: String, createType: String, entityId: String): Boolean {
+        val create = dao.pendingAction(scope, entityId, createType) ?: return false
+        if (create.attemptCount != 0 || create.lastErrorCode != null) return false
+        dao.deletePending(create.localId)
+        dao.pendingActionsByType(scope, createType.replace("create", "update"))
+            .filter { it.entityId == entityId }
+            .forEach { dao.deletePending(it.localId) }
+        return true
+    }
+
+    private suspend fun recalculateNutritionDayLocked(scope: String, date: LocalDate) {
+        val items = dao.nutritionEntries(scope, date.toString())
+        fun sum(selector: (NutritionEntryEntity) -> String?): String? {
+            val values = items.mapNotNull(selector).mapNotNull(String::toBigDecimalOrNull)
+            return values.takeIf { it.isNotEmpty() }?.fold(BigDecimal.ZERO, BigDecimal::add)?.stripTrailingZeros()?.toPlainString()
+        }
+        dao.upsertNutritionDay(
+            NutritionDayEntity(
+                scope, date.toString(), sum { it.caloriesKcal }, sum { it.proteinG }, sum { it.fatG },
+                sum { it.netCarbsG }, sum { it.totalCarbsG }, sum { it.fiberG }, sum { it.sugarG },
+                sum { it.sodiumMg }, dao.nutritionDay(scope, date.toString())?.targetCaloriesKcal,
+                Instant.now().toString(),
+            ),
+        )
+    }
+
+    private suspend fun recalculateLocalDayForInstantLocked(scope: String, recordedAt: String) {
+        val zone = runCatching { ZoneId.of(dao.account(scope)?.timezone ?: "UTC") }.getOrDefault(ZoneOffset.UTC)
+        val date = runCatching { Instant.parse(recordedAt).atZone(zone).toLocalDate() }.getOrElse { LocalDate.now(zone) }
+        recalculateLocalDayLocked(scope, date, zone.id)
+    }
+
+    private suspend fun recalculateLocalDayLocked(scope: String, date: LocalDate, timezone: String) {
+        val zone = runCatching { ZoneId.of(timezone) }.getOrDefault(ZoneOffset.UTC)
+        val targetEnd = date.plusDays(1).atStartOfDay(zone).toInstant()
+        val body = dao.bodyStats(scope).filter { runCatching { Instant.parse(it.recordedAt) < targetEnd }.getOrDefault(false) }.maxByOrNull { it.recordedAt }
+        val exactBody = body?.let { runCatching { Instant.parse(it.recordedAt).atZone(zone).toLocalDate() == date }.getOrDefault(false) } == true
+        val nutrition = dao.nutritionDay(scope, date.toString())
+        val step = dao.dailyStepsForDate(scope, date.toString()).firstOrNull()
+        val existing = dao.dailyHealthSummary(scope, date.toString())
+        val status = when {
+            listOf(body?.syncStatus, step?.syncStatus).any { it == "conflict" } -> "attention"
+            listOf(body?.syncStatus, step?.syncStatus).any { it == "syncing" } -> "syncing"
+            listOf(body?.syncStatus, step?.syncStatus).any { it == "pending" } || dao.nutritionEntries(scope, date.toString()).any { it.syncStatus == "pending" } -> "pending"
+            else -> "synced"
+        }
+        dao.upsertDailyHealthSummary(
+            DailyHealthSummaryEntity(
+                scope, date.toString(), zone.id, body?.publicId, body?.weightKg, exactBody,
+                nutrition?.caloriesKcal, nutrition?.proteinG, nutrition?.totalCarbsG ?: nutrition?.netCarbsG,
+                nutrition?.fatG, nutrition?.fiberG, nutrition?.targetCaloriesKcal,
+                step?.publicId, step?.steps, step?.goal,
+                existing?.scheduledWorkouts ?: 0, existing?.completedWorkouts ?: 0,
+                status, Instant.now().toString(),
+            ),
+        )
+        val exactWeight = if (exactBody) body?.weightKg else null
+        dao.upsertHealthProgressPoints(
+            listOf(
+                HealthProgressPointEntity(
+                    scope, date.toString(), exactWeight, step?.steps, nutrition?.caloriesKcal,
+                    nutrition?.proteinG, nutrition?.totalCarbsG ?: nutrition?.netCarbsG,
+                    nutrition?.fatG, Instant.now().toString(),
+                ),
+            ),
+        )
+    }
 
     private suspend fun packageForDelivery(scope: String, deliveryId: String): WorkoutPackageEntity {
         return dao.packageForDelivery(scope, deliveryId)
@@ -2314,5 +2917,49 @@ class CompanionRepository(
         }
         return PlanningParts(toPlanEntity(scope, "synced"), workoutRows, exerciseRows, setRows)
     }
+
+    private fun MobileBodyStatDto.toEntity(scope: String) = BodyStatEntity(
+        scope, id, recordedAt, weightKg, bodyFatPercent, muscleMassKg, waterPercent,
+        visceralFat, bmrKcal, bmi, notes, source, revision, revision.toLong(), "synced", createdAt, updatedAt,
+    )
+
+    private fun MobileNutritionEntryDto.toEntity(scope: String) = NutritionEntryEntity(
+        scope, id, date, mealType, mealName, name, quantity, unit, foodId, caloriesKcal,
+        proteinG, fatG, netCarbsG, totalCarbsG, fiberG, sugarG, sodiumMg, notes,
+        dataComplete, revision, revision.toLong(), "synced", createdAt, updatedAt,
+    )
+
+    private fun MobileNutritionDayDto.toEntity(scope: String) = NutritionDayEntity(
+        scope, date, totals.caloriesKcal, totals.proteinG, totals.fatG, totals.netCarbsG,
+        totals.totalCarbsG, totals.fiberG, totals.sugarG, totals.sodiumMg, null, updatedAt,
+    )
+
+    private fun MobileFoodDto.toEntity(scope: String) = FoodCatalogEntity(
+        scope, id, name, name.lowercase(), brand, servingSizeG, servingLabel, caloriesPer100g,
+        proteinGPer100g, fatGPer100g, carbsGPer100g, netCarbsGPer100g, fiberGPer100g,
+        sodiumMgPer100g, notes, custom, archived, dataComplete, revision, "synced", updatedAt,
+    )
+
+    private fun MobileStepDto.toEntity(scope: String) = DailyStepEntity(
+        scope, id, date, steps, source, goal, revision, revision.toLong(), "synced", createdAt, updatedAt,
+    )
+
+    private fun JsonObject.optionalText(key: String): String? =
+        this[key]?.takeUnless { it is JsonNull }?.jsonPrimitive?.content
+
+    private fun MobileHealthTodayDto.toEntity(scope: String): DailyHealthSummaryEntity {
+        val totals = nutrition.totals
+        return DailyHealthSummaryEntity(
+            scope, date, timezone, weight?.id, weight?.weightKg, weightIsExactDate,
+            totals.optionalText("calories_kcal"), totals.optionalText("protein_g"),
+            totals.optionalText("carbohydrate_g"), totals.optionalText("fat_g"),
+            totals.optionalText("fiber_g"), null, steps.entryId, steps.value, steps.goal,
+            training.scheduled, training.completed, "synced", updatedAt,
+        )
+    }
+
+    private fun MobileHealthPointDto.toEntity(scope: String) = HealthProgressPointEntity(
+        scope, date, weightKg, steps, caloriesKcal, proteinG, carbohydrateG, fatG, Instant.now().toString(),
+    )
 
 }

@@ -122,6 +122,7 @@ def _seed_energy(user: User, days: tuple, created: dict[str, int]) -> None:
             db.select(DailyEnergy).where(
                 DailyEnergy.user_id == user.id,
                 DailyEnergy.date == record_date,
+                DailyEnergy.source == DEMO_SOURCE,
             )
         ).scalar_one_or_none()
         if existing is not None:

@@ -708,6 +708,194 @@ data class PushResult(
     val conflict: JsonObject? = null,
 )
 
+@Serializable
+data class MobileBodyStatDto(
+    val id: String,
+    @SerialName("recorded_at") val recordedAt: String,
+    @SerialName("weight_kg") val weightKg: String,
+    @SerialName("body_fat_percent") val bodyFatPercent: String? = null,
+    @SerialName("muscle_mass_kg") val muscleMassKg: String? = null,
+    @SerialName("water_percent") val waterPercent: String? = null,
+    @SerialName("visceral_fat") val visceralFat: String? = null,
+    @SerialName("bmr_kcal") val bmrKcal: String? = null,
+    val bmi: String? = null,
+    val notes: String? = null,
+    val source: String,
+    val revision: Int,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+)
+
+@Serializable
+data class MobileBodyStatsPageDto(
+    val items: List<MobileBodyStatDto>,
+    @SerialName("next_cursor") val nextCursor: String? = null,
+    @SerialName("has_more") val hasMore: Boolean,
+)
+
+@Serializable
+data class MobileNutritionTotalsDto(
+    @SerialName("calories_kcal") val caloriesKcal: String? = null,
+    @SerialName("protein_g") val proteinG: String? = null,
+    @SerialName("fat_g") val fatG: String? = null,
+    @SerialName("net_carbs_g") val netCarbsG: String? = null,
+    @SerialName("total_carbs_g") val totalCarbsG: String? = null,
+    @SerialName("fiber_g") val fiberG: String? = null,
+    @SerialName("sugar_g") val sugarG: String? = null,
+    @SerialName("sodium_mg") val sodiumMg: String? = null,
+)
+
+@Serializable
+data class MobileNutritionEntryDto(
+    val id: String,
+    val date: String,
+    @SerialName("meal_type") val mealType: String,
+    @SerialName("meal_name") val mealName: String? = null,
+    val name: String,
+    val quantity: String? = null,
+    val unit: String? = null,
+    @SerialName("food_id") val foodId: String? = null,
+    @SerialName("calories_kcal") val caloriesKcal: String? = null,
+    @SerialName("protein_g") val proteinG: String? = null,
+    @SerialName("fat_g") val fatG: String? = null,
+    @SerialName("net_carbs_g") val netCarbsG: String? = null,
+    @SerialName("total_carbs_g") val totalCarbsG: String? = null,
+    @SerialName("fiber_g") val fiberG: String? = null,
+    @SerialName("sugar_g") val sugarG: String? = null,
+    @SerialName("sodium_mg") val sodiumMg: String? = null,
+    val notes: String? = null,
+    @SerialName("data_complete") val dataComplete: Boolean,
+    val revision: Int,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+)
+
+@Serializable
+data class MobileNutritionMealDto(
+    @SerialName("meal_type") val mealType: String,
+    val name: String? = null,
+    val items: List<MobileNutritionEntryDto>,
+)
+
+@Serializable
+data class MobileNutritionDayDto(
+    val date: String,
+    val totals: MobileNutritionTotalsDto,
+    val targets: JsonObject? = null,
+    val remaining: JsonObject? = null,
+    val meals: List<MobileNutritionMealDto>,
+    @SerialName("updated_at") val updatedAt: String? = null,
+)
+
+@Serializable
+data class MobileFoodDto(
+    val id: String,
+    val name: String,
+    val brand: String? = null,
+    @SerialName("serving_size_g") val servingSizeG: String? = null,
+    @SerialName("serving_label") val servingLabel: String? = null,
+    @SerialName("calories_per_100g") val caloriesPer100g: String? = null,
+    @SerialName("protein_g_per_100g") val proteinGPer100g: String? = null,
+    @SerialName("fat_g_per_100g") val fatGPer100g: String? = null,
+    @SerialName("carbs_g_per_100g") val carbsGPer100g: String? = null,
+    @SerialName("net_carbs_g_per_100g") val netCarbsGPer100g: String? = null,
+    @SerialName("fiber_g_per_100g") val fiberGPer100g: String? = null,
+    @SerialName("sodium_mg_per_100g") val sodiumMgPer100g: String? = null,
+    val notes: String? = null,
+    val custom: Boolean,
+    val archived: Boolean,
+    @SerialName("data_complete") val dataComplete: Boolean,
+    val revision: Int,
+    @SerialName("updated_at") val updatedAt: String,
+)
+
+@Serializable
+data class MobileFoodPageDto(
+    val items: List<MobileFoodDto>,
+    @SerialName("next_cursor") val nextCursor: String? = null,
+    @SerialName("has_more") val hasMore: Boolean,
+)
+
+@Serializable
+data class MobileStepDto(
+    val id: String,
+    val date: String,
+    val steps: Long,
+    val source: String,
+    val goal: Long? = null,
+    val revision: Int,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+)
+
+@Serializable
+data class MobileStepsPageDto(
+    val items: List<MobileStepDto>,
+    val from: String,
+    val to: String,
+)
+
+@Serializable
+data class MobileHealthNutritionSummaryDto(
+    val totals: JsonObject,
+    val targets: JsonObject? = null,
+    val remaining: JsonObject? = null,
+)
+
+@Serializable
+data class MobileHealthStepsSummaryDto(
+    val value: Long? = null,
+    val source: String? = null,
+    val goal: Long? = null,
+    @SerialName("entry_id") val entryId: String? = null,
+)
+
+@Serializable
+data class MobileHealthTrainingSummaryDto(
+    val scheduled: Int,
+    val completed: Int,
+    val items: List<JsonObject> = emptyList(),
+)
+
+@Serializable
+data class MobileHealthTodayDto(
+    val date: String,
+    val timezone: String,
+    val weight: MobileBodyStatDto? = null,
+    @SerialName("weight_is_exact_date") val weightIsExactDate: Boolean,
+    val nutrition: MobileHealthNutritionSummaryDto,
+    val steps: MobileHealthStepsSummaryDto,
+    val training: MobileHealthTrainingSummaryDto,
+    @SerialName("sync_status") val syncStatus: String,
+    @SerialName("updated_at") val updatedAt: String? = null,
+)
+
+@Serializable
+data class MobileHealthPointDto(
+    val date: String,
+    @SerialName("weight_kg") val weightKg: String? = null,
+    val steps: Long? = null,
+    @SerialName("calories_kcal") val caloriesKcal: String? = null,
+    @SerialName("protein_g") val proteinG: String? = null,
+    @SerialName("carbohydrate_g") val carbohydrateG: String? = null,
+    @SerialName("fat_g") val fatG: String? = null,
+)
+
+@Serializable
+data class MobileHealthProgressDto(
+    val from: String,
+    val to: String,
+    val timezone: String,
+    val points: List<MobileHealthPointDto>,
+)
+
+@Serializable
+data class MobileDeleteResponse(
+    val id: String,
+    val deleted: Boolean,
+    val revision: Int,
+)
+
 enum class AuthState {
     NO_SERVER, SIGNED_OUT, AUTHENTICATING, AUTHENTICATED, TOKEN_EXPIRED,
     DEVICE_REVOKED, SERVER_INCOMPATIBLE, OFFLINE, TEMPORARY_ERROR, PERMANENT_ERROR,

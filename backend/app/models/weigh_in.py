@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import uuid
 
 from app.extensions import db
 
@@ -7,6 +8,7 @@ class WeighIn(db.Model):
     __tablename__ = "weigh_ins"
     __table_args__ = (
         db.CheckConstraint("weight_kg > 0", name="ck_weigh_ins_weight"),
+        db.CheckConstraint("revision >= 1", name="ck_weigh_ins_revision"),
         db.CheckConstraint(
             "body_fat_percentage IS NULL OR "
             "(body_fat_percentage >= 0 AND body_fat_percentage <= 100)",
@@ -39,10 +41,14 @@ class WeighIn(db.Model):
             name="uq_weigh_ins_user_recorded_at",
         ),
         db.UniqueConstraint("source_file_id", name="uq_weigh_ins_source_file"),
+        db.UniqueConstraint("public_id", name="uq_weigh_ins_public_id"),
         db.Index("ix_weigh_ins_user_recorded", "user_id", "recorded_at"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(
+        db.String(36), nullable=False, default=lambda: str(uuid.uuid4())
+    )
     user_id = db.Column(
         db.Integer,
         db.ForeignKey("users.id", ondelete="CASCADE"),
@@ -64,6 +70,7 @@ class WeighIn(db.Model):
     )
     raw_payload_json = db.Column(db.JSON, nullable=True)
     notes = db.Column(db.Text, nullable=True)
+    revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

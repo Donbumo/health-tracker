@@ -1,5 +1,20 @@
 # Checklist de release alpha privada
 
+## Alpha 1.4 — Registro Diario de Salud Android
+
+- [x] Resumen diario local-first con fecha/zona, peso, nutrición, pasos y entrenamiento.
+- [x] CRUD owner-only de cuerpo, nutrición, alimentos personalizados y pasos con UUID, idempotencia y revisión.
+- [x] Room 4 aislada por `accountScope`, migraciones explícitas 1/2/3→4 y sin fallback destructivo.
+- [x] Operaciones offline durables, coalescing seguro, autosync WorkManager y process-death recuperable por persistencia Room.
+- [x] Conflictos sanitizados visibles con usar servidor, reintentar, duplicar cuando aplica y cancelar.
+- [x] Progreso Salud con peso, pasos, calorías/macros y alternativa textual accesible.
+- [x] Backend completo: 612 pasan y 1 omitida en contenedores efímeros; schema/compileall/single head/db check/ciclo 0031 verdes.
+- [x] Android: lint, dos pasadas JVM, APK y compilación de androidTest verdes.
+- [ ] Ejecutar `connectedDebugAndroidTest` únicamente en AVD de pruebas separado.
+- [ ] Completar QA manual offline/process death/reconexión, web↔Android, accesibilidad, rotación, temas y tamaños.
+- [ ] Revisión de integración, firma y decisión formal de release.
+- [ ] Alpha 1.4 lista para release: **NO**, hasta cerrar QA manual, instrumentación y firma aprobada.
+
 ## Alpha 1.3 — Planificación, Rutinas y Calendario Android
 
 - [x] Catálogo owner-only paginado por nombre/alias y ausencia honesta de filtros no disponibles.

@@ -1,0 +1,37 @@
+package io.healthtracker.companion.core.healthconnect
+
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class HealthConnectDiagnosticTest {
+    @Test fun sharedDiagnosticContainsOnlySanitizedMetadataAndCounts() {
+        val diagnostic = sanitizedHealthConnectDiagnostic(
+            HealthConnectDiagnosticContext("1.5.0-alpha01-debug", 15, "16", 36),
+            HealthConnectUiState(
+                status = HealthConnectUiStatus.PERMISSIONS_PARTIAL,
+                selectedTypes = setOf(HealthConnectRecordType.WEIGHT, HealthConnectRecordType.STEPS),
+                grantedTypes = setOf(HealthConnectRecordType.WEIGHT),
+                lastImportAt = "2026-07-27T12:00:00Z",
+                importedCount = 2,
+                deletedCount = 1,
+                errorCode = "provider_io",
+            ),
+        )
+
+        listOf("app=", "android=", "provider_state=permissions_partial", "selected_types=steps,weight",
+            "granted_type_count=1", "imported_count=2", "last_import_at=", "error_code=provider_io")
+            .forEach { assertTrue(diagnostic.contains(it)) }
+        listOf("70.5", "8500", "record_id", "data_origin", "changes_token", "access_token", "refresh_token")
+            .forEach { assertFalse(diagnostic.contains(it)) }
+    }
+
+    @Test fun unsafeErrorTextIsReducedToAStableCode() {
+        val diagnostic = sanitizedHealthConnectDiagnostic(
+            HealthConnectDiagnosticContext("qa", 15, "qa", 36),
+            HealthConnectUiState(errorCode = "path=/private user@example.test"),
+        )
+        assertFalse(diagnostic.contains("/private"))
+        assertFalse(diagnostic.contains("user@example.test"))
+    }
+}

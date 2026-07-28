@@ -47,6 +47,8 @@ import io.healthtracker.companion.core.load.ComponentInput
 import io.healthtracker.companion.core.load.LoadCalculator
 import io.healthtracker.companion.core.load.LoadMode
 import io.healthtracker.companion.core.healthconnect.HealthConnectRecordType
+import io.healthtracker.companion.core.healthconnect.HealthConnectDiagnosticContext
+import io.healthtracker.companion.core.healthconnect.sanitizedHealthConnectDiagnostic
 import io.healthtracker.companion.core.healthconnect.HealthConnectUiStatus
 import io.healthtracker.companion.core.model.AuthState
 import io.healthtracker.companion.core.model.LoadDetailsDto
@@ -132,7 +134,7 @@ private fun LoginScreen(viewModel: CompanionViewModel, snackbar: SnackbarHostSta
         ) {
             item {
                 Text("Health Tracker", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() })
-                Text("Android Companion Alpha 1.2", style = MaterialTheme.typography.titleMedium)
+                Text("Android Companion ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(8.dp))
                 Text(
                     when (auth) {
@@ -2104,13 +2106,15 @@ private fun SettingsScreen(viewModel: CompanionViewModel) {
         item {
             OutlinedButton(
                 onClick = {
-                    val diagnostic = buildString {
-                        appendLine("Health Tracker Android ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
-                        appendLine("API=1 Sync=1.0 Companion=1.0")
-                        appendLine("network=${if (connected) "connected" else "offline"}")
-                        appendLine("last_sync=${preferences.lastSyncAt ?: "never"}")
-                        appendLine("pending=$pending conflicts=$conflicts")
-                    }
+                    val diagnostic = sanitizedHealthConnectDiagnostic(
+                        HealthConnectDiagnosticContext(
+                            BuildConfig.VERSION_NAME,
+                            BuildConfig.VERSION_CODE,
+                            Build.VERSION.RELEASE,
+                            Build.VERSION.SDK_INT,
+                        ),
+                        healthConnect,
+                    )
                     context.startActivity(
                         Intent.createChooser(
                             Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, diagnostic),
@@ -2125,6 +2129,7 @@ private fun SettingsScreen(viewModel: CompanionViewModel) {
             Text("Sesiones y datos locales", style = MaterialTheme.typography.titleLarge)
             Text("Cerrar sesión elimina esta cuenta del teléfono. Cerrar todas revoca todas las sesiones API. Revocar bloquea este dispositivo. Borrar local no cambia el servidor.")
         }
+        item { OutlinedButton(onClick = { confirmation = "switch_server" }, modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp)) { Text("Cambiar servidor") } }
         item { OutlinedButton(onClick = { confirmation = "logout" }, modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp)) { Text("Cerrar sesión en este teléfono") } }
         item { OutlinedButton(onClick = { confirmation = "logout_all" }, modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp)) { Text("Cerrar todas las sesiones API") } }
         item { OutlinedButton(onClick = { confirmation = "revoke" }, modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp)) { Text("Revocar este dispositivo") } }
@@ -2145,19 +2150,20 @@ private fun SettingsScreen(viewModel: CompanionViewModel) {
             return@let
         }
         ConfirmationDialog(
-            title = when (action) { "revoke" -> "¿Revocar dispositivo?"; "clear" -> "¿Borrar datos locales?"; "logout_all" -> "¿Cerrar todas las sesiones?"; else -> "¿Cerrar sesión?" },
+            title = when (action) { "switch_server" -> "¿Cambiar de servidor?"; "revoke" -> "¿Revocar dispositivo?"; "clear" -> "¿Borrar datos locales?"; "logout_all" -> "¿Cerrar todas las sesiones?"; else -> "¿Cerrar sesión?" },
             text = when (action) {
+                "switch_server" -> "Se cerrará la sesión activa y se invalidarán sus tokens locales. Los datos Room se conservarán bajo su servidor y cuenta actuales; después deberás confirmar la nueva URL e iniciar sesión."
                 "clear" -> "Se borrarán cache, drafts y pendientes de esta cuenta. Esta acción no se puede deshacer."
                 "revoke" -> "El servidor revocará sesiones del dispositivo y se borrarán sus datos locales."
                 "logout_all" -> "El servidor revocará todas tus sesiones API. Esta operación requiere red."
                 else -> "Los drafts y datos locales de esta cuenta se borrarán por privacidad."
             },
             confirm = "Confirmar", onDismiss = { confirmation = null },
-            requireAcknowledgement = action in setOf("clear", "revoke", "logout_all"),
+            requireAcknowledgement = action in setOf("switch_server", "clear", "revoke", "logout_all"),
             destructive = action in setOf("clear", "revoke", "logout_all"),
             onConfirm = {
                 confirmation = null
-                when (action) { "revoke" -> viewModel.logout(revoke = true); "clear" -> viewModel.logout(localOnly = true); "logout_all" -> viewModel.logoutAll(); else -> viewModel.logout() }
+                when (action) { "switch_server" -> viewModel.switchServer(); "revoke" -> viewModel.logout(revoke = true); "clear" -> viewModel.logout(localOnly = true); "logout_all" -> viewModel.logoutAll(); else -> viewModel.logout() }
             },
         )
     }

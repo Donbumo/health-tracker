@@ -2,6 +2,14 @@
 
 ## Alpha 1.5 — Health Connect de solo lectura
 
+- [x] RC1 permite NAS con HTTPS, puerto y base path; HTTP LAN exige debug+confirmación y las credenciales/fragmentos se rechazan.
+- [x] Cambio de servidor confirmado invalida tokens/scope activos y conserva Room anterior aislada; refresh queda ligado a la URL normalizada.
+- [x] ProxyFix está desactivado por defecto y limita `X-Forwarded-For/Proto` a 0–2 saltos configurados; operación local no cambia.
+- [x] Existen preflight NAS no destructivo, smoke read-only default/write confirmado con limpieza y runbook de backup/deploy/rollback.
+- [x] Versión candidata: applicationId `io.healthtracker.companion`, debug suffix `.debug`, versionCode 15, versionName `1.5.0-alpha01`, min 26 y target/compile 36.
+- [ ] Ejecutar en el NAS real preflight, backup verificado, migración 0032 y smoke con una cuenta QA.
+- [ ] Instalar con `adb install -r` y completar los 30 pasos del runbook en teléfono real; no se considera aprobado por compilación o fakes.
+
 - [x] Integración opt-in con disponibilidad segura en API 26–36 y proveedor instalable/actualizable donde corresponde.
 - [x] Permisos de lectura por tipo, permisos parciales/revocados, rationale, administración de acceso y background separado por feature.
 - [x] Gateway inyectable, manager/coordinator, paginación, aggregate diario, Changes tokens, recuperación de token expirado, single-flight y WorkManager coalescido.
@@ -11,7 +19,7 @@
 - [x] Room primero y cola servidor durable separada; backend aditivo con fuentes, `client_event_id`, coexistencia e idempotencia owner-only.
 - [x] Ajustes, procedencia en Hoy/Progreso, pausa, desconexión y borrado selectivo confirmado.
 - [x] 31 escenarios unitarios Health Connect y androidTest de migraciones compilables.
-- [x] Matriz final: Android lint/84 JVM dos veces/APK/androidTest compile; backend `612 passed, 3 skipped`; MariaDB efímera migración+carreras; 36 JSON, manifest, Compose config y `git diff --check` verdes.
+- [x] Matriz RC1: Android lint/91 JVM dos veces/APK/androidTest compile; backend local final 618/3 y Docker/MariaDB 619/1; migración+carreras, smoke HTTP, 36 JSON, manifest, Compose config y `git diff --check` verdes.
 - [ ] QA manual con Health Connect real, servidor offline, process death, permisos/revocación, zona, background, accesibilidad y tamaños en dispositivo/AVD separado.
 - [ ] Ejecutar `connectedDebugAndroidTest` únicamente en AVD de pruebas separado; no forma parte del gate automático de esta rama.
 - [ ] Revisión de integración, firma y decisión formal de release.

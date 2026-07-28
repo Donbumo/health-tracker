@@ -17,9 +17,10 @@ class SecureTokenStore(context: Context) {
     @Volatile
     private var accessToken: String? = null
 
-    fun accessToken(): String? = accessToken
+    fun accessToken(serverIdentity: String? = null): String? =
+        accessToken.takeIf { identityMatches(serverIdentity) }
 
-    fun setTokens(access: String, refresh: String) {
+    fun setTokens(access: String, refresh: String, serverIdentity: String? = null) {
         accessToken = access
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, secretKey())
@@ -27,10 +28,13 @@ class SecureTokenStore(context: Context) {
         preferences.edit {
             putString(KEY_REFRESH_CIPHER, Base64.encodeToString(encrypted, Base64.NO_WRAP))
             putString(KEY_REFRESH_IV, Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
+            if (serverIdentity == null) remove(KEY_SERVER_IDENTITY)
+            else putString(KEY_SERVER_IDENTITY, serverIdentity)
         }
     }
 
-    fun refreshToken(): String? {
+    fun refreshToken(serverIdentity: String? = null): String? {
+        if (!identityMatches(serverIdentity)) return null
         val cipherText = preferences.getString(KEY_REFRESH_CIPHER, null) ?: return null
         val iv = preferences.getString(KEY_REFRESH_IV, null) ?: return null
         return runCatching {
@@ -47,6 +51,19 @@ class SecureTokenStore(context: Context) {
     fun clear() {
         accessToken = null
         preferences.edit { clear() }
+    }
+
+    fun bindLegacyServerIfMissing(serverIdentity: String?) {
+        if (serverIdentity == null || preferences.getString(KEY_SERVER_IDENTITY, null) != null) return
+        if (preferences.contains(KEY_REFRESH_CIPHER)) {
+            preferences.edit { putString(KEY_SERVER_IDENTITY, serverIdentity) }
+        }
+    }
+
+    private fun identityMatches(expected: String?): Boolean {
+        if (expected == null) return true
+        val stored = preferences.getString(KEY_SERVER_IDENTITY, null)
+        return stored == expected
     }
 
     private fun secretKey(): SecretKey {
@@ -71,6 +88,7 @@ class SecureTokenStore(context: Context) {
         const val PREFS_NAME = "secure_session_v1"
         const val KEY_REFRESH_CIPHER = "refresh_cipher"
         const val KEY_REFRESH_IV = "refresh_iv"
+        const val KEY_SERVER_IDENTITY = "server_identity"
         const val KEY_ALIAS = "health_tracker_refresh_v1"
         const val ANDROID_KEYSTORE = "AndroidKeyStore"
         const val TRANSFORMATION = "AES/GCM/NoPadding"

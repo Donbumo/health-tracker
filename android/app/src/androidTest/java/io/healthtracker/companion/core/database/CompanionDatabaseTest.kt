@@ -343,6 +343,36 @@ class CompanionDatabaseTest {
         assertNull(tokens.refreshToken())
     }
 
+    @Test fun confirmedServerSwitchInvalidatesTokensButPreservesScopedRoomRows() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val preferences = PreferenceStore(context)
+        val oldServer = "https://nas-a.example.test/base"
+        preferences.configureServer(oldServer, false)
+        preferences.setAccountScope(TEST_SCOPE)
+        preferences.setOfflineSessionEligible(true)
+        val tokens = SecureTokenStore(context).also {
+            it.clear()
+            it.setTokens("qa-access", "qa-refresh", oldServer)
+        }
+        database.companionDao().upsertPlanned(
+            listOf(
+                PlannedWorkoutEntity(
+                    TEST_SCOPE, "qa-switch-workout", "qa-plan", "qa-version", "2099-07-20", "UTC",
+                    "planned", "QA retained", 1, "2099-07-20T00:00:00Z", false,
+                ),
+            ),
+        )
+
+        CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens))
+            .detachForServerSwitch(TEST_SCOPE)
+
+        val saved = preferences.values.first()
+        assertNull(saved.accountScope)
+        assertEquals(oldServer, saved.serverUrl)
+        assertNull(tokens.refreshToken(oldServer))
+        assertEquals(1, database.companionDao().observePlanned(TEST_SCOPE).first().size)
+    }
+
     @Test fun incompatibleRecoveredDraftIsIsolatedWithoutCrash() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val dao = database.companionDao()

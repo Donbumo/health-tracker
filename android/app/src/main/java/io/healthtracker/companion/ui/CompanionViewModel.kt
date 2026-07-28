@@ -363,8 +363,9 @@ class CompanionViewModel(
         )
         viewModelScope.launch {
             val actual = container.preferences.values.first()
+            container.tokens.bindLegacyServerIfMissing(actual.serverUrl)
             if (actual.serverUrl == null) mutableAuth.value = AuthState.NO_SERVER
-            else if (actual.accountScope != null && container.tokens.refreshToken() != null) {
+            else if (actual.accountScope != null && container.tokens.refreshToken(actual.serverUrl) != null) {
                 val localProfile = repository.restoreLocalSession()
                 if (localProfile == null) {
                     mutableAuth.value = AuthState.SIGNED_OUT
@@ -382,7 +383,7 @@ class CompanionViewModel(
                 .distinctUntilChanged()
                 .filter { it }
                 .collect {
-                    if (mutableAuth.value == AuthState.AUTHENTICATED && container.tokens.accessToken() == null) {
+                    if (mutableAuth.value == AuthState.AUTHENTICATED && container.tokens.accessToken(preferences.value.serverUrl) == null) {
                         preferences.value.accountScope?.let { restoreOnline(it) }
                     } else {
                         SyncScheduler.enqueueNow(SyncTrigger.CONNECTIVITY_RECOVERED)
@@ -1095,6 +1096,16 @@ class CompanionViewModel(
         selectPlan(null)
         mutableProfile.value = null
         mutableAuth.value = AuthState.SIGNED_OUT
+    }
+
+    fun switchServer() = action {
+        val account = preferences.value.accountScope ?: return@action
+        repository.detachForServerSwitch(account)
+        selectPlanWorkout(null)
+        selectPlan(null)
+        mutableProfile.value = null
+        mutableAuth.value = AuthState.SIGNED_OUT
+        mutableMessage.value = "Sesión separada. Confirma la nueva URL e inicia sesión; los datos anteriores siguen aislados."
     }
 
     fun clearMessage() { mutableMessage.value = null }

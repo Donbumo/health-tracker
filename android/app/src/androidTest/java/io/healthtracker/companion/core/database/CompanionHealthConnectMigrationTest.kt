@@ -26,6 +26,22 @@ class CompanionHealthConnectMigrationTest {
                 "INSERT INTO body_stats(accountScope,publicId,recordedAt,weightKg,bodyFatPercent,muscleMassKg,waterPercent,visceralFat,bmrKcal,bmi,notes,source,revision,localRevision,syncStatus,createdAt,updatedAt) " +
                     "VALUES('qa-scope','qa-body','2026-07-26T00:00:00Z','70',NULL,NULL,NULL,NULL,NULL,NULL,NULL,'manual',1,1,'synced','2026-07-26T00:00:00Z','2026-07-26T00:00:00Z')",
             )
+            execSQL(
+                "INSERT INTO planned_workouts(accountScope,id,planId,planVersionId,scheduledForDate,timezone,status,title,revision,updatedAt,deleted,sourceWorkoutId) " +
+                    "VALUES('qa-scope','qa-workout','qa-plan','qa-version','2026-07-27','UTC','planned','QA retained',1,'2026-07-26T00:00:00Z',0,NULL)",
+            )
+            execSQL(
+                "INSERT INTO workout_drafts(accountScope,deliveryId,packageId,clientSubmissionId,clientEventId,schemaVersion,packageHash,status,startedAt,pausedAt,elapsedSeconds,averageHeartRateBpm,caloriesBurned,notes,checkpointSequence,payloadHash,updatedAt,expiresAt,corruptReasonCode) " +
+                    "VALUES('qa-scope','qa-delivery','qa-package','qa-submission','qa-event','1.0','qa-hash','active','2026-07-26T00:00:00Z',NULL,30,NULL,NULL,NULL,1,'qa-payload-hash','2026-07-26T00:01:00Z','2099-01-01T00:00:00Z',NULL)",
+            )
+            execSQL(
+                "INSERT INTO pending_actions(accountScope,actionType,entityId,idempotencyKey,payloadJson,payloadHash,status,attemptCount,notBeforeEpochMs,createdAt,lastErrorCode) " +
+                    "VALUES('qa-scope','HEALTH_BODY_CREATE','qa-body-pending','qa-key','{}','qa-payload','pending',0,0,'2026-07-26T00:00:00Z',NULL)",
+            )
+            execSQL(
+                "INSERT INTO history_sessions(accountScope,publicId,clientEventId,plannedWorkoutId,trainingPlanId,trainingPlanVersionId,name,performedAt,startedAt,completedAt,timezone,durationSeconds,exerciseCount,setCount,volumeKg,volumePartial,source,syncStatus,notes,detailCached,updatedAt) " +
+                    "VALUES('qa-scope','qa-history','qa-history-event',NULL,NULL,NULL,'QA history','2026-07-25T00:00:00Z',NULL,'2026-07-25T00:30:00Z','UTC',1800,1,1,'100',0,'server','synced',NULL,0,'2026-07-25T00:30:00Z')",
+            )
             close()
         }
         val migrated = helper.runMigrationsAndValidate(name, 5, true, CompanionDatabase.MIGRATION_4_5)
@@ -35,6 +51,14 @@ class CompanionHealthConnectMigrationTest {
             assertEquals(true, cursor.isNull(1))
         }
         assertHealthConnectTables(migrated)
+        listOf(
+            "SELECT COUNT(*) FROM planned_workouts WHERE id='qa-workout'",
+            "SELECT COUNT(*) FROM workout_drafts WHERE deliveryId='qa-delivery'",
+            "SELECT COUNT(*) FROM pending_actions WHERE idempotencyKey='qa-key'",
+            "SELECT COUNT(*) FROM history_sessions WHERE publicId='qa-history'",
+        ).forEach { query ->
+            migrated.query(query).use { cursor -> cursor.moveToFirst(); assertEquals(1, cursor.getInt(0)) }
+        }
         migrated.close()
     }
 

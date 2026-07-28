@@ -9,6 +9,7 @@
 - Alpha 1.3: orden/prescripción, semana/mes y bisiesto, zona horaria sin mover el día, programación offline con UUID estable y coalescing, varios eventos diarios, Today inmediato, package vigente/desactualizado con draft protegido, conflictos resolubles, completion local en Historial/Progreso, account scope y migraciones backend/Room 2→3.
 - Alpha 1.4: conversión kg/lb sin deriva, macros incompletos, gráficas con cero/uno/múltiples puntos, caché diaria owner-scoped, cuerpo/nutrición/pasos offline, coalescing y doble pulsación, conflictos sanitizados/resolubles, logout aislado y migraciones Room 1/2/3→4.
 - Alpha 1.5: 31 casos con gateway/store fake para disponibilidad, actualización de proveedor, permisos parciales/revocados, peso y grasa, mapeos incompatibles, pasos agregados/origen opaco/zona, nutrición incompleta, dedupe, Changes/token expirado, borrado/detached, rollback, process death, cuentas, single-flight, background, pausa/desconexión, borrado selectivo, cola servidor y actualización observable. Las instrumentadas de migración cubren 1/2/3/4→5.
+- RC1 añade URL con puerto/base path, rechazo de credenciales/query/fragmento, separación HTTP debug/HTTPS release, cambio confirmado de servidor, binding del token al servidor, DNS/refused/timeout/TLS/HTTP sanitizados, diagnóstico Health Connect allowlisted y preservación de plan/draft/historial/salud/pendientes en 4→5. Las pruebas instrumentadas se compilan, pero no se marcan ejecutadas.
 
 ```powershell
 Set-Location android
@@ -27,9 +28,13 @@ Alpha 1.5 conserva esa restricción: `connectedDebugAndroidTest` no se ejecuta. 
 
 El 26 de julio de 2026 pasó la matriz final Alpha 1.5 en orden: `lintDebug`, `testDebugUnitTest`, `assembleDebug`, `compileDebugAndroidTestKotlin` y segunda invocación de `testDebugUnitTest`; una pasada adicional `--rerun-tasks` confirmó la segunda ejecución real. El resultado es 84/84 JVM, incluidos 31 casos Health Connect. Backend pasó `612 passed, 3 skipped`; MariaDB 11.4 efímera pasó upgrade/check/downgrade/re-upgrade y 3 carreras de concurrencia. `connectedDebugAndroidTest` no se ejecutó.
 
+El 27 de julio de 2026 RC1 repitió el orden completo sobre las brechas NAS: `lintDebug`, 91/91 JVM, APK, compilación androidTest y segunda pasada forzada 91/91. Backend local final pasó 618/3 y el focal final de proxy/readiness/smoke 9/9; Docker/MariaDB pasó 619/1 con las tres carreras. El smoke final recorrió HTTP real contra Flask efímero y limpió sus fixtures. QA real y `connectedDebugAndroidTest` continúan pendientes.
+
 El 26 de julio de 2026 pasaron `lintDebug`, dos ejecuciones de `testDebugUnitTest` (53/53), `assembleDebug` y `compileDebugAndroidTestKotlin`. Las pruebas instrumentadas de migración 1/2/3→4 compilan, pero no se marcarán ejecutadas hasta disponer del AVD separado.
 
 ## QA manual requerido
+
+Para RC1 sigue exactamente el gate de [ALPHA_1_5_NAS_RC_RUNBOOK.md](ALPHA_1_5_NAS_RC_RUNBOOK.md): `adb devices -l`, `adb install -r <apk>` y lanzamiento con `monkey`, sin uninstall ni `pm clear`. El recorrido de 30 pasos valida NAS, process death, offline/reconexión, web y permisos parciales reales. Debe terminar con pendientes/conflictos en cero y sin duplicados ni secretos en logcat.
 
 Usa únicamente cuenta y datos ficticios. Ejecuta los recorridos conectado, modo avión/process death/reconexión y errores descritos en el encargo Alpha 1.1. Cubre teléfono pequeño/medio/grande, API 26 y API 36, claro/oscuro, fuente grande, TalkBack, portrait/landscape y doble toque en completion.
 

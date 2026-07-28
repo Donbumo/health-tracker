@@ -43,6 +43,18 @@ class ApiClientMockWebServerTest {
         tokenStore.clear()
     }
 
+    @Test fun configuredBasePathIsPreservedForApiRequests() = runBlocking {
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody(
+            """{"data":{"status":"ok","app":"health-tracker"},"meta":{"api_version":"1","request_id":"qa"}}""",
+        ))
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val client = ApiClient(PreferenceStore(context), SecureTokenStore(context).also { it.clear() })
+
+        client.health(server.url("/tracker/base").toString().trimEnd('/'))
+
+        assertEquals("/tracker/base/api/v1/health", server.takeRequest().path)
+    }
+
     @Test fun tokenRefreshIsRotatedAndOriginalRequestIsRetriedOnce() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val preferences = PreferenceStore(context)

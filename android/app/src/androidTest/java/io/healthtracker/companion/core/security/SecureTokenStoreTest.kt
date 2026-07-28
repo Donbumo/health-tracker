@@ -22,4 +22,28 @@ class SecureTokenStoreTest {
         store.clear()
         assertNull(store.refreshToken())
     }
+
+    @Test fun processDeathRetainsRefreshOnlyForItsBoundServer() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        SecureTokenStore(context).also {
+            it.clear()
+            it.setTokens("access-qa", "refresh-secret-qa", "https://nas-a.example")
+        }
+        val restored = SecureTokenStore(context)
+        assertEquals("refresh-secret-qa", restored.refreshToken("https://nas-a.example"))
+        assertNull(restored.refreshToken("https://nas-b.example"))
+        assertNull(restored.accessToken("https://nas-a.example"))
+        restored.clear()
+    }
+
+    @Test fun legacyRefreshIsBoundOnceToPersistedServerDuringUpgrade() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val store = SecureTokenStore(context).also { it.clear(); it.setTokens("access-qa", "refresh-qa") }
+        assertNull(store.refreshToken("https://nas-a.example"))
+        store.bindLegacyServerIfMissing("https://nas-a.example")
+        assertEquals("refresh-qa", store.refreshToken("https://nas-a.example"))
+        store.bindLegacyServerIfMissing("https://nas-b.example")
+        assertNull(store.refreshToken("https://nas-b.example"))
+        store.clear()
+    }
 }

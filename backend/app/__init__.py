@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from flask import Flask, g, jsonify, render_template, request, session
 from flask_login import current_user
 from flask_wtf.csrf import CSRFError
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.cli import register_commands
 from app.config import Config
@@ -18,6 +19,22 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     if test_config:
         app.config.update(test_config)
+
+    proxy_counts = {
+        name: app.config.get(name, 0)
+        for name in ("PROXY_FIX_X_FOR", "PROXY_FIX_X_PROTO")
+    }
+    if any(type(value) is not int or value not in range(0, 3) for value in proxy_counts.values()):
+        raise RuntimeError("ProxyFix counts must be integers between 0 and 2")
+    if any(proxy_counts.values()):
+        app.wsgi_app = ProxyFix(
+            app.wsgi_app,
+            x_for=proxy_counts["PROXY_FIX_X_FOR"],
+            x_proto=proxy_counts["PROXY_FIX_X_PROTO"],
+            x_host=0,
+            x_port=0,
+            x_prefix=0,
+        )
 
     engine_options = dict(app.config.get("SQLALCHEMY_ENGINE_OPTIONS") or {})
     database_uri = str(app.config.get("SQLALCHEMY_DATABASE_URI") or "")

@@ -10,23 +10,23 @@
 
 ## Red
 
-Release acepta solo HTTPS con validación TLS/hostname normal de OkHttp. No hay trust-all, pinning inseguro ni hostname verifier personalizado. Debug puede habilitar cleartext únicamente tras confirmación explícita y validación en aplicación de loopback, emulador, IPv4 RFC1918 o `.local`; el riesgo de LAN sin TLS se muestra y queda fuera de release.
+Release acepta solo HTTPS con validación TLS/hostname normal de OkHttp. No hay trust-all, pinning inseguro ni hostname verifier personalizado. Debug puede habilitar cleartext únicamente tras confirmación explícita y validación en aplicación de loopback, emulador, IPv4 RFC1918 o `.local`; el riesgo de LAN sin TLS se muestra y queda fuera de release. La URL conserva puerto y base path válidos, rechaza credenciales/query/fragmento y se normaliza sin slash final.
 
 Solo se aceptan esquemas `https`/`http`; se rechazan userinfo, query, fragment, rutas base, `javascript:`, `file:` y `content:`. No hay body logging.
 
 ## Plataforma
 
 - `allowBackup=false` y reglas de extracción excluyen todos los datos.
-- La Activity principal solo exporta el launcher. Alpha 1.5 añade la Activity/alias exportadas exigidas por Health Connect para rationale y uso de permisos, protegidas por las acciones/permisos oficiales; no hay receivers, services, providers ni deep links propios exportados.
+- Los componentes propios exportados son el launcher y la Activity/alias exigidas por Health Connect para rationale y uso de permisos. El manifest combinado añade componentes de AndroidX Health/WorkManager protegidos por sus acciones o permisos oficiales; no hay deep links ni receivers/services/providers de negocio propios. No se declara FileProvider porque el diagnóstico se comparte como texto y no se exponen archivos.
 - Sin permisos de ubicación, Bluetooth, archivos ni publicidad. Alpha 1.5 declara exclusivamente permisos de lectura Health Connect para peso, grasa corporal, masa magra, masa de agua, pasos y nutrición, más lectura en background; solo solicita en runtime los tipos compatibles y seleccionados, y el permiso de background se pide por separado cuando la feature está disponible.
 - Sin WebView, SDK de fabricante, analytics o crash reporter externo.
 - R8 activo en release; ningún secreto o URL privada entra en `BuildConfig`.
 
 ## Datos locales
 
-Room permanece en almacenamiento privado de la app y usa `accountScope = SHA256(server URL + user UUID)` en toda consulta. Se guardan únicamente datos de entrenamiento necesarios, no respuestas clínicas completas. Logout, revocación y borrado local eliminan cache, drafts, cursores y pendientes de esa cuenta; no afectan otras cuentas.
+Room permanece en almacenamiento privado de la app y usa `accountScope = SHA256(server URL + user UUID)` en toda consulta. El refresh cifrado queda además ligado a la URL normalizada: un token de un NAS no se devuelve al cliente para otro. **Cambiar servidor** exige confirmación, invalida tokens y scope activos, cancela workers y conserva las filas antiguas bajo su scope aislado. Logout, revocación y borrado local sí eliminan cache, drafts, cursores y pendientes de esa cuenta.
 
-El diagnóstico exportable previsto es una allowlist de versión, timestamps, estado de red, cantidad de pendientes y códigos. No incluye IDs completos, hashes, headers, tokens, notas ni payloads.
+El diagnóstico Health Connect exportable usa allowlist: versión de app/Android, estado del proveedor, tipos seleccionados, conteos, timestamps y códigos sanitizados. No incluye valores de peso/grasa/pasos/nutrición, IDs/origins completos, changes tokens, headers, access/refresh tokens, notas ni payloads.
 
 Cerrar todas las sesiones, revocar el dispositivo y borrar datos locales muestran alcance explícito y requieren una confirmación adicional. Los botones quedan protegidos contra doble envío. Cerrar sesión afecta esta cuenta local; cerrar todas revoca sesiones API; revocar bloquea el dispositivo; borrar local no modifica el servidor.
 

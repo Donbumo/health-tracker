@@ -83,6 +83,8 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = _as_bool(os.getenv("SESSION_COOKIE_SECURE"))
+    PROXY_FIX_X_FOR = int(os.getenv("PROXY_FIX_X_FOR", "0"))
+    PROXY_FIX_X_PROTO = int(os.getenv("PROXY_FIX_X_PROTO", "0"))
     PERMANENT_SESSION_LIFETIME = timedelta(hours=12)
     SESSION_REFRESH_EACH_REQUEST = True
     # Flask-WTF passes this value directly to itsdangerous, which expects

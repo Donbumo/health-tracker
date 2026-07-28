@@ -1201,9 +1201,10 @@ class CompanionRepository(
 
     suspend fun restoreLocalSession(): UserProfile? {
         val local = preferences.values.first()
+        tokens.bindLegacyServerIfMissing(local.serverUrl)
         val scope = local.accountScope ?: return null
         if (!local.offlineSessionEligible || local.serverUrl == null || local.deviceId.isBlank()) return null
-        if (tokens.refreshToken() == null) return null
+        if (tokens.refreshToken(local.serverUrl) == null) return null
         val account = dao.account(scope) ?: return null
         if (account.scope != scope || account.serverUrl != local.serverUrl || account.deviceId != local.deviceId) return null
         return UserProfile(
@@ -1758,6 +1759,15 @@ class CompanionRepository(
     }
 
     suspend fun clearConfirmedInvalidSession(scope: String) = clearLocal(scope)
+
+    suspend fun detachForServerSwitch(scope: String) {
+        SyncScheduler.cancelAll()
+        tokens.clear()
+        preferences.setOfflineSessionEligible(false)
+        preferences.setAccountScope(null)
+        // Room rows are intentionally retained under their existing accountScope.
+        // A later login derives a different scope from server identity + user UUID.
+    }
 
     suspend fun discardCorruptDraft(scope: String, deliveryId: String) {
         val draft = dao.draft(scope, deliveryId) ?: return

@@ -59,7 +59,7 @@ class ApiClient(
             baseOverride = baseUrl,
             requiresAuth = false,
         )
-        tokens.setTokens(result.accessToken, result.refreshToken)
+        tokens.setTokens(result.accessToken, result.refreshToken, baseUrl)
         return result
     }
 
@@ -67,9 +67,9 @@ class ApiClient(
     suspend fun bootstrap(): BootstrapResponse = call("/api/v1/sync/bootstrap", "GET")
 
     suspend fun restoreSession() {
-        if (tokens.accessToken() == null && tokens.refreshToken() != null) {
-            val base = preferences.values.first().serverUrl
-                ?: throw AppFailure(AppErrorCode.REFRESH_FAILED, "Falta la configuración del servidor.", false)
+        val base = preferences.values.first().serverUrl
+            ?: throw AppFailure(AppErrorCode.REFRESH_FAILED, "Falta la configuración del servidor.", false)
+        if (tokens.accessToken(base) == null && tokens.refreshToken(base) != null) {
             refreshSingleFlight(base, null)
         }
     }
@@ -323,7 +323,8 @@ class ApiClient(
     ): String = withContext(Dispatchers.IO) {
         val base = baseOverride ?: preferences.values.first().serverUrl
             ?: throw AppFailure(AppErrorCode.SERVER_INCOMPATIBLE, "Configura un servidor antes de continuar.", false)
-        val failedAccess = tokens.accessToken()
+        if (requiresAuth) tokens.bindLegacyServerIfMissing(base)
+        val failedAccess = tokens.accessToken(base)
         val response = execute(base, path, method, body, requiresAuth, idempotencyKey)
         if (response.code == 401 && requiresAuth && allowRefresh) {
             val rawError = response.body.string()
@@ -351,7 +352,7 @@ class ApiClient(
             .url(base.trimEnd('/') + path)
             .header("Accept", "application/json")
         if (requiresAuth) {
-            val token = tokens.accessToken()
+            val token = tokens.accessToken(base)
                 ?: throw AppFailure(AppErrorCode.UNAUTHORIZED, "Inicia sesión para continuar.", false)
             builder.header("Authorization", "Bearer $token")
         }
@@ -386,8 +387,8 @@ class ApiClient(
         java.net.URLEncoder.encode(value, Charsets.UTF_8.name())
 
     private suspend fun refreshSingleFlight(base: String, failedAccess: String?) = refreshMutex.withLock {
-        if (tokens.accessToken() != null && tokens.accessToken() != failedAccess) return@withLock
-        val refresh = tokens.refreshToken() ?: run {
+        if (tokens.accessToken(base) != null && tokens.accessToken(base) != failedAccess) return@withLock
+        val refresh = tokens.refreshToken(base) ?: run {
             tokens.clear()
             throw AppFailure(AppErrorCode.REFRESH_FAILED, "La sesión venció. Inicia sesión nuevamente.", false)
         }
@@ -396,7 +397,7 @@ class ApiClient(
                 "/api/v1/auth/refresh", "POST", json.encodeToString(RefreshRequest(refresh)),
                 baseOverride = base, requiresAuth = false,
             )
-            tokens.setTokens(response.accessToken, response.refreshToken)
+            tokens.setTokens(response.accessToken, response.refreshToken, base)
         } catch (error: AppFailure) {
             if (refreshFailureDisposition(error) == RefreshFailureDisposition.PRESERVE_LOCAL_SESSION) {
                 throw error

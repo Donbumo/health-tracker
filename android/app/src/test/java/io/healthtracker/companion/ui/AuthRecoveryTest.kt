@@ -13,6 +13,7 @@ class AuthRecoveryTest {
         listOf(
             AppErrorCode.NETWORK_UNAVAILABLE,
             AppErrorCode.TIMEOUT,
+            AppErrorCode.TLS_ERROR,
             AppErrorCode.SERVER_ERROR,
             AppErrorCode.RATE_LIMITED,
         ).forEach { code ->

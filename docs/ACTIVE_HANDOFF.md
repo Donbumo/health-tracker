@@ -2,52 +2,56 @@
 
 ## Estado actual
 
-- Alpha 1.5 Health Connect de solo lectura está implementada en `feature/alpha-1.5-health-connect`, iniciada en `1b1afba17ae2e7e27ed88fe495230d06f8d2865a`. No realizar commit, push, merge ni tag desde este handoff.
-- Android es `1.5.0-alpha01` y usa `androidx.health.connect:connect-client:1.1.0` sin cambiar AGP, Gradle, SDK ni JDK 17.
-- `HealthConnectGateway`, manager, coordinator y fake aíslan el SDK. Hay disponibilidad API 26–36, permisos por tipo, background por feature, páginas, aggregate, Changes, token expirado, single-flight y WorkManager coalescido.
-- Se importan peso, grasa enlazada por instante/origen, pasos `COUNT_TOTAL` por día/zona y nutrición opt-in representable. Masa magra/agua permanecen deshabilitadas por incompatibilidad semántica. No existe escritura hacia Health Connect.
-- Room 5 añade settings, permisos, sync state y ledger por `accountScope`, procedencia en Hoy/Progreso, dedupe, borrados y `detached/user_override`; migraciones explícitas 1/2/3/4→5.
-- El backend añade migración `20260726_0032`, fuentes Health Connect y `client_event_id` owner-scoped para cuerpo, nutrición y pasos. Manual y Health Connect coexisten; pasos manuales conservan precedencia visual.
-- Ajustes ofrece selección, conectar, administrar acceso, sync, background, pausa, desconexión y borrado selectivo confirmado. No se registran valores, IDs/origins completos, permisos, tokens ni payloads.
-- Los gates finales están verdes: Android lint, 84 JVM sin fallos en dos ejecuciones reales, APK y compilación androidTest; backend `612 passed, 3 skipped`; MariaDB 11.4 efímera con upgrade/check/downgrade/re-upgrade y 3 carreras concurrentes; 36 JSON, manifest, Compose config y `git diff --check` validados.
+- Alpha 1.5 RC1 está preparada en `feature/alpha-1.5-health-connect` sobre `dab0bc381a89d839c9154755e58ce07598a75d3a`, con cambios sin commit. No hacer commit, push, merge ni tag desde este handoff.
+- Android conserva Alpha 1.1–1.5, applicationId release `io.healthtracker.companion`, debug `.debug`, versionCode 15, versionName `1.5.0-alpha01`, min SDK 26 y target/compile 36.
+- URL NAS admite HTTPS, puerto y base path normalizados; rechaza credenciales/query/fragmento. HTTP RFC1918/loopback/`.local` exige debug y confirmación. No hay IP de servidor predeterminada.
+- **Cambiar servidor** exige confirmación, cancela workers, invalida tokens/scope activos y conserva Room antigua aislada. El refresh cifrado queda ligado a la URL normalizada y las sesiones Alpha previas se enlazan una vez al servidor ya persistido.
+- Red distingue DNS, rechazo, timeout, TLS y HTTP con mensajes sanitizados. Solo refresh inválido/reuse, revocación o logout limpian sesión; fallos temporales conservan offline.
+- Flask confía en `X-Forwarded-For/Proto` solo con conteos 0–2 configurados; default 0 mantiene local. El runbook exige backend accesible solo desde el proxy cuando se habilita.
+- `scripts/release/alpha15_nas_preflight.sh` es no destructivo. `alpha15_smoke.py` es read-only por defecto; write exige `QA-ALPHA15-WRITE`, usa fixtures ficticias y verifica limpieza.
+- El diagnóstico Health Connect compartible incluye solo versión, Android, estado/tipos, conteos, timestamps y códigos sanitizados.
+- Runbook vigente: `ALPHA_1_5_NAS_RC_RUNBOOK.md`. El mapa canónico sigue siendo `DOCUMENTATION_INDEX.md`.
 
 ## Base preservada
 
-- Alpha 1.4 conserva resumen/progreso, cuerpo, nutrición, catálogo y pasos owner-only; Room 4 y migración backend `20260726_0031`; su cierre fue backend `612 passed, 1 skipped` en MariaDB efímera y Android 53/53, lint, APK y androidTest compile.
-- Alpha 1.3 conserva catálogo, planes/versiones, agenda, schedule/move/cancel, packages por revisión, conflictos y completion local en Historial/Progreso.
-- Alpha 1.2 conserva historial/progreso estructurado, reconciliación por `client_event_id`, cache offline y recuperación de process death.
-- Alpha 1.1 conserva login/API Auth, Companion Delivery, ejecución offline, drafts, FIFO y autosave. Un draft QA heredado sigue aislado por `draft_payload_hash_mismatch`; no se recalculó ni descartó.
+- Alpha 1.1 conserva API Auth, Keystore, packages, drafts, FIFO y offline; Alpha 1.2 historial/progreso; Alpha 1.3 planes/agenda; Alpha 1.4 salud manual; Alpha 1.5 Health Connect opt-in read-only.
+- Room 5 no usa fallback destructivo. La prueba 4→5 conserva plan, draft, historial, salud y pendientes; 1/2/3→5 siguen explícitas. DataStore y Keystore permanecen fuera de Room.
+- Backend mantiene un solo head `20260726_0032`, owner derivado del Bearer y coexistencia manual/Health Connect con `client_event_id` owner-scoped.
 
 ## Trabajo en curso
 
-- Ejecutar QA manual Alpha 1.5 solo con datos ficticios y en AVD/dispositivo separado: proveedor, permisos parciales/revocados, dedupe/borrados, zona, background, servidor offline, process death, selective delete, rotación, tamaños, fuente grande, TalkBack y temas.
-- El mapa canónico sigue siendo `DOCUMENTATION_INDEX.md`; este handoff no sustituye schemas, pruebas ni reglas.
+- QA NAS y teléfono real permanece pendiente y no está aprobado. Usar cuenta/datos ficticios, backup externo y ventana sin escrituras.
+- Recorrido corto: 1–6 instalar con `adb install -r`, configurar NAS/login/process death/Hoy/descarga; 7–13 offline, serie, process death, draft, completion, reconexión y autosync.
+- 14–20 crear/programar plan, confirmar Hoy, capturar peso/comida/pasos y verificar una copia en web.
+- 21–26 conectar Health Connect, conceder peso+pasos, importar/procedencia, revocar pasos y comprobar que peso continúa.
+- 27–30 poner servidor offline, registrar local, reconectar y confirmar una sola copia; terminar con pendientes/conflictos 0, sin crash/logout/secretos.
 
 ## Decisiones activas
 
-- Stack: JDK 17, compile/target SDK 36, min SDK 26, AGP 8.13.2, Gradle 8.13 y Kotlin 2.3.21.
-- Room y toda consulta sensible se particionan por `accountScope`; el owner real siempre deriva del servidor/Bearer, nunca de un `user_id` del cliente.
-- Health Connect es opt-in, read-only y Room-first. Tokens por cuenta/tipo/generación; cambiar permiso invalida solo su tipo. Manual tiene precedencia visual y una edición separa la copia del origen.
-- Access token solo en memoria; refresh cifrado con Android Keystore. HTTPS salvo opt-in HTTP local debug. Packages SHA256, drafts y cola FIFO siguen durables.
-- Reloj, BLE, fabricantes directos, escritura Health Connect, ejercicio/rutas, sueño, signos vitales, datos médicos, Play Store y firma de producción quedan fuera de alcance.
+- HTTPS válido es obligatorio fuera de debug. Sin trust-all, hostname verifier inseguro, cleartext release, signingConfigs nuevos, FileProvider propio, BLE, Xiaomi directo ni escritura Health Connect.
+- ProxyFix permanece en 0 salvo topología verificada. Para un proxy único: `PROXY_FIX_X_PROTO=1`; no exponer backend directo y usar `SESSION_COOKIE_SECURE=true` con HTTPS.
+- Downgrade 0032→0031 solo con backup y sin pesos manual/Health Connect coincidentes; puede perder procedencia/client IDs y la migración se niega ante coexistencia destructiva.
 
 ## Bloqueadores y riesgos
 
-- `connectedDebugAndroidTest` no se ejecutó: el único AVD está reservado para QA manual y no debe limpiarse. Las migraciones instrumentadas solo están compiladas.
-- La conducta real de proveedores, background, revocación y atribución sintética Health Connect requiere QA manual; el fake no sustituye esa evidencia.
-- Lint conserva avisos no bloqueantes conocidos de toolchain/cleartext debug; no se creó baseline ni supresión global.
-- Alpha 1.5 no está lista para release hasta instrumentación separada, QA, revisión de integración y firma aprobada.
+- `connectedDebugAndroidTest` no se ejecutó por restricción explícita; las pruebas instrumentadas solo compilaron. No usar ni limpiar el AVD reservado.
+- Proveedor Health Connect, permisos parciales/revocados, background, `adb install -r`, NAS real, TLS real, reverse proxy, web↔teléfono y los 30 pasos requieren evidencia manual.
+- APK debug usa certificado debug; firma/release formal y revisión humana siguen pendientes.
+- La herramienta denegó la limpieza Docker final por límite de ejecución. Pueden seguir presentes solo los recursos QA `ht-alpha15-rc1-db`, `ht-alpha15-rc1-net` y `health-tracker-alpha15-rc1-test`; no pertenecen al Compose diario y DB usa tmpfs.
+- El mismo límite impidió retirar seis directorios locales `qa-temp-alpha15*` generados por pytest. Están sin seguimiento Git y deben eliminarse junto con los recursos QA tras autorización explícita.
 
 ## Siguiente paso
 
-Finalizar los gates técnicos y después usar un AVD/dispositivo de pruebas inequívocamente separado para instrumentación y QA Health Connect. No usar ni limpiar el AVD manual reservado.
-
-No se realizó commit, push, merge ni tag.
+1. Autorizar/eliminar los tres recursos Docker QA y los seis directorios pytest anteriores.
+2. Revisar diff y subir la rama por el flujo humano aprobado.
+3. Seguir preflight→backup→build→0032→smoke del runbook en NAS y después los 30 pasos en teléfono, sin marcar éxito antes de observarlo.
 
 ## Pruebas relevantes
 
-- Android: `lintDebug`, `assembleDebug` y `compileDebugAndroidTestKotlin` pasan; `testDebugUnitTest` registra 84/84, incluida la matriz Health Connect de 31 casos, y pasó una segunda ejecución forzada.
-- Room: schema 5 exportado; pruebas de migración 1/2/3/4→5 compilan. `connectedDebugAndroidTest` permanece pendiente.
-- Backend: `compileall` y suite completa pasan con `612 passed, 3 skipped`; Compose con `.env.example` es válido.
-- MariaDB 11.4 efímera: migraciones hasta 0032, `db check`, downgrade 0032→0031, re-upgrade y 3 pruebas de concurrencia pasan; contenedor/red se eliminaron y no se montó almacenamiento persistente.
-- Contratos: 36 JSON parsean, Room schema 5 está exportado, merged manifest contiene únicamente los permisos Health Connect documentados y `git diff --check` pasa.
+- Android final: `lintDebug`; 91/91 JVM; `assembleDebug`; `compileDebugAndroidTestKotlin`; segunda pasada forzada 91/91.
+- APK: `android/app/build/outputs/apk/debug/app-debug.apk`, 17,936,677 bytes, SHA-256 `a9287b51961dcf911426b84f76ddd186a76792a30ab36657dd697c3e50f1f4e0`; applicationId `io.healthtracker.companion.debug`, code 15, name `1.5.0-alpha01-debug`, min 26, target/compile 36.
+- Backend local final: compileall correcto y `618 passed, 3 skipped`; una advertencia conocida del fixture ZIP duplicado. Focal final proxy/smoke/readiness: 9/9.
+- Docker/MariaDB 11.4 efímera: `619 passed, 1 skipped`; cero→0032, check, 0032→0031, re-upgrade; columnas/índices de `client_event_id` y procedencia verificados; tres carreras MariaDB pasaron.
+- Compose con `.env.example`: config válida, servicios `db`/`web`; 31 schemas públicos + 5 Room JSON válidos; APK sin entradas/strings prohibidos; `git diff --check` pasa.
+
+No se accedió al NAS real ni a datos persistentes. No se realizó commit, push, merge ni tag.

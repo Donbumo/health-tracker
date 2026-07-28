@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ ./
 COPY schemas/ /app/schemas/
 COPY examples/ /examples/
+COPY scripts/release/ /app/scripts/release/
 RUN chmod +x /app/docker-entrypoint.sh \
     && addgroup --system app \
     && adduser --system --ingroup app app \

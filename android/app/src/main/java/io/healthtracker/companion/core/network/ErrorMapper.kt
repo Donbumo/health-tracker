@@ -5,6 +5,9 @@ import io.healthtracker.companion.core.model.AppErrorCode
 import io.healthtracker.companion.core.model.AppFailure
 import java.io.IOException
 import java.net.SocketTimeoutException
+import java.net.ConnectException
+import java.net.UnknownHostException
+import javax.net.ssl.SSLException
 
 object ErrorMapper {
     fun http(status: Int, error: ApiErrorBody?, retryAfter: Long?): AppFailure {
@@ -47,6 +50,9 @@ object ErrorMapper {
 
     fun network(error: IOException): AppFailure = when (error) {
         is SocketTimeoutException -> AppFailure(AppErrorCode.TIMEOUT, "El servidor tardó demasiado en responder.", true)
+        is UnknownHostException -> AppFailure(AppErrorCode.NETWORK_UNAVAILABLE, "No se encontró el servidor configurado. Revisa la red y la URL.", true)
+        is ConnectException -> AppFailure(AppErrorCode.NETWORK_UNAVAILABLE, "El servidor rechazó o no aceptó la conexión. Tus cambios siguen guardados.", true)
+        is SSLException -> AppFailure(AppErrorCode.TLS_ERROR, "No se pudo validar la conexión segura con el servidor.", false)
         else -> AppFailure(AppErrorCode.NETWORK_UNAVAILABLE, "No hay conexión con el servidor. Tus cambios siguen guardados.", true)
     }
 }

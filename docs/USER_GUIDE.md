@@ -38,7 +38,7 @@ Al programar para la fecha operativa de la cuenta, la tarjeta aparece inmediatam
 
 Hoy separa **Sin conexión**, **Guardado en este dispositivo**, **Sincronización pendiente**, **Sincronizando**, **Sincronizado** y **Requiere atención**. Al volver la red, la app renueva la sesión y procesa START, progreso y completion en orden. El botón **Sincronizar ahora** es solo un respaldo: login, descarga, cambios relevantes, foreground, reconexión y WorkManager ya disparan sync automática. No descartes un borrador corrupto hasta revisar su motivo; un fallo de red por sí solo nunca lo vuelve corrupto.
 
-En Ajustes, **Cerrar sesión en este teléfono** elimina esa cuenta local, **Cerrar todas las sesiones API** revoca todas las sesiones, **Revocar este dispositivo** bloquea sus sesiones y **Borrar solo datos locales** no cambia el servidor. Las tres acciones de mayor alcance exigen confirmación adicional.
+En Ajustes, **Cambiar servidor** exige confirmación, invalida los tokens activos y conserva la copia Room anterior aislada; después confirma la nueva URL e inicia sesión. **Cerrar sesión en este teléfono** elimina esa cuenta local, **Cerrar todas las sesiones API** revoca todas las sesiones, **Revocar este dispositivo** bloquea sus sesiones y **Borrar solo datos locales** no cambia el servidor. Las acciones de mayor alcance exigen confirmación adicional. **Compartir diagnóstico sanitizado** entrega solo metadatos y conteos de Health Connect, nunca mediciones ni tokens.
 
 Consulta [Instalación Android](ANDROID_INSTALLATION.md) y [Android Companion](ANDROID_COMPANION.md). No hay conexión con reloj o Bluetooth, ni escritura hacia Health Connect.
 

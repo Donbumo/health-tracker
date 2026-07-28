@@ -16,6 +16,7 @@ internal fun classifyRestoreFailure(error: Throwable): AuthRecoveryDecision {
     return when (failure.code) {
         AppErrorCode.NETWORK_UNAVAILABLE,
         AppErrorCode.TIMEOUT,
+        AppErrorCode.TLS_ERROR,
         AppErrorCode.SERVER_ERROR,
         AppErrorCode.RATE_LIMITED -> AuthRecoveryDecision(
             AuthState.AUTHENTICATED,

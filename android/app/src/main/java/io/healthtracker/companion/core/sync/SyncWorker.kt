@@ -24,12 +24,13 @@ class SyncWorker(context: Context, parameters: WorkerParameters) : CoroutineWork
     override suspend fun doWork(): Result {
         val app = applicationContext as HealthTrackerApplication
         val local = app.container.preferences.values.first()
+        app.container.tokens.bindLegacyServerIfMissing(local.serverUrl)
         val scope = local.accountScope ?: return Result.success()
         if (!local.offlineSessionEligible) return Result.success()
         return try {
             var observedGeneration = SyncScheduler.generation()
             repeat(3) {
-                if (app.container.tokens.accessToken() == null) {
+                if (app.container.tokens.accessToken(local.serverUrl) == null) {
                     app.container.repository.restoreOnlineSession(scope)
                 }
                 app.container.repository.synchronize(scope)

@@ -30,6 +30,7 @@ class ErrorMapperTest {
             AppErrorCode.TLS_ERROR,
             AppErrorCode.SERVER_ERROR,
             AppErrorCode.RATE_LIMITED,
+            AppErrorCode.UNAUTHORIZED,
         ).forEach { code ->
             assertEquals(
                 RefreshFailureDisposition.PRESERVE_LOCAL_SESSION,
@@ -60,7 +61,7 @@ class ErrorMapperTest {
     }
 
     @Test fun definitiveRefreshFailureOrRevocationClearsSession() {
-        listOf(AppErrorCode.REFRESH_FAILED, AppErrorCode.UNAUTHORIZED, AppErrorCode.DEVICE_REVOKED).forEach { code ->
+        listOf(AppErrorCode.REFRESH_FAILED, AppErrorCode.DEVICE_REVOKED).forEach { code ->
             assertEquals(
                 RefreshFailureDisposition.CLEAR_LOCAL_SESSION,
                 refreshFailureDisposition(AppFailure(code, "QA definitiva", false)),

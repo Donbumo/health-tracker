@@ -40,11 +40,14 @@ class ApiClient(
         coerceInputValues = false
         encodeDefaults = true
     }
-    private val http = client ?: OkHttpClient.Builder()
+    private val http = (client ?: OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .retryOnConnectionFailure(false)
+        .build()).newBuilder()
+        .followRedirects(false)
+        .followSslRedirects(false)
         .build()
     private val refreshMutex = Mutex()
 
@@ -52,6 +55,7 @@ class ApiClient(
         call("/api/v1/health", "GET", baseOverride = baseUrl, requiresAuth = false)
 
     suspend fun login(baseUrl: String, request: LoginRequest): TokenResponse {
+        val expectedVersion = tokens.mutationVersion()
         val result: TokenResponse = call(
             "/api/v1/auth/login",
             "POST",
@@ -59,7 +63,9 @@ class ApiClient(
             baseOverride = baseUrl,
             requiresAuth = false,
         )
-        tokens.setTokens(result.accessToken, result.refreshToken, baseUrl)
+        if (!tokens.replaceTokensIfVersion(expectedVersion, result.accessToken, result.refreshToken, baseUrl)) {
+            throw AppFailure(AppErrorCode.UNAUTHORIZED, "La sesión cambió durante el inicio de sesión.", false)
+        }
         return result
     }
 
@@ -325,13 +331,15 @@ class ApiClient(
             ?: throw AppFailure(AppErrorCode.SERVER_INCOMPATIBLE, "Configura un servidor antes de continuar.", false)
         if (requiresAuth) tokens.bindLegacyServerIfMissing(base)
         val failedAccess = tokens.accessToken(base)
+        val requestVersion = tokens.mutationVersion()
         val response = execute(base, path, method, body, requiresAuth, idempotencyKey)
         if (response.code == 401 && requiresAuth && allowRefresh) {
-            val rawError = response.body.string()
+            val rawError = response.use { readResponseBody(it) }
             val parsed = runCatching { json.decodeFromString<ErrorEnvelope>(rawError).error }.getOrNull()
-            response.close()
             if (parsed?.code == "session_revoked") {
-                tokens.clear()
+                if (!tokens.clearIfVersion(requestVersion)) {
+                    throw AppFailure(AppErrorCode.UNAUTHORIZED, "La sesión cambió durante la solicitud.", false)
+                }
                 throw ErrorMapper.http(401, parsed, null)
             }
             refreshSingleFlight(base, failedAccess)
@@ -367,7 +375,7 @@ class ApiClient(
     }
 
     private fun checkedResponse(response: Response): String {
-        val raw = response.body.string()
+        val raw = readResponseBody(response)
         if (response.isSuccessful) return raw
         val parsed = runCatching { json.decodeFromString<ErrorEnvelope>(raw).error }.getOrNull()
         val retryAfter = parseRetryAfter(response.header("Retry-After"))
@@ -376,11 +384,28 @@ class ApiClient(
 
     private fun parseRetryAfter(value: String?): Long? {
         value ?: return null
-        value.toLongOrNull()?.let { return it.coerceAtLeast(0) }
+        value.toLongOrNull()?.let { return it.coerceIn(0, MAX_RETRY_AFTER_SECONDS) }
         return runCatching {
             Duration.between(ZonedDateTime.now(), ZonedDateTime.parse(value, DateTimeFormatter.RFC_1123_DATE_TIME))
-                .seconds.coerceAtLeast(0)
+                .seconds.coerceIn(0, MAX_RETRY_AFTER_SECONDS)
         }.getOrNull()
+    }
+
+    private fun readResponseBody(response: Response): String = try {
+        val body = response.body
+        if (body.contentLength() > MAX_RESPONSE_BYTES) {
+            throw AppFailure(AppErrorCode.SCHEMA_INCOMPATIBLE, "La respuesta del servidor excede el límite permitido.", false)
+        }
+        val source = body.source()
+        source.request(MAX_RESPONSE_BYTES + 1)
+        if (source.buffer.size > MAX_RESPONSE_BYTES) {
+            throw AppFailure(AppErrorCode.SCHEMA_INCOMPATIBLE, "La respuesta del servidor excede el límite permitido.", false)
+        }
+        source.readUtf8()
+    } catch (failure: AppFailure) {
+        throw failure
+    } catch (error: IOException) {
+        throw ErrorMapper.network(error)
     }
 
     private fun encodeQuery(value: String): String =
@@ -388,8 +413,9 @@ class ApiClient(
 
     private suspend fun refreshSingleFlight(base: String, failedAccess: String?) = refreshMutex.withLock {
         if (tokens.accessToken(base) != null && tokens.accessToken(base) != failedAccess) return@withLock
+        val expectedVersion = tokens.mutationVersion()
         val refresh = tokens.refreshToken(base) ?: run {
-            tokens.clear()
+            tokens.clearIfVersion(expectedVersion)
             throw AppFailure(AppErrorCode.REFRESH_FAILED, "La sesión venció. Inicia sesión nuevamente.", false)
         }
         try {
@@ -397,12 +423,15 @@ class ApiClient(
                 "/api/v1/auth/refresh", "POST", json.encodeToString(RefreshRequest(refresh)),
                 baseOverride = base, requiresAuth = false,
             )
-            tokens.setTokens(response.accessToken, response.refreshToken, base)
+            if (!tokens.replaceTokensIfVersion(expectedVersion, response.accessToken, response.refreshToken, base)) {
+                throw AppFailure(AppErrorCode.UNAUTHORIZED, "La sesión cambió durante la renovación.", false)
+            }
         } catch (error: AppFailure) {
+            if (tokens.mutationVersion() != expectedVersion) throw error
             if (refreshFailureDisposition(error) == RefreshFailureDisposition.PRESERVE_LOCAL_SESSION) {
                 throw error
             }
-            tokens.clear()
+            tokens.clearIfVersion(expectedVersion)
             if (error.code == AppErrorCode.DEVICE_REVOKED) throw error
             throw AppFailure(AppErrorCode.REFRESH_FAILED, "No fue posible renovar la sesión. Inicia sesión nuevamente.", false)
         }
@@ -412,5 +441,7 @@ class ApiClient(
         val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()
         val UUID_PATH_COMPONENT = Regex("/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}")
         val SERIALIZATION_PATH = Regex("(?:at path:?\\s*)(\\$[A-Za-z0-9_.$\\[\\]-]+)")
+        const val MAX_RESPONSE_BYTES = 4L * 1024L * 1024L
+        const val MAX_RETRY_AFTER_SECONDS = 6L * 60L * 60L
     }
 }

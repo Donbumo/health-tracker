@@ -52,6 +52,14 @@ class HealthConnectSyncCoordinatorTest {
         assertEquals("permission_revoked", fixture.store.errors[HealthConnectRecordType.WEIGHT])
     }
 
+    @Test fun retryableGatewayFailurePropagatesForWorkerBackoff() = runTest {
+        val fixture = fixture(HealthConnectRecordType.WEIGHT)
+        fixture.gateway.readFailure = HealthConnectGatewayException("provider_busy", true)
+        val failure = runCatching { fixture.coordinator.sync(SCOPE, true) }.exceptionOrNull()
+        assertTrue(failure is HealthConnectGatewayException)
+        assertEquals("provider_busy", fixture.store.errors[HealthConnectRecordType.WEIGHT])
+    }
+
     @Test fun firstWeightImportPersistsLocally() = runTest {
         val fixture = fixture(HealthConnectRecordType.WEIGHT)
         fixture.gateway.pages[HealthConnectRecordType.WEIGHT] = listOf(weight("w1"))

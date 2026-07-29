@@ -42,6 +42,28 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    connection = op.get_bind()
+    unsafe = connection.execute(
+        sa.text("SELECT 1 FROM weigh_ins WHERE client_event_id IS NOT NULL LIMIT 1")
+    ).first()
+    unsafe = unsafe or connection.execute(
+        sa.text("SELECT 1 FROM daily_energy WHERE client_event_id IS NOT NULL LIMIT 1")
+    ).first()
+    unsafe = unsafe or connection.execute(
+        sa.text(
+            "SELECT 1 FROM nutrition_items "
+            "WHERE client_event_id IS NOT NULL OR source <> 'manual' LIMIT 1"
+        )
+    ).first()
+    unsafe = unsafe or connection.execute(
+        sa.text(
+            "SELECT 1 FROM weigh_ins GROUP BY user_id, recorded_at "
+            "HAVING COUNT(*) > 1 LIMIT 1"
+        )
+    ).first()
+    if unsafe is not None:
+        raise RuntimeError("Unsafe downgrade: Alpha 1.5 provenance is still present.")
+
     with op.batch_alter_table("nutrition_items") as batch_op:
         batch_op.drop_constraint("uq_nutrition_items_user_client_event", type_="unique")
         batch_op.drop_column("client_event_id")
@@ -51,17 +73,6 @@ def downgrade() -> None:
         batch_op.drop_constraint("uq_daily_energy_user_client_event", type_="unique")
         batch_op.drop_column("client_event_id")
 
-    connection = op.get_bind()
-    duplicate = connection.execute(
-        sa.text(
-            "SELECT user_id, recorded_at FROM weigh_ins "
-            "GROUP BY user_id, recorded_at HAVING COUNT(*) > 1"
-        )
-    ).first()
-    if duplicate is not None:
-        raise RuntimeError(
-            "Cannot downgrade while manual and Health Connect weights coexist at one instant."
-        )
     with op.batch_alter_table("weigh_ins") as batch_op:
         batch_op.drop_constraint("uq_weigh_ins_user_client_event", type_="unique")
         batch_op.drop_constraint("uq_weigh_ins_user_recorded_source", type_="unique")

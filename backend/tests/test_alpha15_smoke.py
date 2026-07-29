@@ -113,3 +113,12 @@ def test_write_requires_exact_confirmation_and_tls_is_default():
         assert "HTTPS" in str(error)
     else:
         raise AssertionError("HTTP sin opt-in debió rechazarse")
+
+
+def test_http_opt_in_remains_limited_to_local_qa_hosts():
+    try:
+        smoke.SmokeClient("http://203.0.113.10", "qa", allow_http=True)
+    except smoke.SmokeFailure as error:
+        assert "HTTP" in str(error)
+    else:
+        raise AssertionError("public HTTP with opt-in must be rejected")

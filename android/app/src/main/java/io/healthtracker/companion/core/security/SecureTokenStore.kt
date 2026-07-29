@@ -17,9 +17,13 @@ class SecureTokenStore(context: Context) {
     @Volatile
     private var accessToken: String? = null
 
+    @Volatile
+    private var mutationVersion: Long = 0
+
     fun accessToken(serverIdentity: String? = null): String? =
         accessToken.takeIf { identityMatches(serverIdentity) }
 
+    @Synchronized
     fun setTokens(access: String, refresh: String, serverIdentity: String? = null) {
         accessToken = access
         val cipher = Cipher.getInstance(TRANSFORMATION)
@@ -31,7 +35,22 @@ class SecureTokenStore(context: Context) {
             if (serverIdentity == null) remove(KEY_SERVER_IDENTITY)
             else putString(KEY_SERVER_IDENTITY, serverIdentity)
         }
+        mutationVersion++
     }
+
+    @Synchronized
+    fun replaceTokensIfVersion(
+        expectedVersion: Long,
+        access: String,
+        refresh: String,
+        serverIdentity: String,
+    ): Boolean {
+        if (mutationVersion != expectedVersion) return false
+        setTokens(access, refresh, serverIdentity)
+        return true
+    }
+
+    fun mutationVersion(): Long = mutationVersion
 
     fun refreshToken(serverIdentity: String? = null): String? {
         if (!identityMatches(serverIdentity)) return null
@@ -48,21 +67,32 @@ class SecureTokenStore(context: Context) {
         }.getOrNull()
     }
 
+    @Synchronized
     fun clear() {
         accessToken = null
         preferences.edit { clear() }
+        mutationVersion++
     }
 
+    @Synchronized
+    fun clearIfVersion(expectedVersion: Long): Boolean {
+        if (mutationVersion != expectedVersion) return false
+        clear()
+        return true
+    }
+
+    @Synchronized
     fun bindLegacyServerIfMissing(serverIdentity: String?) {
         if (serverIdentity == null || preferences.getString(KEY_SERVER_IDENTITY, null) != null) return
         if (preferences.contains(KEY_REFRESH_CIPHER)) {
             preferences.edit { putString(KEY_SERVER_IDENTITY, serverIdentity) }
+            mutationVersion++
         }
     }
 
     private fun identityMatches(expected: String?): Boolean {
-        if (expected == null) return true
         val stored = preferences.getString(KEY_SERVER_IDENTITY, null)
+        if (expected == null) return true
         return stored == expected
     }
 

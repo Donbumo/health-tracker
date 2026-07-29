@@ -596,6 +596,12 @@ def test_health_connect_migration_adds_provenance_and_restores_old_weight_constr
     )
     metadata.create_all(engine)
     with engine.begin() as connection:
+        connection.execute(sa.text(
+            "INSERT INTO weigh_ins (id,user_id,recorded_at,source) "
+            "VALUES (1,1,'2026-07-26 12:00:00','manual')"
+        ))
+        connection.execute(sa.text("INSERT INTO daily_energy (id,user_id) VALUES (1,1)"))
+        connection.execute(sa.text("INSERT INTO nutrition_items (id,user_id) VALUES (1,1)"))
         with Operations.context(MigrationContext.configure(connection)):
             migration.upgrade()
     inspector = sa.inspect(engine)
@@ -605,6 +611,37 @@ def test_health_connect_migration_adds_provenance_and_restores_old_weight_constr
         item["column_names"] == ["user_id", "recorded_at", "source"]
         for item in inspector.get_unique_constraints("weigh_ins")
     )
+    with engine.connect() as connection:
+        assert connection.execute(sa.text("SELECT source FROM nutrition_items WHERE id=1")).scalar_one() == "manual"
+        assert connection.execute(sa.text("SELECT client_event_id FROM weigh_ins WHERE id=1")).scalar_one_or_none() is None
+
+    with engine.begin() as connection:
+        connection.execute(sa.text(
+            "INSERT INTO weigh_ins (id,user_id,recorded_at,source,client_event_id) "
+            "VALUES (2,1,'2026-07-26 12:00:00','health_connect','11111111-1111-4111-8111-111111111111')"
+        ))
+        connection.execute(sa.text(
+            "UPDATE daily_energy SET client_event_id='22222222-2222-4222-8222-222222222222' WHERE id=1"
+        ))
+        connection.execute(sa.text(
+            "UPDATE nutrition_items SET source='health_connect', "
+            "client_event_id='33333333-3333-4333-8333-333333333333' WHERE id=1"
+        ))
+        with pytest.raises(RuntimeError, match="Unsafe downgrade"):
+            with Operations.context(MigrationContext.configure(connection)):
+                migration.downgrade()
+
+    inspector = sa.inspect(engine)
+    assert "client_event_id" in {item["name"] for item in inspector.get_columns("weigh_ins")}
+    assert "client_event_id" in {item["name"] for item in inspector.get_columns("daily_energy")}
+    assert {"source", "client_event_id"} <= {item["name"] for item in inspector.get_columns("nutrition_items")}
+
+    with engine.begin() as connection:
+        connection.execute(sa.text("DELETE FROM weigh_ins WHERE id=2"))
+        connection.execute(sa.text("UPDATE daily_energy SET client_event_id=NULL WHERE id=1"))
+        connection.execute(sa.text(
+            "UPDATE nutrition_items SET source='manual', client_event_id=NULL WHERE id=1"
+        ))
     with engine.begin() as connection:
         with Operations.context(MigrationContext.configure(connection)):
             migration.downgrade()
@@ -614,4 +651,8 @@ def test_health_connect_migration_adds_provenance_and_restores_old_weight_constr
         item["column_names"] == ["user_id", "recorded_at"]
         for item in inspector.get_unique_constraints("weigh_ins")
     )
+    with engine.connect() as connection:
+        assert connection.execute(sa.text("SELECT COUNT(*) FROM weigh_ins")).scalar_one() == 1
+        assert connection.execute(sa.text("SELECT COUNT(*) FROM daily_energy")).scalar_one() == 1
+        assert connection.execute(sa.text("SELECT COUNT(*) FROM nutrition_items")).scalar_one() == 1
     engine.dispose()

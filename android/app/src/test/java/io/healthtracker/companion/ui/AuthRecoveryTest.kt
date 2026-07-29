@@ -16,6 +16,7 @@ class AuthRecoveryTest {
             AppErrorCode.TLS_ERROR,
             AppErrorCode.SERVER_ERROR,
             AppErrorCode.RATE_LIMITED,
+            AppErrorCode.UNAUTHORIZED,
         ).forEach { code ->
             val decision = classifyRestoreFailure(AppFailure(code, "QA temporal", true))
             assertEquals(AuthState.AUTHENTICATED, decision.state)

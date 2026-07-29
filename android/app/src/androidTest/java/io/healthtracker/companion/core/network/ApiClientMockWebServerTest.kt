@@ -9,6 +9,7 @@ import io.healthtracker.companion.core.model.AppErrorCode
 import io.healthtracker.companion.core.model.AppFailure
 import io.healthtracker.companion.core.security.SecureTokenStore
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.async
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -17,6 +18,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class ApiClientMockWebServerTest {
@@ -141,6 +143,95 @@ class ApiClientMockWebServerTest {
         server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody("{not-json"))
         val malformed = runCatching { client.health(base) }.exceptionOrNull() as AppFailure
         assertEquals(AppErrorCode.SCHEMA_INCOMPATIBLE, malformed.code)
+    }
+
+    @Test fun redirectsNeverForwardLoginCredentialsOrBody() = runBlocking {
+        val target = MockWebServer().also { it.start() }
+        try {
+            server.enqueue(
+                MockResponse().setResponseCode(307)
+                    .setHeader("Location", target.url("/capture")),
+            )
+            val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+            val client = ApiClient(PreferenceStore(context), SecureTokenStore(context).also { it.clear() })
+            val failure = runCatching {
+                client.login(
+                    server.url("/").toString().trimEnd('/'),
+                    LoginRequest("qa@example.test", "qa-secret", DeviceRegistration(
+                        "11111111-1111-4111-8111-111111111111", "QA Android", appVersion = "qa", osVersion = "qa",
+                    )),
+                )
+            }.exceptionOrNull()
+            assertTrue(failure is AppFailure)
+            assertEquals(0, target.requestCount)
+        } finally {
+            target.shutdown()
+        }
+    }
+
+    @Test fun staleRefreshCannotOverwriteAReplacementSession() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val preferences = PreferenceStore(context)
+        val oldBase = server.url("/").toString().trimEnd('/')
+        val newBase = "https://replacement.example.test"
+        preferences.configureServer(oldBase, true)
+        val tokenStore = SecureTokenStore(context).also {
+            it.clear()
+            it.setTokens("old-access", "old-refresh", oldBase)
+        }
+        val client = ApiClient(preferences, tokenStore)
+        server.enqueue(MockResponse().setResponseCode(401).setBody(errorEnvelope("token_expired")))
+        server.enqueue(
+            MockResponse().setBodyDelay(300, TimeUnit.MILLISECONDS)
+                .setBody(tokenEnvelope("stale-access", "stale-refresh")),
+        )
+
+        val pending = async { runCatching { client.me() }.exceptionOrNull() }
+        server.takeRequest()
+        server.takeRequest()
+        tokenStore.clear()
+        tokenStore.setTokens("new-access", "new-refresh", newBase)
+        assertTrue(pending.await() is AppFailure)
+        assertEquals("new-access", tokenStore.accessToken(newBase))
+        assertEquals("new-refresh", tokenStore.refreshToken(newBase))
+        tokenStore.clear()
+    }
+
+    @Test fun staleRevocationResponseCannotClearAReplacementSession() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val preferences = PreferenceStore(context)
+        val oldBase = server.url("/").toString().trimEnd('/')
+        val newBase = "https://replacement.example.test"
+        preferences.configureServer(oldBase, true)
+        val tokenStore = SecureTokenStore(context).also {
+            it.clear()
+            it.setTokens("old-access", "old-refresh", oldBase)
+        }
+        val client = ApiClient(preferences, tokenStore)
+        server.enqueue(
+            MockResponse().setResponseCode(401).setBodyDelay(300, TimeUnit.MILLISECONDS)
+                .setBody(errorEnvelope("session_revoked")),
+        )
+        val pending = async { runCatching { client.me() }.exceptionOrNull() }
+        server.takeRequest()
+        tokenStore.clear()
+        tokenStore.setTokens("new-access", "new-refresh", newBase)
+        assertTrue(pending.await() is AppFailure)
+        assertEquals("new-access", tokenStore.accessToken(newBase))
+        assertEquals("new-refresh", tokenStore.refreshToken(newBase))
+        tokenStore.clear()
+    }
+
+    @Test fun responseBodiesAndRetryAfterAreBounded() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val client = ApiClient(PreferenceStore(context), SecureTokenStore(context).also { it.clear() })
+        val base = server.url("/").toString().trimEnd('/')
+        server.enqueue(MockResponse().setBody("x".repeat(4 * 1024 * 1024 + 1)))
+        val oversized = runCatching { client.health(base) }.exceptionOrNull() as AppFailure
+        assertEquals(AppErrorCode.SCHEMA_INCOMPATIBLE, oversized.code)
+        server.enqueue(MockResponse().setResponseCode(429).setHeader("Retry-After", "999999").setBody(errorEnvelope("rate_limited")))
+        val limited = runCatching { client.health(base) }.exceptionOrNull() as AppFailure
+        assertEquals(21600L, limited.retryAfterSeconds)
     }
 
     private fun tokenEnvelope(access: String, refresh: String) =

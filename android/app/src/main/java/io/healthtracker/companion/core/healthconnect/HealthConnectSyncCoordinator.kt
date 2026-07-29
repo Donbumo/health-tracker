@@ -36,6 +36,7 @@ class HealthConnectSyncCoordinator(
         val now = clock.instant()
         val zone = runCatching { accountZone(accountScope) }.getOrDefault(ZoneOffset.UTC)
         var total = HealthConnectImportResult()
+        var retryableFailure: HealthConnectGatewayException? = null
         selected.sortedBy { it.ordinal }.forEach { type ->
             if (!type.importSupported || type !in grantedTypes) return@forEach
             try {
@@ -44,6 +45,7 @@ class HealthConnectSyncCoordinator(
                 total += result
             } catch (failure: HealthConnectGatewayException) {
                 store.markError(accountScope, type, permissionUpdate.generation, failure.sanitizedCode)
+                if (failure.retryable && retryableFailure == null) retryableFailure = failure
                 if (failure.sanitizedCode == "permission_revoked") {
                     val current = gateway.grantedPermissions()
                     val stillGranted = selected.filterTo(mutableSetOf()) { selectedType ->
@@ -54,6 +56,7 @@ class HealthConnectSyncCoordinator(
             }
         }
         if (total.imported + total.deleted > 0) onServerQueueReady()
+        retryableFailure?.let { throw it }
         total
     }
 

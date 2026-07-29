@@ -56,7 +56,6 @@ class SyncWorker(context: Context, parameters: WorkerParameters) : CoroutineWork
         val DEFINITIVE_SESSION_FAILURES = setOf(
             io.healthtracker.companion.core.model.AppErrorCode.DEVICE_REVOKED,
             io.healthtracker.companion.core.model.AppErrorCode.REFRESH_FAILED,
-            io.healthtracker.companion.core.model.AppErrorCode.UNAUTHORIZED,
         )
     }
 }

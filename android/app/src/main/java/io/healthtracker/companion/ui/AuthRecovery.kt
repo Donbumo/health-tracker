@@ -18,7 +18,8 @@ internal fun classifyRestoreFailure(error: Throwable): AuthRecoveryDecision {
         AppErrorCode.TIMEOUT,
         AppErrorCode.TLS_ERROR,
         AppErrorCode.SERVER_ERROR,
-        AppErrorCode.RATE_LIMITED -> AuthRecoveryDecision(
+        AppErrorCode.RATE_LIMITED,
+        AppErrorCode.UNAUTHORIZED -> AuthRecoveryDecision(
             AuthState.AUTHENTICATED,
             "Modo offline: puedes continuar con los entrenamientos ya descargados.",
         )
@@ -32,8 +33,7 @@ internal fun classifyRestoreFailure(error: Throwable): AuthRecoveryDecision {
             AuthState.SERVER_INCOMPATIBLE,
             failure.userMessage,
         )
-        AppErrorCode.REFRESH_FAILED,
-        AppErrorCode.UNAUTHORIZED -> AuthRecoveryDecision(
+        AppErrorCode.REFRESH_FAILED -> AuthRecoveryDecision(
             AuthState.TOKEN_EXPIRED,
             "La sesión venció. Inicia sesión nuevamente.",
             clearLocalSession = true,

@@ -60,6 +60,13 @@ class CompanionHealthConnectMigrationTest {
             migrated.query(query).use { cursor -> cursor.moveToFirst(); assertEquals(1, cursor.getInt(0)) }
         }
         migrated.close()
+        val reopened = helper.runMigrationsAndValidate(name, 5, true)
+        assertHealthConnectTables(reopened)
+        reopened.query("SELECT COUNT(*) FROM body_stats WHERE publicId='qa-body'").use {
+            it.moveToFirst()
+            assertEquals(1, it.getInt(0))
+        }
+        reopened.close()
     }
 
     private fun migrateFrom(version: Int) {

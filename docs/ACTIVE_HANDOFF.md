@@ -2,56 +2,42 @@
 
 ## Estado actual
 
-- Alpha 1.5 RC1 está preparada en `feature/alpha-1.5-health-connect` sobre `dab0bc381a89d839c9154755e58ce07598a75d3a`, con cambios sin commit. No hacer commit, push, merge ni tag desde este handoff.
-- Android conserva Alpha 1.1–1.5, applicationId release `io.healthtracker.companion`, debug `.debug`, versionCode 15, versionName `1.5.0-alpha01`, min SDK 26 y target/compile 36.
-- URL NAS admite HTTPS, puerto y base path normalizados; rechaza credenciales/query/fragmento. HTTP RFC1918/loopback/`.local` exige debug y confirmación. No hay IP de servidor predeterminada.
-- **Cambiar servidor** exige confirmación, cancela workers, invalida tokens/scope activos y conserva Room antigua aislada. El refresh cifrado queda ligado a la URL normalizada y las sesiones Alpha previas se enlazan una vez al servidor ya persistido.
-- Red distingue DNS, rechazo, timeout, TLS y HTTP con mensajes sanitizados. Solo refresh inválido/reuse, revocación o logout limpian sesión; fallos temporales conservan offline.
-- Flask confía en `X-Forwarded-For/Proto` solo con conteos 0–2 configurados; default 0 mantiene local. El runbook exige backend accesible solo desde el proxy cuando se habilita.
-- `scripts/release/alpha15_nas_preflight.sh` es no destructivo. `alpha15_smoke.py` es read-only por defecto; write exige `QA-ALPHA15-WRITE`, usa fixtures ficticias y verifica limpieza.
-- El diagnóstico Health Connect compartible incluye solo versión, Android, estado/tipos, conteos, timestamps y códigos sanitizados.
-- Runbook vigente: `ALPHA_1_5_NAS_RC_RUNBOOK.md`. El mapa canónico sigue siendo `DOCUMENTATION_INDEX.md`.
-
-## Base preservada
-
-- Alpha 1.1 conserva API Auth, Keystore, packages, drafts, FIFO y offline; Alpha 1.2 historial/progreso; Alpha 1.3 planes/agenda; Alpha 1.4 salud manual; Alpha 1.5 Health Connect opt-in read-only.
-- Room 5 no usa fallback destructivo. La prueba 4→5 conserva plan, draft, historial, salud y pendientes; 1/2/3→5 siguen explícitas. DataStore y Keystore permanecen fuera de Room.
-- Backend mantiene un solo head `20260726_0032`, owner derivado del Bearer y coexistencia manual/Health Connect con `client_event_id` owner-scoped.
-
-## Trabajo en curso
-
-- QA NAS y teléfono real permanece pendiente y no está aprobado. Usar cuenta/datos ficticios, backup externo y ventana sin escrituras.
-- Recorrido corto: 1–6 instalar con `adb install -r`, configurar NAS/login/process death/Hoy/descarga; 7–13 offline, serie, process death, draft, completion, reconexión y autosync.
-- 14–20 crear/programar plan, confirmar Hoy, capturar peso/comida/pasos y verificar una copia en web.
-- 21–26 conectar Health Connect, conceder peso+pasos, importar/procedencia, revocar pasos y comprobar que peso continúa.
-- 27–30 poner servidor offline, registrar local, reconectar y confirmar una sola copia; terminar con pendientes/conflictos 0, sin crash/logout/secretos.
-
-## Decisiones activas
-
-- HTTPS válido es obligatorio fuera de debug. Sin trust-all, hostname verifier inseguro, cleartext release, signingConfigs nuevos, FileProvider propio, BLE, Xiaomi directo ni escritura Health Connect.
-- ProxyFix permanece en 0 salvo topología verificada. Para un proxy único: `PROXY_FIX_X_PROTO=1`; no exponer backend directo y usar `SESSION_COOKIE_SECURE=true` con HTTPS.
-- Downgrade 0032→0031 solo con backup y sin pesos manual/Health Connect coincidentes; puede perder procedencia/client IDs y la migración se niega ante coexistencia destructiva.
-
-## Bloqueadores y riesgos
-
-- `connectedDebugAndroidTest` no se ejecutó por restricción explícita; las pruebas instrumentadas solo compilaron. No usar ni limpiar el AVD reservado.
-- Proveedor Health Connect, permisos parciales/revocados, background, `adb install -r`, NAS real, TLS real, reverse proxy, web↔teléfono y los 30 pasos requieren evidencia manual.
-- APK debug usa certificado debug; firma/release formal y revisión humana siguen pendientes.
-- La herramienta denegó la limpieza Docker final por límite de ejecución. Pueden seguir presentes solo los recursos QA `ht-alpha15-rc1-db`, `ht-alpha15-rc1-net` y `health-tracker-alpha15-rc1-test`; no pertenecen al Compose diario y DB usa tmpfs.
-- El mismo límite impidió retirar seis directorios locales `qa-temp-alpha15*` generados por pytest. Están sin seguimiento Git y deben eliminarse junto con los recursos QA tras autorización explícita.
-
-## Siguiente paso
-
-1. Autorizar/eliminar los tres recursos Docker QA y los seis directorios pytest anteriores.
-2. Revisar diff y subir la rama por el flujo humano aprobado.
-3. Seguir preflight→backup→build→0032→smoke del runbook en NAS y después los 30 pasos en teléfono, sin marcar éxito antes de observarlo.
+- Rama: `feature/alpha-1.5-health-connect`. HEAD observado al iniciar esta tanda: `13c3e545d41c3e1d5a7412b2feeb6d16f963a6cb`; ese commit ya existía pese a que el encargo citaba `dab0bc3` y cambios sin commit. La tanda actual queda sin staging ni commit.
+- Alpha 1.5 RC1 conserva applicationId release `io.healthtracker.companion`, debug `.debug`, versionCode 15, versionName `1.5.0-alpha01`, min SDK 26 y target/compile 36.
+- Identidad de servidor canoniza esquema, host, puerto y base path; HTTPS `:443` y HTTP local `:80` equivalen al puerto implícito. Se rechazan control, userinfo, query, fragmento, puertos inválidos, separadores codificados, traversal, backslash, path ambiguo y HTTP público.
+- OkHttp y el smoke no siguen redirecciones. Un host distinto o downgrade HTTPS→HTTP no recibe Authorization ni cuerpo.
+- Tokens cifrados siguen ligados a la identidad normalizada. Una generación de mutación impide que un refresh tardío repueble credenciales tras logout o cambio de servidor. Un worker viejo no limpia una cuenta nueva.
+- Un `401` sin código definitivo conserva la sesión local/offline. Solo refresh inválido confirmado, revocación o logout limpian credenciales.
+- Health Connect sigue opt-in y opcional. Errores reintentables llegan a WorkManager; permisos revocados permanecen por tipo; tokens se avanzan tras persistencia. El diagnóstico trunca `last_import_at` a la hora.
+- Room continúa en v5 sin fallback destructivo; 1/2/3/4→5 es explícito, 4→5 conserva pendientes, draft, plan, historial y salud, y v5 reabre conservando filas.
+- El downgrade 0032 valida antes de cualquier DDL: rechaza client IDs, nutrición no manual o pesos coexistentes que perderían procedencia.
 
 ## Pruebas relevantes
 
-- Android final: `lintDebug`; 91/91 JVM; `assembleDebug`; `compileDebugAndroidTestKotlin`; segunda pasada forzada 91/91.
-- APK: `android/app/build/outputs/apk/debug/app-debug.apk`, 17,936,677 bytes, SHA-256 `a9287b51961dcf911426b84f76ddd186a76792a30ab36657dd697c3e50f1f4e0`; applicationId `io.healthtracker.companion.debug`, code 15, name `1.5.0-alpha01-debug`, min 26, target/compile 36.
-- Backend local final: compileall correcto y `618 passed, 3 skipped`; una advertencia conocida del fixture ZIP duplicado. Focal final proxy/smoke/readiness: 9/9.
-- Docker/MariaDB 11.4 efímera: `619 passed, 1 skipped`; cero→0032, check, 0032→0031, re-upgrade; columnas/índices de `client_event_id` y procedencia verificados; tres carreras MariaDB pasaron.
-- Compose con `.env.example`: config válida, servicios `db`/`web`; 31 schemas públicos + 5 Room JSON válidos; APK sin entradas/strings prohibidos; `git diff --check` pasa.
+- Android: `lintDebug`, dos `testDebugUnitTest --rerun-tasks`, `assembleDebug` y `compileDebugAndroidTestKotlin`, todos correctos. Las instrumentadas compilaron; no se ejecutó `connectedDebugAndroidTest`.
+- Backend local: `620 passed, 3 skipped`; simulador integrado Alpha 1.5 incluido.
+- MariaDB 11.4 efímera: build, readiness, cero→0032, `db check`, smoke read-only/write con cleanup y ciclo seguro 0031→0032→0031→0032 correctos. Suite Docker final: `621 passed, 1 skipped`.
+- Todo laboratorio usó red y nombres exclusivos con `tmpfs`; tras cada intento quedaron 0 contenedores, 0 redes y 0 volúmenes nuevos.
+- APK debug: `android/app/build/outputs/apk/debug/app-debug.apk`, 17,935,727 bytes, SHA-256 `1ca23b52cba26094564c8169e207c805965c56665854fd59b14840cf7e1dadf6`; firma v2 válida, code 15, name `1.5.0-alpha01-debug`, min 26, target/compile 36, debuggable y backups deshabilitados.
+- Escaneo APK: sin `.env`, secretos de backend, Bearer literal, clave privada, IP de emulador, tokens ni `qa-temp-alpha15` detectados.
 
-No se accedió al NAS real ni a datos persistentes. No se realizó commit, push, merge ni tag.
+## Trabajo en curso
+
+- `scripts/release/alpha15_phone_preflight.ps1`: selección segura de un dispositivo, serial enmascarado, propiedades, espacio, APK/firma/versiones y compatibilidad conservadora; nunca instala ni limpia.
+- `scripts/release/alpha15_apk_manifest.ps1`: manifiesto local con hash, tamaño, package, versiones, SDK, fecha, commit y dirty/clean.
+- `scripts/release/alpha15_postdeploy_readonly.sh`: estado Compose, Alembic, readiness, rutas públicas, logs acotados y smoke autenticado opcional sin escribir.
+- `scripts/release/alpha15_smoke.py`: bloquea redirects, limita HTTP a hosts locales, limita cuerpos y mantiene write bajo confirmación explícita con cleanup.
+- El runbook contiene bloques A–E para Windows, NAS predeploy/deploy, teléfono y rollback con placeholders.
+- El mapa canónico de documentación continúa en `DOCUMENTATION_INDEX.md`.
+
+## Bloqueadores y riesgos
+
+- No se conectó al NAS ni a un teléfono. TLS y reverse proxy reales, `adb install -r`, proveedor Health Connect, permisos parciales/revocados, process death, offline y el recorrido manual de 30 pasos requieren evidencia mañana.
+- El APK es debug; firma release formal sigue fuera de Alpha privada.
+- `shellcheck` no está instalado; `bash -n`, parse PowerShell, ayudas y Python compile sí se validaron.
+- Los seis `qa-temp-alpha15*` preexistentes permanecen intactos por instrucción explícita; no se cambiaron ACL ni se intentó borrarlos.
+- Los servicios diarios no se reiniciaron ni modificaron. Verificar nuevamente IDs y `StartedAt` antes de la ventana humana.
+
+## Siguiente paso
+
+Revisar el diff humano, ejecutar el bloque A del runbook por el flujo aprobado y, solo después, seguir B→C→D. No declarar QA real hasta completar el teléfono y comprobar pendientes/conflictos 0, una sola copia de cada dato y ausencia de logout, crash y secretos.

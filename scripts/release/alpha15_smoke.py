@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
+import ipaddress
 import json
 import os
 import ssl
@@ -13,8 +14,8 @@ import sys
 import time
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote, urlsplit
-from urllib.request import Request, urlopen
+from urllib.parse import quote, unquote, urlsplit
+from urllib.request import HTTPRedirectHandler, HTTPSHandler, Request, build_opener
 import uuid
 
 
@@ -23,6 +24,11 @@ WRITE_CONFIRMATION = "QA-ALPHA15-WRITE"
 
 class SmokeFailure(RuntimeError):
     pass
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
 
 
 @dataclass
@@ -41,10 +47,40 @@ class SmokeClient:
             raise SmokeFailure("base URL no puede contener credenciales, consulta ni fragmento")
         if parsed.scheme != "https" and not allow_http:
             raise SmokeFailure("HTTPS es obligatorio; usa --allow-http solo para una LAN QA explícita")
+        try:
+            port = parsed.port
+        except ValueError:
+            raise SmokeFailure("puerto invalido") from None
+        if port == 0:
+            raise SmokeFailure("puerto invalido")
+        path = unquote(parsed.path).rstrip("/")
+        if "\\" in path or "//" in path or any(part in {".", ".."} for part in path.split("/")):
+            raise SmokeFailure("ruta base ambigua")
+        if parsed.scheme == "http" and not self._is_local_host(parsed.hostname):
+            raise SmokeFailure("HTTP se limita a loopback, RFC1918, ULA o nombres .local")
         self.base_url = base_url.strip().rstrip("/")
         self.token = token
         self.timeout = timeout
         self.ssl_context = ssl.create_default_context()
+        self.opener = build_opener(_NoRedirect(), HTTPSHandler(context=self.ssl_context))
+
+    @staticmethod
+    def _is_local_host(hostname: str) -> bool:
+        normalized = hostname.rstrip(".").lower()
+        if normalized == "localhost" or normalized.endswith(".local"):
+            return True
+        try:
+            address = ipaddress.ip_address(normalized)
+        except ValueError:
+            return False
+        if isinstance(address, ipaddress.IPv4Address):
+            private_v4 = (
+                ipaddress.ip_network("10.0.0.0/8"),
+                ipaddress.ip_network("172.16.0.0/12"),
+                ipaddress.ip_network("192.168.0.0/16"),
+            )
+            return address.is_loopback or address.is_link_local or any(address in network for network in private_v4)
+        return address.is_loopback or address.is_link_local or address in ipaddress.ip_network("fc00::/7")
 
     def request(self, method: str, path: str, payload: dict | None = None, key: str | None = None,
                 authenticated: bool = True) -> Result:
@@ -59,10 +95,9 @@ class SmokeClient:
             headers["Content-Type"] = "application/json"
         started = time.monotonic()
         try:
-            with urlopen(
+            with self.opener.open(
                 Request(self.base_url + path, data=body, headers=headers, method=method),
                 timeout=self.timeout,
-                context=self.ssl_context,
             ) as response:
                 raw = response.read(1_048_577)
                 if len(raw) > 1_048_576:

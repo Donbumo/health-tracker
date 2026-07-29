@@ -12,7 +12,7 @@ class HealthConnectDiagnosticTest {
                 status = HealthConnectUiStatus.PERMISSIONS_PARTIAL,
                 selectedTypes = setOf(HealthConnectRecordType.WEIGHT, HealthConnectRecordType.STEPS),
                 grantedTypes = setOf(HealthConnectRecordType.WEIGHT),
-                lastImportAt = "2026-07-27T12:00:00Z",
+                lastImportAt = "2026-07-27T12:34:56Z",
                 importedCount = 2,
                 deletedCount = 1,
                 errorCode = "provider_io",
@@ -24,6 +24,8 @@ class HealthConnectDiagnosticTest {
             .forEach { assertTrue(diagnostic.contains(it)) }
         listOf("70.5", "8500", "record_id", "data_origin", "changes_token", "access_token", "refresh_token")
             .forEach { assertFalse(diagnostic.contains(it)) }
+        assertTrue(diagnostic.contains("last_import_at=2026-07-27T12:00:00Z"))
+        assertFalse(diagnostic.contains("12:34:56"))
     }
 
     @Test fun unsafeErrorTextIsReducedToAStableCode() {

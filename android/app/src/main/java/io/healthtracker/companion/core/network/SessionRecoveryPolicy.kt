@@ -7,7 +7,6 @@ internal enum class RefreshFailureDisposition { PRESERVE_LOCAL_SESSION, CLEAR_LO
 
 internal fun refreshFailureDisposition(error: AppFailure): RefreshFailureDisposition = when (error.code) {
     AppErrorCode.REFRESH_FAILED,
-    AppErrorCode.UNAUTHORIZED,
     AppErrorCode.DEVICE_REVOKED -> RefreshFailureDisposition.CLEAR_LOCAL_SESSION
     else -> RefreshFailureDisposition.PRESERVE_LOCAL_SESSION
 }

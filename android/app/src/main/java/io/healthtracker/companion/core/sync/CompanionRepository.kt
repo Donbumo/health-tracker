@@ -1227,7 +1227,7 @@ class CompanionRepository(
         val profile = api.me()
         val expectedScope = CanonicalJson.accountScope(account.serverUrl, profile.id)
         if (expectedScope != scope) {
-            throw AppFailure(AppErrorCode.UNAUTHORIZED, "La sesión restaurada no corresponde a la cuenta local.", false)
+            throw AppFailure(AppErrorCode.REFRESH_FAILED, "La sesión restaurada no corresponde a la cuenta local.", false)
         }
         val bootstrap = api.bootstrap()
         verifyBootstrap(bootstrap)
@@ -1758,7 +1758,9 @@ class CompanionRepository(
         preferences.setAccountScope(null)
     }
 
-    suspend fun clearConfirmedInvalidSession(scope: String) = clearLocal(scope)
+    suspend fun clearConfirmedInvalidSession(scope: String) {
+        if (preferences.values.first().accountScope == scope) clearLocal(scope)
+    }
 
     suspend fun detachForServerSwitch(scope: String) {
         SyncScheduler.cancelAll()

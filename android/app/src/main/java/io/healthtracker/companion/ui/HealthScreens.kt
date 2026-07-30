@@ -42,6 +42,7 @@ internal fun DailyHealthScreen(
     val connected by viewModel.connected.collectAsState()
     val refreshing by viewModel.healthRefreshing.collectAsState()
     val conflicts by viewModel.healthConflicts.collectAsState()
+    val confirmedScaleBodyStatIds by viewModel.confirmedScaleBodyStatIds.collectAsState()
     LaunchedEffect(date) { if (connected) viewModel.refreshHealth() }
     Scaffold(topBar = { TopAppBar(title = { Text("Salud del día") }, navigationIcon = { TextButton(onClick = close) { Text("Atrás") } }) }) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp), contentPadding = PaddingValues(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -69,7 +70,7 @@ internal fun DailyHealthScreen(
                     }
                 }
             }
-            item { HealthMetricCard("Peso", summary?.weightKg?.let { "$it kg${if (summary?.weightIsExactDate == false) " · último disponible" else ""}" } ?: "Sin registro", summary?.syncStatus, openBody, summary?.weightSource) }
+            item { HealthMetricCard("Peso", summary?.weightKg?.let { "$it kg${if (summary?.weightIsExactDate == false) " · último disponible" else ""}" } ?: "Sin registro", summary?.syncStatus, openBody, summary?.weightSource, summary?.weightId?.let { it in confirmedScaleBodyStatIds } == true) }
             item { HealthMetricCard("Nutrición", summary?.caloriesKcal?.let { "$it kcal · P ${summary?.proteinG ?: "—"} g · C ${summary?.carbohydrateG ?: "—"} g · G ${summary?.fatG ?: "—"} g" } ?: "Sin entradas", summary?.syncStatus, openNutrition) }
             item { HealthMetricCard("Pasos", summary?.steps?.toString() ?: "Sin registro", summary?.syncStatus, openSteps, summary?.stepsSource) }
             item { HealthMetricCard("Entrenamiento", "${summary?.completedWorkouts ?: 0} completados de ${summary?.scheduledWorkouts ?: 0} programados", summary?.syncStatus, null) }
@@ -87,12 +88,15 @@ private fun HealthDateRow(date: String, previous: () -> Unit, next: () -> Unit) 
 }
 
 @Composable
-private fun HealthMetricCard(title: String, value: String, status: String?, open: (() -> Unit)?, source: String? = null) {
+private fun HealthMetricCard(title: String, value: String, status: String?, open: (() -> Unit)?, source: String? = null, confirmedScale: Boolean = false) {
     ElevatedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             Text(value)
-            if (source in setOf("health_connect", "health_connect_aggregate")) Text("Procedencia: Health Connect", style = MaterialTheme.typography.labelSmall)
+            if (source in setOf("health_connect", "health_connect_aggregate")) Text(
+                if (source == "health_connect" && confirmedScale) "Procedencia: Báscula confirmada" else "Procedencia: Health Connect",
+                style = MaterialTheme.typography.labelSmall,
+            )
             Text(humanHealthSync(status), style = MaterialTheme.typography.bodySmall)
             open?.let { TextButton(onClick = it) { Text("Abrir") } }
         }
@@ -105,6 +109,7 @@ internal fun BodyHistoryScreen(viewModel: CompanionViewModel, close: () -> Unit)
     val rows by viewModel.bodyStats.collectAsState()
     val preferences by viewModel.preferences.collectAsState()
     val connected by viewModel.connected.collectAsState()
+    val confirmedScaleBodyStatIds by viewModel.confirmedScaleBodyStatIds.collectAsState()
     var weight by rememberSaveable { mutableStateOf("") }
     var bodyFat by rememberSaveable { mutableStateOf("") }
     var notes by rememberSaveable { mutableStateOf("") }
@@ -128,7 +133,9 @@ internal fun BodyHistoryScreen(viewModel: CompanionViewModel, close: () -> Unit)
                 Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("${displayWeight(row.weightKg, preferences.unit.name.lowercase()) ?: row.weightKg} ${preferences.unit.name.lowercase()}", style = MaterialTheme.typography.titleMedium)
                     Text(healthReadableInstant(row.recordedAt)); row.bodyFatPercent?.let { Text("Grasa corporal: $it %") }
-                    Text(if (row.source == "health_connect") "Procedencia: Health Connect" else if (row.source == "user_override") "Copia editada por el usuario" else "Procedencia: manual", style = MaterialTheme.typography.bodySmall)
+                    Text(if (row.source == "health_connect") {
+                        if (row.publicId in confirmedScaleBodyStatIds) "Procedencia: Báscula confirmada" else "Procedencia: Health Connect"
+                    } else if (row.source == "user_override") "Copia editada por el usuario" else "Procedencia: manual", style = MaterialTheme.typography.bodySmall)
                     Text(humanHealthSync(row.syncStatus), style = MaterialTheme.typography.bodySmall)
                     Row { TextButton(onClick = { editing = row }) { Text("Editar") }; TextButton(onClick = { deleting = row }) { Text("Eliminar") } }
                 } }
@@ -295,7 +302,7 @@ internal fun StepsHistoryScreen(viewModel: CompanionViewModel, close: () -> Unit
 }
 
 @Composable
-internal fun HealthProgressContent(points: List<HealthProgressPointEntity>) {
+internal fun HealthProgressContent(points: List<HealthProgressPointEntity>, confirmedScaleDates: Set<String> = emptySet()) {
     val weights = points.mapNotNull { point -> point.weightKg?.toFloatOrNull()?.let { point.date to it } }
     val steps = points.mapNotNull { point -> point.steps?.toFloat()?.let { point.date to it } }
     val calories = points.mapNotNull { point -> point.caloriesKcal?.toFloatOrNull()?.let { point.date to it } }
@@ -310,6 +317,8 @@ internal fun HealthProgressContent(points: List<HealthProgressPointEntity>) {
         val importedSteps = points.count { it.stepsSource == "health_connect_aggregate" }
         Text("Resumen textual: ${weights.size} mediciones de peso; pasos promedio ${avgSteps ?: "sin datos"}; calorías promedio ${avgCalories ?: "sin datos"}; proteína promedio ${avgProtein?.let { "%.1f g".format(it) } ?: "sin datos"}.", modifier = Modifier.semantics { contentDescription = "Alternativa textual de las gráficas de salud" })
         if (importedWeights + importedSteps > 0) Text("Procedencia Health Connect: $importedWeights puntos de peso y $importedSteps totales diarios de pasos.", style = MaterialTheme.typography.bodySmall)
+        val confirmedWeights = points.count { it.weightSource == "health_connect" && it.date in confirmedScaleDates }
+        if (confirmedWeights > 0) Text("Procedencia Báscula confirmada: $confirmedWeights puntos de peso.", style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -319,12 +328,13 @@ internal fun HealthProgressScreen(viewModel: CompanionViewModel) {
     val points by viewModel.healthProgress.collectAsState()
     val connected by viewModel.connected.collectAsState()
     val refreshing by viewModel.progressRefreshing.collectAsState()
+    val confirmedScaleDates by viewModel.confirmedScaleDates.collectAsState()
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 20.dp), contentPadding = PaddingValues(vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { Text("Progreso", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() }) }
         item { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { FilterChip(selected = false, onClick = { viewModel.setProgressSection("training") }, label = { Text("Entrenamiento") }); FilterChip(selected = true, onClick = {}, label = { Text("Salud") }) } }
         item { LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) { items(listOf("7", "30", "90", "180", "365", "all")) { value -> FilterChip(selected = range == value, onClick = { viewModel.setProgressRange(value) }, label = { Text(if (value == "all") "Todo (365 días)" else "$value días") }) } } }
         item { Text(if (connected) "Tendencias descriptivas desde la caché local." else "Sin conexión: se muestran las tendencias guardadas."); OutlinedButton(onClick = viewModel::refreshProgress, enabled = connected && !refreshing) { Text(if (refreshing) "Actualizando…" else "Actualizar") } }
-        item { HealthProgressContent(points) }
+        item { HealthProgressContent(points, confirmedScaleDates) }
         item { Text("Estas gráficas no calculan correlaciones médicas ni implican causalidad.", style = MaterialTheme.typography.bodySmall) }
         item { Spacer(Modifier.height(72.dp)) }
     }

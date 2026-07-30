@@ -1,5 +1,13 @@
 # Pruebas Android Companion
 
+## Alpha 1.6
+
+Las JVM cubren registro de fuentes, fingerprint, diagnóstico Health Connect sin valores/IDs, permisos por API, dedupe exacto/probable/posible/detached/override, límites de scan/captura, parser/replay, propiedades notify/indicate y adaptador S400 sin publicación. Instrumentadas compilables cubren migraciones 1/2/3/4/5→6, aislamiento de scope, permisos manifest, BLE opcional y FileProvider privado.
+
+El 28 de julio de 2026 pasó el gate final Alpha 1.6 en orden: `lintDebug`, 146/146 JVM forzadas, `assembleDebug`, `compileDebugAndroidTestKotlin` y segunda pasada forzada 146/146. `connectedDebugAndroidTest` no se ejecutó. El APK resultante mide 18.719.697 bytes y tiene SHA-256 `45f6dc75925612c6f84927270009a752b061679f383500c0f13c990235df5ac4`.
+
+Fixtures `ble_capture_*_fictional.json` son inventadas. `connectedDebugAndroidTest` continúa prohibido en el gate automático; scan, CompanionDeviceManager, CCCD, timeout, background, cifrado/export y UI deben recorrerse después en AVD/teléfono separado con datos QA. Los comandos obligatorios permanecen lint, JVM forzada, APK, compilación androidTest y segunda JVM forzada, además de `compileall` y `--help` de las tres herramientas BLE.
+
 ## Automatizadas
 
 - Unitarias: doce modos de carga, canonical hash, redacción, clasificación temporal/definitiva de refresh, debounce + flush de autosave, coalescing de triggers y textos de estado offline/autosave.

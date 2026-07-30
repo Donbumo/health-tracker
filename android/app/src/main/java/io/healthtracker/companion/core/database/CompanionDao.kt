@@ -129,6 +129,33 @@ interface CompanionDao {
     suspend fun upsertHealthConnectLedger(values: List<HealthConnectRecordLedgerEntity>)
 
     @Upsert
+    suspend fun upsertExternalSource(value: ExternalSourceEntity)
+
+    @Upsert
+    suspend fun upsertExternalSourceCapabilities(values: List<ExternalSourceCapabilityEntity>)
+
+    @Upsert
+    suspend fun upsertHealthConnectSourceAssociation(value: HealthConnectSourceAssociationEntity)
+
+    @Upsert
+    suspend fun upsertBleDeviceAssociation(value: BleDeviceAssociationEntity)
+
+    @Upsert
+    suspend fun upsertBleGattSnapshot(value: BleGattSnapshotEntity)
+
+    @Upsert
+    suspend fun upsertBleCaptureMetadata(value: BleCaptureMetadataEntity)
+
+    @Upsert
+    suspend fun upsertExternalMeasurementLedger(value: ExternalMeasurementLedgerEntity)
+
+    @Upsert
+    suspend fun upsertPossibleDuplicate(value: PossibleDuplicateEntity)
+
+    @Upsert
+    suspend fun upsertProtocolEvidence(value: ProtocolEvidenceEntity)
+
+    @Upsert
     suspend fun upsertSyncState(value: SyncStateEntity)
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
@@ -232,6 +259,54 @@ interface CompanionDao {
 
     @Query("UPDATE health_connect_record_ledger SET detachedByUser=1,state='detached',localResourceUuid=NULL,lastSeenAt=:now WHERE accountScope=:scope AND localResourceUuid=:resourceId")
     suspend fun detachHealthConnectLedgers(scope: String, resourceId: String, now: String)
+
+    @Query("SELECT * FROM external_sources WHERE accountScope=:scope ORDER BY visualPriority DESC,displayName")
+    fun observeExternalSources(scope: String): Flow<List<ExternalSourceEntity>>
+
+    @Query("DELETE FROM external_source_capabilities WHERE accountScope=:scope AND sourceId=:sourceId")
+    suspend fun deleteExternalSourceCapabilities(scope: String, sourceId: String)
+
+    @Query("SELECT * FROM health_connect_source_associations WHERE accountScope=:scope ORDER BY lastSeenAt DESC")
+    fun observeHealthConnectSourceAssociations(scope: String): Flow<List<HealthConnectSourceAssociationEntity>>
+
+    @Query("SELECT * FROM health_connect_source_associations WHERE accountScope=:scope AND sourceFingerprint=:fingerprint LIMIT 1")
+    suspend fun healthConnectSourceAssociation(scope: String, fingerprint: String): HealthConnectSourceAssociationEntity?
+
+    @Query("SELECT * FROM ble_device_associations WHERE accountScope=:scope ORDER BY lastSeenAt DESC")
+    fun observeBleDeviceAssociations(scope: String): Flow<List<BleDeviceAssociationEntity>>
+
+    @Query("SELECT * FROM ble_device_associations WHERE accountScope=:scope AND associationKey=:associationKey LIMIT 1")
+    suspend fun bleDeviceAssociation(scope: String, associationKey: String): BleDeviceAssociationEntity?
+
+    @Query("SELECT * FROM ble_device_associations WHERE accountScope=:scope AND deviceFingerprint=:fingerprint LIMIT 1")
+    suspend fun bleDeviceAssociationByFingerprint(scope: String, fingerprint: String): BleDeviceAssociationEntity?
+
+    @Query("DELETE FROM ble_device_associations WHERE accountScope=:scope AND deviceFingerprint=:fingerprint")
+    suspend fun deleteBleDeviceAssociation(scope: String, fingerprint: String)
+
+    @Query("SELECT * FROM ble_gatt_snapshots WHERE accountScope=:scope AND associationKey=:associationKey ORDER BY observedDate DESC")
+    fun observeBleGattSnapshots(scope: String, associationKey: String): Flow<List<BleGattSnapshotEntity>>
+
+    @Query("SELECT * FROM ble_capture_metadata WHERE accountScope=:scope AND associationKey=:associationKey ORDER BY createdDate DESC")
+    fun observeBleCaptureMetadata(scope: String, associationKey: String): Flow<List<BleCaptureMetadataEntity>>
+
+    @Query("SELECT * FROM ble_capture_metadata WHERE accountScope=:scope")
+    suspend fun bleCaptureMetadataForAccount(scope: String): List<BleCaptureMetadataEntity>
+
+    @Query("SELECT * FROM ble_capture_metadata WHERE accountScope=:scope AND captureId=:captureId LIMIT 1")
+    suspend fun bleCaptureMetadata(scope: String, captureId: String): BleCaptureMetadataEntity?
+
+    @Query("DELETE FROM ble_capture_metadata WHERE accountScope=:scope AND captureId=:captureId")
+    suspend fun deleteBleCaptureMetadata(scope: String, captureId: String)
+
+    @Query("SELECT * FROM possible_duplicates WHERE accountScope=:scope AND resolution='unresolved' ORDER BY createdAt")
+    fun observePossibleDuplicates(scope: String): Flow<List<PossibleDuplicateEntity>>
+
+    @Query("UPDATE possible_duplicates SET resolution=:resolution,resolvedAt=:resolvedAt WHERE accountScope=:scope AND duplicateId=:duplicateId")
+    suspend fun resolvePossibleDuplicate(scope: String, duplicateId: String, resolution: String, resolvedAt: String)
+
+    @Query("SELECT * FROM protocol_evidence WHERE accountScope=:scope AND captureId=:captureId ORDER BY relativeTimestampMs")
+    fun observeProtocolEvidence(scope: String, captureId: String): Flow<List<ProtocolEvidenceEntity>>
 
     @Query("SELECT * FROM health_conflicts WHERE accountScope=:scope ORDER BY createdAt")
     fun observeHealthConflicts(scope: String): Flow<List<HealthConflictEntity>>
@@ -593,6 +668,30 @@ interface CompanionDao {
     @Query("DELETE FROM health_connect_settings WHERE accountScope=:scope")
     suspend fun deleteHealthConnectSettingsForAccount(scope: String)
 
+    @Query("DELETE FROM protocol_evidence WHERE accountScope=:scope")
+    suspend fun deleteProtocolEvidenceForAccount(scope: String)
+
+    @Query("DELETE FROM possible_duplicates WHERE accountScope=:scope")
+    suspend fun deletePossibleDuplicatesForAccount(scope: String)
+
+    @Query("DELETE FROM external_measurement_ledger WHERE accountScope=:scope")
+    suspend fun deleteExternalMeasurementLedgerForAccount(scope: String)
+
+    @Query("DELETE FROM ble_capture_metadata WHERE accountScope=:scope")
+    suspend fun deleteBleCaptureMetadataForAccount(scope: String)
+
+    @Query("DELETE FROM ble_gatt_snapshots WHERE accountScope=:scope")
+    suspend fun deleteBleGattSnapshotsForAccount(scope: String)
+
+    @Query("DELETE FROM ble_device_associations WHERE accountScope=:scope")
+    suspend fun deleteBleDeviceAssociationsForAccount(scope: String)
+
+    @Query("DELETE FROM health_connect_source_associations WHERE accountScope=:scope")
+    suspend fun deleteHealthConnectSourceAssociationsForAccount(scope: String)
+
+    @Query("DELETE FROM external_sources WHERE accountScope=:scope")
+    suspend fun deleteExternalSourcesForAccount(scope: String)
+
     @Query("DELETE FROM sync_state WHERE accountScope=:scope")
     suspend fun deleteSyncStateForAccount(scope: String)
 
@@ -611,6 +710,16 @@ interface CompanionDao {
         upsertPackage(packageEntity)
         upsertExercises(exercises)
         upsertSets(sets)
+    }
+
+    @Transaction
+    suspend fun replaceExternalSourceCapabilities(
+        scope: String,
+        sourceId: String,
+        values: List<ExternalSourceCapabilityEntity>,
+    ) {
+        deleteExternalSourceCapabilities(scope, sourceId)
+        upsertExternalSourceCapabilities(values)
     }
 
     @Transaction
@@ -665,6 +774,14 @@ interface CompanionDao {
     @Transaction
     suspend fun clearAccount(scope: String) {
         deletePendingForAccount(scope)
+        deleteProtocolEvidenceForAccount(scope)
+        deletePossibleDuplicatesForAccount(scope)
+        deleteExternalMeasurementLedgerForAccount(scope)
+        deleteBleCaptureMetadataForAccount(scope)
+        deleteBleGattSnapshotsForAccount(scope)
+        deleteBleDeviceAssociationsForAccount(scope)
+        deleteHealthConnectSourceAssociationsForAccount(scope)
+        deleteExternalSourcesForAccount(scope)
         deleteHealthConnectLedgerForAccount(scope)
         deleteHealthConnectSyncForAccount(scope)
         deleteHealthConnectPermissionsForAccount(scope)

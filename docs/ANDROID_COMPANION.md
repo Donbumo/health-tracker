@@ -1,4 +1,12 @@
-# Android Companion Alpha 1.5
+# Android Companion Alpha 1.6
+
+## Infraestructura de fuentes externas Alpha 1.6
+
+Alpha 1.6 mantiene las cinco pestañas y añade **Ajustes → Fuentes externas**. Un registro desacoplado declara manual, Health Connect genérico/confirmado y Xiaomi S400 BLE experimental por `accountScope`. El diagnóstico de báscula lee solo peso/grasa con permiso y muestra tipos, conteos, fechas truncadas, estado del ledger y fingerprints; nunca valores, IDs o packages completos. Confirmar un origen como báscula/S400 es una preferencia local revocable y no reclasifica destructivamente imports anteriores.
+
+BLE es opcional. API 31+ solicita scan/connect de forma contextual; API 26–30 limita ubicación al scan requerido por plataforma. Scan dura 15–30 s, necesita selección explícita y se cierra al seleccionar/salir/background. GATT solo descubre estructura, salvo la escritura del CCCD estándar después de que el usuario seleccione un notify/indicate para una captura debug consentida. Capturas `ble-capture-v1` se cifran con Keystore en almacenamiento sin backup, no entran en Room salvo metadata y solo se exportan mediante FileProvider/confirmación.
+
+Room 6 conserva la cadena explícita 1/2/3/4/5→6. `ExternalMeasurementReconciler` solo auto-reconcilia identidad fuerte exacta; probabilidades conservan ambos registros. El adaptador S400 no interpreta peso, unidad, impedancia o composición y el mapper de dominio siempre devuelve ausencia. Detalle y QA pendiente: [ALPHA_1_6_EXTERNAL_SOURCES.md](ALPHA_1_6_EXTERNAL_SOURCES.md).
 
 Cliente Android nativo y offline-first para planificar, ejecutar, registrar salud diaria, importar Health Connect en modo de solo lectura y sincronizar. El backend sigue siendo autoritativo; la app reutiliza los dominios canónicos de peso, nutrición, alimentos, energía y entrenamiento, sin duplicar `TrainingSession`, cursor, importador ni protocolo.
 

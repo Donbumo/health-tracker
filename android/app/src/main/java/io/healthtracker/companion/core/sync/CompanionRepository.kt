@@ -71,6 +71,7 @@ class CompanionRepository(
     private val preferences: PreferenceStore,
     private val tokens: SecureTokenStore,
     private val api: ApiClient,
+    private val onBeforeClearAccount: suspend (String) -> Unit = {},
 ) {
     private val dao = database.companionDao()
     private val syncMutex = Mutex()
@@ -156,7 +157,7 @@ class CompanionRepository(
                 preferences.setOfflineSessionEligible(false)
                 preferences.setAccountScope(null)
             } finally {
-                scope?.let { database.withTransaction { dao.clearAccount(it) } }
+                scope?.let { clearAccountData(it) }
             }
         }
     }
@@ -1735,7 +1736,7 @@ class CompanionRepository(
             api.revokeDevice(deviceId)
         } else runCatching { api.logout() }
         SyncScheduler.cancelAll()
-        database.withTransaction { dao.clearAccount(scope) }
+        clearAccountData(scope)
         tokens.clear()
         preferences.setOfflineSessionEligible(false)
         preferences.setAccountScope(null)
@@ -1744,7 +1745,7 @@ class CompanionRepository(
     suspend fun logoutAll(scope: String) {
         api.logoutAll()
         SyncScheduler.cancelAll()
-        database.withTransaction { dao.clearAccount(scope) }
+        clearAccountData(scope)
         tokens.clear()
         preferences.setOfflineSessionEligible(false)
         preferences.setAccountScope(null)
@@ -1752,7 +1753,7 @@ class CompanionRepository(
 
     suspend fun clearLocal(scope: String) {
         SyncScheduler.cancelAll()
-        database.withTransaction { dao.clearAccount(scope) }
+        clearAccountData(scope)
         tokens.clear()
         preferences.setOfflineSessionEligible(false)
         preferences.setAccountScope(null)
@@ -1760,6 +1761,11 @@ class CompanionRepository(
 
     suspend fun clearConfirmedInvalidSession(scope: String) {
         if (preferences.values.first().accountScope == scope) clearLocal(scope)
+    }
+
+    private suspend fun clearAccountData(scope: String) {
+        onBeforeClearAccount(scope)
+        database.withTransaction { dao.clearAccount(scope) }
     }
 
     suspend fun detachForServerSwitch(scope: String) {

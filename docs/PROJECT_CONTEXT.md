@@ -70,6 +70,8 @@ Las reglas ejecutables de estos principios viven en `../AGENTS.md`, `schemas/AGE
 
 El cliente móvil cubre planificación, ejecución, historial, progreso, registro diario de salud e importación Health Connect de solo lectura sin duplicar dominio: las rutinas editables publican versiones inmutables, la agenda usa planned workouts, la ejecución usa Companion Delivery/Mobile Sync y salud reutiliza peso, nutrición, catálogo y energía canónicos mediante endpoints owner-only.
 
+Alpha 1.6 añade una base local experimental para fuentes externas y BLE: registro/deduplicación, diagnóstico Health Connect de báscula, asociación, descubrimiento GATT, captura privada/replay y evidencia de protocolo. No amplía el dominio servidor ni afirma soporte S400: ningún valor BLE llega al dominio de salud mientras el mapper permanezca deshabilitado.
+
 La estructura real del código manda sobre diagramas o rutas narrativas antiguas. Consulta `architecture/OVERVIEW.md` y el árbol del repositorio en vez de copiar una estructura sugerida a nuevas tareas.
 
 ## Capacidades de producto
@@ -118,7 +120,7 @@ Desde Alpha 1.2 el cliente también consulta historial paginado y progreso descr
 Salvo evidencia nueva en código y pruebas, no considerar implementados:
 
 - APK firmado/publicado, distribución Play Store o app de reloj;
-- Bluetooth o bridge con reloj;
+- bridge con reloj o Bluetooth de entrenamiento; la única base BLE actual es investigación local S400 sin métricas habilitadas;
 - telemetría continua;
 - FIT binario de salida;
 - APIs privadas o scraping de fabricantes;

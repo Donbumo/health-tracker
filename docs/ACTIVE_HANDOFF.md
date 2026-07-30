@@ -1,5 +1,19 @@
 # Handoff activo
 
+## Alpha 1.6 en esta rama
+
+- Rama/HEAD de baseline: `feature/alpha-1.6-external-device-foundation` en `1c3d7c3642295964e6417ee1592a4046e6567835`, commit completo Alpha 1.5 RC1 compartido con `feature/alpha-1.5-health-connect`. No se cambió de rama ni se usó staging.
+- Room sube de v5 a v6 con fuentes externas, asociaciones Health Connect/BLE, snapshots GATT, metadata de captura, ledger externo, duplicados y evidencia de protocolo; cadena 1/2/3/4/5→6 explícita.
+- Android pasa a versionCode 16/versionName `1.6.0-alpha01` (debug `-debug`), min 26 y target/compile 36.
+- `Ajustes → Fuentes externas` añade diagnóstico de peso/grasa sin valores, confirmación local/revocable de origen, permisos BLE contextuales, scan manual limitado, inspección GATT y captura debug cifrada/limitada.
+- Xiaomi S400 permanece `protocol_unknown`: no hay UUIDs/frames/fórmulas reales, mapper de peso/composición deshabilitado ni botón de guardar medición.
+- Backend y schemas públicos permanecen sin cambios; GATT, capturas, frames, MAC y association IDs no salen del teléfono.
+- Fixtures BLE añadidas son ficticias y declaran `fixtureFictional=true`; herramientas sanitizan, inspeccionan y comparan sin inferir semántica.
+- Gate automático verde en orden: `lintDebug`, primera JVM forzada 146/146, `assembleDebug`, `compileDebugAndroidTestKotlin` y segunda JVM forzada 146/146. No se ejecutó `connectedDebugAndroidTest`.
+- Herramientas: compileall/ayudas, ruta con espacios, límites, archivo inválido, no sobrescritura, sanitización, inspección y comparación verdes. Los 37 JSON de schemas/Room son válidos.
+- APK debug: `android/app/build/outputs/apk/debug/app-debug.apk`, 18,719,697 bytes, SHA-256 `45f6dc75925612c6f84927270009a752b061679f383500c0f13c990235df5ac4`; sin archivo `.env`, capturas/fixtures BLE, `qa-temp-alpha15`, clave privada o Bearer de fixture como entradas/contenido revisado.
+- QA físico, ejecución de instrumentadas y validación con S400 real siguen pendientes. Consulta `ALPHA_1_6_EXTERNAL_SOURCES.md` y `XIAOMI_S400_PROTOCOL_RESEARCH.md`.
+
 ## Estado actual
 
 - Rama: `feature/alpha-1.5-health-connect`. HEAD observado al iniciar esta tanda: `13c3e545d41c3e1d5a7412b2feeb6d16f963a6cb`; ese commit ya existía pese a que el encargo citaba `dab0bc3` y cambios sin commit. La tanda actual queda sin staging ni commit.

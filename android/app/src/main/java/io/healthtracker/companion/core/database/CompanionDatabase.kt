@@ -49,9 +49,18 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         HealthConnectPermissionStateEntity::class,
         HealthConnectSyncStateEntity::class,
         HealthConnectRecordLedgerEntity::class,
+        ExternalSourceEntity::class,
+        ExternalSourceCapabilityEntity::class,
+        HealthConnectSourceAssociationEntity::class,
+        BleDeviceAssociationEntity::class,
+        BleGattSnapshotEntity::class,
+        BleCaptureMetadataEntity::class,
+        ExternalMeasurementLedgerEntity::class,
+        PossibleDuplicateEntity::class,
+        ProtocolEvidenceEntity::class,
         SyncStateEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class CompanionDatabase : RoomDatabase() {
@@ -62,7 +71,7 @@ abstract class CompanionDatabase : RoomDatabase() {
             context.applicationContext,
             CompanionDatabase::class.java,
             "health_tracker_companion_v1.db",
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6).build()
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -145,6 +154,34 @@ abstract class CompanionDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_record_ledger_accountScope_localResourceUuid` ON `health_connect_record_ledger` (`accountScope`, `localResourceUuid`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_record_ledger_accountScope_recordType_sourceStartTime` ON `health_connect_record_ledger` (`accountScope`, `recordType`, `sourceStartTime`)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_record_ledger_accountScope_state` ON `health_connect_record_ledger` (`accountScope`, `state`)")
+            }
+        }
+
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `external_sources` (`accountScope` TEXT NOT NULL, `sourceId` TEXT NOT NULL, `sourceType` TEXT NOT NULL, `displayName` TEXT NOT NULL, `availability` TEXT NOT NULL, `experimental` INTEGER NOT NULL, `requiredPermissions` TEXT NOT NULL, `supportedMetrics` TEXT NOT NULL, `identityQuality` TEXT NOT NULL, `deduplicationStrategy` TEXT NOT NULL, `visualPriority` INTEGER NOT NULL, `editable` INTEGER NOT NULL, `userOverrideAllowed` INTEGER NOT NULL, `lastDetectedAt` TEXT, `syncState` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `sourceId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_external_sources_accountScope_sourceType` ON `external_sources` (`accountScope`, `sourceType`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `external_source_capabilities` (`accountScope` TEXT NOT NULL, `sourceId` TEXT NOT NULL, `capability` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `sourceId`, `capability`), FOREIGN KEY(`accountScope`, `sourceId`) REFERENCES `external_sources`(`accountScope`, `sourceId`) ON UPDATE NO ACTION ON DELETE CASCADE)""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_external_source_capabilities_accountScope_sourceId` ON `external_source_capabilities` (`accountScope`, `sourceId`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `health_connect_source_associations` (`accountScope` TEXT NOT NULL, `sourceFingerprint` TEXT NOT NULL, `sourceId` TEXT NOT NULL, `safeLabel` TEXT NOT NULL, `state` TEXT NOT NULL, `confirmedModel` TEXT, `identityQuality` TEXT NOT NULL, `firstSeenAt` TEXT NOT NULL, `lastSeenAt` TEXT NOT NULL, `confirmedAt` TEXT, `revokedAt` TEXT, PRIMARY KEY(`accountScope`, `sourceFingerprint`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_source_associations_accountScope_state` ON `health_connect_source_associations` (`accountScope`, `state`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_health_connect_source_associations_accountScope_sourceId` ON `health_connect_source_associations` (`accountScope`, `sourceId`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `ble_device_associations` (`accountScope` TEXT NOT NULL, `associationKey` TEXT NOT NULL, `systemAssociationId` INTEGER, `sanitizedName` TEXT NOT NULL, `alias` TEXT, `deviceFingerprint` TEXT NOT NULL, `serviceUuids` TEXT NOT NULL, `manufacturerFingerprint` TEXT, `firstSeenAt` TEXT NOT NULL, `lastSeenAt` TEXT NOT NULL, `state` TEXT NOT NULL, `userConfirmedModel` TEXT, PRIMARY KEY(`accountScope`, `associationKey`))""")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_ble_device_associations_accountScope_deviceFingerprint` ON `ble_device_associations` (`accountScope`, `deviceFingerprint`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_ble_device_associations_accountScope_state` ON `ble_device_associations` (`accountScope`, `state`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `ble_gatt_snapshots` (`accountScope` TEXT NOT NULL, `snapshotId` TEXT NOT NULL, `associationKey` TEXT NOT NULL, `serviceFingerprint` TEXT NOT NULL, `servicesJson` TEXT NOT NULL, `observedDate` TEXT NOT NULL, `resultCode` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `snapshotId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_ble_gatt_snapshots_accountScope_associationKey_observedDate` ON `ble_gatt_snapshots` (`accountScope`, `associationKey`, `observedDate`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `ble_capture_metadata` (`accountScope` TEXT NOT NULL, `captureId` TEXT NOT NULL, `associationKey` TEXT NOT NULL, `encryptedFileName` TEXT NOT NULL, `createdDate` TEXT NOT NULL, `eventCount` INTEGER NOT NULL, `byteCount` INTEGER NOT NULL, `durationMs` INTEGER NOT NULL, `checksum` TEXT NOT NULL, `terminalState` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `captureId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_ble_capture_metadata_accountScope_associationKey_createdDate` ON `ble_capture_metadata` (`accountScope`, `associationKey`, `createdDate`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `external_measurement_ledger` (`accountScope` TEXT NOT NULL, `measurementId` TEXT NOT NULL, `sourceId` TEXT NOT NULL, `metricType` TEXT NOT NULL, `observedAt` TEXT NOT NULL, `zoneOffset` TEXT, `canonicalValueHash` TEXT NOT NULL, `precision` INTEGER, `sourceFingerprint` TEXT, `strongIdentity` TEXT, `contentFingerprint` TEXT NOT NULL, `localResourceUuid` TEXT, `state` TEXT NOT NULL, `userOverride` INTEGER NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `measurementId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_external_measurement_ledger_accountScope_sourceId_observedAt` ON `external_measurement_ledger` (`accountScope`, `sourceId`, `observedAt`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_external_measurement_ledger_accountScope_strongIdentity` ON `external_measurement_ledger` (`accountScope`, `strongIdentity`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_external_measurement_ledger_accountScope_localResourceUuid` ON `external_measurement_ledger` (`accountScope`, `localResourceUuid`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `possible_duplicates` (`accountScope` TEXT NOT NULL, `duplicateId` TEXT NOT NULL, `leftMeasurementId` TEXT NOT NULL, `rightMeasurementId` TEXT NOT NULL, `classification` TEXT NOT NULL, `evidenceJson` TEXT NOT NULL, `resolution` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `resolvedAt` TEXT, PRIMARY KEY(`accountScope`, `duplicateId`))""")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_possible_duplicates_accountScope_leftMeasurementId_rightMeasurementId` ON `possible_duplicates` (`accountScope`, `leftMeasurementId`, `rightMeasurementId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_possible_duplicates_accountScope_resolution` ON `possible_duplicates` (`accountScope`, `resolution`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `protocol_evidence` (`accountScope` TEXT NOT NULL, `evidenceId` TEXT NOT NULL, `captureId` TEXT NOT NULL, `relativeTimestampMs` INTEGER NOT NULL, `displayedValue` TEXT NOT NULL, `unit` TEXT NOT NULL, `frameFingerprint` TEXT, `state` TEXT NOT NULL, `createdAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `evidenceId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_protocol_evidence_accountScope_captureId_relativeTimestampMs` ON `protocol_evidence` (`accountScope`, `captureId`, `relativeTimestampMs`)")
             }
         }
     }

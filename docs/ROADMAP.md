@@ -11,6 +11,9 @@ Este documento reúne trabajo futuro o no comprobado. No describe funcionalidade
 
 ## Companion móvil y reloj
 
+- Completar QA físico Alpha 1.6 con S400/fixtures QA: permisos API 26/30/31/34/36, CompanionDeviceManager/fallback, scan cancel/background, fingerprint tras process death, GATT/CCCD, límites, cifrado, delete/export/revocación, TalkBack y ausencia de payloads/logs. No añadir la captura real a Git.
+- Investigar peso S400 únicamente con el criterio de evidencia de `XIAOMI_S400_PROTOCOL_RESEARCH.md`; composición sigue siendo un proyecto contractual independiente aun si peso se valida.
+
 - Completar QA manual de Alpha 1.5 con Health Connect real y datos ficticios: dispositivo/proveedor ausente y actualización, permisos parciales/revocación, peso+grasa del mismo origen, pasos en cambio de zona, nutrición incompleta, background opt-in, eliminación remota, edición detached, servidor offline→reconexión, process death, borrado selectivo y accesibilidad. Ejecutar instrumentación únicamente en un AVD o dispositivo separado.
 - Completar QA manual de Alpha 1.4: recorrido Hoy→peso→desayuno→pasos, modo avión, process death, edición nutricional offline, reconexión sin duplicados, resolución de conflictos, Progreso Salud, rotación, TalkBack, fuente grande y tamaños 320/360/411/600 dp. Ejecutar instrumentación solo en un AVD separado.
 - Completar QA manual de Alpha 1.3 para planificación: creación/edición offline, coalescing al mover o cancelar, varios eventos diarios, cambio de zona horaria, reemplazo de package sin draft y conflicto con draft activo, ciclo Hoy→Historial→Progreso, rotación, TalkBack, fuente grande y tamaños 320/360/411/600 dp; no está aprobado todavía.
@@ -23,7 +26,7 @@ Este documento reúne trabajo futuro o no comprobado. No describe funcionalidade
 ## Integraciones y formatos
 
 - Ampliar Health Connect más allá de la lectura Alpha 1.5 solo con contrato y consentimiento independientes. Siguen pendientes escritura, ejercicio/rutas, sueño, signos vitales y datos médicos; masa magra y masa de agua requieren primero campos canónicos semánticamente equivalentes.
-- Google Fit, Huawei Health directo, Xiaomi Home/S400, BLE y Wear OS siguen fuera de alcance; requieren contrato de procedencia, consentimiento, deduplicación y revocación antes de implementarse.
+- Google Fit, Huawei Health directo, Xiaomi Home y Wear OS siguen fuera de alcance. S400/BLE dispone solo de infraestructura experimental local; soporte de métricas sigue pendiente de evidencia, contrato, consentimiento y QA físico.
 
 - FIT de salida solo con una biblioteca mantenida y validación binaria; sigue unsupported.
 - Integraciones Garmin, Huawei, Magene/OnelapFit, Strava o TrainingPeaks requieren APIs oficiales y autorización; no usar scraping ni APIs privadas.

@@ -1,0 +1,10 @@
+{
+  "formatVersion":"ble-capture-v1",
+  "sourceType":"xiaomi_s400_ble_experimental",
+  "captureId":"fixture_disconnect_0001",
+  "deviceFingerprint":"f1c710a1f1c710a1f1c710a1",
+  "sessionStart":0,
+  "fixtureFictional":true,
+  "events":[{"eventType":"connection","relativeTimestampMs":0,"connectionState":"connected"},{"eventType":"connection","relativeTimestampMs":25,"connectionState":"disconnected"}],
+  "expectedResult":{"protocolState":"awaiting_evidence","fixtureFictional":true}
+}

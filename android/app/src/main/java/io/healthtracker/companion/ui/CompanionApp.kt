@@ -72,7 +72,7 @@ private enum class Destination(val route: String, val label: String, val symbol:
     HISTORY_DETAIL("history_detail", "Sesión", ""), EXERCISE_DETAIL("exercise_detail", "Ejercicio", ""),
     HEALTH_DAY("health_day", "Salud", ""), BODY_HISTORY("body_history", "Cuerpo", ""),
     NUTRITION_DAY("nutrition_day", "Nutrición", ""), FOOD_CATALOG("food_catalog", "Alimentos", ""),
-    STEPS_HISTORY("steps_history", "Pasos", "")
+    STEPS_HISTORY("steps_history", "Pasos", ""), EXTERNAL_SOURCES("external_sources", "Fuentes externas", "")
 }
 
 @Composable
@@ -215,7 +215,7 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            if (route !in setOf(Destination.WORKOUT.route, Destination.PLAN_DETAIL.route, Destination.PLAN_WORKOUT.route, Destination.HISTORY_DETAIL.route, Destination.EXERCISE_DETAIL.route, Destination.HEALTH_DAY.route, Destination.BODY_HISTORY.route, Destination.NUTRITION_DAY.route, Destination.FOOD_CATALOG.route, Destination.STEPS_HISTORY.route)) NavigationBar {
+            if (route !in setOf(Destination.WORKOUT.route, Destination.PLAN_DETAIL.route, Destination.PLAN_WORKOUT.route, Destination.HISTORY_DETAIL.route, Destination.EXERCISE_DETAIL.route, Destination.HEALTH_DAY.route, Destination.BODY_HISTORY.route, Destination.NUTRITION_DAY.route, Destination.FOOD_CATALOG.route, Destination.STEPS_HISTORY.route, Destination.EXTERNAL_SOURCES.route)) NavigationBar {
                 listOf(Destination.TODAY, Destination.PLAN, Destination.HISTORY, Destination.PROGRESS, Destination.SETTINGS).forEach { destination ->
                     NavigationBarItem(
                         selected = route == destination.route,
@@ -260,13 +260,14 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
             composable(Destination.EXERCISE_DETAIL.route) { ExerciseDetailScreen(viewModel) {
                 viewModel.closeProgressExercise(); nav.popBackStack()
             } }
-            composable(Destination.SETTINGS.route) { SettingsScreen(viewModel) }
+            composable(Destination.SETTINGS.route) { SettingsScreen(viewModel) { nav.navigate(Destination.EXTERNAL_SOURCES.route) } }
             composable(Destination.WORKOUT.route) { WorkoutScreen(viewModel) { nav.popBackStack() } }
             composable(Destination.HEALTH_DAY.route) { DailyHealthScreen(viewModel, { nav.popBackStack() }, { nav.navigate(Destination.BODY_HISTORY.route) }, { nav.navigate(Destination.NUTRITION_DAY.route) }, { nav.navigate(Destination.STEPS_HISTORY.route) }) }
             composable(Destination.BODY_HISTORY.route) { BodyHistoryScreen(viewModel) { nav.popBackStack() } }
             composable(Destination.NUTRITION_DAY.route) { NutritionDayScreen(viewModel, { nav.popBackStack() }, { nav.navigate(Destination.FOOD_CATALOG.route) }) }
             composable(Destination.FOOD_CATALOG.route) { FoodCatalogScreen(viewModel) { nav.popBackStack() } }
             composable(Destination.STEPS_HISTORY.route) { StepsHistoryScreen(viewModel) { nav.popBackStack() } }
+            composable(Destination.EXTERNAL_SOURCES.route) { ExternalSourcesScreen(viewModel) { nav.popBackStack() } }
         }
     }
 }
@@ -299,6 +300,7 @@ private fun TodayScreen(
     val weekly by viewModel.weeklyProgress.collectAsState()
     val recentRecord by viewModel.latestPersonalRecord.collectAsState()
     val health by viewModel.dailyHealth.collectAsState()
+    val confirmedScaleBodyStatIds by viewModel.confirmedScaleBodyStatIds.collectAsState()
     val healthDate by viewModel.healthDate.collectAsState()
     val operationalToday by viewModel.planningToday.collectAsState()
     LaunchedEffect(operationalToday) { viewModel.setHealthDate(operationalToday) }
@@ -346,7 +348,10 @@ private fun TodayScreen(
                     Column(Modifier.padding(12.dp)) {
                         Text("Peso")
                         Text(health?.weightKg?.let { "$it kg" } ?: "—")
-                        if (health?.weightSource == "health_connect") Text("Health Connect", style = MaterialTheme.typography.labelSmall)
+                        if (health?.weightSource == "health_connect") Text(
+                            if (health?.weightId?.let { it in confirmedScaleBodyStatIds } == true) "Báscula confirmada" else "Health Connect",
+                            style = MaterialTheme.typography.labelSmall,
+                        )
                         Text(humanHealthStatus(health?.syncStatus), style = MaterialTheme.typography.bodySmall)
                     }
                 }
@@ -1946,7 +1951,7 @@ private fun TrendChart(
 }
 
 @Composable
-private fun SettingsScreen(viewModel: CompanionViewModel) {
+private fun SettingsScreen(viewModel: CompanionViewModel, openExternalSources: () -> Unit) {
     val context = LocalContext.current
     val preferences by viewModel.preferences.collectAsState()
     val profile by viewModel.profile.collectAsState()
@@ -1970,6 +1975,15 @@ private fun SettingsScreen(viewModel: CompanionViewModel) {
         item { SettingsCard("Usuario", profile?.email ?: "Sin sesión") }
         item { SettingsCard("Dispositivo", "Android $deviceLabel · ${if (connected) "con red" else "offline"}") }
         item { SettingsCard("Versión", "App ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · API 1 · Sync 1.0 · Companion 1.0") }
+        item {
+            Card(onClick = openExternalSources, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Fuentes externas", style = MaterialTheme.typography.titleLarge)
+                    Text("Diagnóstico de báscula, asociaciones y Bluetooth experimental.")
+                    Text("Abrir", color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
         item {
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {

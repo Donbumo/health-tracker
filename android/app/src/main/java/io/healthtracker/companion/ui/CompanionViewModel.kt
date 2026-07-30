@@ -2,6 +2,7 @@ package io.healthtracker.companion.ui
 
 import android.os.Build
 import android.content.Intent
+import android.net.Uri
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -35,6 +36,10 @@ import io.healthtracker.companion.core.healthconnect.HealthConnectRecordType
 import io.healthtracker.companion.core.healthconnect.HealthConnectScheduler
 import io.healthtracker.companion.core.healthconnect.HealthConnectTrigger
 import io.healthtracker.companion.core.healthconnect.HealthConnectUiState
+import io.healthtracker.companion.core.healthconnect.ScaleDiagnosticResult
+import io.healthtracker.companion.core.external.ConfirmedScaleKind
+import io.healthtracker.companion.core.external.ExternalDeviceUiState
+import io.healthtracker.companion.core.external.shortFingerprint
 import io.healthtracker.companion.core.load.LoadPreview
 import io.healthtracker.companion.core.planning.reorderedIds
 import io.healthtracker.companion.core.planning.PlanningEditorState
@@ -90,6 +95,7 @@ class CompanionViewModel(
 ) : ViewModel() {
     private val repository = container.repository
     private val healthConnectManager: HealthConnectManager = container.healthConnectManager
+    private val externalSourceStore = container.externalSourceStore
     private val planningEditorState = PlanningEditorState(savedStateHandle)
     private val mutableAuth = MutableStateFlow(AuthState.SIGNED_OUT)
     private val mutableProfile = MutableStateFlow<UserProfile?>(null)
@@ -120,6 +126,7 @@ class CompanionViewModel(
     private val mutableFoodHasMore = MutableStateFlow(false)
     private val mutableFoodLoading = MutableStateFlow(false)
     private val mutableProgressSection = MutableStateFlow("training")
+    private val mutableScaleDiagnostic = MutableStateFlow(ScaleDiagnosticResult())
     private var catalogSearchJob: Job? = null
     private val serializer = Json { explicitNulls = false; encodeDefaults = true }
     private val autosaveController: DebouncedAutosave<AutosaveCommand>
@@ -155,6 +162,8 @@ class CompanionViewModel(
     val foodHasMore: StateFlow<Boolean> = mutableFoodHasMore
     val foodLoading: StateFlow<Boolean> = mutableFoodLoading
     val progressSection: StateFlow<String> = mutableProgressSection
+    val scaleDiagnostic: StateFlow<ScaleDiagnosticResult> = mutableScaleDiagnostic
+    val externalDevice: StateFlow<ExternalDeviceUiState> = container.externalDeviceManager.state
     val preferences = container.preferences.values.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000),
         io.healthtracker.companion.core.config.AppPreferences(deviceId = ""),
@@ -167,6 +176,27 @@ class CompanionViewModel(
     val healthConnect = scope.flatMapLatest { account ->
         if (account == null) flowOf(HealthConnectUiState()) else healthConnectManager.observe(account)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HealthConnectUiState())
+
+    val externalSources = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else externalSourceStore.observeSources(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val healthConnectSourceAssociations = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else externalSourceStore.observeHealthConnectAssociations(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val bleDeviceAssociations = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else externalSourceStore.observeBleDeviceAssociations(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val bleCaptureMetadata = combine(scope, bleDeviceAssociations) { account, associations -> account to associations.firstOrNull() }
+        .flatMapLatest { (account, association) ->
+            if (account == null || association == null) flowOf(emptyList()) else externalSourceStore.observeBleCaptures(account, association.associationKey)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val possibleExternalDuplicates = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else externalSourceStore.observePossibleDuplicates(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val planned = scope.flatMapLatest { value ->
         if (value == null) flowOf(emptyList()) else repository.observePlanned(value)
@@ -185,6 +215,25 @@ class CompanionViewModel(
     val bodyStats = scope.flatMapLatest { account ->
         if (account == null) flowOf(emptyList()) else repository.observeBodyStats(account)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val confirmedScaleBodyStatIds = combine(scope, bodyStats, healthConnectSourceAssociations) { account, stats, associations ->
+        Triple(account, stats, associations)
+    }.mapLatest { (account, stats, associations) ->
+        if (account == null) return@mapLatest emptySet()
+        val confirmed = associations.filter { it.state == "user_confirmed" }.mapTo(mutableSetOf()) { it.sourceFingerprint }
+        stats.filterTo(mutableSetOf()) { stat ->
+            stat.source == "health_connect" && container.database.companionDao()
+                .healthConnectLedgersForResource(account, stat.publicId)
+                .any { ledger -> shortFingerprint("health-connect-origin:${ledger.dataOrigin}") in confirmed }
+        }.mapTo(mutableSetOf()) { it.publicId }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
+    val confirmedScaleDates = combine(confirmedScaleBodyStatIds, bodyStats, mutableProfile) { ids, stats, currentProfile ->
+        val zone = runCatching { currentProfile?.timezone?.let(ZoneId::of) ?: ZoneId.systemDefault() }.getOrDefault(ZoneId.systemDefault())
+        stats.filter { it.publicId in ids }.mapNotNullTo(mutableSetOf()) { stat ->
+            runCatching { Instant.parse(stat.recordedAt).atZone(zone).toLocalDate().toString() }.getOrNull()
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
     val nutritionDay = combine(scope, mutableHealthDate) { account, date -> account to date }.flatMapLatest { (account, date) ->
         if (account == null) flowOf(null) else repository.observeNutritionDay(account, date)
@@ -402,7 +451,10 @@ class CompanionViewModel(
             container.preferences.values.mapLatest { it.accountScope }
                 .distinctUntilChanged()
                 .collectLatest { account ->
-                    if (account != null) runCatching { healthConnectManager.ensure(account) }
+                    if (account != null) runCatching {
+                        healthConnectManager.ensure(account)
+                        externalSourceStore.ensureDefaults(account)
+                    }
                 }
         }
         viewModelScope.launch {
@@ -1079,6 +1131,84 @@ class CompanionViewModel(
 
     fun healthConnectManageAccessIntent(): Intent = healthConnectManager.manageAccessIntent()
     fun healthConnectProviderIntent(): Intent = healthConnectManager.providerIntent()
+
+    fun inspectHealthConnectScaleSources() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        mutableScaleDiagnostic.value = container.healthConnectScaleDiagnostic.inspect(account)
+    }
+
+    fun confirmHealthConnectScale(fingerprint: String, kind: ConfirmedScaleKind) = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        externalSourceStore.confirmHealthConnectOrigin(account, fingerprint, kind)
+        mutableMessage.value = if (kind == ConfirmedScaleKind.NOT_SURE) "El origen quedó marcado como ambiguo." else "Confirmación local actualizada."
+    }
+
+    fun revokeHealthConnectScale(fingerprint: String) = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        externalSourceStore.revokeHealthConnectOrigin(account, fingerprint)
+        mutableMessage.value = "La confirmación local se revocó sin cambiar mediciones históricas."
+    }
+
+    fun requiredBlePermissions(): Set<String> = container.externalDeviceManager.requiredPermissions()
+    fun onBlePermissionResult() = container.externalDeviceManager.refresh()
+    fun startBleScan() = container.externalDeviceManager.startScan()
+    fun cancelBleScan() = container.externalDeviceManager.cancelScan()
+    fun cancelExperimentalCapture() = container.externalDeviceManager.cancelCapture()
+
+    fun associateBleCandidate(sessionDeviceId: String) = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        if (container.externalDeviceManager.selectAndAssociate(account, sessionDeviceId)) {
+            mutableMessage.value = "Dispositivo asociado localmente. El protocolo S400 sigue sin validar."
+        }
+    }
+
+    fun inspectAssociatedBleDevice() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val result = container.externalDeviceManager.inspect(account)
+        mutableMessage.value = if (result.state == io.healthtracker.companion.core.bluetooth.BleGattState.DISCOVERED) {
+            "Inspección GATT completada sin escribir características."
+        } else {
+            "La inspección terminó con estado ${result.resultCode}."
+        }
+    }
+
+    fun forgetAssociatedBleDevice() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val persisted = bleDeviceAssociations.value.firstOrNull()
+        if (persisted != null) externalSourceStore.forgetBleAssociation(account, persisted.deviceFingerprint)
+        container.externalDeviceManager.forget(account)
+        mutableMessage.value = "Se olvidó la asociación local; las mediciones y capturas se conservan por separado."
+    }
+
+    fun explainExperimentalCapture() {
+        val account = preferences.value.accountScope ?: return
+        container.externalDeviceManager.startCapture(account)
+        mutableMessage.value = "Captura privada iniciada. Se detendrá por cancelación, desconexión, límite o timeout; no se interpretará peso."
+    }
+
+    fun selectBleCaptureCharacteristic(serviceUuid: String, characteristicUuid: String) {
+        if (container.externalDeviceManager.selectCaptureCharacteristic(serviceUuid, characteristicUuid)) {
+            mutableMessage.value = "Característica seleccionada para la captura experimental."
+        }
+    }
+
+    fun deleteLatestBleCapture() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        mutableMessage.value = if (container.externalDeviceManager.deleteLatestCapture(account)) "Captura privada eliminada." else "No se encontró una captura para borrar."
+    }
+
+    fun prepareLatestBleCaptureExport(onReady: (Uri) -> Unit) = action(showBusy = false) {
+        val captureId = container.externalDeviceManager.latestCaptureId() ?: return@action
+        onReady(container.bleCaptureExporter.prepareExplicitExport(captureId))
+    }
+
+    fun revokeBleCaptureExport(uri: Uri) = container.bleCaptureExporter.revokeAndDelete(uri)
+
+    fun resolveExternalDuplicate(duplicateId: String, sameMeasurement: Boolean) = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        externalSourceStore.resolvePossibleDuplicate(account, duplicateId, sameMeasurement)
+        mutableMessage.value = if (sameMeasurement) "Las mediciones quedaron enlazadas sin borrado silencioso." else "Se conservarán ambas mediciones."
+    }
 
     fun logout(revoke: Boolean = false, localOnly: Boolean = false) = action {
         val account = preferences.value.accountScope ?: return@action

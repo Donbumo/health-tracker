@@ -1,5 +1,23 @@
 # Checklist de release alpha privada
 
+## Alpha 1.6 — fuentes externas y Xiaomi S400 experimental
+
+- [x] Registro externo desacoplado y owner-scoped con cinco fuentes iniciales.
+- [x] Diagnóstico Weight/BodyFat sanitizado y confirmación local revocable sin reclasificación automática Xiaomi.
+- [x] Permisos BLE por API, hardware opcional, solicitud contextual y estados sin BLE/apagado/denegado.
+- [x] Scan limitado/cancelable/single-flight con selección explícita, sin MAC principal ni loop.
+- [x] GATT con timeouts/límites/cierre; snapshot sin valores y cero escrituras de características desconocidas.
+- [x] Captura debug consentida, limitada, cifrada/privada, metadata Room, delete, export FileProvider explícito y replay determinista.
+- [x] Adaptador S400 sin offsets/fórmulas/métricas; ground truth separado y gate documentado para peso.
+- [x] Dedupe multifuentе conserva probable/posible/override y solo automatiza identidad fuerte exacta.
+- [x] Room 6 y migraciones explícitas 1/2/3/4/5→6; capturas fuera de SQLite.
+- [x] Fixtures ficticias y herramientas sanitizar/inspeccionar/comparar sin semántica.
+- [x] Gate final en orden: lint; 146/146 JVM; APK; androidTest compilable; segunda JVM 146/146. APK 18.719.697 bytes, SHA-256 `45f6dc75925612c6f84927270009a752b061679f383500c0f13c990235df5ac4`.
+- [ ] QA físico en S400/teléfono separado, incluida asociación, GATT/CCCD, captura/export y permisos reales.
+- [ ] Ejecutar instrumentación solo en AVD/dispositivo separado; no forma parte del gate automático de esta rama.
+- [ ] Peso BLE habilitado: **NO**. Composición BLE habilitada: **NO**.
+- [ ] Alpha 1.6 lista para release: **NO**, hasta evidencia física, QA manual, instrumentación y revisión formal.
+
 ## Alpha 1.5 — Health Connect de solo lectura
 
 - [x] RC1 permite NAS con HTTPS, puerto y base path; HTTP LAN exige debug+confirmación y las credenciales/fragmentos se rechazan.

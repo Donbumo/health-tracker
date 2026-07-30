@@ -1,5 +1,11 @@
 # Seguridad Android Companion
 
+## Fuentes externas Alpha 1.6
+
+BLE se declara opcional. El manifest usa `BLUETOOTH_SCAN`/`BLUETOOTH_CONNECT` en API 31+ y permisos heredados/ubicación con `maxSdkVersion=30`; no declara advertise. No se usa `neverForLocation` porque todavía podría filtrar dispositivos necesarios y falta evidencia S400 real. La solicitud solo aparece desde Fuentes externas; denegar/revocar no cierra sesión ni afecta Health Connect o entrenamiento.
+
+No se registran MAC, manufacturer bytes, payloads, peso, grasa, impedancia, record IDs o package names completos. Asociación persiste únicamente identity/fingerprints sanitizados. Snapshots GATT no guardan valores. Capturas se cifran AES/GCM con Keystore bajo `noBackupFilesDir`, tienen límites y no se diagnostican/suben. FileProvider es no exportado; una exportación manual concede lectura temporal y elimina/revoca la copia al abandonar la pantalla o reiniciar. Logout/borrado local elimina primero los archivos cifrados del `accountScope` y después su metadata Room; cambiar servidor conserva la partición anterior sin mezclarla. El CCCD estándar es la única escritura de captura; no existen escrituras de características desconocidas.
+
 ## Identidad y tokens
 
 - Login API Bearer, nunca cookies ni CSRF.

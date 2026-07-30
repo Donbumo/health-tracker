@@ -6,6 +6,9 @@
 - [x] Cambio de servidor confirmado invalida tokens/scope activos y conserva Room anterior aislada; refresh queda ligado a la URL normalizada.
 - [x] ProxyFix está desactivado por defecto y limita `X-Forwarded-For/Proto` a 0–2 saltos configurados; operación local no cambia.
 - [x] Existen preflight NAS no destructivo, smoke read-only default/write confirmado con limpieza y runbook de backup/deploy/rollback.
+- [x] Kit de teléfono separa preflight, firma instalada, instalación literal confirmada, smoke explícito, logs sanitizados y sesión QA fuera del repositorio; no contiene uninstall, `pm clear`, `install -d`, permisos ni cambios de red.
+- [x] Harness PowerShell 5.1 cubre 42 escenarios con SDK/adb/package/logs completamente ficticios y cleanup en `finally`.
+- [ ] Ejecutar el kit en teléfono físico y aprobar conservación manual pre/post; los fakes y `adb install -r` por sí solos no prueban login, Room, DataStore, Keystore, drafts, planes o ledger.
 - [x] Versión candidata: applicationId `io.healthtracker.companion`, debug suffix `.debug`, versionCode 15, versionName `1.5.0-alpha01`, min 26 y target/compile 36.
 - [ ] Ejecutar en el NAS real preflight, backup verificado, migración 0032 y smoke con una cuenta QA.
 - [ ] Instalar con `adb install -r` y completar los 30 pasos del runbook en teléfono real; no se considera aprobado por compilación o fakes.

@@ -2,6 +2,8 @@
 
 ## Automatizadas
 
+El 29 de julio de 2026, el endurecimiento del kit físico pasó en orden `lintDebug`, 93/93 JVM forzadas, `assembleDebug`, `compileDebugAndroidTestKotlin` y segunda pasada forzada 93/93. El harness externo pasó 42/42 casos bajo Windows PowerShell 5.1, incluido SDK ficticio, build-tools semántico/fijado, dispositivos/firmas/versiones, redacción y cleanup. El SDK/APK reales validaron antes de terminar con `device_missing`; no se ejecutó instalación, launch, logcat clear ni `connectedDebugAndroidTest`.
+
 - Unitarias: doce modos de carga, canonical hash, redacción, clasificación temporal/definitiva de refresh, debounce + flush de autosave, coalescing de triggers y textos de estado offline/autosave.
 - Alpha 1.2: decode de contratos, porcentaje con base cero, escala de gráfica vacía/un punto/valores iguales/múltiples, caché Room owner-scoped, paginación y reconciliación sin duplicados.
 - Instrumentación: aislamiento Room, Keystore, refresh temporal/definitivo con MockWebServer, package+ACK observable sin pull, sesión local tras process death, logout explícito, start/completion offline, autosave tardío, FIFO `START → PROGRESS → COMPLETE`, 200/409, pull repetido y single-flight manual/worker.
@@ -34,7 +36,7 @@ El 26 de julio de 2026 pasaron `lintDebug`, dos ejecuciones de `testDebugUnitTes
 
 ## QA manual requerido
 
-Para RC1 sigue exactamente el gate de [ALPHA_1_5_NAS_RC_RUNBOOK.md](ALPHA_1_5_NAS_RC_RUNBOOK.md): `adb devices -l`, `adb install -r <apk>` y lanzamiento con `monkey`, sin uninstall ni `pm clear`. El recorrido de 30 pasos valida NAS, process death, offline/reconexión, web y permisos parciales reales. Debe terminar con pendientes/conflictos en cero y sin duplicados ni secretos en logcat.
+Para RC1 usa [ALPHA_1_5_PHONE_QA_RUNBOOK.md](ALPHA_1_5_PHONE_QA_RUNBOOK.md): el preflight descubre SDK, inspecciona APK, selecciona dispositivo y compara certificado de forma read-only; la instalación separada exige `ALPHA15-INSTALL` y usa únicamente `adb install -r`. El smoke no toca formularios ni datos. El recorrido manual valida process death, offline/reconexión, web y permisos parciales reales; debe terminar con pendientes/conflictos en cero y sin duplicados ni secretos.
 
 Usa únicamente cuenta y datos ficticios. Ejecuta los recorridos conectado, modo avión/process death/reconexión y errores descritos en el encargo Alpha 1.1. Cubre teléfono pequeño/medio/grande, API 26 y API 36, claro/oscuro, fuente grande, TalkBack, portrait/landscape y doble toque en completion.
 

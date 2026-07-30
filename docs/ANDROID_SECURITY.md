@@ -26,7 +26,9 @@ Solo se aceptan esquemas `https`/`http`; se rechazan userinfo, query, fragment, 
 
 Room permanece en almacenamiento privado de la app y usa `accountScope = SHA256(server URL + user UUID)` en toda consulta. El refresh cifrado queda además ligado a la URL normalizada: un token de un NAS no se devuelve al cliente para otro. **Cambiar servidor** exige confirmación, invalida tokens y scope activos, cancela workers y conserva las filas antiguas bajo su scope aislado. Logout, revocación y borrado local sí eliminan cache, drafts, cursores y pendientes de esa cuenta.
 
-El diagnóstico Health Connect exportable usa allowlist: versión de app/Android, estado del proveedor, tipos seleccionados, conteos, timestamps y códigos sanitizados. No incluye valores de peso/grasa/pasos/nutrición, IDs/origins completos, changes tokens, headers, access/refresh tokens, notas ni payloads.
+El diagnóstico Health Connect exportable usa texto explícitamente sanitizado y una allowlist: versión de app/Android, estado/disponibilidad/actualización del proveedor, conteo y grupos genéricos seleccionados/concedidos, estado background, pendientes, timestamps truncados y códigos sanitizados. No crea archivo ni necesita FileProvider. No incluye nombres concretos ni valores de peso/grasa/pasos/nutrición, IDs/origins completos, changes tokens, headers, access/refresh tokens, notas ni payloads.
+
+El kit de teléfono Alpha 1.5 oculta seriales con fingerprints cortos, reemplaza rutas de perfil por marcadores, acota logcat y guarda por defecto solo hallazgos `[REDACTED]`. El APK instalado temporal para comparar certificado queda bajo `%TEMP%` y se elimina en `finally`; nunca usa `run-as` ni abre Room, DataStore, SharedPreferences o Keystore. Los reportes de sesión viven fuera del repositorio. Logs crudos requieren ruta externa y opción explícita.
 
 Cerrar todas las sesiones, revocar el dispositivo y borrar datos locales muestran alcance explícito y requieren una confirmación adicional. Los botones quedan protegidos contra doble envío. Cerrar sesión afecta esta cuenta local; cerrar todas revoca sesiones API; revocar bloquea el dispositivo; borrar local no modifica el servidor.
 

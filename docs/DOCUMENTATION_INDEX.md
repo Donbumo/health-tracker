@@ -17,7 +17,7 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 - Reglas: [project-rules/web-ui.md](project-rules/web-ui.md), [project-rules/web-daily-driver.md](project-rules/web-daily-driver.md).
 - Primer acceso y uso: [GETTING_STARTED.md](GETTING_STARTED.md), [USER_GUIDE.md](USER_GUIDE.md), [DAILY_WORKFLOW.md](DAILY_WORKFLOW.md), [TROUBLESHOOTING_USER.md](TROUBLESHOOTING_USER.md).
 - Diseño/QA: [WEB_UI_HOMELAB.md](WEB_UI_HOMELAB.md), [WEB_UI_DESIGN_SYSTEM.md](WEB_UI_DESIGN_SYSTEM.md), [WEB_UI_ACCESSIBILITY.md](WEB_UI_ACCESSIBILITY.md).
-- Release/operación: [ALPHA_DEPLOYMENT.md](ALPHA_DEPLOYMENT.md), [ALPHA_RELEASE_CHECKLIST.md](ALPHA_RELEASE_CHECKLIST.md) y [ALPHA_1_5_NAS_RC_RUNBOOK.md](ALPHA_1_5_NAS_RC_RUNBOOK.md) para preflight, backup, migración, smoke, teléfono y rollback de RC1.
+- Release/operación: [ALPHA_DEPLOYMENT.md](ALPHA_DEPLOYMENT.md), [ALPHA_RELEASE_CHECKLIST.md](ALPHA_RELEASE_CHECKLIST.md), [ALPHA_1_5_NAS_RC_RUNBOOK.md](ALPHA_1_5_NAS_RC_RUNBOOK.md) para NAS y [ALPHA_1_5_PHONE_QA_RUNBOOK.md](ALPHA_1_5_PHONE_QA_RUNBOOK.md) para preflight, firma, instalación confirmada, smoke y QA conservador en teléfono.
 
 ## Contratos e importación
 

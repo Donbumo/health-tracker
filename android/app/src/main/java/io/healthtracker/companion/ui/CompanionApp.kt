@@ -2112,6 +2112,7 @@ private fun SettingsScreen(viewModel: CompanionViewModel) {
                             BuildConfig.VERSION_CODE,
                             Build.VERSION.RELEASE,
                             Build.VERSION.SDK_INT,
+                            pending,
                         ),
                         healthConnect,
                     )

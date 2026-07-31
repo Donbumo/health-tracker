@@ -2,6 +2,7 @@ package io.healthtracker.companion.ui
 
 import android.os.Build
 import android.content.Intent
+import android.content.Context
 import android.net.Uri
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.lifecycle.SavedStateHandle
@@ -30,6 +31,11 @@ import io.healthtracker.companion.core.database.MobilePlanWorkoutEntity
 import io.healthtracker.companion.core.database.PlanningConflictEntity
 import io.healthtracker.companion.core.database.BodyStatEntity
 import io.healthtracker.companion.core.database.NutritionEntryEntity
+import io.healthtracker.companion.core.database.GoalEntity
+import io.healthtracker.companion.core.database.ReminderRuleEntity
+import io.healthtracker.companion.core.database.ReminderEventEntity
+import io.healthtracker.companion.core.network.CanonicalJson
+import io.healthtracker.companion.core.notifications.NotificationPublisher
 import io.healthtracker.companion.core.health.canonicalWeightKg
 import io.healthtracker.companion.core.healthconnect.HealthConnectManager
 import io.healthtracker.companion.core.healthconnect.HealthConnectRecordType
@@ -75,6 +81,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 enum class AutosaveUiState { SAVING, SAVED, SAVED_LOCAL, ERROR }
 
@@ -98,6 +108,7 @@ class CompanionViewModel(
     private val healthConnectManager: HealthConnectManager = container.healthConnectManager
     private val externalSourceStore = container.externalSourceStore
     private val portabilityRepository = container.portabilityRepository
+    private val engagementRepository = container.engagementRepository
     private val planningEditorState = PlanningEditorState(savedStateHandle)
     private val mutableAuth = MutableStateFlow(AuthState.SIGNED_OUT)
     private val mutableProfile = MutableStateFlow<UserProfile?>(null)
@@ -129,6 +140,7 @@ class CompanionViewModel(
     private val mutableFoodLoading = MutableStateFlow(false)
     private val mutableProgressSection = MutableStateFlow("training")
     private val mutableScaleDiagnostic = MutableStateFlow(ScaleDiagnosticResult())
+    private val mutableAdherenceDays = MutableStateFlow(7)
     private var catalogSearchJob: Job? = null
     private val serializer = Json { explicitNulls = false; encodeDefaults = true }
     private val autosaveController: DebouncedAutosave<AutosaveCommand>
@@ -165,6 +177,7 @@ class CompanionViewModel(
     val foodLoading: StateFlow<Boolean> = mutableFoodLoading
     val progressSection: StateFlow<String> = mutableProgressSection
     val scaleDiagnostic: StateFlow<ScaleDiagnosticResult> = mutableScaleDiagnostic
+    val adherenceDays: StateFlow<Int> = mutableAdherenceDays
     val externalDevice: StateFlow<ExternalDeviceUiState> = container.externalDeviceManager.state
     val preferences = container.preferences.values.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000),
@@ -174,6 +187,31 @@ class CompanionViewModel(
         viewModelScope, SharingStarted.WhileSubscribed(5_000), false,
     )
     private val scope = preferences.mapLatest { it.accountScope }
+    private val engagementScope = preferences.mapLatest { local ->
+        val account = local.accountScope
+        val server = local.serverUrl
+        if (account == null || server == null) null else account to CanonicalJson.serverIdentity(server)
+    }
+
+    val goals = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(emptyList()) else engagementRepository.observeGoals(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val reminderRules = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(emptyList()) else engagementRepository.observeRules(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val reminderEvents = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(emptyList()) else engagementRepository.observeEvents(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val reminderPermission = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(null) else engagementRepository.observePermission(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val adherence = combine(engagementScope, mutableAdherenceDays) { value, days -> value to days }.flatMapLatest { (value, days) ->
+        if (value == null) flowOf(null) else engagementRepository.observeAdherence(value.first, value.second, days)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val portableExports = scope.flatMapLatest { account ->
         if (account == null) flowOf(emptyList()) else portabilityRepository.observeExports(account)
@@ -1335,6 +1373,125 @@ class CompanionViewModel(
         val account = preferences.value.accountScope ?: return@action
         portabilityRepository.deleteLocalImport(account, importId)
         mutableMessage.value = "Inspeccion local eliminada."
+    }
+
+    fun createWeeklySessionsGoal() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val timezone = profile.value?.timezone ?: "UTC"
+        engagementRepository.createGoal(account, buildJsonObject {
+            put("public_id", UUID.randomUUID().toString()); put("goal_type", "training_sessions_per_week")
+            put("target_value", "3"); put("unit", "session"); put("period", "weekly")
+            put("applicable_days", JsonArray((1..7).map(::JsonPrimitive))); put("timezone", timezone)
+            put("start_date", LocalDate.now(ZoneId.of(timezone)).toString())
+        })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Objetivo guardado en este dispositivo."
+    }
+
+    fun createDailyStepsGoal() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val timezone = profile.value?.timezone ?: "UTC"
+        engagementRepository.createGoal(account, buildJsonObject {
+            put("public_id", UUID.randomUUID().toString()); put("goal_type", "daily_steps")
+            put("target_value", "5000"); put("unit", "step"); put("period", "daily")
+            put("applicable_days", JsonArray((1..7).map(::JsonPrimitive))); put("timezone", timezone)
+            put("start_date", LocalDate.now(ZoneId.of(timezone)).toString())
+        })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Objetivo diario guardado en este dispositivo."
+    }
+
+    fun setGoalPaused(goal: GoalEntity, paused: Boolean) = action(showBusy = false) {
+        engagementRepository.updateGoal(goal.accountScope, goal.publicId, buildJsonObject { put("state", if (paused) "paused" else "active") })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun updateGoalTarget(goal: GoalEntity, target: String) = action(showBusy = false) {
+        engagementRepository.updateGoal(goal.accountScope, goal.publicId, buildJsonObject { put("target_value", target) })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun archiveGoal(goal: GoalEntity) = action(showBusy = false) {
+        engagementRepository.archiveGoal(goal.accountScope, goal.publicId)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Objetivo archivado."
+    }
+
+    fun createTrainingReminder() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val timezone = profile.value?.timezone ?: "UTC"
+        engagementRepository.createRule(account, buildJsonObject {
+            put("public_id", UUID.randomUUID().toString()); put("reminder_type", "scheduled_workout_pending")
+            put("local_time", "18:00"); put("applicable_days", JsonArray((1..7).map(::JsonPrimitive)))
+            put("lead_minutes", 0); put("quiet_start", "22:00"); put("quiet_end", "07:00"); put("quiet_timezone", timezone)
+            put("snooze_options", JsonArray(listOf(JsonPrimitive(15), JsonPrimitive(30), JsonPrimitive(60), JsonPrimitive("tomorrow"))))
+            put("max_per_day", 1); put("cooldown_minutes", 120); put("enabled", false); put("timezone", timezone)
+        })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Recordatorio creado desactivado; revisa horario y permiso antes de activarlo."
+    }
+
+    fun createWeightReminder() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val timezone = profile.value?.timezone ?: "UTC"
+        engagementRepository.createRule(account, buildJsonObject {
+            put("public_id", UUID.randomUUID().toString()); put("reminder_type", "log_weight")
+            put("local_time", "08:00"); put("applicable_days", JsonArray(listOf(JsonPrimitive(1))))
+            put("lead_minutes", 0); put("quiet_start", "22:00"); put("quiet_end", "07:00"); put("quiet_timezone", timezone)
+            put("snooze_options", JsonArray(listOf(JsonPrimitive(15), JsonPrimitive(30), JsonPrimitive(60), JsonPrimitive("tomorrow"))))
+            put("max_per_day", 1); put("cooldown_minutes", 180); put("enabled", false); put("timezone", timezone)
+        })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun setReminderEnabled(rule: ReminderRuleEntity, enabled: Boolean) = action(showBusy = false) {
+        engagementRepository.updateRule(rule.accountScope, rule.publicId, buildJsonObject { put("enabled", enabled) })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun updateReminderSchedule(rule: ReminderRuleEntity, time: String, quietStart: String, quietEnd: String) = action(showBusy = false) {
+        engagementRepository.updateRule(rule.accountScope, rule.publicId, buildJsonObject {
+            put("local_time", time); put("quiet_start", quietStart); put("quiet_end", quietEnd)
+            put("quiet_timezone", rule.timezone)
+        })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun deleteReminder(rule: ReminderRuleEntity) = action(showBusy = false) {
+        engagementRepository.deleteRule(rule.accountScope, rule.publicId)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun acknowledgeReminder(event: ReminderEventEntity) = action(showBusy = false) {
+        engagementRepository.acknowledge(event.accountScope, event.serverIdentity, event.publicId)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun snoozeReminder(event: ReminderEventEntity, minutes: Int?) = action(showBusy = false) {
+        engagementRepository.snooze(event.accountScope, event.serverIdentity, event.publicId, minutes)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun cleanOldReminderEvents() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val count = engagementRepository.cleanOldEvents(account)
+        mutableMessage.value = "$count eventos locales antiguos eliminados."
+    }
+
+    fun recordNotificationPermission(requested: Boolean, rationaleShown: Boolean, granted: Boolean) = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        engagementRepository.recordPermission(account, requested, rationaleShown, granted)
+    }
+
+    fun sendTestNotification(context: Context) {
+        mutableMessage.value = if (NotificationPublisher.showTest(context)) "Notificación de prueba enviada localmente." else "Concede el permiso de notificaciones para realizar la prueba."
+    }
+
+    fun setAdherenceDays(days: Int) { if (days in setOf(7, 30, 90)) mutableAdherenceDays.value = days }
+
+    fun refreshEngagement() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        if (connected.value) engagementRepository.refresh(account)
     }
 
     fun logout(revoke: Boolean = false, localOnly: Boolean = false) = action {

@@ -1,5 +1,11 @@
 # Android offline y sincronización
 
+## Cola de engagement Alpha 1.8
+
+Objetivos, reglas y eventos técnicos usan tipos `engagement_*` en `pending_actions`. Create→update reemplaza el payload del create, create→delete elimina ambos y múltiples updates conservan el estado final. `SyncWorker` drena esta familia antes del FIFO histórico y luego refresca objetivos, reglas y adherencia. Room emite sin HTTP desde recomposición; el trabajo de red conserva constraints y backoff existentes.
+
+Las seis tablas nuevas incluyen `accountScope` e identidad SHA-256 del servidor. Logout cancela los works del scope antes de limpiar sus filas; el cambio de servidor no reutiliza identidad ni agenda reglas del servidor anterior.
+
 Room es la fuente durante el entrenamiento. Un package descargado se verifica excluyendo `package_hash`, ordenando claves recursivamente y calculando SHA-256 sobre JSON canónico; solo entonces se normaliza en tablas de package/ejercicio/set.
 
 ## Flujo durable

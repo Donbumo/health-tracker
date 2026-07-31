@@ -33,6 +33,7 @@ class SyncWorker(context: Context, parameters: WorkerParameters) : CoroutineWork
                 if (app.container.tokens.accessToken(local.serverUrl) == null) {
                     app.container.repository.restoreOnlineSession(scope)
                 }
+                app.container.engagementRepository.synchronize(scope)
                 app.container.repository.synchronize(scope)
                 val nextGeneration = SyncScheduler.generation()
                 if (nextGeneration == observedGeneration && !app.container.repository.hasReadyPending(scope)) {

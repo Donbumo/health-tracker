@@ -454,7 +454,7 @@ def test_checksum_undeclared_file_zip_bomb_and_file_count_limits(app, client, us
 def test_every_portable_schema_is_valid_and_uses_only_local_refs(app):
     root = Path(app.config["SCHEMA_ROOT"])
     schemas = sorted(root.glob("portable_*.schema.json"))
-    assert len(schemas) == 20
+    assert len(schemas) == 22
     names = {path.name for path in schemas}
     for path in schemas:
         document = json.loads(path.read_text(encoding="utf-8"))

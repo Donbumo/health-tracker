@@ -27,9 +27,14 @@ import io.healthtracker.companion.core.security.SecureTokenStore
 import io.healthtracker.companion.core.sync.CompanionRepository
 import io.healthtracker.companion.core.sync.SyncScheduler
 import io.healthtracker.companion.core.portability.PortabilityRepository
+import io.healthtracker.companion.core.notifications.AndroidReminderScheduler
+import io.healthtracker.companion.core.notifications.EngagementRepository
+import io.healthtracker.companion.core.notifications.NotificationChannelRegistrar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class HealthTrackerApplication : Application() {
     lateinit var container: AppContainer
@@ -38,6 +43,7 @@ class HealthTrackerApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        NotificationChannelRegistrar.create(this)
         SyncScheduler.initialize(this)
         SyncScheduler.schedulePeriodic()
         HealthConnectScheduler.initialize(this)
@@ -47,6 +53,13 @@ class HealthTrackerApplication : Application() {
                 override fun onStart(owner: LifecycleOwner) {
                     SyncScheduler.enqueueNow(io.healthtracker.companion.core.sync.SyncTrigger.FOREGROUND)
                     HealthConnectScheduler.enqueue(HealthConnectTrigger.FOREGROUND)
+                    val local = container.preferences.values
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.IO).launch {
+                        val preferences = local.first()
+                        val scope = preferences.accountScope ?: return@launch
+                        val server = preferences.serverUrl ?: return@launch
+                        container.reminderScheduler.rescheduleAll(scope, io.healthtracker.companion.core.network.CanonicalJson.serverIdentity(server))
+                    }
                 }
 
                 override fun onStop(owner: LifecycleOwner) {
@@ -67,12 +80,20 @@ class AppContainer(application: Application) {
     val connectivity = ConnectivityObserver(application)
     val portabilityRepository = PortabilityRepository(application, database, api)
     val bleCaptureStore = EncryptedBleCaptureStore(application)
+    val reminderScheduler = AndroidReminderScheduler(application, database)
+    val engagementRepository = EngagementRepository(database, api, reminderScheduler)
     val repository = CompanionRepository(
         database,
         preferences,
         tokens,
         api,
         onBeforeClearAccount = { scope ->
+            val identity = engagementRepository.identity(scope)
+            if (identity != null) {
+                database.companionDao().enabledReminderRules(scope, identity).forEach { rule ->
+                    reminderScheduler.cancel(scope, identity, rule.publicId)
+                }
+            }
             portabilityRepository.fileStore.deleteScope(scope)
             database.companionDao().bleCaptureMetadataForAccount(scope).forEach { metadata ->
                 check(bleCaptureStore.deleteEncryptedFile(metadata.encryptedFileName)) { "capture_cleanup_failed" }

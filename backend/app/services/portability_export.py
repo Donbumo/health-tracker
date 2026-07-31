@@ -15,7 +15,7 @@ from app.models import (
     DailyEnergy, DailyNutrition, Exercise, FoodProduct, NutritionItem, NutritionMeal, PlannedWorkout,
     PortableArtifact, PortableExportJob, TrainingPlan, TrainingPlanWorkout,
     TrainingSession, TrainingSessionExercise, TrainingSet, UploadedFile, User,
-    WeighIn,
+    UserGoal, ReminderRule, WeighIn,
 )
 from app.services.portable_archive import (
     ALL_SECTIONS, MEDIA_TYPE, PortableArchiveError, PortableArchiveWriter,
@@ -153,6 +153,40 @@ def _serialize_records(user: User, sections: list[str], start: date | None, end:
             "preferred_load_unit": user.preferred_load_unit,
             "timezone": user.timezone,
         })]
+    if "goals" in sections:
+        rows = _query(UserGoal, user.id, UserGoal.created_at, UserGoal.public_id)
+        output["goals"] = [_record("goals", row.public_id, {
+            "goal_type": row.goal_type,
+            "target_value": row.target_value,
+            "unit": row.unit,
+            "period": row.period,
+            "applicable_days": row.applicable_days_json or [],
+            "timezone": row.timezone,
+            "start_date": row.start_date,
+            "end_date": row.end_date,
+            "state": row.state,
+            "source": "manual" if row.source == "manual" else "portable_import",
+            "related_public_id": row.related_public_id,
+        }, row.revision) for row in rows]
+    if "reminder_rules" in sections:
+        rows = _query(ReminderRule, user.id, ReminderRule.created_at, ReminderRule.public_id,
+            loaders=(selectinload(ReminderRule.goal),))
+        output["reminder_rules"] = [_record("reminder_rules", row.public_id, {
+            "reminder_type": row.reminder_type,
+            "goal_public_id": row.goal.public_id if row.goal else None,
+            "local_time": row.local_time.strftime("%H:%M"),
+            "applicable_days": row.applicable_days_json or [],
+            "lead_minutes": row.lead_minutes,
+            "quiet_start": row.quiet_start.strftime("%H:%M") if row.quiet_start else None,
+            "quiet_end": row.quiet_end.strftime("%H:%M") if row.quiet_end else None,
+            "quiet_timezone": row.quiet_timezone,
+            "snooze_options": row.snooze_options_json or [],
+            "max_per_day": row.max_per_day,
+            "cooldown_minutes": row.cooldown_minutes,
+            "enabled": row.enabled,
+            "timezone": row.timezone,
+            "related_public_id": row.related_public_id,
+        }, row.revision) for row in rows]
     if "exercises" in sections:
         rows = _query(Exercise, user.id, Exercise.normalized_name, Exercise.public_id,
             loaders=(selectinload(Exercise.aliases), selectinload(Exercise.load_profile)))

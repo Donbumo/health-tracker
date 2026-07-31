@@ -121,6 +121,10 @@ Tras process death sin red, una cuenta con refresh cifrado, scope, dispositivo y
 
 Export permite secciones y rango; perfil identificable y attachments parten apagados. Import usa SAF, inspección local, upload, dry-run, resumen de conflictos y confirmación. Descargar escribe `.partial`, verifica tamaño/SHA-256 y sólo después habilita guardar o compartir. FileProvider concede URI temporal y no expone el árbol BLE. Consulta [Alpha 1.7](ALPHA_1_7_DATA_PORTABILITY.md).
 
+## Objetivos y recordatorios Alpha 1.8
+
+`Ajustes → Objetivos y recordatorios` conserva las cinco pestañas y usa Room primero. La pantalla crea/edita/pausa/archiva objetivos, configura reglas, explica el permiso Android, envía una prueba explícita y muestra el centro local. Hoy muestra hasta tres objetivos; Progreso consume la caché 7/30/90. WorkManager y el ledger sobreviven process death; reboot sólo solicita reprogramación futura. Consulta [Alpha 1.8](ALPHA_1_8_GOALS_REMINDERS.md).
+
 ## Alcance no soportado
 
 Alpha 1.5 integra únicamente lectura de Health Connect para los tipos documentados. Google Fit, Huawei Health, Xiaomi Home/S400, BLE, Wear OS, fotografía, OCR, IA, códigos de barras, recomendaciones y diagnósticos siguen fuera de alcance. Los objetivos de nutrición o pasos permanecen ausentes cuando el backend no tiene un contrato existente; no se fabrican valores.

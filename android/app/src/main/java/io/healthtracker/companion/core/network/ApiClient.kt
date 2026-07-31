@@ -59,6 +59,32 @@ class ApiClient(
     suspend fun health(baseUrl: String? = null): HealthResponse =
         call("/api/v1/health", "GET", baseOverride = baseUrl, requiresAuth = false)
 
+    suspend fun goals(): JsonObject = call("/api/v1/mobile/goals", "GET")
+    suspend fun createGoal(payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/goals", "POST", payload.toString(), idempotencyKey = key)
+    suspend fun patchGoal(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/goals/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+    suspend fun deleteGoal(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/goals/${encodeQuery(publicId)}", "DELETE", payload.toString(), idempotencyKey = key)
+
+    suspend fun reminderRules(): JsonObject = call("/api/v1/mobile/reminder-rules", "GET")
+    suspend fun createReminderRule(payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/reminder-rules", "POST", payload.toString(), idempotencyKey = key)
+    suspend fun patchReminderRule(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/reminder-rules/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+    suspend fun deleteReminderRule(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/reminder-rules/${encodeQuery(publicId)}", "DELETE", payload.toString(), idempotencyKey = key)
+
+    suspend fun reminderEvents(limit: Int = 50): JsonObject =
+        call("/api/v1/mobile/reminder-events?limit=$limit", "GET")
+    suspend fun createReminderEvent(payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/reminder-events", "POST", payload.toString(), idempotencyKey = key)
+    suspend fun patchReminderEvent(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/reminder-events/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+
+    suspend fun adherenceSummary(days: Int, timezone: String): JsonObject =
+        call("/api/v1/mobile/adherence/summary?days=$days&timezone=${encodeQuery(timezone)}", "GET")
+
     suspend fun createPortableExport(payload: JsonObject, key: String): JsonObject = call(
         "/api/v1/mobile/portability/exports", "POST", payload.toString(), idempotencyKey = key,
     )

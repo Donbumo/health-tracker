@@ -1,5 +1,9 @@
 # Pruebas Android Companion
 
+## Alpha 1.8
+
+La cobertura JVM prueba DST con y sin horario estacional, overlap/gap, dedupe lógico, quiet hours, cooldown, límites, permiso contextual, contenido genérico/privado y política de resumen semanal. Las instrumentadas compilables cubren cadena Room 1/2/3/4/5/6/7→8, preservación 7→8, identidad de servidor, coalescing offline y ledger ante doble worker. No ejecutar `connectedDebugAndroidTest` en este gate; quedan reboot, permisos y entrega bajo ahorro de batería para QA físico.
+
 ## Alpha 1.6
 
 Las JVM cubren registro de fuentes, fingerprint, diagnóstico Health Connect sin valores/IDs, permisos por API, dedupe exacto/probable/posible/detached/override, límites de scan/captura, parser/replay, propiedades notify/indicate y adaptador S400 sin publicación. Instrumentadas compilables cubren migraciones 1/2/3/4/5→6, aislamiento de scope, permisos manifest, BLE opcional y FileProvider privado.

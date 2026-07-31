@@ -133,6 +133,8 @@ El trabajo futuro vive en `ROADMAP.md`, no en instrucciones operativas.
 
 Alpha 1.7 define `health-tracker-portable-v1` como contrato de migración de usuario entre instalaciones. Es distinto de exportadores de conveniencia, backup/restore administrativo y Mobile Sync. Conserva UUID públicos sólo cuando es seguro, remapea colisiones, deriva el owner del destino y excluye cachés/estado técnico recalculable. Los contratos públicos viven en `schemas/portable_*.schema.json`; el diseño se documenta en [ALPHA_1_7_DATA_PORTABILITY.md](ALPHA_1_7_DATA_PORTABILITY.md).
 
+Alpha 1.8 incorpora engagement no clínico. El servidor persiste objetivos y reglas; Android agenda avisos locales sin push y conserva schedule/permiso/dedupe como estado técnico no portable. Adherencia describe cumplimiento contra un objetivo explícito, nunca sustituye métricas canónicas, diagnóstico o recomendación. Véase [ALPHA_1_8_GOALS_REMINDERS.md](ALPHA_1_8_GOALS_REMINDERS.md).
+
 ## Fuentes de verdad
 
 1. Schemas para contratos JSON públicos.

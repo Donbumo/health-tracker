@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 import hashlib
 import json
@@ -17,8 +17,10 @@ from app.models import (
     PortableImportDecision, PortableImportJob, PortableImportMapping,
     TrainingPlan, TrainingPlanVersion, TrainingPlanWorkout, TrainingSession,
     TrainingSessionExercise, TrainingSet, UploadedFile, User, WeighIn,
+    UserGoal, ReminderRule,
 )
 from app.services.exercise_identity import normalize_exercise_name
+from app.services.mobile_sync import validate_timezone
 from app.services.portable_archive import (
     ALL_SECTIONS, MEDIA_TYPE, PortableArchiveError, PortableArchiveReader,
     PortableLimits, canonical_json_bytes, safe_filename, scrub_portable,
@@ -31,7 +33,7 @@ STRATEGIES = {
     "update_when_identical_lineage", "require_manual_resolution",
 }
 DEPENDENCY_ORDER = (
-    "profile", "settings", "custom_foods", "exercises", "plans", "workouts",
+    "profile", "settings", "custom_foods", "exercises", "plans", "workouts", "goals", "reminder_rules",
     "schedules", "sessions", "session_exercises", "sets", "body_stats",
     "nutrition_entries", "steps", "attachments", "external_sources",
 )
@@ -40,6 +42,7 @@ PUBLIC_MODELS = {
     "schedules": PlannedWorkout, "sessions": TrainingSession,
     "session_exercises": TrainingSessionExercise, "body_stats": WeighIn,
     "custom_foods": FoodProduct, "steps": DailyEnergy,
+    "goals": UserGoal, "reminder_rules": ReminderRule,
 }
 
 
@@ -201,6 +204,24 @@ def _existing_data(section: str, row) -> dict:
     if section == "steps":
         return {"date": row.date, "steps": row.steps, "distance_meters": row.distance_meters,
             "source": _portable_source(row.source), "notes": row.notes}
+    if section == "goals":
+        return {"goal_type": row.goal_type, "target_value": row.target_value,
+            "unit": row.unit, "period": row.period,
+            "applicable_days": row.applicable_days_json or [], "timezone": row.timezone,
+            "start_date": row.start_date, "end_date": row.end_date, "state": row.state,
+            "source": "manual" if row.source == "manual" else "portable_import",
+            "related_public_id": row.related_public_id}
+    if section == "reminder_rules":
+        return {"reminder_type": row.reminder_type,
+            "goal_public_id": row.goal.public_id if row.goal else None,
+            "local_time": row.local_time.strftime("%H:%M"),
+            "applicable_days": row.applicable_days_json or [], "lead_minutes": row.lead_minutes,
+            "quiet_start": row.quiet_start.strftime("%H:%M") if row.quiet_start else None,
+            "quiet_end": row.quiet_end.strftime("%H:%M") if row.quiet_end else None,
+            "quiet_timezone": row.quiet_timezone, "snooze_options": row.snooze_options_json or [],
+            "max_per_day": row.max_per_day, "cooldown_minutes": row.cooldown_minutes,
+            "enabled": row.enabled, "timezone": row.timezone,
+            "related_public_id": row.related_public_id}
     return {}
 
 
@@ -256,8 +277,13 @@ def _classify(section: str, record: dict, user: User, package_ids: dict[str, set
             "skip_existing" if same else "require_manual_resolution", getattr(natural, "public_id", source_id))
     reference = None
     reference_section = None
-    for key, parent in (("plan_public_id", "plans"), ("session_public_id", "sessions"),
-                        ("session_exercise_public_id", "session_exercises")):
+    references = [("plan_public_id", "plans"), ("session_public_id", "sessions"),
+                  ("session_exercise_public_id", "session_exercises")]
+    if section == "reminder_rules":
+        references.append(("goal_public_id", "goals"))
+    if section == "goals" and data.get("goal_type") == "active_plan_tracking":
+        references.append(("related_public_id", "plans"))
+    for key, parent in references:
         if data.get(key): reference, reference_section = data[key], parent; break
     if reference and reference not in package_ids.get(reference_section, set()):
         model = PUBLIC_MODELS.get(reference_section)
@@ -362,6 +388,16 @@ def _datetime(value, required=False):
     except ValueError as error: raise PortabilityImportError("invalid_datetime", "El paquete contiene una fecha inválida.") from error
 
 
+def _local_time(value) -> time:
+    try:
+        result = time.fromisoformat(str(value))
+    except ValueError as error:
+        raise PortabilityImportError("invalid_time", "El paquete contiene una hora local inválida.") from error
+    if result.tzinfo is not None:
+        raise PortabilityImportError("invalid_time", "La hora local no debe incluir offset.")
+    return result.replace(second=0, microsecond=0)
+
+
 def _decimal(value):
     if value in (None, ""): return None
     try: return Decimal(str(value))
@@ -441,6 +477,40 @@ def _apply_record(job, section, record, strategy, maps, created_paths):
                 configuration_json=profile.get("configuration") or {}, quick_increments_json=profile.get("quick_increments") or [],
                 revision=max(1, int(profile.get("revision", 1)))))
         _add_mapping(job, section, source_id, destination, collision, maps); return "inserted"
+    if section == "goals":
+        destination, collision = _destination_uuid(UserGoal, source_id, user_id, force_new)
+        related = data.get("related_public_id")
+        if data.get("goal_type") == "active_plan_tracking" and related:
+            plan = _resolve(TrainingPlan, user_id, related, maps, "plans")
+            if plan is None:
+                raise PortabilityImportError("broken_reference", "No se pudo remapear la rutina de un objetivo.", 409)
+            related = plan.public_id
+        row = UserGoal(public_id=destination, user_id=user_id,
+            goal_type=data["goal_type"], target_value=_decimal(data["target_value"]),
+            unit=data["unit"], period=data["period"], applicable_days_json=data.get("applicable_days") or [],
+            timezone=validate_timezone(data["timezone"]), start_date=_date(data["start_date"]),
+            end_date=_date(data["end_date"]) if data.get("end_date") else None,
+            state=data.get("state", "active"), source="portable_import", related_public_id=related,
+            revision=max(1, int(record.get("revision", 1))))
+        db.session.add(row); _add_mapping(job, section, source_id, destination, collision, maps); return "inserted"
+    if section == "reminder_rules":
+        destination, collision = _destination_uuid(ReminderRule, source_id, user_id, force_new)
+        goal = _resolve(UserGoal, user_id, data.get("goal_public_id"), maps, "goals") if data.get("goal_public_id") else None
+        if data.get("goal_public_id") and goal is None:
+            raise PortabilityImportError("broken_reference", "No se pudo remapear el objetivo de un recordatorio.", 409)
+        row = ReminderRule(public_id=destination, user_id=user_id, goal_id=goal.id if goal else None,
+            reminder_type=data["reminder_type"], local_time=_local_time(data["local_time"]),
+            applicable_days_json=data.get("applicable_days") or [], lead_minutes=int(data.get("lead_minutes", 0)),
+            quiet_start=_local_time(data["quiet_start"]) if data.get("quiet_start") else None,
+            quiet_end=_local_time(data["quiet_end"]) if data.get("quiet_end") else None,
+            quiet_timezone=validate_timezone(data["quiet_timezone"]) if data.get("quiet_timezone") else None,
+            snooze_options_json=data.get("snooze_options") or [15, 30, 60, "tomorrow"],
+            max_per_day=int(data.get("max_per_day", 1)), cooldown_minutes=int(data.get("cooldown_minutes", 60)),
+            enabled=bool(data.get("enabled", True)), timezone=validate_timezone(data["timezone"]),
+            related_public_id=data.get("related_public_id"), source="portable_import",
+            requires_device_confirmation=True, next_occurrence=None,
+            revision=max(1, int(record.get("revision", 1))))
+        db.session.add(row); _add_mapping(job, section, source_id, destination, collision, maps); return "inserted"
     if section == "plans":
         destination, collision = _destination_uuid(TrainingPlan, source_id, user_id, force_new)
         row = TrainingPlan(public_id=destination, user_id=user_id, name=str(data["name"])[:200],

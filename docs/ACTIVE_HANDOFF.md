@@ -1,6 +1,18 @@
 # Handoff activo
 
-## Alpha 1.7 en esta rama
+## Alpha 1.8 en esta rama
+
+- Rama `feature/alpha-1.8-goals-reminders-adherence`; checkpoint inicial/HEAD sin modificar `a5cee0add8448516428f3044c70a3a03058139ac`.
+- Objetivos y reglas owner-only con API Bearer, idempotencia, revisión optimista, adherencia 7/30/90 y Alembic `20260731_0034` aditiva/reversible.
+- Android versionCode 18/versionName `1.8.0-alpha01`, Room 8, cola offline con coalescing y aislamiento por `accountScope` e identidad hash del servidor.
+- WorkManager agenda avisos locales sin alarmas exactas; canales separados, permiso contextual, lockscreen privado, quiet hours, snooze hijo, dedupe y antispam.
+- Se conservan cinco pestañas: Ajustes abre configuración/centro interno, Hoy limita objetivos a tres y Progreso muestra caché descriptiva.
+- Portable v1 añade opcionalmente `goals` y `reminder_rules`; nunca transporta eventos, permisos, schedules, channels o ledger.
+- Arquitectura y QA pendiente: `ALPHA_1_8_GOALS_REMINDERS.md`, `NOTIFICATION_PRIVACY.md` y `ADHERENCE_METRICS.md`.
+- Gates: backend local 657/5 y MariaDB 661/1; Android lint, 154/154 JVM dos veces, APK y compilación androidTest correctos. APK debug 17.835.620 bytes, SHA-256 `4511c25e69e2f3476a229a5ea2b97e573854ead9848136affa86206ae8cbcd8c`, firma v2, code 18/name `1.8.0-alpha01-debug`.
+- MariaDB usó un contenedor/red exclusivos y tmpfs; contenedor, red e imagen QA se eliminaron. Volúmenes antes/después: los mismos dos preexistentes. Compose diario, `.env`, `/data`, NAS y `qa-temp-alpha15*` no se tocaron.
+
+## Checkpoint Alpha 1.7 de partida
 
 - Rama: `feature/alpha-1.7-data-portability`; checkpoint inicial/HEAD: `8b2b7d86937ca33f118989cc6753b9fe8761bd75`, Alpha 1.6 completa.
 - No se cambió de rama ni se usó staging, commit, push, merge o tag.

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/mobile_reminder_rules.schema.json",
+  "title": "Mobile reminder rule v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["public_id", "reminder_type", "goal_public_id", "local_time", "applicable_days", "lead_minutes", "quiet_start", "quiet_end", "quiet_timezone", "snooze_options", "max_per_day", "cooldown_minutes", "enabled", "revision", "timezone", "next_occurrence", "last_triggered_at", "last_acknowledged_at", "related_public_id", "source", "requires_device_confirmation", "created_at", "updated_at"],
+  "properties": {
+    "public_id": {"type": "string", "format": "uuid"},
+    "reminder_type": {"enum": ["scheduled_workout_upcoming", "scheduled_workout_pending", "log_weight", "log_nutrition", "review_steps", "weekly_summary", "pending_sync_attention", "conflict_attention"]},
+    "goal_public_id": {"type": ["string", "null"], "format": "uuid"},
+    "local_time": {"type": "string", "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"},
+    "applicable_days": {"type": "array", "uniqueItems": true, "minItems": 1, "maxItems": 7, "items": {"type": "integer", "minimum": 1, "maximum": 7}},
+    "lead_minutes": {"type": "integer", "minimum": 0, "maximum": 10080},
+    "quiet_start": {"type": ["string", "null"], "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"},
+    "quiet_end": {"type": ["string", "null"], "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$"},
+    "quiet_timezone": {"type": ["string", "null"], "maxLength": 64},
+    "snooze_options": {"type": "array", "uniqueItems": true, "minItems": 1, "maxItems": 4, "items": {"enum": [15, 30, 60, "tomorrow"]}},
+    "max_per_day": {"type": "integer", "minimum": 1, "maximum": 10},
+    "cooldown_minutes": {"type": "integer", "minimum": 0, "maximum": 1440},
+    "enabled": {"type": "boolean"},
+    "revision": {"type": "integer", "minimum": 1},
+    "timezone": {"type": "string", "minLength": 1, "maxLength": 64},
+    "next_occurrence": {"type": ["string", "null"], "format": "date-time"},
+    "last_triggered_at": {"type": ["string", "null"], "format": "date-time"},
+    "last_acknowledged_at": {"type": ["string", "null"], "format": "date-time"},
+    "related_public_id": {"type": ["string", "null"], "format": "uuid"},
+    "source": {"enum": ["manual", "portable_import"]},
+    "requires_device_confirmation": {"type": "boolean"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  }
+}

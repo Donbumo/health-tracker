@@ -30,6 +30,7 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 ## Exportación y portabilidad
 
 - Portabilidad selectiva Alpha 1.7: [ALPHA_1_7_DATA_PORTABILITY.md](ALPHA_1_7_DATA_PORTABILITY.md), contrato [PORTABLE_PACKAGE_FORMAT_V1.md](PORTABLE_PACKAGE_FORMAT_V1.md) y matriz [DATA_EXPORT_PRIVACY.md](DATA_EXPORT_PRIVACY.md); schemas públicos `../schemas/portable_*.schema.json` y CLI `../scripts/portability/`.
+- Objetivos y recordatorios Alpha 1.8: [ALPHA_1_8_GOALS_REMINDERS.md](ALPHA_1_8_GOALS_REMINDERS.md), [NOTIFICATION_PRIVACY.md](NOTIFICATION_PRIVACY.md) y [ADHERENCE_METRICS.md](ADHERENCE_METRICS.md); contratos `../schemas/mobile_goals.schema.json`, `mobile_reminder_rules.schema.json` y `mobile_adherence.schema.json`.
 - Exporters: [project-rules/exporters.md](project-rules/exporters.md), [EXPORTERS.md](EXPORTERS.md), [EXPORT_STORAGE.md](EXPORT_STORAGE.md), [ACTIVITY_ROUTE_EXPORTS.md](ACTIVITY_ROUTE_EXPORTS.md), [TRAINING_EXPORTS.md](TRAINING_EXPORTS.md).
 - Restore de cuenta: [project-rules/account-restore.md](project-rules/account-restore.md), [ACCOUNT_RESTORE.md](ACCOUNT_RESTORE.md), [DATA_PORTABILITY.md](DATA_PORTABILITY.md).
 - Backup ZIP: [project-rules/full-backup.md](project-rules/full-backup.md), [FULL_BACKUP.md](FULL_BACKUP.md), [BACKUP_FORMAT_1_0.md](BACKUP_FORMAT_1_0.md), [BACKUP_SECURITY.md](BACKUP_SECURITY.md), [BACKUP_RESTORE_RUNBOOK.md](BACKUP_RESTORE_RUNBOOK.md).

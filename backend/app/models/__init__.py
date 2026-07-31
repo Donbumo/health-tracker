@@ -40,6 +40,12 @@ from app.models.portability import (
     PortableImportJob,
     PortableImportMapping,
 )
+from app.models.engagement import (
+    AdherenceSnapshot,
+    ReminderEvent,
+    ReminderRule,
+    UserGoal,
+)
 
 
 __all__ = [
@@ -84,4 +90,8 @@ __all__ = [
     "PortableImportDecision",
     "PortableImportJob",
     "PortableImportMapping",
+    "UserGoal",
+    "ReminderRule",
+    "ReminderEvent",
+    "AdherenceSnapshot",
 ]

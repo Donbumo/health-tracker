@@ -73,7 +73,7 @@ private enum class Destination(val route: String, val label: String, val symbol:
     HEALTH_DAY("health_day", "Salud", ""), BODY_HISTORY("body_history", "Cuerpo", ""),
     NUTRITION_DAY("nutrition_day", "Nutrición", ""), FOOD_CATALOG("food_catalog", "Alimentos", ""),
     STEPS_HISTORY("steps_history", "Pasos", ""), EXTERNAL_SOURCES("external_sources", "Fuentes externas", ""),
-    DATA_PRIVACY("data_privacy", "Datos y privacidad", "")
+    DATA_PRIVACY("data_privacy", "Datos y privacidad", ""), ENGAGEMENT("engagement", "Objetivos y recordatorios", "")
 }
 
 @Composable
@@ -216,7 +216,7 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            if (route !in setOf(Destination.WORKOUT.route, Destination.PLAN_DETAIL.route, Destination.PLAN_WORKOUT.route, Destination.HISTORY_DETAIL.route, Destination.EXERCISE_DETAIL.route, Destination.HEALTH_DAY.route, Destination.BODY_HISTORY.route, Destination.NUTRITION_DAY.route, Destination.FOOD_CATALOG.route, Destination.STEPS_HISTORY.route, Destination.EXTERNAL_SOURCES.route)) NavigationBar {
+            if (route !in setOf(Destination.WORKOUT.route, Destination.PLAN_DETAIL.route, Destination.PLAN_WORKOUT.route, Destination.HISTORY_DETAIL.route, Destination.EXERCISE_DETAIL.route, Destination.HEALTH_DAY.route, Destination.BODY_HISTORY.route, Destination.NUTRITION_DAY.route, Destination.FOOD_CATALOG.route, Destination.STEPS_HISTORY.route, Destination.EXTERNAL_SOURCES.route, Destination.DATA_PRIVACY.route, Destination.ENGAGEMENT.route)) NavigationBar {
                 listOf(Destination.TODAY, Destination.PLAN, Destination.HISTORY, Destination.PROGRESS, Destination.SETTINGS).forEach { destination ->
                     NavigationBarItem(
                         selected = route == destination.route,
@@ -236,6 +236,7 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
                 openBody = { nav.navigate(Destination.BODY_HISTORY.route) },
                 openNutrition = { nav.navigate(Destination.NUTRITION_DAY.route) },
                 openSteps = { nav.navigate(Destination.STEPS_HISTORY.route) },
+                openEngagement = { nav.navigate(Destination.ENGAGEMENT.route) },
             ) }
             composable(Destination.PLAN.route) { PlanScreen(viewModel) { id ->
                 viewModel.selectPlan(id); nav.navigate(Destination.PLAN_DETAIL.route)
@@ -265,6 +266,7 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
                 viewModel,
                 { nav.navigate(Destination.EXTERNAL_SOURCES.route) },
                 { nav.navigate(Destination.DATA_PRIVACY.route) },
+                { nav.navigate(Destination.ENGAGEMENT.route) },
             ) }
             composable(Destination.WORKOUT.route) { WorkoutScreen(viewModel) { nav.popBackStack() } }
             composable(Destination.HEALTH_DAY.route) { DailyHealthScreen(viewModel, { nav.popBackStack() }, { nav.navigate(Destination.BODY_HISTORY.route) }, { nav.navigate(Destination.NUTRITION_DAY.route) }, { nav.navigate(Destination.STEPS_HISTORY.route) }) }
@@ -274,6 +276,7 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
             composable(Destination.STEPS_HISTORY.route) { StepsHistoryScreen(viewModel) { nav.popBackStack() } }
             composable(Destination.EXTERNAL_SOURCES.route) { ExternalSourcesScreen(viewModel) { nav.popBackStack() } }
             composable(Destination.DATA_PRIVACY.route) { DataPrivacyScreen(viewModel) { nav.popBackStack() } }
+            composable(Destination.ENGAGEMENT.route) { GoalsAndRemindersScreen(viewModel) { nav.popBackStack() } }
         }
     }
 }
@@ -287,6 +290,7 @@ private fun TodayScreen(
     openBody: () -> Unit,
     openNutrition: () -> Unit,
     openSteps: () -> Unit,
+    openEngagement: () -> Unit,
 ) {
     val preferences by viewModel.preferences.collectAsState()
     val profile by viewModel.profile.collectAsState()
@@ -309,6 +313,7 @@ private fun TodayScreen(
     val confirmedScaleBodyStatIds by viewModel.confirmedScaleBodyStatIds.collectAsState()
     val healthDate by viewModel.healthDate.collectAsState()
     val operationalToday by viewModel.planningToday.collectAsState()
+    val goals by viewModel.goals.collectAsState()
     LaunchedEffect(operationalToday) { viewModel.setHealthDate(operationalToday) }
     LaunchedEffect(healthDate, connected) { if (connected) viewModel.refreshHealth() }
     var showDiscardCorrupt by remember { mutableStateOf(false) }
@@ -337,6 +342,17 @@ private fun TodayScreen(
                     Text(if (pending == 1) "1 operación pendiente" else "$pending operaciones pendientes")
                     if (!connected && pending > 0) Text("Tus cambios están guardados y se enviarán al volver la red.")
                     if (conflicts > 0) Text("Conflictos: $conflicts. Conservamos tu copia local; sincroniza y revisa antes de reintentar.", color = MaterialTheme.colorScheme.error)
+                }
+            }
+        }
+        item {
+            Card(onClick = openEngagement, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text("Objetivos activos", style = MaterialTheme.typography.titleMedium)
+                    val active = goals.filter { it.state == "active" }.take(3)
+                    if (active.isEmpty()) Text("No hay objetivos configurados.")
+                    active.forEach { goal -> Text("${goalLabel(goal.goalType)}: ${goal.targetValue} ${goal.unit}") }
+                    Text(if (goals.count { it.state == "active" } > 3) "Ver todos" else "Configurar", color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -1836,6 +1852,7 @@ private fun ProgressScreen(viewModel: CompanionViewModel, openExercise: (String)
             Text(if (connected) "Datos locales con actualización automática." else "Sin conexión: se muestra la última actualización guardada.")
             OutlinedButton(onClick = viewModel::refreshProgress, enabled = connected && !refreshing) { Text(if (refreshing) "Actualizando…" else "Actualizar") }
         }
+        item { AdherenceSection(viewModel) }
         error?.let { message -> item { Text("Actualización temporal fallida: $message", color = MaterialTheme.colorScheme.error) } }
         summary?.let { metrics ->
             item {
@@ -1961,6 +1978,7 @@ private fun SettingsScreen(
     viewModel: CompanionViewModel,
     openExternalSources: () -> Unit,
     openDataPrivacy: () -> Unit,
+    openEngagement: () -> Unit,
 ) {
     val context = LocalContext.current
     val preferences by viewModel.preferences.collectAsState()
@@ -1985,6 +2003,15 @@ private fun SettingsScreen(
         item { SettingsCard("Usuario", profile?.email ?: "Sin sesión") }
         item { SettingsCard("Dispositivo", "Android $deviceLabel · ${if (connected) "con red" else "offline"}") }
         item { SettingsCard("Versión", "App ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) · API 1 · Sync 1.0 · Companion 1.0") }
+        item {
+            Card(onClick = openEngagement, modifier = Modifier.fillMaxWidth().testTag("open_goals_reminders")) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Objetivos y recordatorios", style = MaterialTheme.typography.titleLarge)
+                    Text("Objetivos personales, horarios, quiet hours y centro de notificaciones local.")
+                    Text("Abrir", color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
         item {
             Card(onClick = openExternalSources, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

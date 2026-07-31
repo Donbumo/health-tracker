@@ -65,9 +65,15 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         PortableImportDecisionEntity::class,
         PortableDownloadEntity::class,
         PortableTempFileEntity::class,
+        GoalEntity::class,
+        ReminderRuleEntity::class,
+        ReminderEventEntity::class,
+        ReminderScheduleEntity::class,
+        ReminderPermissionStateEntity::class,
+        AdherenceCacheEntity::class,
         SyncStateEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 abstract class CompanionDatabase : RoomDatabase() {
@@ -78,7 +84,7 @@ abstract class CompanionDatabase : RoomDatabase() {
             context.applicationContext,
             CompanionDatabase::class.java,
             "health_tracker_companion_v1.db",
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8).build()
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -208,6 +214,26 @@ abstract class CompanionDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_portable_downloads_accountScope_state` ON `portable_downloads` (`accountScope`, `state`)")
                 db.execSQL("""CREATE TABLE IF NOT EXISTS `portable_temp_files` (`accountScope` TEXT NOT NULL, `fileId` TEXT NOT NULL, `kind` TEXT NOT NULL, `fileName` TEXT NOT NULL, `sha256` TEXT, `sizeBytes` INTEGER, `createdAt` TEXT NOT NULL, `expiresAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `fileId`))""")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_portable_temp_files_accountScope_expiresAt` ON `portable_temp_files` (`accountScope`, `expiresAt`)")
+            }
+        }
+
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `goals` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `publicId` TEXT NOT NULL, `goalType` TEXT NOT NULL, `targetValue` TEXT NOT NULL, `unit` TEXT NOT NULL, `period` TEXT NOT NULL, `applicableDaysJson` TEXT NOT NULL, `timezone` TEXT NOT NULL, `startDate` TEXT NOT NULL, `endDate` TEXT, `state` TEXT NOT NULL, `revision` INTEGER NOT NULL, `source` TEXT NOT NULL, `relatedPublicId` TEXT, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_goals_accountScope_serverIdentity_state_updatedAt` ON `goals` (`accountScope`, `serverIdentity`, `state`, `updatedAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_goals_accountScope_serverIdentity_goalType` ON `goals` (`accountScope`, `serverIdentity`, `goalType`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `reminder_rules` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `publicId` TEXT NOT NULL, `reminderType` TEXT NOT NULL, `goalPublicId` TEXT, `localTime` TEXT NOT NULL, `applicableDaysJson` TEXT NOT NULL, `leadMinutes` INTEGER NOT NULL, `quietStart` TEXT, `quietEnd` TEXT, `quietTimezone` TEXT, `snoozeOptionsJson` TEXT NOT NULL, `maxPerDay` INTEGER NOT NULL, `cooldownMinutes` INTEGER NOT NULL, `enabled` INTEGER NOT NULL, `revision` INTEGER NOT NULL, `timezone` TEXT NOT NULL, `nextOccurrence` TEXT, `lastTriggeredAt` TEXT, `lastAcknowledgedAt` TEXT, `relatedPublicId` TEXT, `source` TEXT NOT NULL, `requiresDeviceConfirmation` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_reminder_rules_accountScope_serverIdentity_enabled_nextOccurrence` ON `reminder_rules` (`accountScope`, `serverIdentity`, `enabled`, `nextOccurrence`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_reminder_rules_accountScope_serverIdentity_goalPublicId` ON `reminder_rules` (`accountScope`, `serverIdentity`, `goalPublicId`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `reminder_events` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `publicId` TEXT NOT NULL, `rulePublicId` TEXT NOT NULL, `parentEventPublicId` TEXT, `scheduledFor` TEXT NOT NULL, `scheduledLocal` TEXT NOT NULL, `eventType` TEXT NOT NULL, `relatedPublicId` TEXT, `triggeredAt` TEXT, `state` TEXT NOT NULL, `acknowledgedAt` TEXT, `snoozedUntil` TEXT, `dismissedAt` TEXT, `deduplicationKey` TEXT NOT NULL, `errorCode` TEXT, `syncStatus` TEXT NOT NULL, `revision` INTEGER NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `publicId`))""")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_reminder_events_accountScope_serverIdentity_deduplicationKey` ON `reminder_events` (`accountScope`, `serverIdentity`, `deduplicationKey`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_reminder_events_accountScope_serverIdentity_state_scheduledFor` ON `reminder_events` (`accountScope`, `serverIdentity`, `state`, `scheduledFor`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_reminder_events_accountScope_serverIdentity_rulePublicId` ON `reminder_events` (`accountScope`, `serverIdentity`, `rulePublicId`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `reminder_schedules` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `rulePublicId` TEXT NOT NULL, `scheduledLocal` TEXT NOT NULL, `scheduledInstant` TEXT NOT NULL, `scheduledEpochMillis` INTEGER NOT NULL, `timezone` TEXT NOT NULL, `ruleRevision` INTEGER NOT NULL, `workName` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `rulePublicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_reminder_schedules_accountScope_serverIdentity_scheduledEpochMillis` ON `reminder_schedules` (`accountScope`, `serverIdentity`, `scheduledEpochMillis`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `reminder_permission_state` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `requested` INTEGER NOT NULL, `granted` INTEGER NOT NULL, `rationaleShown` INTEGER NOT NULL, `deniedAt` TEXT, `checkedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `adherence_cache` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `rangeDays` INTEGER NOT NULL, `periodFrom` TEXT NOT NULL, `periodTo` TEXT NOT NULL, `timezone` TEXT NOT NULL, `status` TEXT NOT NULL, `summaryJson` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `rangeDays`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_adherence_cache_accountScope_serverIdentity_updatedAt` ON `adherence_cache` (`accountScope`, `serverIdentity`, `updatedAt`)")
             }
         }
     }

@@ -22,6 +22,8 @@ AUTHENTICITY_WARNING = "Los checksums demuestran integridad, no autenticidad; el
 SECTION_PATHS = {
     "profile": "records/profile.json",
     "settings": "records/settings.json",
+    "goals": "records/goals.jsonl",
+    "reminder_rules": "records/reminder_rules.jsonl",
     "exercises": "records/exercises.jsonl",
     "plans": "records/plans.jsonl",
     "workouts": "records/workouts.jsonl",

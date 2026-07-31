@@ -1,5 +1,9 @@
 # Privacidad de exportación y portabilidad
 
+## Configuración Alpha 1.8
+
+`goals` transporta tipo, valor, periodo, días, timezone, estado y relaciones por UUID público. `reminder_rules` transporta hora, días, quiet hours, snooze y límites, y siempre requiere confirmación en destino. No se exportan eventos enviados, texto, historial, permission state, schedule, WorkManager, PendingIntent, channel IDs o ledger de dedupe.
+
 Todo `.htpack` puede contener información corporal, alimentaria y de entrenamiento. Guárdalo en un lugar seguro. Alpha 1.7 no cifra ni firma el paquete: los checksums verifican integridad, no autenticidad o confidencialidad.
 
 ## Matriz de dominio

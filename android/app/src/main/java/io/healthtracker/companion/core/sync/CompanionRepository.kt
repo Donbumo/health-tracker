@@ -1795,6 +1795,9 @@ class CompanionRepository(
             // blocks later START/PROGRESS/COMPLETE operations instead of letting the
             // SQL readiness filter skip over a required transition.
             if (pending.status == "conflict" || pending.notBeforeEpochMs > System.currentTimeMillis()) return
+            // Alpha 1.8 engagement operations are drained by EngagementRepository
+            // before this strict FIFO processor runs.
+            if (pending.actionType.startsWith("engagement_")) return
             if (pending.actionType.startsWith("planning_")) {
                 markPlanningSyncStatus(scope, pending, "syncing")
             }

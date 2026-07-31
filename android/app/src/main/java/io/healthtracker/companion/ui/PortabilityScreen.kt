@@ -55,6 +55,8 @@ private val portableSections = linkedMapOf(
     "nutrition_entries" to "Nutrición",
     "custom_foods" to "Alimentos personalizados",
     "steps" to "Pasos",
+    "goals" to "Objetivos",
+    "reminder_rules" to "Recordatorios y quiet hours",
     "external_sources" to "Procedencia externa sanitizada",
 )
 

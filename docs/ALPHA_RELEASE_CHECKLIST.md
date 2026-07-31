@@ -1,5 +1,16 @@
 # Checklist de release alpha privada
 
+## Alpha 1.8 — objetivos, recordatorios y adherencia
+
+- [x] CRUD Bearer owner-only, UUID, idempotencia, revisión optimista y errores estructurados.
+- [x] Alembic 0034 y Room 8 son aditivos, reversibles/explícitos y sin migración destructiva.
+- [x] Scheduler local sin push ni exact alarms; quiet hours, snooze, dedupe y antispam.
+- [x] Permiso contextual, cuatro canales estables y lockscreen privado con contenido genérico.
+- [x] Offline create/update/delete, coalescing, aislamiento cuenta/servidor y centro local.
+- [x] Adherencia descriptiva 7/30/90 y resumen semanal condicionado a objetivos/datos.
+- [x] Portable v1 incluye sólo configuración de goals/reminder rules y exige confirmación de destino.
+- [ ] QA físico posterior: reboot, proceso, permiso, DST, OEM/batería y lockscreen real.
+
 ## Alpha 1.7 — portabilidad selectiva
 
 - [x] Branch/HEAD y staging verificados; sin commit/push/merge/tag.

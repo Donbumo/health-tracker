@@ -1,5 +1,9 @@
 # Formato `health-tracker-portable-v1`
 
+## Extensión Alpha 1.8
+
+Alpha 1.8 añade las secciones opcionales `goals` (`records/goals.jsonl`) y `reminder_rules` (`records/reminder_rules.jsonl`). Las reglas conservan hora, días, timezone, quiet hours, snooze y límites, pero omiten próxima ejecución e historial. Import fija `source=portable_import`, `requires_device_confirmation=true` y no agenda en el dispositivo destino hasta revisión explícita.
+
 ## Identificación
 
 - Extensión: `.htpack`.

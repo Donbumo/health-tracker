@@ -1,5 +1,11 @@
 # Guía de usuario
 
+## Objetivos y recordatorios Alpha 1.8
+
+En Android abre **Ajustes → Objetivos y recordatorios**. Puedes crear objetivos personales, pausarlos o archivarlos y guardar reglas aun sin red. Una regla nueva parte desactivada para que revises hora, días y quiet hours. Al activarla por primera vez Android explica y, sólo entonces, puede solicitar permiso; si lo deniegas la regla permanece guardada y puedes abrir los ajustes después.
+
+**Enviar prueba** sólo genera un aviso local genérico. El centro permite revisar o posponer eventos y limpiar historial local antiguo. Hoy muestra hasta tres objetivos y Progreso ofrece adherencia 7/30/90 sin calificación global. Android puede diferir la entrega porque no se usan alarmas exactas.
+
 Health Tracker Alpha 1.0 es una aplicación privada y self-hosted para registrar salud y entrenamiento desde navegador. No sustituye evaluación médica.
 
 ## Navegación cotidiana

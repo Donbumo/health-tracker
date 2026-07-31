@@ -1,5 +1,9 @@
 # Seguridad Android Companion
 
+## Notificaciones Alpha 1.8
+
+No existe push externo. `POST_NOTIFICATIONS` sólo se solicita tras una activación explícita y `RECEIVE_BOOT_COMPLETED` se limita a un receiver no exportado que delega a WorkManager. No hay permisos de alarmas exactas, servicios foreground, ubicación, calendario, contactos o SMS. Los `PendingIntent` son immutable; actions y workers vuelven a validar cuenta, hash del servidor, revisión, regla y recurso en Room. Contenido y diagnóstico siguen la allowlist de [Privacidad de notificaciones](NOTIFICATION_PRIVACY.md).
+
 ## Fuentes externas Alpha 1.6
 
 BLE se declara opcional. El manifest usa `BLUETOOTH_SCAN`/`BLUETOOTH_CONNECT` en API 31+ y permisos heredados/ubicación con `maxSdkVersion=30`; no declara advertise. No se usa `neverForLocation` porque todavía podría filtrar dispositivos necesarios y falta evidencia S400 real. La solicitud solo aparece desde Fuentes externas; denegar/revocar no cierra sesión ni afecta Health Connect o entrenamiento.

@@ -5,6 +5,7 @@ Este documento reúne trabajo futuro o no comprobado. No describe funcionalidade
 ## Próximos cierres operativos
 
 - Completar QA manual Alpha 1.7 en Android y round-trip entre dos instancias efímeras; firma/autenticidad criptográfica y cifrado estándar quedan para una fase contractual posterior.
+- Completar QA físico Alpha 1.8 de permiso concedido/denegado, reboot, cambio de timezone/DST, restricciones OEM de batería, snooze y privacidad en lockscreen. Push remoto y alarmas exactas permanecen fuera de alcance.
 - Evaluar jobs asíncronos/reanudación HTTP por rangos sólo si los límites actuales dejan de ser suficientes; no ampliar retención o nube sin política explícita.
 - Sign-off visual real de tema claro para Alpha 1.0.
 - Rotación de la credencial señalada durante QA antes de un release posterior.

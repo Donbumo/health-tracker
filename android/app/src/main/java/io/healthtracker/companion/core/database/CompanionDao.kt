@@ -12,6 +12,99 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CompanionDao {
     @Upsert
+    suspend fun upsertGoals(values: List<GoalEntity>)
+
+    @Upsert
+    suspend fun upsertGoal(value: GoalEntity)
+
+    @Query("SELECT * FROM goals WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND state!='archived' ORDER BY updatedAt DESC")
+    fun observeGoals(scope: String, serverIdentity: String): Flow<List<GoalEntity>>
+
+    @Query("SELECT * FROM goals WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    suspend fun goal(scope: String, serverIdentity: String, publicId: String): GoalEntity?
+
+    @Query("DELETE FROM goals WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    suspend fun deleteGoal(scope: String, serverIdentity: String, publicId: String)
+
+    @Upsert
+    suspend fun upsertReminderRules(values: List<ReminderRuleEntity>)
+
+    @Upsert
+    suspend fun upsertReminderRule(value: ReminderRuleEntity)
+
+    @Query("SELECT * FROM reminder_rules WHERE accountScope=:scope AND serverIdentity=:serverIdentity ORDER BY enabled DESC, updatedAt DESC")
+    fun observeReminderRules(scope: String, serverIdentity: String): Flow<List<ReminderRuleEntity>>
+
+    @Query("SELECT * FROM reminder_rules WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND enabled=1 AND requiresDeviceConfirmation=0")
+    suspend fun enabledReminderRules(scope: String, serverIdentity: String): List<ReminderRuleEntity>
+
+    @Query("SELECT * FROM reminder_rules WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    suspend fun reminderRule(scope: String, serverIdentity: String, publicId: String): ReminderRuleEntity?
+
+    @Query("DELETE FROM reminder_rules WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    suspend fun deleteReminderRule(scope: String, serverIdentity: String, publicId: String)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertReminderEvent(value: ReminderEventEntity): Long
+
+    @Upsert
+    suspend fun upsertReminderEvents(values: List<ReminderEventEntity>)
+
+    @Upsert
+    suspend fun upsertReminderEvent(value: ReminderEventEntity)
+
+    @Query("SELECT * FROM reminder_events WHERE accountScope=:scope AND serverIdentity=:serverIdentity ORDER BY scheduledFor DESC LIMIT :limit")
+    fun observeReminderEvents(scope: String, serverIdentity: String, limit: Int = 100): Flow<List<ReminderEventEntity>>
+
+    @Query("SELECT * FROM reminder_events WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    suspend fun reminderEvent(scope: String, serverIdentity: String, publicId: String): ReminderEventEntity?
+
+    @Query("SELECT * FROM reminder_events WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND deduplicationKey=:key LIMIT 1")
+    suspend fun reminderEventByDedupe(scope: String, serverIdentity: String, key: String): ReminderEventEntity?
+
+    @Query("SELECT COUNT(*) FROM reminder_events WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND eventType=:eventType AND triggeredAt>=:dayStart AND state IN ('triggered','acknowledged','dismissed','snoozed')")
+    suspend fun reminderCountSince(scope: String, serverIdentity: String, eventType: String, dayStart: String): Int
+
+    @Query("SELECT COUNT(*) FROM reminder_events WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND triggeredAt>=:dayStart AND state IN ('triggered','acknowledged','dismissed','snoozed')")
+    suspend fun reminderGlobalCountSince(scope: String, serverIdentity: String, dayStart: String): Int
+
+    @Query("SELECT COUNT(*) FROM reminder_events WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND eventType IN (:eventTypes) AND triggeredAt>=:dayStart AND state IN ('triggered','acknowledged','dismissed','snoozed')")
+    suspend fun reminderChannelCountSince(scope: String, serverIdentity: String, eventTypes: List<String>, dayStart: String): Int
+
+    @Query("SELECT MAX(triggeredAt) FROM reminder_events WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND eventType=:eventType")
+    suspend fun lastReminderTrigger(scope: String, serverIdentity: String, eventType: String): String?
+
+    @Query("DELETE FROM reminder_events WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND scheduledFor<:before AND state IN ('acknowledged','dismissed','cancelled','suppressed','failed')")
+    suspend fun deleteOldReminderEvents(scope: String, serverIdentity: String, before: String): Int
+
+    @Upsert
+    suspend fun upsertReminderSchedule(value: ReminderScheduleEntity)
+
+    @Query("SELECT * FROM reminder_schedules WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND rulePublicId=:ruleId")
+    suspend fun reminderSchedule(scope: String, serverIdentity: String, ruleId: String): ReminderScheduleEntity?
+
+    @Query("DELETE FROM reminder_schedules WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND rulePublicId=:ruleId")
+    suspend fun deleteReminderSchedule(scope: String, serverIdentity: String, ruleId: String)
+
+    @Upsert
+    suspend fun upsertReminderPermissionState(value: ReminderPermissionStateEntity)
+
+    @Query("SELECT * FROM reminder_permission_state WHERE accountScope=:scope AND serverIdentity=:serverIdentity")
+    fun observeReminderPermissionState(scope: String, serverIdentity: String): Flow<ReminderPermissionStateEntity?>
+
+    @Query("SELECT * FROM reminder_permission_state WHERE accountScope=:scope AND serverIdentity=:serverIdentity")
+    suspend fun reminderPermissionState(scope: String, serverIdentity: String): ReminderPermissionStateEntity?
+
+    @Upsert
+    suspend fun upsertAdherenceCache(value: AdherenceCacheEntity)
+
+    @Query("SELECT * FROM adherence_cache WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND rangeDays=:days")
+    fun observeAdherence(scope: String, serverIdentity: String, days: Int): Flow<AdherenceCacheEntity?>
+
+    @Query("SELECT * FROM pending_actions WHERE accountScope=:scope AND actionType LIKE 'engagement_%' AND status='pending' AND notBeforeEpochMs<=:now ORDER BY localId LIMIT :limit")
+    suspend fun readyEngagementPending(scope: String, now: Long, limit: Int = 50): List<PendingActionEntity>
+
+    @Upsert
     suspend fun upsertPortableExport(value: PortableExportJobEntity)
 
     @Upsert
@@ -797,6 +890,24 @@ interface CompanionDao {
     @Query("DELETE FROM accounts WHERE scope=:scope")
     suspend fun deleteAccount(scope: String)
 
+    @Query("DELETE FROM adherence_cache WHERE accountScope=:scope")
+    suspend fun deleteAdherenceForAccount(scope: String)
+
+    @Query("DELETE FROM reminder_permission_state WHERE accountScope=:scope")
+    suspend fun deleteReminderPermissionForAccount(scope: String)
+
+    @Query("DELETE FROM reminder_schedules WHERE accountScope=:scope")
+    suspend fun deleteReminderSchedulesForAccount(scope: String)
+
+    @Query("DELETE FROM reminder_events WHERE accountScope=:scope")
+    suspend fun deleteReminderEventsForAccount(scope: String)
+
+    @Query("DELETE FROM reminder_rules WHERE accountScope=:scope")
+    suspend fun deleteReminderRulesForAccount(scope: String)
+
+    @Query("DELETE FROM goals WHERE accountScope=:scope")
+    suspend fun deleteGoalsForAccount(scope: String)
+
     @Transaction
     suspend fun replacePackage(
         packageEntity: WorkoutPackageEntity,
@@ -869,6 +980,12 @@ interface CompanionDao {
 
     @Transaction
     suspend fun clearAccount(scope: String) {
+        deleteAdherenceForAccount(scope)
+        deleteReminderPermissionForAccount(scope)
+        deleteReminderSchedulesForAccount(scope)
+        deleteReminderEventsForAccount(scope)
+        deleteReminderRulesForAccount(scope)
+        deleteGoalsForAccount(scope)
         deletePortableDecisionsForAccount(scope)
         deletePortablePlansForAccount(scope)
         deletePortableInspectionsForAccount(scope)

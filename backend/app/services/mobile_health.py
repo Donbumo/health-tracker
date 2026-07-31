@@ -23,6 +23,7 @@ from app.models import (
 )
 from app.services.daily_balance import effective_energy_record
 from app.services.mobile_sync import MobileSyncError, rfc3339
+from app.services.engagement import active_goal_targets
 
 
 LB_TO_KG = Decimal("0.45359237")
@@ -917,6 +918,7 @@ def health_today(user_id: int, target: date, timezone_name: str | None) -> dict:
     ).scalars().all()
     nutrition = _day(user_id, target)
     energy = effective_energy_record(user_id, target)
+    goals = active_goal_targets(user_id, target)
     planned = db.session.execute(
         db.select(PlannedWorkout).where(
             PlannedWorkout.user_id == user_id,
@@ -945,16 +947,33 @@ def health_today(user_id: int, target: date, timezone_name: str | None) -> dict:
         "fat_g": _number(nutrition.fat_g) if nutrition else None,
         "fiber_g": _number(nutrition.fiber_g) if nutrition else None,
     }
+    nutrition_targets = {
+        "calories_kcal": _number(goals["nutrition_calories"].target_value) if "nutrition_calories" in goals else None,
+        "protein_g": _number(goals["nutrition_protein"].target_value) if "nutrition_protein" in goals else None,
+        "carbohydrate_g": _number(goals["nutrition_carbohydrates"].target_value) if "nutrition_carbohydrates" in goals else None,
+        "fat_g": _number(goals["nutrition_fat"].target_value) if "nutrition_fat" in goals else None,
+    }
+    nutrition_remaining = {
+        key: (
+            _number(max(Decimal("0"), Decimal(target_value) - Decimal(nutrition_totals[key] or "0")))
+            if target_value is not None else None
+        )
+        for key, target_value in nutrition_targets.items()
+    }
     return {
         "date": target.isoformat(),
         "timezone": zone.key,
         "weight": serialize_body_stat(latest_weight) if latest_weight else None,
         "weight_is_exact_date": exact_weight,
-        "nutrition": {"totals": nutrition_totals, "targets": None, "remaining": None},
+        "nutrition": {
+            "totals": nutrition_totals,
+            "targets": nutrition_targets if any(value is not None for value in nutrition_targets.values()) else None,
+            "remaining": nutrition_remaining if any(value is not None for value in nutrition_targets.values()) else None,
+        },
         "steps": {
             "value": energy.steps if energy else None,
             "source": energy.source if energy else None,
-            "goal": None,
+            "goal": int(goals["daily_steps"].target_value) if "daily_steps" in goals else None,
             "entry_id": energy.public_id if energy and energy.steps is not None else None,
         },
         "training": {

@@ -12,6 +12,102 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CompanionDao {
     @Upsert
+    suspend fun upsertPortableExport(value: PortableExportJobEntity)
+
+    @Upsert
+    suspend fun upsertPortableImport(value: PortableImportJobEntity)
+
+    @Upsert
+    suspend fun upsertPortableInspection(value: PortableInspectionEntity)
+
+    @Upsert
+    suspend fun upsertPortableImportPlan(value: PortableImportPlanEntity)
+
+    @Upsert
+    suspend fun upsertPortableImportDecision(value: PortableImportDecisionEntity)
+
+    @Upsert
+    suspend fun upsertPortableDownload(value: PortableDownloadEntity)
+
+    @Upsert
+    suspend fun upsertPortableTempFile(value: PortableTempFileEntity)
+
+    @Query("SELECT * FROM portable_export_jobs WHERE accountScope = :scope ORDER BY createdAt DESC")
+    fun observePortableExports(scope: String): Flow<List<PortableExportJobEntity>>
+
+    @Query("SELECT * FROM portable_import_jobs WHERE accountScope = :scope ORDER BY createdAt DESC")
+    fun observePortableImports(scope: String): Flow<List<PortableImportJobEntity>>
+
+    @Query("SELECT * FROM portable_inspections WHERE accountScope = :scope ORDER BY verifiedAt DESC")
+    fun observePortableInspections(scope: String): Flow<List<PortableInspectionEntity>>
+
+    @Query("SELECT * FROM portable_import_plans WHERE accountScope = :scope ORDER BY expiresAt DESC")
+    fun observePortableImportPlans(scope: String): Flow<List<PortableImportPlanEntity>>
+
+    @Query("SELECT * FROM portable_downloads WHERE accountScope = :scope ORDER BY updatedAt DESC")
+    fun observePortableDownloads(scope: String): Flow<List<PortableDownloadEntity>>
+
+    @Query("SELECT * FROM portable_import_decisions WHERE accountScope = :scope AND importPublicId = :importId ORDER BY section, sourcePublicId")
+    fun observePortableDecisions(scope: String, importId: String): Flow<List<PortableImportDecisionEntity>>
+
+    @Query("SELECT * FROM portable_export_jobs WHERE accountScope = :scope AND publicId = :publicId")
+    suspend fun portableExport(scope: String, publicId: String): PortableExportJobEntity?
+
+    @Query("SELECT * FROM portable_import_jobs WHERE accountScope = :scope AND publicId = :publicId")
+    suspend fun portableImport(scope: String, publicId: String): PortableImportJobEntity?
+
+    @Query("SELECT * FROM portable_import_plans WHERE accountScope = :scope AND importPublicId = :importId")
+    suspend fun portableImportPlan(scope: String, importId: String): PortableImportPlanEntity?
+
+    @Query("SELECT * FROM portable_downloads WHERE accountScope = :scope AND exportPublicId = :exportId")
+    suspend fun portableDownload(scope: String, exportId: String): PortableDownloadEntity?
+
+    @Query("SELECT * FROM portable_export_jobs WHERE accountScope = :scope AND syncStatus = 'pending' ORDER BY createdAt")
+    suspend fun pendingPortableExports(scope: String): List<PortableExportJobEntity>
+
+    @Query("SELECT * FROM portable_import_jobs WHERE accountScope = :scope AND syncStatus = 'pending_upload' ORDER BY createdAt")
+    suspend fun pendingPortableImports(scope: String): List<PortableImportJobEntity>
+
+    @Query("SELECT * FROM portable_import_jobs WHERE accountScope = :scope AND syncStatus = 'pending_apply' ORDER BY createdAt")
+    suspend fun pendingPortableApplies(scope: String): List<PortableImportJobEntity>
+
+    @Query("DELETE FROM portable_export_jobs WHERE accountScope = :scope AND publicId = :publicId")
+    suspend fun deletePortableExport(scope: String, publicId: String)
+
+    @Query("DELETE FROM portable_import_jobs WHERE accountScope = :scope AND publicId = :publicId")
+    suspend fun deletePortableImport(scope: String, publicId: String)
+
+    @Query("DELETE FROM portable_inspections WHERE accountScope = :scope AND importPublicId = :importId")
+    suspend fun deletePortableInspection(scope: String, importId: String)
+
+    @Query("DELETE FROM portable_import_plans WHERE accountScope = :scope AND importPublicId = :importId")
+    suspend fun deletePortableImportPlan(scope: String, importId: String)
+
+    @Query("DELETE FROM portable_import_decisions WHERE accountScope = :scope AND importPublicId = :importId")
+    suspend fun deletePortableImportDecisions(scope: String, importId: String)
+
+    @Query("DELETE FROM portable_export_jobs WHERE accountScope = :scope")
+    suspend fun deletePortableExportsForAccount(scope: String)
+
+    @Query("DELETE FROM portable_import_jobs WHERE accountScope = :scope")
+    suspend fun deletePortableImportsForAccount(scope: String)
+
+    @Query("DELETE FROM portable_inspections WHERE accountScope = :scope")
+    suspend fun deletePortableInspectionsForAccount(scope: String)
+
+    @Query("DELETE FROM portable_import_plans WHERE accountScope = :scope")
+    suspend fun deletePortablePlansForAccount(scope: String)
+
+    @Query("DELETE FROM portable_import_decisions WHERE accountScope = :scope")
+    suspend fun deletePortableDecisionsForAccount(scope: String)
+
+    @Query("DELETE FROM portable_downloads WHERE accountScope = :scope")
+    suspend fun deletePortableDownloadsForAccount(scope: String)
+
+    @Query("DELETE FROM portable_temp_files WHERE accountScope = :scope")
+    suspend fun deletePortableTempFilesForAccount(scope: String)
+
+    @Upsert
     suspend fun upsertAccount(value: AccountEntity)
 
     @Upsert
@@ -773,6 +869,13 @@ interface CompanionDao {
 
     @Transaction
     suspend fun clearAccount(scope: String) {
+        deletePortableDecisionsForAccount(scope)
+        deletePortablePlansForAccount(scope)
+        deletePortableInspectionsForAccount(scope)
+        deletePortableDownloadsForAccount(scope)
+        deletePortableTempFilesForAccount(scope)
+        deletePortableImportsForAccount(scope)
+        deletePortableExportsForAccount(scope)
         deletePendingForAccount(scope)
         deleteProtocolEvidenceForAccount(scope)
         deletePossibleDuplicatesForAccount(scope)

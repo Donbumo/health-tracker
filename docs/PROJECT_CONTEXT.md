@@ -129,6 +129,10 @@ Salvo evidencia nueva en código y pruebas, no considerar implementados:
 
 El trabajo futuro vive en `ROADMAP.md`, no en instrucciones operativas.
 
+## Portabilidad selectiva
+
+Alpha 1.7 define `health-tracker-portable-v1` como contrato de migración de usuario entre instalaciones. Es distinto de exportadores de conveniencia, backup/restore administrativo y Mobile Sync. Conserva UUID públicos sólo cuando es seguro, remapea colisiones, deriva el owner del destino y excluye cachés/estado técnico recalculable. Los contratos públicos viven en `schemas/portable_*.schema.json`; el diseño se documenta en [ALPHA_1_7_DATA_PORTABILITY.md](ALPHA_1_7_DATA_PORTABILITY.md).
+
 ## Fuentes de verdad
 
 1. Schemas para contratos JSON públicos.

@@ -56,4 +56,10 @@ Consulta [Instalación Android](ANDROID_INSTALLATION.md) y [Android Companion](A
 
 Cada dato pertenece al usuario autenticado. Los previews de importación no escriben en la base. Un export JSON sirve para portabilidad; un backup ZIP incluye también archivos verificables. Ninguno incluye contraseñas ni tokens.
 
+En Android Alpha 1.7 abre **Ajustes → Datos y privacidad**. Para exportar, elige secciones y un rango opcional; perfil identificable y attachments están apagados hasta que los actives. Sin red, **Guardar solicitud offline** la conserva, pero no afirma que el paquete esté listo. Cuando el servidor termine, usa **Descargar y verificar** y después **Guardar** o **Compartir**. Borra por separado la copia local y el artefacto temporal del servidor.
+
+Para importar, **Seleccionar paquete** sólo hace una inspección local. Revisa formato, hash, tamaño, secciones y advertencias; luego **Subir y simular**. La simulación no escribe. Resuelve conflictos —la opción segura conserva el destino— y sólo entonces pulsa **Confirmar importación**. Repetir el mismo paquete no duplica records. Si pierdes acceso al URI o vence el plan, selecciona/inspecciona de nuevo.
+
+Un `.htpack` puede contener información corporal, alimentaria y de entrenamiento. SHA-256 detecta cambios, pero no demuestra quién lo creó. Consulta [Privacidad de exportación](DATA_EXPORT_PRIVACY.md).
+
 Consulta [Primeros pasos](GETTING_STARTED.md), [Flujo diario](DAILY_WORKFLOW.md), [Import Hub](IMPORT_HUB.md) y [Solución de problemas](TROUBLESHOOTING_USER.md).

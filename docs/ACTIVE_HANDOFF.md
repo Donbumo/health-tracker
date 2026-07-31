@@ -1,57 +1,42 @@
 # Handoff activo
 
-## Alpha 1.6 en esta rama
+## Alpha 1.7 en esta rama
 
-- Rama/HEAD de baseline: `feature/alpha-1.6-external-device-foundation` en `1c3d7c3642295964e6417ee1592a4046e6567835`, commit completo Alpha 1.5 RC1 compartido con `feature/alpha-1.5-health-connect`. No se cambió de rama ni se usó staging.
-- Room sube de v5 a v6 con fuentes externas, asociaciones Health Connect/BLE, snapshots GATT, metadata de captura, ledger externo, duplicados y evidencia de protocolo; cadena 1/2/3/4/5→6 explícita.
-- Android pasa a versionCode 16/versionName `1.6.0-alpha01` (debug `-debug`), min 26 y target/compile 36.
-- `Ajustes → Fuentes externas` añade diagnóstico de peso/grasa sin valores, confirmación local/revocable de origen, permisos BLE contextuales, scan manual limitado, inspección GATT y captura debug cifrada/limitada.
-- Xiaomi S400 permanece `protocol_unknown`: no hay UUIDs/frames/fórmulas reales, mapper de peso/composición deshabilitado ni botón de guardar medición.
-- Backend y schemas públicos permanecen sin cambios; GATT, capturas, frames, MAC y association IDs no salen del teléfono.
-- Fixtures BLE añadidas son ficticias y declaran `fixtureFictional=true`; herramientas sanitizan, inspeccionan y comparan sin inferir semántica.
-- Gate automático verde en orden: `lintDebug`, primera JVM forzada 146/146, `assembleDebug`, `compileDebugAndroidTestKotlin` y segunda JVM forzada 146/146. No se ejecutó `connectedDebugAndroidTest`.
-- Herramientas: compileall/ayudas, ruta con espacios, límites, archivo inválido, no sobrescritura, sanitización, inspección y comparación verdes. Los 37 JSON de schemas/Room son válidos.
-- APK debug: `android/app/build/outputs/apk/debug/app-debug.apk`, 18,719,697 bytes, SHA-256 `45f6dc75925612c6f84927270009a752b061679f383500c0f13c990235df5ac4`; sin archivo `.env`, capturas/fixtures BLE, `qa-temp-alpha15`, clave privada o Bearer de fixture como entradas/contenido revisado.
-- QA físico, ejecución de instrumentadas y validación con S400 real siguen pendientes. Consulta `ALPHA_1_6_EXTERNAL_SOURCES.md` y `XIAOMI_S400_PROTOCOL_RESEARCH.md`.
+- Rama: `feature/alpha-1.7-data-portability`; checkpoint inicial/HEAD: `8b2b7d86937ca33f118989cc6753b9fe8761bd75`, Alpha 1.6 completa.
+- No se cambió de rama ni se usó staging, commit, push, merge o tag.
+- Formato público `health-tracker-portable-v1` v1.0 (`.htpack`) con manifest, schemas embebidos, records JSON/JSONL, attachments opt-in y checksums SHA-256.
+- Backend añade API Bearer owner-only de export/import, dry-run, conflictos, decisiones, remapeo, idempotencia, expiración y aplicación atómica.
+- Alembic añade `20260730_0033`; modelos nuevos sólo para jobs, artefactos, decisiones y mappings portables.
+- Android pasa a versionCode 17/versionName `1.7.0-alpha01`, Room 7 y `Ajustes → Datos y privacidad`; usa SAF, FileProvider, archivos privados por `accountScope` y WorkManager, incluida confirmación durable `pending_apply` al reconectar.
+- Herramientas `scripts/portability/` inspeccionan, verifican, listan y crean una copia saneada sin mostrar records por defecto.
+- Matriz de dominio, formato y privacidad: `ALPHA_1_7_DATA_PORTABILITY.md`, `PORTABLE_PACKAGE_FORMAT_V1.md` y `DATA_EXPORT_PRIVACY.md`.
+- El mapa canónico de contexto permanece en `DOCUMENTATION_INDEX.md`.
 
 ## Estado actual
 
-- Rama: `feature/alpha-1.5-health-connect`. HEAD observado al iniciar esta tanda: `13c3e545d41c3e1d5a7412b2feeb6d16f963a6cb`; ese commit ya existía pese a que el encargo citaba `dab0bc3` y cambios sin commit. La tanda actual queda sin staging ni commit.
-- Alpha 1.5 RC1 conserva applicationId release `io.healthtracker.companion`, debug `.debug`, versionCode 15, versionName `1.5.0-alpha01`, min SDK 26 y target/compile 36.
-- Identidad de servidor canoniza esquema, host, puerto y base path; HTTPS `:443` y HTTP local `:80` equivalen al puerto implícito. Se rechazan control, userinfo, query, fragmento, puertos inválidos, separadores codificados, traversal, backslash, path ambiguo y HTTP público.
-- OkHttp y el smoke no siguen redirecciones. Un host distinto o downgrade HTTPS→HTTP no recibe Authorization ni cuerpo.
-- Tokens cifrados siguen ligados a la identidad normalizada. Una generación de mutación impide que un refresh tardío repueble credenciales tras logout o cambio de servidor. Un worker viejo no limpia una cuenta nueva.
-- Un `401` sin código definitivo conserva la sesión local/offline. Solo refresh inválido confirmado, revocación o logout limpian credenciales.
-- Health Connect sigue opt-in y opcional. Errores reintentables llegan a WorkManager; permisos revocados permanecen por tipo; tokens se avanzan tras persistencia. El diagnóstico trunca `last_import_at` a la hora.
-- Room continúa en v5 sin fallback destructivo; 1/2/3/4→5 es explícito, 4→5 conserva pendientes, draft, plan, historial y salud, y v5 reabre conservando filas.
-- El downgrade 0032 valida antes de cualquier DDL: rechaza client IDs, nutrición no manual o pesos coexistentes que perderían procedencia.
+- La implementación solicitada está completa y permanece sin staging.
+- No se ejecutarán instrumentadas conectadas, instalación APK, NAS ni Compose diario.
 
 ## Pruebas relevantes
 
-- Android: `lintDebug`, dos `testDebugUnitTest --rerun-tasks`, `assembleDebug` y `compileDebugAndroidTestKotlin`, todos correctos. Las instrumentadas compilaron; no se ejecutó `connectedDebugAndroidTest`.
-- Backend local: `620 passed, 3 skipped`; simulador integrado Alpha 1.5 incluido.
-- MariaDB 11.4 efímera: build, readiness, cero→0032, `db check`, smoke read-only/write con cleanup y ciclo seguro 0031→0032→0031→0032 correctos. Suite Docker final: `621 passed, 1 skipped`.
-- Todo laboratorio usó red y nombres exclusivos con `tmpfs`; tras cada intento quedaron 0 contenedores, 0 redes y 0 volúmenes nuevos.
-- APK debug: `android/app/build/outputs/apk/debug/app-debug.apk`, 17,935,727 bytes, SHA-256 `1ca23b52cba26094564c8169e207c805965c56665854fd59b14840cf7e1dadf6`; firma v2 válida, code 15, name `1.5.0-alpha01-debug`, min 26, target/compile 36, debuggable y backups deshabilitados.
-- Escaneo APK: sin `.env`, secretos de backend, Bearer literal, clave privada, IP de emulador, tokens ni `qa-temp-alpha15` detectados.
+- Backend local final: 643 correctas, 4 omitidas (carreras sólo Docker), un warning intencional de ZIP duplicado del backup histórico.
+- Docker/MariaDB: suite completa 645 correctas/1 omitida y carrera focal portable 1/1; cero→0033, check, downgrade a 0032 y re-upgrade correctos.
+- Android: `lintDebug`, dos JVM forzadas 149/149, `assembleDebug` y `compileDebugAndroidTestKotlin` correctos.
+- Los tests cubren round-trip, repetición sin duplicados, foreign collision, conflicto conservador, rollback, attachments, expiración, ZIP safety, schemas, CLI y migraciones Room 1/2/3/4/5/6→7.
+- APK debug: 18.930.583 bytes, SHA-256 `3080e9e04c309cdd22629827b53c6c8781c880250dc2a0bf848b712d59fbf527`, firma v2 válida, code 17/name `1.7.0-alpha01-debug`; escaneo sensible limpio.
 
 ## Trabajo en curso
 
-- `scripts/release/alpha15_phone_preflight.ps1`: selección segura de un dispositivo, serial enmascarado, propiedades, espacio, APK/firma/versiones y compatibilidad conservadora; nunca instala ni limpia.
-- `scripts/release/alpha15_apk_manifest.ps1`: manifiesto local con hash, tamaño, package, versiones, SDK, fecha, commit y dirty/clean.
-- `scripts/release/alpha15_postdeploy_readonly.sh`: estado Compose, Alembic, readiness, rutas públicas, logs acotados y smoke autenticado opcional sin escribir.
-- `scripts/release/alpha15_smoke.py`: bloquea redirects, limita HTTP a hosts locales, limita cuerpos y mantiene write bajo confirmación explícita con cleanup.
-- El runbook contiene bloques A–E para Windows, NAS predeploy/deploy, teléfono y rollback con placeholders.
-- El mapa canónico de documentación continúa en `DOCUMENTATION_INDEX.md`.
+- Sólo quedan revisión humana del diff y QA manual/físico posterior; los gates automáticos Alpha 1.7 están completos.
 
 ## Bloqueadores y riesgos
 
-- No se conectó al NAS ni a un teléfono. TLS y reverse proxy reales, `adb install -r`, proveedor Health Connect, permisos parciales/revocados, process death, offline y el recorrido manual de 30 pasos requieren evidencia mañana.
-- El APK es debug; firma release formal sigue fuera de Alpha privada.
-- `shellcheck` no está instalado; `bash -n`, parse PowerShell, ayudas y Python compile sí se validaron.
-- Los seis `qa-temp-alpha15*` preexistentes permanecen intactos por instrucción explícita; no se cambiaron ACL ni se intentó borrarlos.
-- Los servicios diarios no se reiniciaron ni modificaron. Verificar nuevamente IDs y `StartedAt` antes de la ventana humana.
+- SHA-256 no prueba autenticidad y Alpha 1.7 no cifra/firma paquetes.
+- La generación backend es síncrona y acotada.
+- La inspección Android es una barrera temprana; el servidor repite la validación autoritativa completa.
+- QA físico, ejecución instrumentada en entorno aislado y revisión humana siguen pendientes.
+- Los directorios inaccesibles `qa-temp-alpha15*` son preexistentes y deben permanecer intactos.
 
 ## Siguiente paso
 
-Revisar el diff humano, ejecutar el bloque A del runbook por el flujo aprobado y, solo después, seguir B→C→D. No declarar QA real hasta completar el teléfono y comprobar pendientes/conflictos 0, una sola copia de cada dato y ausencia de logout, crash y secretos.
+Revisar el diff sin añadirlo al staging y programar QA manual en un AVD/dispositivo aislado. No declarar autenticidad criptográfica ni QA físico no realizado.

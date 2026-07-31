@@ -7,6 +7,8 @@ import io.healthtracker.companion.core.model.*
 import io.healthtracker.companion.core.security.Redaction
 import io.healthtracker.companion.core.security.SecureTokenStore
 import java.io.IOException
+import java.io.File
+import java.security.MessageDigest
 import java.time.Duration
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -20,13 +22,16 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.Response
 import java.util.concurrent.TimeUnit
 
 data class VerifiedPackage(val value: WorkoutPackageDto, val calculatedHash: String)
+data class PortableDownloadResult(val sha256: String, val sizeBytes: Long)
 
 class ApiClient(
     private val preferences: PreferenceStore,
@@ -53,6 +58,63 @@ class ApiClient(
 
     suspend fun health(baseUrl: String? = null): HealthResponse =
         call("/api/v1/health", "GET", baseOverride = baseUrl, requiresAuth = false)
+
+    suspend fun createPortableExport(payload: JsonObject, key: String): JsonObject = call(
+        "/api/v1/mobile/portability/exports", "POST", payload.toString(), idempotencyKey = key,
+    )
+
+    suspend fun portableExports(): JsonObject = call("/api/v1/mobile/portability/exports", "GET")
+
+    suspend fun deletePortableExport(publicId: String): JsonObject = call(
+        "/api/v1/mobile/portability/exports/$publicId", "DELETE",
+    )
+
+    suspend fun portableImports(): JsonObject = call("/api/v1/mobile/portability/imports", "GET")
+
+    suspend fun inspectPortablePackage(file: File, sections: List<String>): JsonObject = withContext(Dispatchers.IO) {
+        val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", "selected.htpack", file.asRequestBody(PORTABLE_MEDIA))
+            .addFormDataPart("sections", json.encodeToString(sections))
+            .build()
+        val raw = executeCustom("/api/v1/mobile/portability/imports/inspect", "POST", body).use { checkedResponse(it) }
+        try {
+            json.decodeFromString<ApiEnvelope<JsonObject>>(raw).data
+        } catch (error: Exception) {
+            logContractDecodeFailure("/api/v1/mobile/portability/imports/inspect", error)
+            throw AppFailure(AppErrorCode.SCHEMA_INCOMPATIBLE, "El servidor respondió con un contrato incompatible.", false)
+        }
+    }
+
+    suspend fun applyPortableImport(publicId: String, payload: JsonObject, key: String): JsonObject = call(
+        "/api/v1/mobile/portability/imports/$publicId/apply", "POST", payload.toString(), idempotencyKey = key,
+    )
+
+    suspend fun deletePortableImport(publicId: String): JsonObject = call(
+        "/api/v1/mobile/portability/imports/$publicId", "DELETE",
+    )
+
+    suspend fun downloadPortableExport(publicId: String, destination: File): PortableDownloadResult = withContext(Dispatchers.IO) {
+        executeCustom("/api/v1/mobile/portability/exports/$publicId/download", "GET", null).use { response ->
+            if (!response.isSuccessful) checkedResponse(response)
+            val length = response.body.contentLength()
+            if (length > MAX_PORTABLE_BYTES) throw AppFailure(AppErrorCode.PACKAGE_HASH_MISMATCH, "La descarga supera el límite local.", false)
+            val digest = MessageDigest.getInstance("SHA-256")
+            var size = 0L
+            destination.parentFile?.mkdirs()
+            destination.outputStream().use { output ->
+                val input = response.body.byteStream()
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    size += read
+                    if (size > MAX_PORTABLE_BYTES) throw AppFailure(AppErrorCode.PACKAGE_HASH_MISMATCH, "La descarga supera el límite local.", false)
+                    digest.update(buffer, 0, read); output.write(buffer, 0, read)
+                }
+            }
+            PortableDownloadResult(digest.digest().joinToString("") { byte -> "%02x".format(byte) }, size)
+        }
+    }
 
     suspend fun login(baseUrl: String, request: LoginRequest): TokenResponse {
         val expectedVersion = tokens.mutationVersion()
@@ -374,6 +436,44 @@ class ApiClient(
         }
     }
 
+    private suspend fun executeCustom(
+        path: String,
+        method: String,
+        body: okhttp3.RequestBody?,
+        allowRefresh: Boolean = true,
+    ): Response {
+        val base = preferences.values.first().serverUrl
+            ?: throw AppFailure(AppErrorCode.SERVER_INCOMPATIBLE, "Configura un servidor antes de continuar.", false)
+        tokens.bindLegacyServerIfMissing(base)
+        val failedAccess = tokens.accessToken(base)
+            ?: throw AppFailure(AppErrorCode.UNAUTHORIZED, "Inicia sesión para continuar.", false)
+        val requestVersion = tokens.mutationVersion()
+        val request = Request.Builder()
+            .url(base.trimEnd('/') + path)
+            .header("Accept", "application/json, application/vnd.health-tracker.portable+zip")
+            .header("Authorization", "Bearer $failedAccess")
+            .method(method, body)
+            .build()
+        val response = try {
+            http.newCall(request).execute()
+        } catch (error: IOException) {
+            throw ErrorMapper.network(error)
+        }
+        if (response.code == 401 && allowRefresh) {
+            val rawError = response.use { readResponseBody(it) }
+            val parsed = runCatching { json.decodeFromString<ErrorEnvelope>(rawError).error }.getOrNull()
+            if (parsed?.code == "session_revoked") {
+                if (!tokens.clearIfVersion(requestVersion)) {
+                    throw AppFailure(AppErrorCode.UNAUTHORIZED, "La sesion cambio durante la solicitud.", false)
+                }
+                throw ErrorMapper.http(401, parsed, null)
+            }
+            refreshSingleFlight(base, failedAccess)
+            return executeCustom(path, method, body, false)
+        }
+        return response
+    }
+
     private fun checkedResponse(response: Response): String {
         val raw = readResponseBody(response)
         if (response.isSuccessful) return raw
@@ -439,9 +539,11 @@ class ApiClient(
 
     private companion object {
         val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()
+        val PORTABLE_MEDIA = "application/vnd.health-tracker.portable+zip".toMediaType()
         val UUID_PATH_COMPONENT = Regex("/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}")
         val SERIALIZATION_PATH = Regex("(?:at path:?\\s*)(\\$[A-Za-z0-9_.$\\[\\]-]+)")
         const val MAX_RESPONSE_BYTES = 4L * 1024L * 1024L
+        const val MAX_PORTABLE_BYTES = 50L * 1024L * 1024L
         const val MAX_RETRY_AFTER_SECONDS = 6L * 60L * 60L
     }
 }

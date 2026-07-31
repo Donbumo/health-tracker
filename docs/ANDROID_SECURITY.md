@@ -28,6 +28,15 @@ Solo se aceptan esquemas `https`/`http`; se rechazan userinfo, query, fragment, 
 - Sin WebView, SDK de fabricante, analytics o crash reporter externo.
 - R8 activo en release; ningún secreto o URL privada entra en `BuildConfig`.
 
+## Paquetes portables Alpha 1.7
+
+- SAF evita permisos amplios de almacenamiento; una copia pública requiere selección explícita.
+- FileProvider separado (`.portability`) es non-exported y concede sólo lectura temporal.
+- Descargas y parciales viven bajo filesDir, en subdirectorios derivados por hash de `accountScope`; no entran en backup ni Room.
+- Android valida hash, límites, nombres ZIP, duplicados, manifest y checksums antes del upload. El backend repite la verificación completa y valida schemas.
+- No se escriben tokens, contenido de records o rutas en logs; la UI trunca IDs y hashes.
+- El paquete no cifrado muestra advertencia de salud y autenticidad no demostrada.
+
 ## Datos locales
 
 Room permanece en almacenamiento privado de la app y usa `accountScope = SHA256(server URL + user UUID)` en toda consulta. El refresh cifrado queda además ligado a la URL normalizada: un token de un NAS no se devuelve al cliente para otro. **Cambiar servidor** exige confirmación, invalida tokens y scope activos, cancela workers y conserva las filas antiguas bajo su scope aislado. Logout, revocación y borrado local sí eliminan cache, drafts, cursores y pendientes de esa cuenta.

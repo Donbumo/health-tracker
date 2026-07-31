@@ -40,6 +40,20 @@ El 27 de julio de 2026 RC1 repitió el orden completo sobre las brechas NAS: `li
 
 El 26 de julio de 2026 pasaron `lintDebug`, dos ejecuciones de `testDebugUnitTest` (53/53), `assembleDebug` y `compileDebugAndroidTestKotlin`. Las pruebas instrumentadas de migración 1/2/3→4 compilan, pero no se marcarán ejecutadas hasta disponer del AVD separado.
 
+## Alpha 1.7
+
+Automatizado JVM/instrumentación compilable:
+
+- consentimiento de perfil/attachments, rango inválido y rutas ZIP inseguras;
+- migraciones Room 1/2/3/4/5/6→7 aditivas con cuenta, pending action y draft preservados;
+- aislamiento/cleanup por `accountScope`, incluida la cola durable `pending_apply`;
+- inspección local válida, traversal, checksum inválido y autenticidad no demostrada;
+- FileProvider content URI y separación de archivos por cuenta.
+
+QA manual pendiente: solicitud offline→reconexión, doble toque, process death, URI persistible/perdido, descarga interrumpida, hash erróneo, guardar/compartir/borrar, paquete inválido, preview/conflictos/decisiones, confirmación, TalkBack, rotación, tamaños 320/360/411/600 dp y estados vacío/error/offline. `connectedDebugAndroidTest` no forma parte del gate automatizado de esta tarea.
+
+El 30 de julio de 2026 pasó el gate Alpha 1.7 en orden: `lintDebug`, JVM forzada 149/149, `assembleDebug`, compilación de androidTest y segunda JVM forzada 149/149. Las instrumentadas no se ejecutaron. Backend local terminó 643/4; Docker/MariaDB terminó 645/1 más la carrera portable focal 1/1.
+
 ## QA manual requerido
 
 Para RC1 sigue exactamente el gate de [ALPHA_1_5_NAS_RC_RUNBOOK.md](ALPHA_1_5_NAS_RC_RUNBOOK.md): `adb devices -l`, `adb install -r <apk>` y lanzamiento con `monkey`, sin uninstall ni `pm clear`. El recorrido de 30 pasos valida NAS, process death, offline/reconexión, web y permisos parciales reales. Debe terminar con pendientes/conflictos en cero y sin duplicados ni secretos en logcat.

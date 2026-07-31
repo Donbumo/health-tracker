@@ -53,6 +53,12 @@ El resumen y Progreso se recalculan en la misma transacción que cada escritura 
 
 Un fallo temporal conserva la cola. Los rechazos permanentes crean un conflicto sanitizado sin payload. Desde Salud del día se puede descartar la copia local y refrescar servidor, reintentar con una nueva idempotency key, duplicar cuerpo/nutrición cuando procede o cancelar. Ninguna resolución hace merge genérico de notas.
 
+## Portabilidad en Alpha 1.7
+
+Una solicitud de export equivalente se coalesce en Room y queda `pending` hasta recuperar red. WorkManager procesa exports e imports pendientes con retry para fallos transitorios; no marca el paquete como listo sin respuesta autoritativa.
+
+La inspección estructural de un URI SAF funciona offline y persiste hash, formato, secciones, conteos y warnings. Upload/apply requieren red. El permiso URI persistible y el plan Room permiten reanudar tras process death; si el permiso se pierde, se debe elegir el archivo otra vez. Parciales fallidos se borran y el hash final gobierna la promoción. Logout limpia filas y archivos sólo del `accountScope` efectivo.
+
 ## Health Connect en Alpha 1.5
 
 La lectura Health Connect tiene su propio trabajo único, mutex y backoff; no comparte la restricción de red de la cola servidor. Conexión, permiso concedido, foreground, selección, acción manual y periodicidad de seis horas se coalescen. Sin permiso de background el trabajo periódico termina sin leer y los triggers foreground continúan disponibles. Pausar o desconectar no revoca permisos ni borra filas importadas.

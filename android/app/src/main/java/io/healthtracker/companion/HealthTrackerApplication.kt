@@ -26,6 +26,7 @@ import io.healthtracker.companion.core.bluetooth.BleCaptureExporter
 import io.healthtracker.companion.core.security.SecureTokenStore
 import io.healthtracker.companion.core.sync.CompanionRepository
 import io.healthtracker.companion.core.sync.SyncScheduler
+import io.healthtracker.companion.core.portability.PortabilityRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -64,6 +65,7 @@ class AppContainer(application: Application) {
     val database = CompanionDatabase.create(application)
     val api = ApiClient(preferences, tokens)
     val connectivity = ConnectivityObserver(application)
+    val portabilityRepository = PortabilityRepository(application, database, api)
     val bleCaptureStore = EncryptedBleCaptureStore(application)
     val repository = CompanionRepository(
         database,
@@ -71,6 +73,7 @@ class AppContainer(application: Application) {
         tokens,
         api,
         onBeforeClearAccount = { scope ->
+            portabilityRepository.fileStore.deleteScope(scope)
             database.companionDao().bleCaptureMetadataForAccount(scope).forEach { metadata ->
                 check(bleCaptureStore.deleteEncryptedFile(metadata.encryptedFileName)) { "capture_cleanup_failed" }
             }

@@ -8,3 +8,4 @@ from app.api_v1 import companion_routes  # noqa: E402,F401
 from app.api_v1 import mobile_progress_routes  # noqa: E402,F401
 from app.api_v1 import mobile_planning_routes  # noqa: E402,F401
 from app.api_v1 import mobile_health_routes  # noqa: E402,F401
+from app.api_v1 import portability_routes  # noqa: E402,F401

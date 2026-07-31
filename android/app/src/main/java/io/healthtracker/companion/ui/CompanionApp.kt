@@ -72,7 +72,8 @@ private enum class Destination(val route: String, val label: String, val symbol:
     HISTORY_DETAIL("history_detail", "Sesión", ""), EXERCISE_DETAIL("exercise_detail", "Ejercicio", ""),
     HEALTH_DAY("health_day", "Salud", ""), BODY_HISTORY("body_history", "Cuerpo", ""),
     NUTRITION_DAY("nutrition_day", "Nutrición", ""), FOOD_CATALOG("food_catalog", "Alimentos", ""),
-    STEPS_HISTORY("steps_history", "Pasos", ""), EXTERNAL_SOURCES("external_sources", "Fuentes externas", "")
+    STEPS_HISTORY("steps_history", "Pasos", ""), EXTERNAL_SOURCES("external_sources", "Fuentes externas", ""),
+    DATA_PRIVACY("data_privacy", "Datos y privacidad", "")
 }
 
 @Composable
@@ -260,7 +261,11 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
             composable(Destination.EXERCISE_DETAIL.route) { ExerciseDetailScreen(viewModel) {
                 viewModel.closeProgressExercise(); nav.popBackStack()
             } }
-            composable(Destination.SETTINGS.route) { SettingsScreen(viewModel) { nav.navigate(Destination.EXTERNAL_SOURCES.route) } }
+            composable(Destination.SETTINGS.route) { SettingsScreen(
+                viewModel,
+                { nav.navigate(Destination.EXTERNAL_SOURCES.route) },
+                { nav.navigate(Destination.DATA_PRIVACY.route) },
+            ) }
             composable(Destination.WORKOUT.route) { WorkoutScreen(viewModel) { nav.popBackStack() } }
             composable(Destination.HEALTH_DAY.route) { DailyHealthScreen(viewModel, { nav.popBackStack() }, { nav.navigate(Destination.BODY_HISTORY.route) }, { nav.navigate(Destination.NUTRITION_DAY.route) }, { nav.navigate(Destination.STEPS_HISTORY.route) }) }
             composable(Destination.BODY_HISTORY.route) { BodyHistoryScreen(viewModel) { nav.popBackStack() } }
@@ -268,6 +273,7 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
             composable(Destination.FOOD_CATALOG.route) { FoodCatalogScreen(viewModel) { nav.popBackStack() } }
             composable(Destination.STEPS_HISTORY.route) { StepsHistoryScreen(viewModel) { nav.popBackStack() } }
             composable(Destination.EXTERNAL_SOURCES.route) { ExternalSourcesScreen(viewModel) { nav.popBackStack() } }
+            composable(Destination.DATA_PRIVACY.route) { DataPrivacyScreen(viewModel) { nav.popBackStack() } }
         }
     }
 }
@@ -1951,7 +1957,11 @@ private fun TrendChart(
 }
 
 @Composable
-private fun SettingsScreen(viewModel: CompanionViewModel, openExternalSources: () -> Unit) {
+private fun SettingsScreen(
+    viewModel: CompanionViewModel,
+    openExternalSources: () -> Unit,
+    openDataPrivacy: () -> Unit,
+) {
     val context = LocalContext.current
     val preferences by viewModel.preferences.collectAsState()
     val profile by viewModel.profile.collectAsState()
@@ -1980,6 +1990,15 @@ private fun SettingsScreen(viewModel: CompanionViewModel, openExternalSources: (
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Fuentes externas", style = MaterialTheme.typography.titleLarge)
                     Text("Diagnóstico de báscula, asociaciones y Bluetooth experimental.")
+                    Text("Abrir", color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+        item {
+            Card(onClick = openDataPrivacy, modifier = Modifier.fillMaxWidth().testTag("open_data_privacy")) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Datos y privacidad", style = MaterialTheme.typography.titleLarge)
+                    Text("Exportar, verificar e importar paquetes portables.")
                     Text("Abrir", color = MaterialTheme.colorScheme.primary)
                 }
             }

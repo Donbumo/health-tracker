@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/portable_inspection.schema.json",
+  "title": "Portable package inspection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "format",
+    "format_version",
+    "export_id",
+    "package_sha256",
+    "integrity",
+    "authenticity",
+    "sections",
+    "counts",
+    "files",
+    "warnings"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "format": {
+      "const": "health-tracker-portable-v1"
+    },
+    "format_version": {
+      "const": "1.0"
+    },
+    "export_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "package_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "integrity": {
+      "const": "verified"
+    },
+    "authenticity": {
+      "const": "not_proven"
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "size_bytes"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._/-]+$",
+            "maxLength": 255
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 500
+      }
+    }
+  }
+}

@@ -115,6 +115,12 @@ Sync manual, WorkManager y triggers automáticos comparten single-flight por rep
 
 Tras process death sin red, una cuenta con refresh cifrado, scope, dispositivo y registro Room coherentes abre su cache antes de intentar red y puede reanudar un draft verificado. Los campos válidos se autosalvan a los 400 ms y se fuerzan al perder foco, navegar o ir a background. Al volver la conexión se restaura primero el access token, se revalida bootstrap/negociación cuando corresponde y después se sincroniza. Solo revocación o refresh definitivamente inválido limpian la sesión; fallos temporales nunca borran credenciales ni corrompen drafts.
 
+## Datos y privacidad Alpha 1.7
+
+`Ajustes → Datos y privacidad` añade portabilidad sin otra pestaña. Room 7 conserva export jobs, import jobs, inspecciones, planes, decisiones, metadata de descarga y temporales con `accountScope`. Los `.htpack` no se guardan en Room: viven en almacenamiento privado particionado por identidad de cuenta/servidor.
+
+Export permite secciones y rango; perfil identificable y attachments parten apagados. Import usa SAF, inspección local, upload, dry-run, resumen de conflictos y confirmación. Descargar escribe `.partial`, verifica tamaño/SHA-256 y sólo después habilita guardar o compartir. FileProvider concede URI temporal y no expone el árbol BLE. Consulta [Alpha 1.7](ALPHA_1_7_DATA_PORTABILITY.md).
+
 ## Alcance no soportado
 
 Alpha 1.5 integra únicamente lectura de Health Connect para los tipos documentados. Google Fit, Huawei Health, Xiaomi Home/S400, BLE, Wear OS, fotografía, OCR, IA, códigos de barras, recomendaciones y diagnósticos siguen fuera de alcance. Los objetivos de nutrición o pasos permanecen ausentes cuando el backend no tiene un contrato existente; no se fabrican valores.

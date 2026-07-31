@@ -1,5 +1,20 @@
 # Checklist de release alpha privada
 
+## Alpha 1.7 — portabilidad selectiva
+
+- [x] Branch/HEAD y staging verificados; sin commit/push/merge/tag.
+- [x] Schemas portable v1 válidos y referencias locales resueltas.
+- [x] Export owner-only, opt-in de perfil/attachments, expiración y descarga no-cache.
+- [x] ZIP safety, checksums, schemas embebidos, límites y autenticidad no demostrada verificados.
+- [x] Inspect/dry-run/conflictos/remapeo/confirmación/rollback/repetición sin duplicados verificados.
+- [x] Alembic cero→0033, 0032→0033, check, downgrade y re-upgrade en MariaDB efímera.
+- [x] Room 1/2/3/4/5/6→7 compila sin fallback destructivo.
+- [x] SAF/FileProvider, offline, process death, parciales, hash y cleanup revisados en código/pruebas compilables.
+- [x] `lintDebug`, JVM dos veces, `assembleDebug` y `compileDebugAndroidTestKotlin` pasan; no se ejecutaron connected tests.
+- [x] CLI inspect/verify/list/sanitize y compileall pasan.
+- [x] APK escaneado; ningún paquete, attachment, dump, DB, secreto o dato real está versionado.
+- [ ] QA manual y riesgos pendientes se registran sin declarar evidencia no obtenida.
+
 ## Alpha 1.6 — fuentes externas y Xiaomi S400 experimental
 
 - [x] Registro externo desacoplado y owner-scoped con cinco fuentes iniciales.

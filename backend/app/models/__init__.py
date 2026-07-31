@@ -33,6 +33,13 @@ from app.models.companion import (
     CompanionProgressEvent,
     CompanionWorkoutDelivery,
 )
+from app.models.portability import (
+    PortableArtifact,
+    PortableExportJob,
+    PortableImportDecision,
+    PortableImportJob,
+    PortableImportMapping,
+)
 
 
 __all__ = [
@@ -72,4 +79,9 @@ __all__ = [
     "CompanionDeviceProfile",
     "CompanionProgressEvent",
     "CompanionWorkoutDelivery",
+    "PortableArtifact",
+    "PortableExportJob",
+    "PortableImportDecision",
+    "PortableImportJob",
+    "PortableImportMapping",
 ]

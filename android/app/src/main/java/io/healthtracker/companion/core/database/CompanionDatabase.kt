@@ -58,9 +58,16 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ExternalMeasurementLedgerEntity::class,
         PossibleDuplicateEntity::class,
         ProtocolEvidenceEntity::class,
+        PortableExportJobEntity::class,
+        PortableImportJobEntity::class,
+        PortableInspectionEntity::class,
+        PortableImportPlanEntity::class,
+        PortableImportDecisionEntity::class,
+        PortableDownloadEntity::class,
+        PortableTempFileEntity::class,
         SyncStateEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 abstract class CompanionDatabase : RoomDatabase() {
@@ -71,7 +78,7 @@ abstract class CompanionDatabase : RoomDatabase() {
             context.applicationContext,
             CompanionDatabase::class.java,
             "health_tracker_companion_v1.db",
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7).build()
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -182,6 +189,25 @@ abstract class CompanionDatabase : RoomDatabase() {
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_possible_duplicates_accountScope_resolution` ON `possible_duplicates` (`accountScope`, `resolution`)")
                 db.execSQL("""CREATE TABLE IF NOT EXISTS `protocol_evidence` (`accountScope` TEXT NOT NULL, `evidenceId` TEXT NOT NULL, `captureId` TEXT NOT NULL, `relativeTimestampMs` INTEGER NOT NULL, `displayedValue` TEXT NOT NULL, `unit` TEXT NOT NULL, `frameFingerprint` TEXT, `state` TEXT NOT NULL, `createdAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `evidenceId`))""")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_protocol_evidence_accountScope_captureId_relativeTimestampMs` ON `protocol_evidence` (`accountScope`, `captureId`, `relativeTimestampMs`)")
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `portable_export_jobs` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `state` TEXT NOT NULL, `sectionsJson` TEXT NOT NULL, `countsJson` TEXT NOT NULL, `sha256` TEXT, `sizeBytes` INTEGER, `requestJson` TEXT NOT NULL, `idempotencyKey` TEXT NOT NULL, `revision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `expiresAt` TEXT, `completedAt` TEXT, `errorCode` TEXT, PRIMARY KEY(`accountScope`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_portable_export_jobs_accountScope_createdAt` ON `portable_export_jobs` (`accountScope`, `createdAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_portable_export_jobs_accountScope_state` ON `portable_export_jobs` (`accountScope`, `state`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `portable_import_jobs` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `state` TEXT NOT NULL, `sectionsJson` TEXT NOT NULL, `countsJson` TEXT NOT NULL, `sourceUri` TEXT, `uriPermissionPersisted` INTEGER NOT NULL, `packageSha256` TEXT, `sizeBytes` INTEGER, `uploadIdempotencyKey` TEXT NOT NULL, `applyIdempotencyKey` TEXT NOT NULL, `revision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `expiresAt` TEXT, `completedAt` TEXT, `errorCode` TEXT, PRIMARY KEY(`accountScope`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_portable_import_jobs_accountScope_createdAt` ON `portable_import_jobs` (`accountScope`, `createdAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_portable_import_jobs_accountScope_state` ON `portable_import_jobs` (`accountScope`, `state`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `portable_inspections` (`accountScope` TEXT NOT NULL, `importPublicId` TEXT NOT NULL, `packageSha256` TEXT NOT NULL, `format` TEXT NOT NULL, `formatVersion` TEXT NOT NULL, `sectionsJson` TEXT NOT NULL, `countsJson` TEXT NOT NULL, `filesJson` TEXT NOT NULL, `warningsJson` TEXT NOT NULL, `integrity` TEXT NOT NULL, `authenticity` TEXT NOT NULL, `verifiedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `importPublicId`))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `portable_import_plans` (`accountScope` TEXT NOT NULL, `importPublicId` TEXT NOT NULL, `planId` TEXT NOT NULL, `revision` INTEGER NOT NULL, `selectedSectionsJson` TEXT NOT NULL, `summaryJson` TEXT NOT NULL, `recordsJson` TEXT NOT NULL, `warningsJson` TEXT NOT NULL, `expiresAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `importPublicId`))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `portable_import_decisions` (`accountScope` TEXT NOT NULL, `importPublicId` TEXT NOT NULL, `section` TEXT NOT NULL, `sourcePublicId` TEXT NOT NULL, `strategy` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `importPublicId`, `section`, `sourcePublicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_portable_import_decisions_accountScope_importPublicId` ON `portable_import_decisions` (`accountScope`, `importPublicId`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `portable_downloads` (`accountScope` TEXT NOT NULL, `exportPublicId` TEXT NOT NULL, `partialFileName` TEXT, `finalFileName` TEXT, `expectedSha256` TEXT NOT NULL, `calculatedSha256` TEXT, `expectedBytes` INTEGER, `downloadedBytes` INTEGER NOT NULL, `state` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, `errorCode` TEXT, PRIMARY KEY(`accountScope`, `exportPublicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_portable_downloads_accountScope_state` ON `portable_downloads` (`accountScope`, `state`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `portable_temp_files` (`accountScope` TEXT NOT NULL, `fileId` TEXT NOT NULL, `kind` TEXT NOT NULL, `fileName` TEXT NOT NULL, `sha256` TEXT, `sizeBytes` INTEGER, `createdAt` TEXT NOT NULL, `expiresAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `fileId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_portable_temp_files_accountScope_expiresAt` ON `portable_temp_files` (`accountScope`, `expiresAt`)")
             }
         }
     }

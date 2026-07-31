@@ -48,6 +48,7 @@ import io.healthtracker.companion.core.model.AuthState
 import io.healthtracker.companion.core.model.LoadDetailsDto
 import io.healthtracker.companion.core.model.SyncStatus
 import io.healthtracker.companion.core.model.UserProfile
+import io.healthtracker.companion.core.portability.PortableExportRequest
 import io.healthtracker.companion.core.sync.SyncScheduler
 import io.healthtracker.companion.core.sync.SyncTrigger
 import io.healthtracker.companion.core.sync.HistoryFilters
@@ -96,6 +97,7 @@ class CompanionViewModel(
     private val repository = container.repository
     private val healthConnectManager: HealthConnectManager = container.healthConnectManager
     private val externalSourceStore = container.externalSourceStore
+    private val portabilityRepository = container.portabilityRepository
     private val planningEditorState = PlanningEditorState(savedStateHandle)
     private val mutableAuth = MutableStateFlow(AuthState.SIGNED_OUT)
     private val mutableProfile = MutableStateFlow<UserProfile?>(null)
@@ -172,6 +174,26 @@ class CompanionViewModel(
         viewModelScope, SharingStarted.WhileSubscribed(5_000), false,
     )
     private val scope = preferences.mapLatest { it.accountScope }
+
+    val portableExports = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else portabilityRepository.observeExports(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val portableImports = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else portabilityRepository.observeImports(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val portableInspections = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else portabilityRepository.observeInspections(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val portablePlans = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else portabilityRepository.observePlans(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val portableDownloads = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else portabilityRepository.observeDownloads(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val healthConnect = scope.flatMapLatest { account ->
         if (account == null) flowOf(HealthConnectUiState()) else healthConnectManager.observe(account)
@@ -1208,6 +1230,111 @@ class CompanionViewModel(
         val account = preferences.value.accountScope ?: return@action
         externalSourceStore.resolvePossibleDuplicate(account, duplicateId, sameMeasurement)
         mutableMessage.value = if (sameMeasurement) "Las mediciones quedaron enlazadas sin borrado silencioso." else "Se conservarán ambas mediciones."
+    }
+
+    fun requestPortableExport(request: PortableExportRequest) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.queueExport(account, request)
+        mutableMessage.value = if (connected.value) {
+            "Solicitud de exportación guardada; se enviará ahora."
+        } else {
+            "Solicitud guardada offline; se enviará al recuperar la red."
+        }
+    }
+
+    fun refreshPortability() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        if (!connected.value) {
+            mutableMessage.value = "Sin conexión: se muestran los estados guardados."
+            return@action
+        }
+        portabilityRepository.processPending(account)
+        portabilityRepository.refreshExports(account)
+        portabilityRepository.refreshImports(account)
+    }
+
+    fun inspectPortablePackage(uri: Uri, permissionPersisted: Boolean) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.inspectLocal(account, uri, permissionPersisted)
+        mutableMessage.value = if (connected.value) {
+            "Inspección local correcta; el paquete se enviará para simulación."
+        } else {
+            "Inspección local correcta; upload y simulación quedan pendientes."
+        }
+    }
+
+    fun uploadPortableImport(localId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        if (!connected.value) {
+            mutableMessage.value = "El upload queda pendiente hasta recuperar la red."
+            return@action
+        }
+        portabilityRepository.uploadImport(account, localId)
+        mutableMessage.value = "Simulación de importación lista."
+    }
+
+    fun resolvePortableConflictsSafely(importId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.resolveConflictsSafely(account, importId)
+        mutableMessage.value = "Los conflictos se conservarán en el destino."
+    }
+
+    fun applyPortableImport(importId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        if (!connected.value) {
+            portabilityRepository.queueApply(account, importId)
+            mutableMessage.value = "La confirmación queda pendiente y se aplicará al recuperar la red."
+            return@action
+        }
+        portabilityRepository.applyImport(account, importId)
+        mutableMessage.value = "Importación completada sin escritura parcial."
+    }
+
+    fun downloadPortableExport(exportId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.download(account, exportId)
+        mutableMessage.value = "Paquete descargado y SHA-256 verificado."
+    }
+
+    fun sharePortableIntent(exportId: String): Intent {
+        val account = preferences.value.accountScope ?: error("account_scope_required")
+        return portabilityRepository.shareIntent(account, exportId)
+    }
+
+    fun savePortableExport(exportId: String, destination: Uri) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.fileStore.copyTo(account, exportId, destination)
+        mutableMessage.value = "Paquete guardado en el destino elegido."
+    }
+
+    fun deleteLocalPortableExport(exportId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.deleteLocalExport(account, exportId)
+        mutableMessage.value = "Copia local eliminada."
+    }
+
+    fun deleteServerPortableExport(exportId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.deleteServerExport(account, exportId)
+        mutableMessage.value = "Artefacto del servidor eliminado."
+    }
+
+    fun cancelPortableExport(exportId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.cancelExport(account, exportId)
+        mutableMessage.value = "Solicitud de exportacion cancelada."
+    }
+
+    fun deleteServerPortableImport(importId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.deleteServerImport(account, importId)
+        mutableMessage.value = "Paquete temporal de importación eliminado."
+    }
+
+    fun deleteLocalPortableImport(importId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.deleteLocalImport(account, importId)
+        mutableMessage.value = "Inspeccion local eliminada."
     }
 
     fun logout(revoke: Boolean = false, localOnly: Boolean = false) = action {

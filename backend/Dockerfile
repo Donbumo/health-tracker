@@ -14,6 +14,7 @@ COPY backend/ ./
 COPY schemas/ /app/schemas/
 COPY examples/ /examples/
 COPY scripts/release/ /app/scripts/release/
+COPY scripts/portability/ /app/scripts/portability/
 RUN chmod +x /app/docker-entrypoint.sh \
     && addgroup --system app \
     && adduser --system --ingroup app app \

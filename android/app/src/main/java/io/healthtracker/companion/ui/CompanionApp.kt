@@ -73,7 +73,9 @@ private enum class Destination(val route: String, val label: String, val symbol:
     HEALTH_DAY("health_day", "Salud", ""), BODY_HISTORY("body_history", "Cuerpo", ""),
     NUTRITION_DAY("nutrition_day", "Nutrición", ""), FOOD_CATALOG("food_catalog", "Alimentos", ""),
     STEPS_HISTORY("steps_history", "Pasos", ""), EXTERNAL_SOURCES("external_sources", "Fuentes externas", ""),
-    DATA_PRIVACY("data_privacy", "Datos y privacidad", ""), ENGAGEMENT("engagement", "Objetivos y recordatorios", "")
+    DATA_PRIVACY("data_privacy", "Datos y privacidad", ""), ENGAGEMENT("engagement", "Objetivos y recordatorios", ""),
+    MEDICAL_RECORDS("medical_records", "Estudios médicos", ""), MEDICAL_DETAIL("medical_detail", "Estudio médico", ""),
+    MEDICAL_HISTORY("medical_history", "Historial de laboratorio", "")
 }
 
 @Composable
@@ -216,7 +218,7 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            if (route !in setOf(Destination.WORKOUT.route, Destination.PLAN_DETAIL.route, Destination.PLAN_WORKOUT.route, Destination.HISTORY_DETAIL.route, Destination.EXERCISE_DETAIL.route, Destination.HEALTH_DAY.route, Destination.BODY_HISTORY.route, Destination.NUTRITION_DAY.route, Destination.FOOD_CATALOG.route, Destination.STEPS_HISTORY.route, Destination.EXTERNAL_SOURCES.route, Destination.DATA_PRIVACY.route, Destination.ENGAGEMENT.route)) NavigationBar {
+            if (route !in setOf(Destination.WORKOUT.route, Destination.PLAN_DETAIL.route, Destination.PLAN_WORKOUT.route, Destination.HISTORY_DETAIL.route, Destination.EXERCISE_DETAIL.route, Destination.HEALTH_DAY.route, Destination.BODY_HISTORY.route, Destination.NUTRITION_DAY.route, Destination.FOOD_CATALOG.route, Destination.STEPS_HISTORY.route, Destination.EXTERNAL_SOURCES.route, Destination.DATA_PRIVACY.route, Destination.ENGAGEMENT.route, Destination.MEDICAL_RECORDS.route, Destination.MEDICAL_DETAIL.route, Destination.MEDICAL_HISTORY.route)) NavigationBar {
                 listOf(Destination.TODAY, Destination.PLAN, Destination.HISTORY, Destination.PROGRESS, Destination.SETTINGS).forEach { destination ->
                     NavigationBarItem(
                         selected = route == destination.route,
@@ -269,7 +271,7 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
                 { nav.navigate(Destination.ENGAGEMENT.route) },
             ) }
             composable(Destination.WORKOUT.route) { WorkoutScreen(viewModel) { nav.popBackStack() } }
-            composable(Destination.HEALTH_DAY.route) { DailyHealthScreen(viewModel, { nav.popBackStack() }, { nav.navigate(Destination.BODY_HISTORY.route) }, { nav.navigate(Destination.NUTRITION_DAY.route) }, { nav.navigate(Destination.STEPS_HISTORY.route) }) }
+            composable(Destination.HEALTH_DAY.route) { DailyHealthScreen(viewModel, { nav.popBackStack() }, { nav.navigate(Destination.BODY_HISTORY.route) }, { nav.navigate(Destination.NUTRITION_DAY.route) }, { nav.navigate(Destination.STEPS_HISTORY.route) }, { nav.navigate(Destination.MEDICAL_RECORDS.route) }) }
             composable(Destination.BODY_HISTORY.route) { BodyHistoryScreen(viewModel) { nav.popBackStack() } }
             composable(Destination.NUTRITION_DAY.route) { NutritionDayScreen(viewModel, { nav.popBackStack() }, { nav.navigate(Destination.FOOD_CATALOG.route) }) }
             composable(Destination.FOOD_CATALOG.route) { FoodCatalogScreen(viewModel) { nav.popBackStack() } }
@@ -277,6 +279,15 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
             composable(Destination.EXTERNAL_SOURCES.route) { ExternalSourcesScreen(viewModel) { nav.popBackStack() } }
             composable(Destination.DATA_PRIVACY.route) { DataPrivacyScreen(viewModel) { nav.popBackStack() } }
             composable(Destination.ENGAGEMENT.route) { GoalsAndRemindersScreen(viewModel) { nav.popBackStack() } }
+            composable(Destination.MEDICAL_RECORDS.route) { MedicalRecordsScreen(viewModel, { nav.popBackStack() }) { id ->
+                viewModel.openMedicalStudy(id); nav.navigate(Destination.MEDICAL_DETAIL.route)
+            } }
+            composable(Destination.MEDICAL_DETAIL.route) { MedicalStudyDetailScreen(viewModel, {
+                viewModel.openMedicalStudy(null); nav.popBackStack()
+            }) { key ->
+                viewModel.selectMedicalHistory(key); nav.navigate(Destination.MEDICAL_HISTORY.route)
+            } }
+            composable(Destination.MEDICAL_HISTORY.route) { MedicalHistoryScreen(viewModel) { nav.popBackStack() } }
         }
     }
 }

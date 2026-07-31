@@ -11,6 +11,96 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CompanionDao {
+    @Upsert suspend fun upsertMedicalStudies(values: List<MedicalStudyEntity>)
+    @Upsert suspend fun upsertMedicalStudy(value: MedicalStudyEntity)
+    @Upsert suspend fun upsertMedicalDocuments(values: List<MedicalDocumentEntity>)
+    @Upsert suspend fun upsertMedicalDocument(value: MedicalDocumentEntity)
+    @Upsert suspend fun upsertLabPanels(values: List<LabPanelEntity>)
+    @Upsert suspend fun upsertLabPanel(value: LabPanelEntity)
+    @Upsert suspend fun upsertLabResults(values: List<LabResultEntity>)
+    @Upsert suspend fun upsertLabResult(value: LabResultEntity)
+    @Upsert suspend fun upsertLabResultRevisions(values: List<LabResultRevisionEntity>)
+    @Upsert suspend fun upsertLabResultRevision(value: LabResultRevisionEntity)
+    @Upsert suspend fun upsertLabMarkers(values: List<LabMarkerEntity>)
+    @Upsert suspend fun upsertMedicalOperation(value: MedicalOperationEntity)
+    @Upsert suspend fun upsertMedicalHistory(value: MedicalHistoryCacheEntity)
+    @Upsert suspend fun upsertMedicalDuplicates(values: List<MedicalDuplicateCandidateEntity>)
+
+    @Query("SELECT * FROM medical_studies WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND state!='archived' ORDER BY studyDate DESC, updatedAt DESC")
+    fun observeMedicalStudies(scope: String, serverIdentity: String): Flow<List<MedicalStudyEntity>>
+
+    @Query("SELECT * FROM medical_studies WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    fun observeMedicalStudy(scope: String, serverIdentity: String, publicId: String): Flow<MedicalStudyEntity?>
+
+    @Query("SELECT * FROM medical_studies WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    suspend fun medicalStudy(scope: String, serverIdentity: String, publicId: String): MedicalStudyEntity?
+
+    @Query("SELECT * FROM lab_panels WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND studyPublicId=:studyId ORDER BY displayOrder")
+    fun observeLabPanels(scope: String, serverIdentity: String, studyId: String): Flow<List<LabPanelEntity>>
+
+    @Query("SELECT * FROM lab_results WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND panelPublicId IN (:panelIds) ORDER BY panelPublicId, displayOrder")
+    fun observeLabResults(scope: String, serverIdentity: String, panelIds: List<String>): Flow<List<LabResultEntity>>
+
+    @Query("SELECT * FROM medical_documents WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND studyPublicId=:studyId ORDER BY createdAt")
+    fun observeMedicalDocuments(scope: String, serverIdentity: String, studyId: String): Flow<List<MedicalDocumentEntity>>
+
+    @Query("SELECT * FROM medical_documents WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND studyPublicId=:studyId")
+    suspend fun medicalDocuments(scope: String, serverIdentity: String, studyId: String): List<MedicalDocumentEntity>
+
+    @Query("SELECT * FROM lab_markers WHERE accountScope=:scope AND serverIdentity=:serverIdentity ORDER BY displayName")
+    fun observeLabMarkers(scope: String, serverIdentity: String): Flow<List<LabMarkerEntity>>
+
+    @Query("SELECT * FROM medical_history_cache WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND canonicalKey=:canonicalKey AND period=:period")
+    fun observeMedicalHistory(scope: String, serverIdentity: String, canonicalKey: String, period: String): Flow<MedicalHistoryCacheEntity?>
+
+    @Query("SELECT * FROM medical_duplicate_candidates WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND resolution='pending' ORDER BY createdAt DESC")
+    fun observeMedicalDuplicates(scope: String, serverIdentity: String): Flow<List<MedicalDuplicateCandidateEntity>>
+
+    @Query("SELECT * FROM medical_operations WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND status='pending' AND notBeforeEpochMs<=:now ORDER BY createdAt LIMIT :limit")
+    suspend fun readyMedicalOperations(scope: String, serverIdentity: String, now: Long, limit: Int = 50): List<MedicalOperationEntity>
+
+    @Query("SELECT * FROM medical_operations WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND entityPublicId=:entityId AND status='pending' ORDER BY createdAt")
+    suspend fun pendingMedicalOperationsForEntity(scope: String, serverIdentity: String, entityId: String): List<MedicalOperationEntity>
+
+    @Query("DELETE FROM medical_operations WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND operationId=:operationId")
+    suspend fun deleteMedicalOperation(scope: String, serverIdentity: String, operationId: String)
+
+    @Query("DELETE FROM medical_studies WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    suspend fun deleteMedicalStudy(scope: String, serverIdentity: String, publicId: String)
+
+    @Query("DELETE FROM medical_documents WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    suspend fun deleteMedicalDocument(scope: String, serverIdentity: String, publicId: String)
+
+    @Query("SELECT * FROM medical_documents WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    suspend fun medicalDocument(scope: String, serverIdentity: String, publicId: String): MedicalDocumentEntity?
+
+    @Query("DELETE FROM medical_documents WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND studyPublicId=:studyId")
+    suspend fun deleteMedicalDocumentsForStudy(scope: String, serverIdentity: String, studyId: String)
+
+    @Query("DELETE FROM lab_results WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND panelPublicId IN (:panelIds)")
+    suspend fun deleteLabResultsForPanels(scope: String, serverIdentity: String, panelIds: List<String>)
+
+    @Query("DELETE FROM lab_result_revisions WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND resultPublicId IN (:resultIds)")
+    suspend fun deleteLabResultRevisions(scope: String, serverIdentity: String, resultIds: List<String>)
+
+    @Query("SELECT * FROM lab_results WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND panelPublicId IN (:panelIds)")
+    suspend fun labResults(scope: String, serverIdentity: String, panelIds: List<String>): List<LabResultEntity>
+
+    @Query("DELETE FROM lab_panels WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND studyPublicId=:studyId")
+    suspend fun deleteLabPanelsForStudy(scope: String, serverIdentity: String, studyId: String)
+
+    @Query("SELECT * FROM lab_panels WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND studyPublicId=:studyId")
+    suspend fun labPanels(scope: String, serverIdentity: String, studyId: String): List<LabPanelEntity>
+
+    @Query("DELETE FROM lab_results WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    suspend fun deleteLabResult(scope: String, serverIdentity: String, publicId: String)
+
+    @Query("SELECT * FROM lab_results WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    suspend fun labResult(scope: String, serverIdentity: String, publicId: String): LabResultEntity?
+
+    @Query("SELECT * FROM lab_panels WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    suspend fun labPanel(scope: String, serverIdentity: String, publicId: String): LabPanelEntity?
+
     @Upsert
     suspend fun upsertGoals(values: List<GoalEntity>)
 
@@ -908,6 +998,33 @@ interface CompanionDao {
     @Query("DELETE FROM goals WHERE accountScope=:scope")
     suspend fun deleteGoalsForAccount(scope: String)
 
+    @Query("DELETE FROM medical_duplicate_candidates WHERE accountScope=:scope")
+    suspend fun deleteMedicalDuplicatesForAccount(scope: String)
+
+    @Query("DELETE FROM medical_history_cache WHERE accountScope=:scope")
+    suspend fun deleteMedicalHistoryForAccount(scope: String)
+
+    @Query("DELETE FROM medical_operations WHERE accountScope=:scope")
+    suspend fun deleteMedicalOperationsForAccount(scope: String)
+
+    @Query("DELETE FROM lab_markers WHERE accountScope=:scope")
+    suspend fun deleteLabMarkersForAccount(scope: String)
+
+    @Query("DELETE FROM lab_result_revisions WHERE accountScope=:scope")
+    suspend fun deleteLabResultRevisionsForAccount(scope: String)
+
+    @Query("DELETE FROM lab_results WHERE accountScope=:scope")
+    suspend fun deleteLabResultsForAccount(scope: String)
+
+    @Query("DELETE FROM lab_panels WHERE accountScope=:scope")
+    suspend fun deleteLabPanelsForAccount(scope: String)
+
+    @Query("DELETE FROM medical_documents WHERE accountScope=:scope")
+    suspend fun deleteMedicalDocumentsForAccount(scope: String)
+
+    @Query("DELETE FROM medical_studies WHERE accountScope=:scope")
+    suspend fun deleteMedicalStudiesForAccount(scope: String)
+
     @Transaction
     suspend fun replacePackage(
         packageEntity: WorkoutPackageEntity,
@@ -980,6 +1097,15 @@ interface CompanionDao {
 
     @Transaction
     suspend fun clearAccount(scope: String) {
+        deleteMedicalDuplicatesForAccount(scope)
+        deleteMedicalHistoryForAccount(scope)
+        deleteMedicalOperationsForAccount(scope)
+        deleteLabMarkersForAccount(scope)
+        deleteLabResultRevisionsForAccount(scope)
+        deleteLabResultsForAccount(scope)
+        deleteLabPanelsForAccount(scope)
+        deleteMedicalDocumentsForAccount(scope)
+        deleteMedicalStudiesForAccount(scope)
         deleteAdherenceForAccount(scope)
         deleteReminderPermissionForAccount(scope)
         deleteReminderSchedulesForAccount(scope)

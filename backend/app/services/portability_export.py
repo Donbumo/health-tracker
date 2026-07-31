@@ -16,6 +16,7 @@ from app.models import (
     PortableArtifact, PortableExportJob, TrainingPlan, TrainingPlanWorkout,
     TrainingSession, TrainingSessionExercise, TrainingSet, UploadedFile, User,
     UserGoal, ReminderRule, WeighIn,
+    LabPanel, LabResult, MedicalDocument, MedicalStudy,
 )
 from app.services.portable_archive import (
     ALL_SECTIONS, MEDIA_TYPE, PortableArchiveError, PortableArchiveWriter,
@@ -97,8 +98,8 @@ def _parse_date(value, field: str) -> date | None:
         raise PortabilityExportError("invalid_date", f"{field} debe usar YYYY-MM-DD.") from error
 
 
-def _request(payload: dict) -> tuple[list[str], date | None, date | None, bool, bool]:
-    allowed = {"sections", "date_from", "date_to", "include_attachments", "include_identifiable_profile", "format"}
+def _request(payload: dict) -> tuple[list[str], date | None, date | None, bool, bool, bool]:
+    allowed = {"sections", "date_from", "date_to", "include_attachments", "include_medical_attachments", "include_identifiable_profile", "format"}
     if set(payload) - allowed:
         raise PortabilityExportError("invalid_request", "La solicitud contiene campos no reconocidos.")
     if payload.get("format", "health-tracker-portable-v1") != "health-tracker-portable-v1":
@@ -113,19 +114,24 @@ def _request(payload: dict) -> tuple[list[str], date | None, date | None, bool, 
         if section not in sections:
             sections.append(section)
     include_attachments = payload.get("include_attachments", False)
+    include_medical_attachments = payload.get("include_medical_attachments", False)
     identifiable = payload.get("include_identifiable_profile", False)
-    if type(include_attachments) is not bool or type(identifiable) is not bool:
+    if type(include_attachments) is not bool or type(include_medical_attachments) is not bool or type(identifiable) is not bool:
         raise PortabilityExportError("invalid_request", "Las opciones de privacidad deben ser booleanas.")
-    if "attachments" in sections and not include_attachments:
+    if "attachments" in sections and not (include_attachments or include_medical_attachments):
         raise PortabilityExportError("attachments_not_confirmed", "Los attachments requieren selección explícita.")
-    if include_attachments and "attachments" not in sections:
+    if (include_attachments or include_medical_attachments) and "attachments" not in sections:
         sections.append("attachments")
+    if include_medical_attachments:
+        for required in ("medical_studies", "lab_panels", "lab_results", "medical_documents_metadata"):
+            if required not in sections:
+                sections.append(required)
     if "profile" in sections and not identifiable:
         raise PortabilityExportError("profile_not_confirmed", "El perfil identificable requiere selección explícita.")
     start, end = _parse_date(payload.get("date_from"), "date_from"), _parse_date(payload.get("date_to"), "date_to")
     if start and end and start > end:
         raise PortabilityExportError("invalid_date_range", "date_from no puede ser posterior a date_to.")
-    return sections, start, end, include_attachments, identifiable
+    return sections, start, end, include_attachments, include_medical_attachments, identifiable
 
 
 def _query(model, user_id: int, *order, loaders=()):
@@ -137,10 +143,20 @@ def _query(model, user_id: int, *order, loaders=()):
     return db.session.execute(statement).scalars().all()
 
 
-def _serialize_records(user: User, sections: list[str], start: date | None, end: date | None, identifiable: bool) -> tuple[dict[str, list[dict]], dict[str, Path]]:
+def _serialize_records(
+    user: User,
+    sections: list[str],
+    start: date | None,
+    end: date | None,
+    identifiable: bool,
+    include_attachments: bool,
+    include_medical_attachments: bool,
+) -> tuple[dict[str, list[dict]], dict[str, Path]]:
     output: dict[str, list[dict]] = {}
     attachment_files: dict[str, Path] = {}
     sources: dict[str, set[str]] = {}
+    medical_upload_ids: set[int] = set()
+    medical_attachment_ids: dict[int, str] = {}
 
     if "profile" in sections:
         output["profile"] = [_record("profile", _stable_uuid("profile", user.public_id), {
@@ -187,6 +203,78 @@ def _serialize_records(user: User, sections: list[str], start: date | None, end:
             "timezone": row.timezone,
             "related_public_id": row.related_public_id,
         }, row.revision) for row in rows]
+    medical_studies = [
+        row for row in _query(
+            MedicalStudy,
+            user.id,
+            MedicalStudy.study_date,
+            MedicalStudy.public_id,
+            loaders=(
+                selectinload(MedicalStudy.panels).selectinload(LabPanel.results),
+                selectinload(MedicalStudy.documents).selectinload(MedicalDocument.uploaded_file),
+            ),
+        )
+        if _in_range(row.study_date, start, end)
+    ]
+    if "medical_studies" in sections:
+        output["medical_studies"] = [_record("medical_studies", row.public_id, {
+            "study_type": row.study_type,
+            "title": row.title,
+            "laboratory_name": row.laboratory_name,
+            "professional_name": row.professional_name,
+            "study_date": row.study_date,
+            "issued_date": row.issued_date,
+            "timezone": row.timezone,
+            "notes": row.notes,
+            "state": row.state,
+            "source": "manual" if row.source in {"manual", "mobile"} else "imported",
+        }, row.revision) for row in medical_studies]
+    panels = [panel for study in medical_studies for panel in study.panels]
+    if "lab_panels" in sections:
+        output["lab_panels"] = [_record("lab_panels", row.public_id, {
+            "study_public_id": row.study.public_id,
+            "name": row.name,
+            "display_order": row.display_order,
+            "source": "manual" if row.source in {"manual", "mobile"} else "imported",
+        }, row.revision) for row in panels]
+    results = [result for panel in panels for result in panel.results]
+    if "lab_results" in sections:
+        output["lab_results"] = [_record("lab_results", row.public_id, {
+            "panel_public_id": row.panel.public_id,
+            "display_name": row.display_name,
+            "canonical_key": row.canonical_key,
+            "value_type": row.value_type,
+            "original_value": row.original_value,
+            "numeric_value": row.numeric_value,
+            "comparator": row.comparator,
+            "original_unit": row.original_unit,
+            "reference_lower": row.reference_lower,
+            "reference_upper": row.reference_upper,
+            "reference_text": row.reference_text,
+            "source_status": row.source_status,
+            "method": row.method,
+            "specimen": row.specimen,
+            "notes": row.notes,
+            "display_order": row.display_order,
+            "source": "manual" if row.source in {"manual", "mobile"} else "imported",
+        }, row.revision) for row in results]
+    medical_documents = [document for study in medical_studies for document in study.documents]
+    for document in medical_documents:
+        if document.uploaded_file_id:
+            medical_upload_ids.add(document.uploaded_file_id)
+            medical_attachment_ids[document.uploaded_file_id] = _stable_uuid("medical_attachment", document.sha256)
+    if "medical_documents_metadata" in sections:
+        output["medical_documents_metadata"] = [_record("medical_documents_metadata", row.public_id, {
+            "study_public_id": row.study.public_id,
+            "document_type": row.document_type,
+            "filename": safe_filename(row.original_filename),
+            "mime_type": row.mime_type,
+            "size_bytes": row.size_bytes,
+            "sha256": row.sha256,
+            "availability": row.availability,
+            "attachment_public_id": medical_attachment_ids.get(row.uploaded_file_id) if include_medical_attachments else None,
+            "source": "manual" if row.source in {"manual", "mobile"} else "imported",
+        }, row.revision) for row in medical_documents]
     if "exercises" in sections:
         rows = _query(Exercise, user.id, Exercise.normalized_name, Exercise.public_id,
             loaders=(selectinload(Exercise.aliases), selectinload(Exercise.load_profile)))
@@ -327,6 +415,9 @@ def _serialize_records(user: User, sections: list[str], start: date | None, end:
         upload_root = Path(current_app.config["UPLOAD_ROOT"]).resolve()
         data_root = Path(current_app.config["DATA_ROOT"]).resolve()
         for row in _query(UploadedFile, user.id, UploadedFile.created_at, UploadedFile.id):
+            is_medical = row.id in medical_upload_ids
+            if (is_medical and not include_medical_attachments) or (not is_medical and not include_attachments):
+                continue
             source = (data_root / row.storage_path).resolve()
             try:
                 source.relative_to(upload_root)
@@ -340,24 +431,32 @@ def _serialize_records(user: User, sections: list[str], start: date | None, end:
             total += size
             if total > maximum_total:
                 raise PortabilityExportError("attachments_too_large", "Los attachments seleccionados superan el límite.", 413)
-            public_id = _stable_uuid("attachment", row.sha256)
+            public_id = medical_attachment_ids.get(row.id) if is_medical else _stable_uuid("attachment", row.sha256)
             archive_path = f"attachments/{public_id}/{safe_filename(row.original_filename)}"
             attachment_files[archive_path] = source
             output["attachments"].append(_record("attachments", public_id, {
                 "archive_path": archive_path, "filename": safe_filename(row.original_filename),
                 "sha256": row.sha256, "size_bytes": row.size_bytes,
                 "media_type": (row.mime_type or "application/octet-stream")[:100],
-                "source_type": "user_upload",
+                "source_type": "medical_document" if is_medical else "user_upload",
             }))
+        included_attachment_ids = {row["public_id"] for row in output["attachments"]}
+        for record in output.get("medical_documents_metadata", []):
+            attachment_id = record["data"].get("attachment_public_id")
+            if attachment_id and attachment_id not in included_attachment_ids:
+                record["data"]["attachment_public_id"] = None
+                if record["data"]["availability"] == "available":
+                    record["data"]["availability"] = "missing"
     return output, attachment_files
 
 
 def create_export(user: User, payload: dict, raw_idempotency_key: str) -> tuple[PortableExportJob, bool]:
     if not isinstance(raw_idempotency_key, str) or not raw_idempotency_key.strip() or len(raw_idempotency_key) > 200:
         raise PortabilityExportError("idempotency_required", "Se requiere Idempotency-Key.")
-    sections, start, end, include_attachments, identifiable = _request(payload)
+    sections, start, end, include_attachments, include_medical_attachments, identifiable = _request(payload)
     normalized = {"sections": sections, "date_from": start.isoformat() if start else None, "date_to": end.isoformat() if end else None,
-        "include_attachments": include_attachments, "include_identifiable_profile": identifiable, "format": "health-tracker-portable-v1"}
+        "include_attachments": include_attachments, "include_medical_attachments": include_medical_attachments,
+        "include_identifiable_profile": identifiable, "format": "health-tracker-portable-v1"}
     request_hash = _hash(canonical_json_bytes(normalized))
     key_hash = _hash(raw_idempotency_key.strip().encode("utf-8"))
     existing = db.session.execute(db.select(PortableExportJob).where(
@@ -369,7 +468,7 @@ def create_export(user: User, payload: dict, raw_idempotency_key: str) -> tuple[
         return existing, True
     now = _now()
     job = PortableExportJob(user_id=user.id, state="preparing", sections_json=sections, counts_json={},
-        include_attachments=include_attachments, include_identifiable_profile=identifiable,
+        include_attachments=(include_attachments or include_medical_attachments), include_identifiable_profile=identifiable,
         date_from=start, date_to=end, request_hash=request_hash, idempotency_key_hash=key_hash,
         created_at=now, expires_at=now + timedelta(hours=current_app.config["PORTABILITY_TTL_HOURS"]))
     try:
@@ -389,7 +488,10 @@ def create_export(user: User, payload: dict, raw_idempotency_key: str) -> tuple[
     destination_dir = _root() / f"user_{user.id}" / "exports"
     destination = destination_dir / f"{job.public_id}.htpack"
     try:
-        records, attachments = _serialize_records(user, sections, start, end, identifiable)
+        records, attachments = _serialize_records(
+            user, sections, start, end, identifiable,
+            include_attachments, include_medical_attachments,
+        )
         omitted = [section for section in ALL_SECTIONS if section not in records]
         manifest = PortableArchiveWriter(Path(current_app.config["SCHEMA_ROOT"])).write(
             destination, export_id=job.public_id, created_at=now,
@@ -408,7 +510,7 @@ def create_export(user: User, payload: dict, raw_idempotency_key: str) -> tuple[
     except Exception as error:
         db.session.rollback(); destination.unlink(missing_ok=True)
         failed = PortableExportJob(user_id=user.id, state="failed", sections_json=sections, counts_json={},
-            include_attachments=include_attachments, include_identifiable_profile=identifiable,
+            include_attachments=(include_attachments or include_medical_attachments), include_identifiable_profile=identifiable,
             date_from=start, date_to=end, request_hash=request_hash, idempotency_key_hash=key_hash,
             created_at=now, expires_at=now + timedelta(hours=current_app.config["PORTABILITY_TTL_HOURS"]),
             completed_at=_now(), error_code=getattr(error, "code", "generation_failed"))

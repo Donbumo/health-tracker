@@ -1,5 +1,18 @@
 # Handoff activo
 
+## Alpha 1.9 en esta rama
+
+- Rama `feature/alpha-1.9-medical-records`; checkpoint inicial/HEAD sin modificar `2644b58a8cd41c0e516773980697f353102a76db` (Alpha 1.8 completa).
+- Backend añade estudios, fuentes, paneles, resultados/revisiones, documentos, duplicados y auditoría sanitizada mediante Alembic `20260731_0035`, endpoints Bearer owner-only e import `health-tracker-medical-lab-v1` JSON/CSV con preview.
+- Storage reutiliza `UploadedFile`; PDF/JPEG/PNG/JSON interno/CSV controlado usan detección real, SHA-256, nombres aleatorios y límites. No hay OCR, IA, diagnóstico, antivirus simulado ni rangos universales.
+- Android pasa a code 19/name `1.9.0-alpha01`, Room 9 y nueve tablas aisladas por cuenta+servidor; Salud contiene estudios/laboratorio, SAF, FileProvider privado y cola offline durable.
+- Portable v1 añade cuatro secciones estructuradas. Los documentos originales permanecen desactivados por defecto y requieren `include_medical_attachments=true`.
+- Documentación canónica de la entrega: `ALPHA_1_9_MEDICAL_RECORDS.md`, `MEDICAL_DATA_PRIVACY.md` y `MEDICAL_LAB_FORMAT_V1.md`.
+- Gates finales: backend local 687/7 y Docker/MariaDB 693/1; el único omitido en Docker es el test documental que no se copia a la imagen. Alembic pasó cero→0035, 0034→0035, check, downgrade y re-upgrade; concurrencia médica y E2E completo pasaron sobre storage efímero.
+- Android pasó en orden `lintDebug`, 157/157 JVM forzadas, `assembleDebug`, `compileDebugAndroidTestKotlin` y segunda JVM forzada 157/157. El APK debug mide 20.513.670 bytes, SHA-256 `05E624AAE2137F063BD4B3866665DB03FF36DA6FFB109C54AF865F63F770E6F7`, firma v2, code 19/name `1.9.0-alpha01-debug` y escaneo sensible limpio.
+- MariaDB usó un contenedor/red exclusivos, `/var/lib/mysql` en tmpfs y storage de aplicación bajo temporal externo; los recursos e imágenes QA se eliminaron. Volúmenes antes/después: los mismos dos preexistentes. Compose diario, `.env`, `/data`, NAS y `qa-temp-alpha15*` no se tocaron.
+- QA físico, instrumentación conectada, OCR/IA/FHIR e interpretación clínica permanecen fuera de alcance.
+
 ## Alpha 1.8 en esta rama
 
 - Rama `feature/alpha-1.8-goals-reminders-adherence`; checkpoint inicial/HEAD sin modificar `a5cee0add8448516428f3044c70a3a03058139ac`.

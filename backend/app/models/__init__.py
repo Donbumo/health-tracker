@@ -46,6 +46,16 @@ from app.models.engagement import (
     ReminderRule,
     UserGoal,
 )
+from app.models.medical_records import (
+    LabPanel,
+    LabResult,
+    LabResultRevision,
+    MedicalAuditEvent,
+    MedicalDocument,
+    MedicalDuplicateCandidate,
+    MedicalStudy,
+    MedicalStudySource,
+)
 
 
 __all__ = [
@@ -94,4 +104,12 @@ __all__ = [
     "ReminderRule",
     "ReminderEvent",
     "AdherenceSnapshot",
+    "MedicalStudy",
+    "MedicalStudySource",
+    "MedicalDocument",
+    "LabPanel",
+    "LabResult",
+    "LabResultRevision",
+    "MedicalDuplicateCandidate",
+    "MedicalAuditEvent",
 ]

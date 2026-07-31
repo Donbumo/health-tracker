@@ -52,3 +52,7 @@ Cerrar todas las sesiones, revocar el dispositivo y borrar datos locales muestra
 Health Connect es opt-in y de solo lectura. La Activity de rationale y la pantalla de Ajustes explican finalidad, tipos y controles. Pausar o desconectar no llama a `revokeAllPermissions`; administrar acceso abre la superficie del sistema. El borrado de importados exige confirmación separada y preserva `manual` y `user_override`.
 
 Valores, nutrientes, pasos, IDs completos, origins completos, permisos completos, tokens y payloads Health Connect no se registran. El estado observable solo expone tipos seleccionados/concedidos, conteos, timestamps y códigos sanitizados. El package de origen se conserva privado en el ledger para enlazar correctamente peso y composición, pero no se usa como identidad única ni se muestra en diagnósticos.
+
+## Datos médicos Alpha 1.9
+
+No se registran títulos, laboratorios/profesionales, notas, nombres de archivo, valores, unidades, rangos, marcadores, documentos, JSON/CSV, hashes completos, URI o rutas. SAF evita permisos amplios; la copia de upload vive en `noBackupFilesDir`, y el FileProvider médico no se exporta. Compartir/abrir requiere acción explícita y grant temporal. Notificaciones siguen genéricas y nunca muestran resultados. Véase [MEDICAL_DATA_PRIVACY.md](MEDICAL_DATA_PRIVACY.md).

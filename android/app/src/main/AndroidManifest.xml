@@ -91,5 +91,14 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/portability_file_paths" />
         </provider>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.medical-documents"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/medical_file_paths" />
+        </provider>
     </application>
 </manifest>

@@ -76,3 +76,5 @@ No confían en la extensión y nunca sobrescriben el original al sanear.
 - QA físico, instrumentadas ejecutadas y validación de distribución siguen siendo gates separados.
 
 Consulta [Formato portable v1](PORTABLE_PACKAGE_FORMAT_V1.md) y [Privacidad de exportación](DATA_EXPORT_PRIVACY.md).
+
+Alpha 1.9 amplía v1 de forma aditiva con cuatro secciones médicas. Los binarios médicos tienen un consentimiento separado del attachment genérico y siguen apagados por defecto; detalle y round-trip en [ALPHA_1_9_MEDICAL_RECORDS.md](ALPHA_1_9_MEDICAL_RECORDS.md).

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/medical_import_result.schema.json",
+  "title": "Medical import result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "format", "state", "study_public_id", "created", "skipped", "duplicate_classification", "uuid_mapping", "warnings"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "format": {"const": "health-tracker-medical-lab-v1"},
+    "state": {"enum": ["completed", "completed_with_skips", "rolled_back"]},
+    "study_public_id": {"type": ["string", "null"], "format": "uuid"},
+    "created": {"type": "integer", "minimum": 0},
+    "skipped": {"type": "integer", "minimum": 0},
+    "duplicate_classification": {"enum": ["exact_structured_duplicate", "probable_duplicate", "possible_duplicate", "distinct", "none"]},
+    "uuid_mapping": {
+      "type": "object",
+      "propertyNames": {"format": "uuid"},
+      "additionalProperties": {"type": "string", "format": "uuid"}
+    },
+    "warnings": {"type": "array", "items": {"type": "string", "maxLength": 500}}
+  }
+}

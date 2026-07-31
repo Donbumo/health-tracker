@@ -109,6 +109,7 @@ class CompanionViewModel(
     private val externalSourceStore = container.externalSourceStore
     private val portabilityRepository = container.portabilityRepository
     private val engagementRepository = container.engagementRepository
+    private val medicalRepository = container.medicalRepository
     private val planningEditorState = PlanningEditorState(savedStateHandle)
     private val mutableAuth = MutableStateFlow(AuthState.SIGNED_OUT)
     private val mutableProfile = MutableStateFlow<UserProfile?>(null)
@@ -141,6 +142,9 @@ class CompanionViewModel(
     private val mutableProgressSection = MutableStateFlow("training")
     private val mutableScaleDiagnostic = MutableStateFlow(ScaleDiagnosticResult())
     private val mutableAdherenceDays = MutableStateFlow(7)
+    private val mutableSelectedMedicalStudyId = MutableStateFlow<String?>(null)
+    private val mutableMedicalHistoryKey = MutableStateFlow<String?>(null)
+    private val mutableMedicalHistoryPeriod = MutableStateFlow("all")
     private var catalogSearchJob: Job? = null
     private val serializer = Json { explicitNulls = false; encodeDefaults = true }
     private val autosaveController: DebouncedAutosave<AutosaveCommand>
@@ -178,6 +182,9 @@ class CompanionViewModel(
     val progressSection: StateFlow<String> = mutableProgressSection
     val scaleDiagnostic: StateFlow<ScaleDiagnosticResult> = mutableScaleDiagnostic
     val adherenceDays: StateFlow<Int> = mutableAdherenceDays
+    val selectedMedicalStudyId: StateFlow<String?> = mutableSelectedMedicalStudyId
+    val medicalHistoryKey: StateFlow<String?> = mutableMedicalHistoryKey
+    val medicalHistoryPeriod: StateFlow<String> = mutableMedicalHistoryPeriod
     val externalDevice: StateFlow<ExternalDeviceUiState> = container.externalDeviceManager.state
     val preferences = container.preferences.values.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000),
@@ -212,6 +219,43 @@ class CompanionViewModel(
     val adherence = combine(engagementScope, mutableAdherenceDays) { value, days -> value to days }.flatMapLatest { (value, days) ->
         if (value == null) flowOf(null) else engagementRepository.observeAdherence(value.first, value.second, days)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val medicalStudies = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(emptyList()) else medicalRepository.observeStudies(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val selectedMedicalStudy = combine(engagementScope, mutableSelectedMedicalStudyId) { value, id -> value to id }
+        .flatMapLatest { (value, id) ->
+            if (value == null || id == null) flowOf(null) else medicalRepository.observeStudy(value.first, value.second, id)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val medicalPanels = combine(engagementScope, mutableSelectedMedicalStudyId) { value, id -> value to id }
+        .flatMapLatest { (value, id) ->
+            if (value == null || id == null) flowOf(emptyList()) else medicalRepository.observePanels(value.first, value.second, id)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val medicalResults = combine(engagementScope, medicalPanels) { value, panels -> value to panels.map { it.publicId } }
+        .flatMapLatest { (value, ids) ->
+            if (value == null || ids.isEmpty()) flowOf(emptyList()) else medicalRepository.observeResults(value.first, value.second, ids)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val medicalDocuments = combine(engagementScope, mutableSelectedMedicalStudyId) { value, id -> value to id }
+        .flatMapLatest { (value, id) ->
+            if (value == null || id == null) flowOf(emptyList()) else medicalRepository.observeDocuments(value.first, value.second, id)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val labMarkers = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(emptyList()) else medicalRepository.observeMarkers(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val medicalHistory = combine(engagementScope, mutableMedicalHistoryKey, mutableMedicalHistoryPeriod) { value, key, period -> Triple(value, key, period) }
+        .flatMapLatest { (value, key, period) ->
+            if (value == null || key == null) flowOf(null) else medicalRepository.observeHistory(value.first, value.second, key, period)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val medicalDuplicates = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(emptyList()) else medicalRepository.observeDuplicates(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val portableExports = scope.flatMapLatest { account ->
         if (account == null) flowOf(emptyList()) else portabilityRepository.observeExports(account)
@@ -1520,6 +1564,124 @@ class CompanionViewModel(
         mutableProfile.value = null
         mutableAuth.value = AuthState.SIGNED_OUT
         mutableMessage.value = "Sesión separada. Confirma la nueva URL e inicia sesión; los datos anteriores siguen aislados."
+    }
+
+    fun openMedicalStudy(publicId: String?) { mutableSelectedMedicalStudyId.value = publicId }
+
+    fun refreshMedicalRecords() = action(showBusy = false) {
+        val (account, identity) = medicalIdentity() ?: return@action
+        medicalRepository.refresh(account, identity)
+    }
+
+    fun createMedicalStudy(title: String, studyType: String, studyDate: String, laboratory: String?, notes: String?, onCreated: (String) -> Unit = {}) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        val id = medicalRepository.createStudy(account, identity, title, studyType, studyDate, laboratory,
+            profile.value?.timezone ?: ZoneId.systemDefault().id, notes)
+        mutableSelectedMedicalStudyId.value = id
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Estudio guardado en el dispositivo."
+        onCreated(id)
+    }
+
+    fun editSelectedMedicalStudy(title: String, notes: String?) = action(showBusy = false) {
+        val (account, identity) = medicalIdentity() ?: return@action
+        val id = mutableSelectedMedicalStudyId.value ?: return@action
+        medicalRepository.editStudy(account, identity, id, title, notes)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Cambios médicos guardados localmente."
+    }
+
+    fun archiveSelectedMedicalStudy(onArchived: () -> Unit = {}) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        val id = mutableSelectedMedicalStudyId.value ?: return@action
+        medicalRepository.archiveStudy(account, identity, id)
+        mutableSelectedMedicalStudyId.value = null
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Estudio archivado."
+        onArchived()
+    }
+
+    fun completeSelectedMedicalStudy() = action(showBusy = false) {
+        val (account, identity) = medicalIdentity() ?: return@action
+        val id = mutableSelectedMedicalStudyId.value ?: return@action
+        medicalRepository.completeStudy(account, identity, id)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Captura marcada como completa."
+    }
+
+    fun addMedicalResult(panelName: String, displayName: String, valueType: String, originalValue: String,
+                         numericValue: String?, unit: String?, lower: String?, upper: String?, sourceStatus: String) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        val studyId = mutableSelectedMedicalStudyId.value ?: return@action
+        medicalRepository.addResult(account, identity, studyId, panelName, displayName, valueType,
+            originalValue, numericValue, unit, lower, upper, sourceStatus)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Resultado guardado localmente."
+    }
+
+    fun editMedicalResult(publicId: String, originalValue: String, numericValue: String?, unit: String?,
+                          lower: String?, upper: String?, sourceStatus: String, reason: String?) = action(showBusy = false) {
+        val (account, identity) = medicalIdentity() ?: return@action
+        medicalRepository.editResult(account, identity, publicId, originalValue, numericValue, unit, lower, upper, sourceStatus, reason)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Corrección guardada localmente."
+    }
+
+    fun deleteMedicalResult(publicId: String) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        medicalRepository.deleteResult(account, identity, publicId)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Resultado eliminado."
+    }
+
+    fun attachMedicalDocument(uri: Uri, filename: String, mimeType: String) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        val studyId = mutableSelectedMedicalStudyId.value ?: return@action
+        medicalRepository.attachDocument(account, identity, studyId, uri, filename, mimeType)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Documento guardado para carga segura."
+    }
+
+    fun deleteMedicalDocument(publicId: String) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        medicalRepository.deleteDocument(account, identity, publicId)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Documento eliminado; el estudio estructurado se conserva."
+    }
+
+    fun shareMedicalDocument(publicId: String, onReady: (Intent) -> Unit) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        onReady(medicalRepository.explicitShareIntent(account, identity, publicId))
+        mutableMessage.value = "Selecciona explícitamente dónde compartir el documento."
+    }
+
+    fun permanentlyDeleteSelectedMedicalStudy(onDeleted: () -> Unit = {}) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        val id = mutableSelectedMedicalStudyId.value ?: return@action
+        medicalRepository.permanentlyDeleteStudy(account, identity, id)
+        mutableSelectedMedicalStudyId.value = null
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Eliminación definitiva guardada."
+        onDeleted()
+    }
+
+    fun selectMedicalHistory(key: String, period: String = "all") = action(showBusy = false) {
+        mutableMedicalHistoryKey.value = key
+        mutableMedicalHistoryPeriod.value = period
+        val (account, identity) = medicalIdentity() ?: return@action
+        if (connected.value) medicalRepository.refreshHistory(account, identity, key, period)
+    }
+
+    fun setMedicalHistoryPeriod(period: String) {
+        val key = mutableMedicalHistoryKey.value ?: return
+        selectMedicalHistory(key, period)
+    }
+
+    private fun medicalIdentity(): Pair<String, String>? {
+        val local = preferences.value
+        val account = local.accountScope ?: return null
+        val server = local.serverUrl ?: return null
+        return account to CanonicalJson.serverIdentity(server)
     }
 
     fun clearMessage() { mutableMessage.value = null }

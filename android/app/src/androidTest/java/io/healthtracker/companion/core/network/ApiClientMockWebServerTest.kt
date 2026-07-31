@@ -10,6 +10,7 @@ import io.healthtracker.companion.core.model.AppFailure
 import io.healthtracker.companion.core.security.SecureTokenStore
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.async
+import kotlinx.serialization.json.put
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -232,6 +233,31 @@ class ApiClientMockWebServerTest {
         server.enqueue(MockResponse().setResponseCode(429).setHeader("Retry-After", "999999").setBody(errorEnvelope("rate_limited")))
         val limited = runCatching { client.health(base) }.exceptionOrNull() as AppFailure
         assertEquals(21600L, limited.retryAfterSeconds)
+    }
+
+    @Test fun medicalMutationUsesBearerJsonAndDurableIdempotencyKey() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val base = server.url("/").toString().trimEnd('/')
+        val preferences = PreferenceStore(context).also { it.configureServer(base, true) }
+        val tokenStore = SecureTokenStore(context).also { it.clear(); it.setTokens("medical-access", "medical-refresh", base) }
+        val client = ApiClient(preferences, tokenStore)
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody(
+            """{"data":{"public_id":"11111111-1111-4111-8111-111111111111","title":"Estudio QA"},"meta":{"api_version":"1","request_id":"qa"}}""",
+        ))
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("public_id", "11111111-1111-4111-8111-111111111111")
+            put("study_type", "laboratory"); put("title", "Estudio QA")
+            put("study_date", "2026-07-31"); put("state", "complete"); put("source", "mobile")
+        }
+
+        client.createMedicalStudy(payload, "medical-idempotency-qa")
+
+        val request = server.takeRequest()
+        assertEquals("/api/v1/mobile/medical-studies", request.path)
+        assertEquals("Bearer medical-access", request.getHeader("Authorization"))
+        assertEquals("medical-idempotency-qa", request.getHeader("Idempotency-Key"))
+        assertTrue(request.body.readUtf8().contains("Estudio QA"))
+        tokenStore.clear()
     }
 
     private fun tokenEnvelope(access: String, refresh: String) =

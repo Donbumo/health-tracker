@@ -47,6 +47,7 @@ data class PortableExportRequest(
     val dateFrom: String? = null,
     val dateTo: String? = null,
     val includeAttachments: Boolean = false,
+    val includeMedicalAttachments: Boolean = false,
     val includeIdentifiableProfile: Boolean = false,
 )
 
@@ -330,6 +331,7 @@ class PortabilityRepository(
         put("sections", buildJsonArray { request.sections.sorted().forEach { add(it) } })
         request.dateFrom?.let { put("date_from", it) }; request.dateTo?.let { put("date_to", it) }
         put("include_attachments", request.includeAttachments)
+        put("include_medical_attachments", request.includeMedicalAttachments)
         put("include_identifiable_profile", request.includeIdentifiableProfile)
     }
 

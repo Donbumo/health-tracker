@@ -69,3 +69,9 @@ Verifica específicamente 401 con refresh válido/inválido, revocación, 409 re
 El 21 de julio de 2026 pasaron `lintDebug`, `testDebugUnitTest` (34 tests, dos pasadas), `assembleDebug` y `compileDebugAndroidTestKotlin`. `connectedDebugAndroidTest` continúa pendiente porque el único AVD disponible es el Pixel_7 que conserva el caso QA manual y no debe limpiarse ni usarse para instrumentación. La matriz manual offline, rotación, tamaños, fuente grande, TalkBack, temas y HTTPS tampoco se marca aprobada.
 
 El 25 de julio de 2026 la matriz final Alpha 1.3 pasó en orden: `lintDebug`, `testDebugUnitTest` forzado (49/49), `assembleDebug`, `compileDebugAndroidTestKotlin` y una segunda ejecución forzada de `testDebugUnitTest` (49/49). La instrumentación no se ejecutó y continúan pendientes el QA manual visual/accesible y el recorrido real modo avión→process death→reconexión en un AVD o dispositivo separado.
+
+## Alpha 1.9
+
+JVM cubre decimales finitos, cálculo mecánico de rango, conversiones exactas/versionadas y comparabilidad por método. AndroidTest compilable añade Room 8→9, cadena 1→9, preservación de pending action, aislamiento por cuenta+servidor y contrato MockWebServer de Bearer/idempotencia. `connectedDebugAndroidTest` permanece prohibido. QA manual pendiente: SAF persistido/perdido, upload parcial, process death, FileProvider/share, offline→reconexión, duplicados/conflictos, logout/cambio de servidor, accesibilidad, rotación, temas y 320/360/411/600 dp.
+
+El 31 de julio de 2026 pasó el gate Alpha 1.9 en orden: `lintDebug`, JVM forzada 157/157, `assembleDebug`, `compileDebugAndroidTestKotlin` y segunda JVM forzada 157/157. Las instrumentadas no se ejecutaron. El APK debug mide 20.513.670 bytes, usa code 19/name `1.9.0-alpha01-debug`, firma v2 y SHA-256 `05E624AAE2137F063BD4B3866665DB03FF36DA6FFB109C54AF865F63F770E6F7`; el inventario no contiene fixtures médicas ni paquetes de prueba.

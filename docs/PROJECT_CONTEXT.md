@@ -145,3 +145,5 @@ Alpha 1.8 incorpora engagement no clínico. El servidor persiste objetivos y reg
 6. `history/` para trazabilidad, nunca para redefinir el presente.
 
 Consulta `DOCUMENTATION_INDEX.md` para el mapa completo por dominio.
+
+Alpha 1.9 incorpora documentación médica privada sin convertir Health Tracker en herramienta clínica: conserva estudios, resultados y originales, compara únicamente unidades/métodos técnicamente compatibles y mantiene rangos/estados como procedencia del informe. OCR, IA, diagnóstico, recomendaciones, FHIR obligatorio y rangos universales siguen fuera de los límites del producto. Véase [ALPHA_1_9_MEDICAL_RECORDS.md](ALPHA_1_9_MEDICAL_RECORDS.md).

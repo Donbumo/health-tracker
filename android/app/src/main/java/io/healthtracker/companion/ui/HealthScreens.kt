@@ -36,6 +36,7 @@ internal fun DailyHealthScreen(
     openBody: () -> Unit,
     openNutrition: () -> Unit,
     openSteps: () -> Unit,
+    openMedical: () -> Unit,
 ) {
     val summary by viewModel.dailyHealth.collectAsState()
     val date by viewModel.healthDate.collectAsState()
@@ -74,6 +75,15 @@ internal fun DailyHealthScreen(
             item { HealthMetricCard("Nutrición", summary?.caloriesKcal?.let { "$it kcal · P ${summary?.proteinG ?: "—"} g · C ${summary?.carbohydrateG ?: "—"} g · G ${summary?.fatG ?: "—"} g" } ?: "Sin entradas", summary?.syncStatus, openNutrition) }
             item { HealthMetricCard("Pasos", summary?.steps?.toString() ?: "Sin registro", summary?.syncStatus, openSteps, summary?.stepsSource) }
             item { HealthMetricCard("Entrenamiento", "${summary?.completedWorkouts ?: 0} completados de ${summary?.scheduledWorkouts ?: 0} programados", summary?.syncStatus, null) }
+            item {
+                Card(onClick = openMedical, modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("Estudios médicos", style = MaterialTheme.typography.titleMedium)
+                        Text("Resultados de laboratorio y documentos, disponibles offline.")
+                        Text("Sin diagnóstico ni interpretación clínica.", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            }
         }
     }
 }

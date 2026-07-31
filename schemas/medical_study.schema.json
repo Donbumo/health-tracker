@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/medical_study.schema.json",
+  "title": "health-tracker-medical-lab-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "schema_version", "study", "panels", "attachments"],
+  "properties": {
+    "format": {"const": "health-tracker-medical-lab-v1"},
+    "schema_version": {"const": "1.0"},
+    "study": {"$ref": "#/$defs/study"},
+    "panels": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/panel"}},
+    "attachments": {"type": "array", "maxItems": 50, "items": {"$ref": "#/$defs/attachment"}}
+  },
+  "$defs": {
+    "study": {
+      "type": "object", "additionalProperties": false,
+      "required": ["public_id", "study_type", "title", "laboratory_name", "professional_name", "study_date", "issued_date", "timezone", "notes", "state", "source", "revision"],
+      "properties": {
+        "public_id": {"type": "string", "format": "uuid"},
+        "study_type": {"enum": ["laboratory", "imaging", "clinical_document", "prescription_document", "vaccination_document", "other"]},
+        "title": {"type": "string", "minLength": 1, "maxLength": 240},
+        "laboratory_name": {"type": ["string", "null"], "minLength": 1, "maxLength": 200},
+        "professional_name": {"type": ["string", "null"], "minLength": 1, "maxLength": 200},
+        "study_date": {"type": "string", "format": "date"},
+        "issued_date": {"type": ["string", "null"], "format": "date"},
+        "timezone": {"type": ["string", "null"], "maxLength": 64},
+        "notes": {"type": ["string", "null"], "maxLength": 5000},
+        "state": {"enum": ["draft", "complete", "archived"]},
+        "source": {"enum": ["manual", "mobile", "json_import", "csv_import", "portable_import"]},
+        "revision": {"type": "integer", "minimum": 1}
+      }
+    },
+    "panel": {
+      "type": "object", "additionalProperties": false,
+      "required": ["public_id", "name", "display_order", "source", "revision", "results"],
+      "properties": {
+        "public_id": {"type": "string", "format": "uuid"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "display_order": {"type": "integer", "minimum": 0},
+        "source": {"enum": ["manual", "mobile", "json_import", "csv_import", "portable_import"]},
+        "revision": {"type": "integer", "minimum": 1},
+        "results": {"type": "array", "maxItems": 500, "items": {"$ref": "#/$defs/result"}}
+      }
+    },
+    "result": {
+      "type": "object", "additionalProperties": false,
+      "required": ["public_id", "display_name", "canonical_key", "value_type", "original_value", "numeric_value", "comparator", "original_unit", "reference_lower", "reference_upper", "reference_text", "source_status", "method", "specimen", "notes", "display_order", "source", "revision"],
+      "properties": {
+        "public_id": {"type": "string", "format": "uuid"},
+        "display_name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "canonical_key": {"type": ["string", "null"], "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$", "maxLength": 100},
+        "value_type": {"enum": ["numeric", "text", "categorical", "positive_negative", "detected_not_detected", "unknown"]},
+        "original_value": {"type": "string", "minLength": 1, "maxLength": 500},
+        "numeric_value": {"type": ["string", "null"], "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$", "maxLength": 80},
+        "comparator": {"enum": ["equal", "less_than", "less_or_equal", "greater_than", "greater_or_equal", "approximate", "none"]},
+        "original_unit": {"type": ["string", "null"], "minLength": 1, "maxLength": 100},
+        "reference_lower": {"type": ["string", "null"], "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$", "maxLength": 80},
+        "reference_upper": {"type": ["string", "null"], "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$", "maxLength": 80},
+        "reference_text": {"type": ["string", "null"], "maxLength": 500},
+        "source_status": {"enum": ["low", "within_range", "high", "abnormal", "critical_as_reported", "indeterminate", "not_provided"]},
+        "method": {"type": ["string", "null"], "maxLength": 200},
+        "specimen": {"type": ["string", "null"], "maxLength": 200},
+        "notes": {"type": ["string", "null"], "maxLength": 2000},
+        "display_order": {"type": "integer", "minimum": 0},
+        "source": {"enum": ["manual", "mobile", "json_import", "csv_import", "portable_import"]},
+        "revision": {"type": "integer", "minimum": 1}
+      }
+    },
+    "attachment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["public_id", "document_type", "filename", "mime_type", "size_bytes", "sha256", "availability", "source", "revision"],
+      "properties": {
+        "public_id": {"type": "string", "format": "uuid"},
+        "document_type": {"enum": ["original", "supporting", "medical_json", "controlled_csv"]},
+        "filename": {"type": "string", "minLength": 1, "maxLength": 255},
+        "mime_type": {"enum": ["application/pdf", "image/jpeg", "image/png", "application/json", "text/csv"]},
+        "size_bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "availability": {"enum": ["available", "metadata_only", "missing"]},
+        "source": {"enum": ["manual", "mobile", "json_import", "csv_import", "portable_import"]},
+        "revision": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}

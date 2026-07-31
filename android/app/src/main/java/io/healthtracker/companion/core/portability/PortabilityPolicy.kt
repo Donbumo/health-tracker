@@ -3,7 +3,14 @@ package io.healthtracker.companion.core.portability
 object PortabilityPolicy {
     fun validateExportRequest(request: PortableExportRequest) {
         require(request.sections.isNotEmpty()) { "sections_required" }
-        require("attachments" !in request.sections || request.includeAttachments) { "attachments_confirmation_required" }
+        require("attachments" !in request.sections || request.includeAttachments || request.includeMedicalAttachments) {
+            "attachments_confirmation_required"
+        }
+        if (request.includeMedicalAttachments) {
+            require(setOf("attachments", "medical_studies", "lab_panels", "lab_results", "medical_documents_metadata").all {
+                it in request.sections
+            }) { "medical_sections_required" }
+        }
         require("profile" !in request.sections || request.includeIdentifiableProfile) { "profile_confirmation_required" }
         require(request.dateFrom == null || request.dateTo == null || request.dateFrom <= request.dateTo) { "invalid_date_range" }
     }

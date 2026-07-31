@@ -57,3 +57,7 @@ Export e import temporales vencen por defecto en 24 horas. Borrar un artefacto v
 - Borra copias del servidor y del dispositivo cuando termines.
 - Usa `sanitize_htpack.py` para crear una copia nueva sin perfil, notas, attachments ni procedencia externa cuando necesites soporte o QA.
 - No interpretes “integridad verificada” como “origen verificado”.
+
+## Datos médicos Alpha 1.9
+
+Estudios/paneles/resultados/metadata son secciones explícitas. Los documentos originales nunca se exportan por defecto: requieren `include_medical_attachments=true`, advertencia reforzada y sección `attachments`. No salen rutas, URI SAF, auditoría, logs, nombres sin sanear, tokens, estados clínicos inferidos ni datos de dispositivo. Una copia metadata-only sigue siendo útil y declara que el original no está disponible.

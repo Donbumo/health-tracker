@@ -74,3 +74,7 @@ Room 5 persiste ajustes, permisos observados, token por tipo/generación y ledge
 Cada importación válida actualiza el recurso local y Hoy/Progreso antes de encolar `health_body_*`, `health_nutrition_*` o `health_steps_*`. Un alta nunca intentada absorbe cambios posteriores. Si el alta ya pudo alcanzar el servidor, se conserva y se añade un update durable; al confirmarse el alta se actualiza su `base_revision` antes de procesar la siguiente acción. La cola se vuelve a consultar en cada paso FIFO para que esa revisión no quede obsoleta.
 
 Un borrado del origen elimina solo el recurso todavía importado y encola el DELETE idempotente. Borrar grasa limpia ese campo sin borrar el peso asociado. Una copia `detached/user_override` permanece y pierde la asociación activa. El borrado selectivo de Ajustes recorre únicamente ledgers importados activos en una transacción; no toca registros manuales, sesiones, planes ni copias editadas.
+
+## Cola médica Alpha 1.9
+
+Room 9 persiste estudios, documentos metadata, paneles, resultados/revisiones, catálogo, operaciones, historial y duplicados por `accountScope + serverIdentity`. Create→update de estudio y updates repetidos consolidan el payload final; create de resultado→delete descarta la operación. PATCH/DELETE conservan revisión base e idempotency key. WorkManager reintenta con backoff y refresca caché después de vaciar la cola. URI/temporales permanecen fuera de Room; permiso perdido exige reselección, y logout borra filas y temporales solo de la cuenta efectiva.

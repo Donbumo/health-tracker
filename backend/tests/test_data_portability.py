@@ -20,7 +20,10 @@ from jsonschema import Draft202012Validator
 from app.api_v1.rate_limit import rate_limiter
 from app import create_app
 from app.extensions import db
-from app.models import PortableExportJob, PortableImportJob, UploadedFile, User, WeighIn
+from app.models import (
+    LabResult, MedicalDocument, MedicalDuplicateCandidate, MedicalStudy, PortableExportJob,
+    PortableImportJob, UploadedFile, User, WeighIn,
+)
 from app.services.portable_archive import PortableArchiveError, PortableArchiveReader, PortableLimits
 from tests.test_mobile_sync import _api_login, _auth
 
@@ -343,6 +346,229 @@ def test_attachment_round_trip_is_opt_in_owner_scoped_and_hash_verified(app, cli
         assert (Path(app.config["DATA_ROOT"]) / uploaded.storage_path).read_bytes() == content
 
 
+def test_medical_portable_metadata_and_opt_in_binary_round_trip(app, client, user):
+    token = _api_login(client)["access_token"]
+    study_payload = {
+        "public_id": "78888888-8888-4888-8888-888888888881",
+        "study_type": "laboratory", "title": "Estudio portable QA ficticio",
+        "laboratory_name": "Laboratorio QA", "professional_name": None,
+        "study_date": "2026-07-15", "issued_date": "2026-07-16",
+        "timezone": "UTC", "notes": "Solo datos ficticios.",
+        "state": "complete", "source": "mobile",
+    }
+    study = client.post("/api/v1/mobile/medical-studies", json=study_payload,
+        headers=_headers(token, "portable-medical-study")).get_json()["data"]
+    result_payload = {
+        "public_id": "78888888-8888-4888-8888-888888888882",
+        "panel_name": "Panel QA", "display_name": "Marcador QA", "canonical_key": None,
+        "value_type": "numeric", "original_value": "4.2", "numeric_value": "4.2",
+        "comparator": "equal", "original_unit": "mg/L", "reference_lower": "3",
+        "reference_upper": "5", "reference_text": "Rango QA del informe",
+        "source_status": "within_range", "method": "Método QA", "specimen": "Muestra QA",
+        "notes": None, "source": "mobile",
+    }
+    assert client.post(f"/api/v1/mobile/medical-studies/{study['public_id']}/results",
+        json=result_payload, headers=_headers(token, "portable-medical-result")).status_code == 201
+    content = b"%PDF-1.4\nFictional portable medical QA document\n%%EOF"
+    uploaded = client.post(f"/api/v1/mobile/medical-studies/{study['public_id']}/documents",
+        data={"file": (io.BytesIO(content), "informe-portable-qa.pdf", "application/pdf")},
+        headers=_headers(token, "portable-medical-document"), content_type="multipart/form-data")
+    assert uploaded.status_code == 201
+
+    medical_sections = ["medical_studies", "lab_panels", "lab_results", "medical_documents_metadata"]
+    metadata_package = _package(client, token, _export(client, token, key="portable-medical-metadata",
+        sections=medical_sections).get_json()["data"]["export_id"])
+    with ZipFile(io.BytesIO(metadata_package)) as archive:
+        assert not any(name.startswith("attachments/") for name in archive.namelist())
+        metadata = json.loads(archive.read("records/medical_documents_metadata.jsonl"))
+        assert metadata["data"]["attachment_public_id"] is None
+
+    package = _package(client, token, _export(client, token, key="portable-medical-binary",
+        sections=medical_sections, include_medical_attachments=True).get_json()["data"]["export_id"])
+    with ZipFile(io.BytesIO(package)) as archive:
+        assert sum(name.startswith("attachments/") for name in archive.namelist()) == 1
+        metadata = json.loads(archive.read("records/medical_documents_metadata.jsonl"))
+        assert metadata["data"]["attachment_public_id"]
+
+    destination_id, destination_token = _second_user(app, client)
+    inspection = _inspect(client, destination_token, package,
+        [*medical_sections, "attachments"]).get_json()["data"]
+    applied = client.post(f"/api/v1/mobile/portability/imports/{inspection['import_id']}/apply",
+        json={"confirmed": True, "plan_revision": 1, "decisions": []},
+        headers=_headers(destination_token, "portable-medical-apply"))
+    assert applied.status_code == 200
+    with app.app_context():
+        destination_study = db.session.execute(db.select(MedicalStudy).where(
+            MedicalStudy.user_id == destination_id)).scalar_one()
+        destination_result = db.session.execute(db.select(LabResult).where(
+            LabResult.user_id == destination_id)).scalar_one()
+        destination_document = db.session.execute(db.select(MedicalDocument).where(
+            MedicalDocument.user_id == destination_id)).scalar_one()
+        assert destination_study.public_id != study["public_id"]
+        assert destination_result.original_value == "4.2"
+        assert destination_document.availability == "available"
+        assert destination_document.uploaded_file.source_type == "medical_document"
+        assert (Path(app.config["DATA_ROOT"]) / destination_document.uploaded_file.storage_path).read_bytes() == content
+
+
+@pytest.mark.skipif(not Path("/.dockerenv").exists(), reason="MariaDB medical E2E runs only in Docker")
+def test_mariadb_medical_document_portability_e2e_and_rollback(app, tmp_path, monkeypatch):
+    concurrent_app = create_app({
+        "TESTING": True,
+        "SECRET_KEY": "medical-e2e-secret-key-long-enough-for-qa",
+        "API_TOKEN_SIGNING_KEY": "medical-e2e-api-signing-key-long-enough-for-qa",
+        "DATA_ROOT": tmp_path / "mariadb-medical-e2e",
+        "UPLOAD_ROOT": tmp_path / "mariadb-medical-e2e" / "uploads" / "raw",
+        "GENERATED_UPLOAD_ROOT": tmp_path / "mariadb-medical-e2e" / "uploads" / "generated",
+        "PORTABILITY_ROOT": tmp_path / "mariadb-medical-e2e" / "portability",
+        "SCHEMA_ROOT": app.config["SCHEMA_ROOT"],
+        "APP_TIMEZONE": "UTC", "WTF_CSRF_ENABLED": False, "API_RATE_LIMIT_ENABLED": False,
+    })
+    nonce = uuid.uuid4().hex
+    roles = ("source", "metadata", "binary", "rollback")
+    account_ids = {}
+    with concurrent_app.app_context():
+        for role in roles:
+            username = f"medical-e2e-{role}-{nonce}"
+            account = User(username=username, email=f"{username}@example.invalid", role="user")
+            account.set_password("fictional-e2e-password")
+            db.session.add(account)
+            db.session.flush()
+            account_ids[role] = account.id
+        db.session.commit()
+
+    def login(role, device_suffix):
+        username = f"medical-e2e-{role}-{nonce}"
+        return _api_login(
+            concurrent_app.test_client(), username=f"{username}@example.invalid",
+            password="fictional-e2e-password",
+            device_id=f"a9222222-2222-4222-8222-22222222222{device_suffix}",
+        )["access_token"]
+
+    try:
+        source_token = login("source", "1")
+        source_client = concurrent_app.test_client()
+        study_id = str(uuid.uuid4())
+        study = source_client.post("/api/v1/mobile/medical-studies", json={
+            "public_id": study_id, "study_type": "laboratory", "title": "Estudio E2E ficticio",
+            "laboratory_name": "Laboratorio E2E ficticio", "study_date": "2026-07-20",
+            "issued_date": "2026-07-21", "timezone": "UTC", "notes": "Fixture QA ficticia.",
+            "state": "complete", "source": "mobile",
+        }, headers=_headers(source_token, "medical-e2e-study")).get_json()["data"]
+        numeric = source_client.post(f"/api/v1/mobile/medical-studies/{study_id}/results", json={
+            "public_id": str(uuid.uuid4()), "panel_name": "Panel E2E ficticio", "display_name": "Glucosa E2E",
+            "canonical_key": "glucose", "value_type": "numeric", "original_value": "4.2",
+            "numeric_value": "4.2", "comparator": "equal", "original_unit": "mg/L",
+            "reference_lower": "3", "reference_upper": "5", "reference_text": "Rango ficticio del informe",
+            "source_status": "within_range", "method": "Método E2E", "specimen": "Muestra ficticia",
+            "source": "mobile",
+        }, headers=_headers(source_token, "medical-e2e-numeric")).get_json()["data"]
+        text_result = source_client.post(f"/api/v1/mobile/medical-studies/{study_id}/results", json={
+            "public_id": str(uuid.uuid4()), "panel_name": "Panel E2E ficticio", "display_name": "Texto E2E",
+            "value_type": "text", "original_value": "No detectado QA", "comparator": "none",
+            "source_status": "not_provided", "source": "mobile",
+        }, headers=_headers(source_token, "medical-e2e-text"))
+        assert text_result.status_code == 201
+        pdf = b"%PDF-1.4\nFictional MariaDB medical E2E document\n%%EOF"
+        document = source_client.post(f"/api/v1/mobile/medical-studies/{study_id}/documents",
+            data={"file": (io.BytesIO(pdf), "medical-e2e-ficticio.pdf", "application/pdf")},
+            headers=_headers(source_token, "medical-e2e-document"), content_type="multipart/form-data")
+        assert document.status_code == 201
+        document_id = document.get_json()["data"]["public_id"]
+        downloaded = source_client.get(f"/api/v1/mobile/medical-documents/{document_id}/download",
+            headers=_headers(source_token))
+        assert downloaded.status_code == 200 and downloaded.data == pdf
+        assert downloaded.headers["Cache-Control"] == "no-store"
+        assert hashlib.sha256(downloaded.data).hexdigest() == document.get_json()["data"]["sha256"]
+        corrected = source_client.patch(f"/api/v1/mobile/lab-results/{numeric['public_id']}",
+            json={"base_revision": 1, "original_value": "4.3", "numeric_value": "4.3",
+                  "correction_reason": "Corrección E2E ficticia"},
+            headers=_headers(source_token, "medical-e2e-correction")).get_json()["data"]
+        assert corrected["revision"] == 2 and len(corrected["revisions"]) == 2
+        history = source_client.get("/api/v1/mobile/lab-history/glucose?period=all",
+            headers=_headers(source_token)).get_json()["data"]
+        assert history["count"] == 1 and history["points"][0]["result"]["original_value"] == "4.3"
+
+        sections = ["medical_studies", "lab_panels", "lab_results", "medical_documents_metadata"]
+        metadata_export = _export(source_client, source_token, key="medical-e2e-export-metadata", sections=sections)
+        metadata_package = _package(source_client, source_token, metadata_export.get_json()["data"]["export_id"])
+        with ZipFile(io.BytesIO(metadata_package)) as archive:
+            assert not any(name.startswith("attachments/") for name in archive.namelist())
+
+        metadata_token = login("metadata", "2")
+        metadata_client = concurrent_app.test_client()
+        metadata_job = _inspect(metadata_client, metadata_token, metadata_package, sections).get_json()["data"]
+        apply_payload = {"confirmed": True, "plan_revision": 1, "decisions": []}
+        applied_once = metadata_client.post(
+            f"/api/v1/mobile/portability/imports/{metadata_job['import_id']}/apply", json=apply_payload,
+            headers=_headers(metadata_token, "medical-e2e-metadata-apply"))
+        applied_twice = metadata_client.post(
+            f"/api/v1/mobile/portability/imports/{metadata_job['import_id']}/apply", json=apply_payload,
+            headers=_headers(metadata_token, "medical-e2e-metadata-apply"))
+        assert applied_once.status_code == applied_twice.status_code == 200
+        assert applied_once.get_json()["data"] == applied_twice.get_json()["data"]
+        with concurrent_app.app_context():
+            metadata_id = account_ids["metadata"]
+            assert db.session.scalar(db.select(db.func.count()).select_from(MedicalStudy).where(
+                MedicalStudy.user_id == metadata_id)) == 1
+            assert db.session.scalar(db.select(db.func.count()).select_from(MedicalDuplicateCandidate).where(
+                MedicalDuplicateCandidate.user_id == metadata_id)) == 0
+            imported_values = sorted(db.session.scalars(db.select(LabResult.original_value).where(
+                LabResult.user_id == metadata_id)).all())
+            assert imported_values == ["4.3", "No detectado QA"]
+            metadata_document = db.session.execute(db.select(MedicalDocument).where(
+                MedicalDocument.user_id == metadata_id)).scalar_one()
+            assert metadata_document.availability == "metadata_only" and metadata_document.uploaded_file_id is None
+
+        binary_export = _export(source_client, source_token, key="medical-e2e-export-binary",
+            sections=sections, include_medical_attachments=True)
+        binary_package = _package(source_client, source_token, binary_export.get_json()["data"]["export_id"])
+        binary_token = login("binary", "3")
+        binary_client = concurrent_app.test_client()
+        binary_job = _inspect(binary_client, binary_token, binary_package, [*sections, "attachments"]).get_json()["data"]
+        assert binary_client.post(f"/api/v1/mobile/portability/imports/{binary_job['import_id']}/apply",
+            json=apply_payload, headers=_headers(binary_token, "medical-e2e-binary-apply")).status_code == 200
+        with concurrent_app.app_context():
+            imported_document = db.session.execute(db.select(MedicalDocument).where(
+                MedicalDocument.user_id == account_ids["binary"])).scalar_one()
+            imported_document_id = imported_document.public_id
+            assert imported_document.availability == "available"
+            assert (Path(concurrent_app.config["DATA_ROOT"]) / imported_document.uploaded_file.storage_path).read_bytes() == pdf
+        assert source_client.get(f"/api/v1/mobile/medical-documents/{imported_document_id}",
+            headers=_headers(source_token)).status_code == 404
+        assert binary_client.get(f"/api/v1/mobile/medical-documents/{imported_document_id}/download",
+            headers=_headers(binary_token)).data == pdf
+
+        rollback_token = login("rollback", "4")
+        rollback_client = concurrent_app.test_client()
+        rollback_job = _inspect(rollback_client, rollback_token, binary_package, [*sections, "attachments"]).get_json()["data"]
+        import app.services.portability_import as service
+        original_apply = service._apply_record
+        calls = 0
+
+        def fail_second(*args, **kwargs):
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise service.PortabilityImportError("qa_injected_failure", "Fallo E2E ficticio.", 409)
+            return original_apply(*args, **kwargs)
+
+        monkeypatch.setattr(service, "_apply_record", fail_second)
+        failed = rollback_client.post(f"/api/v1/mobile/portability/imports/{rollback_job['import_id']}/apply",
+            json=apply_payload, headers=_headers(rollback_token, "medical-e2e-rollback-apply"))
+        assert failed.status_code == 409
+        with concurrent_app.app_context():
+            assert db.session.scalar(db.select(db.func.count()).select_from(MedicalStudy).where(
+                MedicalStudy.user_id == account_ids["rollback"])) == 0
+    finally:
+        with concurrent_app.app_context():
+            for account_id in account_ids.values():
+                account = db.session.get(User, account_id)
+                if account is not None:
+                    db.session.delete(account)
+            db.session.commit()
+
+
 def test_mid_import_failure_rolls_back_all_domain_rows(app, client, user, monkeypatch):
     with app.app_context():
         db.session.add_all([
@@ -454,7 +680,7 @@ def test_checksum_undeclared_file_zip_bomb_and_file_count_limits(app, client, us
 def test_every_portable_schema_is_valid_and_uses_only_local_refs(app):
     root = Path(app.config["SCHEMA_ROOT"])
     schemas = sorted(root.glob("portable_*.schema.json"))
-    assert len(schemas) == 22
+    assert len(schemas) == 26
     names = {path.name for path in schemas}
     for path in schemas:
         document = json.loads(path.read_text(encoding="utf-8"))

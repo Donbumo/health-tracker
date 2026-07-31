@@ -58,6 +58,10 @@ private val portableSections = linkedMapOf(
     "goals" to "Objetivos",
     "reminder_rules" to "Recordatorios y quiet hours",
     "external_sources" to "Procedencia externa sanitizada",
+    "medical_studies" to "Estudios médicos",
+    "lab_panels" to "Paneles de laboratorio",
+    "lab_results" to "Resultados de laboratorio",
+    "medical_documents_metadata" to "Metadatos de documentos médicos",
 )
 
 @Composable
@@ -71,6 +75,7 @@ fun DataPrivacyScreen(viewModel: CompanionViewModel, onBack: () -> Unit) {
     val connected by viewModel.connected.collectAsState()
     var selected by remember { mutableStateOf(portableSections.keys.toSet()) }
     var attachments by remember { mutableStateOf(false) }
+    var medicalAttachments by remember { mutableStateOf(false) }
     var profile by remember { mutableStateOf(false) }
     var dateFrom by remember { mutableStateOf("") }
     var dateTo by remember { mutableStateOf("") }
@@ -130,6 +135,15 @@ fun DataPrivacyScreen(viewModel: CompanionViewModel, onBack: () -> Unit) {
             }
         }
         item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Documentos médicos")
+                    Text("Incluye binarios médicos sensibles; requiere consentimiento separado y está apagado por defecto.", style = MaterialTheme.typography.bodySmall)
+                }
+                Switch(medicalAttachments, onCheckedChange = { medicalAttachments = it })
+            }
+        }
+        item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(dateFrom, { dateFrom = it }, label = { Text("Desde YYYY-MM-DD") }, modifier = Modifier.weight(1f), singleLine = true)
                 OutlinedTextField(dateTo, { dateTo = it }, label = { Text("Hasta YYYY-MM-DD") }, modifier = Modifier.weight(1f), singleLine = true)
@@ -137,15 +151,26 @@ fun DataPrivacyScreen(viewModel: CompanionViewModel, onBack: () -> Unit) {
         }
         item {
             Text(
-                "Estimación: ${selected.size + (if (profile) 1 else 0) + (if (attachments) 1 else 0)} secciones; el servidor calculará records y tamaño exactos.",
+                "Estimación: ${selected.size + (if (profile) 1 else 0) + (if (attachments || medicalAttachments) 1 else 0)} secciones; el servidor calculará records y tamaño exactos.",
                 style = MaterialTheme.typography.bodySmall,
             )
             Button(
                 onClick = {
-                    val sections = selected + (if (profile) setOf("profile") else emptySet()) + (if (attachments) setOf("attachments") else emptySet())
-                    viewModel.requestPortableExport(PortableExportRequest(sections, dateFrom.ifBlank { null }, dateTo.ifBlank { null }, attachments, profile))
+                    val medicalSections = if (medicalAttachments) setOf(
+                        "medical_studies", "lab_panels", "lab_results", "medical_documents_metadata",
+                    ) else emptySet()
+                    val sections = selected + medicalSections + (if (profile) setOf("profile") else emptySet()) +
+                        (if (attachments || medicalAttachments) setOf("attachments") else emptySet())
+                    viewModel.requestPortableExport(PortableExportRequest(
+                        sections = sections,
+                        dateFrom = dateFrom.ifBlank { null },
+                        dateTo = dateTo.ifBlank { null },
+                        includeAttachments = attachments,
+                        includeMedicalAttachments = medicalAttachments,
+                        includeIdentifiableProfile = profile,
+                    ))
                 },
-                enabled = selected.isNotEmpty() || profile || attachments,
+                enabled = selected.isNotEmpty() || profile || attachments || medicalAttachments,
                 modifier = Modifier.fillMaxWidth().testTag("request_portable_export"),
             ) { Text(if (connected) "Solicitar exportación" else "Guardar solicitud offline") }
         }

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/medical_lab_result.schema.json",
+  "title": "Health Tracker medical lab result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["public_id", "display_name", "canonical_key", "value_type", "original_value", "numeric_value", "comparator", "original_unit", "reference_lower", "reference_upper", "reference_text", "source_status", "method", "specimen", "notes", "display_order", "source", "revision"],
+  "properties": {
+    "public_id": {"type": "string", "format": "uuid"},
+    "display_name": {"type": "string", "minLength": 1, "maxLength": 200},
+    "canonical_key": {"type": ["string", "null"], "pattern": "^[a-z0-9]+(?:_[a-z0-9]+)*$", "maxLength": 100},
+    "value_type": {"enum": ["numeric", "text", "categorical", "positive_negative", "detected_not_detected", "unknown"]},
+    "original_value": {"type": "string", "minLength": 1, "maxLength": 500},
+    "numeric_value": {"type": ["string", "null"], "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$", "maxLength": 80},
+    "comparator": {"enum": ["equal", "less_than", "less_or_equal", "greater_than", "greater_or_equal", "approximate", "none"]},
+    "original_unit": {"type": ["string", "null"], "minLength": 1, "maxLength": 100},
+    "reference_lower": {"type": ["string", "null"], "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$", "maxLength": 80},
+    "reference_upper": {"type": ["string", "null"], "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$", "maxLength": 80},
+    "reference_text": {"type": ["string", "null"], "minLength": 1, "maxLength": 500},
+    "source_status": {"enum": ["low", "within_range", "high", "abnormal", "critical_as_reported", "indeterminate", "not_provided"]},
+    "method": {"type": ["string", "null"], "minLength": 1, "maxLength": 200},
+    "specimen": {"type": ["string", "null"], "minLength": 1, "maxLength": 200},
+    "notes": {"type": ["string", "null"], "maxLength": 2000},
+    "display_order": {"type": "integer", "minimum": 0, "maximum": 100000},
+    "source": {"enum": ["manual", "mobile", "json_import", "csv_import", "portable_import"]},
+    "revision": {"type": "integer", "minimum": 1}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"value_type": {"const": "numeric"}}},
+      "then": {"properties": {"numeric_value": {"type": "string"}}},
+      "else": {"properties": {"numeric_value": {"type": "null"}}}
+    }
+  ]
+}

@@ -59,6 +59,78 @@ class ApiClient(
     suspend fun health(baseUrl: String? = null): HealthResponse =
         call("/api/v1/health", "GET", baseOverride = baseUrl, requiresAuth = false)
 
+    suspend fun medicalStudies(includeArchived: Boolean = false): JsonObject =
+        call("/api/v1/mobile/medical-studies?include_archived=$includeArchived", "GET")
+    suspend fun medicalStudy(publicId: String): JsonObject =
+        call("/api/v1/mobile/medical-studies/${encodeQuery(publicId)}", "GET")
+    suspend fun createMedicalStudy(payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/medical-studies", "POST", payload.toString(), idempotencyKey = key)
+    suspend fun patchMedicalStudy(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/medical-studies/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+    suspend fun archiveMedicalStudy(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/medical-studies/${encodeQuery(publicId)}/archive", "POST", payload.toString(), idempotencyKey = key)
+    suspend fun deleteMedicalStudy(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/medical-studies/${encodeQuery(publicId)}", "DELETE", payload.toString(), idempotencyKey = key)
+    suspend fun medicalResults(studyId: String): JsonObject =
+        call("/api/v1/mobile/medical-studies/${encodeQuery(studyId)}/results", "GET")
+    suspend fun createMedicalResult(studyId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/medical-studies/${encodeQuery(studyId)}/results", "POST", payload.toString(), idempotencyKey = key)
+    suspend fun patchMedicalResult(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/lab-results/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+    suspend fun deleteMedicalResult(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/lab-results/${encodeQuery(publicId)}", "DELETE", payload.toString(), idempotencyKey = key)
+    suspend fun labMarkers(): JsonObject = call("/api/v1/mobile/lab-markers", "GET")
+    suspend fun labHistory(canonicalKey: String, period: String): JsonObject =
+        call("/api/v1/mobile/lab-history/${encodeQuery(canonicalKey)}?period=${encodeQuery(period)}", "GET")
+
+    suspend fun uploadMedicalDocument(studyId: String, file: File, filename: String, mimeType: String, key: String): JsonObject = withContext(Dispatchers.IO) {
+        val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", filename, file.asRequestBody(mimeType.toMediaType()))
+            .build()
+        val raw = executeCustom(
+            "/api/v1/mobile/medical-studies/${encodeQuery(studyId)}/documents", "POST", body,
+            idempotencyKey = key,
+        ).use { checkedResponse(it) }
+        try {
+            json.decodeFromString<ApiEnvelope<JsonObject>>(raw).data
+        } catch (error: Exception) {
+            logContractDecodeFailure("/api/v1/mobile/medical-studies/document", error)
+            throw AppFailure(AppErrorCode.SCHEMA_INCOMPATIBLE, "El servidor respondió con un contrato incompatible.", false)
+        }
+    }
+
+    suspend fun previewMedicalImport(file: File, filename: String, mimeType: String): JsonObject = withContext(Dispatchers.IO) {
+        val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", filename, file.asRequestBody(mimeType.toMediaType()))
+            .build()
+        val raw = executeCustom("/api/v1/mobile/medical-imports/preview", "POST", body).use { checkedResponse(it) }
+        json.decodeFromString<ApiEnvelope<JsonObject>>(raw).data
+    }
+
+    suspend fun confirmMedicalImport(payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/medical-imports/confirm", "POST", payload.toString(), idempotencyKey = key)
+
+    suspend fun downloadMedicalDocument(publicId: String, destination: File): PortableDownloadResult = withContext(Dispatchers.IO) {
+        executeCustom("/api/v1/mobile/medical-documents/${encodeQuery(publicId)}/download", "GET", null).use { response ->
+            if (!response.isSuccessful) checkedResponse(response)
+            val digest = MessageDigest.getInstance("SHA-256")
+            var size = 0L
+            destination.parentFile?.mkdirs()
+            destination.outputStream().use { output ->
+                val input = response.body.byteStream(); val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while (true) {
+                    val read = input.read(buffer); if (read < 0) break
+                    size += read
+                    if (size > MAX_MEDICAL_DOCUMENT_BYTES) throw AppFailure(AppErrorCode.PACKAGE_HASH_MISMATCH, "El documento supera el límite local.", false)
+                    digest.update(buffer, 0, read); output.write(buffer, 0, read)
+                }
+            }
+            PortableDownloadResult(digest.digest().joinToString("") { byte -> "%02x".format(byte) }, size)
+        }
+    }
+    suspend fun deleteMedicalDocument(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/medical-documents/${encodeQuery(publicId)}", "DELETE", payload.toString(), idempotencyKey = key)
+
     suspend fun goals(): JsonObject = call("/api/v1/mobile/goals", "GET")
     suspend fun createGoal(payload: JsonObject, key: String): JsonObject =
         call("/api/v1/mobile/goals", "POST", payload.toString(), idempotencyKey = key)
@@ -467,6 +539,7 @@ class ApiClient(
         method: String,
         body: okhttp3.RequestBody?,
         allowRefresh: Boolean = true,
+        idempotencyKey: String? = null,
     ): Response {
         val base = preferences.values.first().serverUrl
             ?: throw AppFailure(AppErrorCode.SERVER_INCOMPATIBLE, "Configura un servidor antes de continuar.", false)
@@ -474,12 +547,13 @@ class ApiClient(
         val failedAccess = tokens.accessToken(base)
             ?: throw AppFailure(AppErrorCode.UNAUTHORIZED, "Inicia sesión para continuar.", false)
         val requestVersion = tokens.mutationVersion()
-        val request = Request.Builder()
+        val requestBuilder = Request.Builder()
             .url(base.trimEnd('/') + path)
             .header("Accept", "application/json, application/vnd.health-tracker.portable+zip")
             .header("Authorization", "Bearer $failedAccess")
             .method(method, body)
-            .build()
+        idempotencyKey?.let { requestBuilder.header("Idempotency-Key", it) }
+        val request = requestBuilder.build()
         val response = try {
             http.newCall(request).execute()
         } catch (error: IOException) {
@@ -495,7 +569,7 @@ class ApiClient(
                 throw ErrorMapper.http(401, parsed, null)
             }
             refreshSingleFlight(base, failedAccess)
-            return executeCustom(path, method, body, false)
+            return executeCustom(path, method, body, false, idempotencyKey)
         }
         return response
     }
@@ -570,6 +644,7 @@ class ApiClient(
         val SERIALIZATION_PATH = Regex("(?:at path:?\\s*)(\\$[A-Za-z0-9_.$\\[\\]-]+)")
         const val MAX_RESPONSE_BYTES = 4L * 1024L * 1024L
         const val MAX_PORTABLE_BYTES = 50L * 1024L * 1024L
+        const val MAX_MEDICAL_DOCUMENT_BYTES = 25L * 1024L * 1024L
         const val MAX_RETRY_AFTER_SECONDS = 6L * 60L * 60L
     }
 }

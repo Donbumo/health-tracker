@@ -114,3 +114,7 @@ El lector no extrae el ZIP completo. Recorre metadata central, aplica límites, 
 ## Compatibilidad
 
 Agregar una sección o versión requiere schema público, lector que la reconozca y política explícita de importación. Un lector v1 rechaza versiones desconocidas; no debe intentar adivinar ni normalizar un contrato futuro. Los JSON Schemas de `schemas/` son la fuente de verdad pública.
+
+## Extensión médica Alpha 1.9
+
+Las secciones opcionales `medical_studies`, `lab_panels`, `lab_results` y `medical_documents_metadata` usan JSONL y referencias por UUID público. La metadata puede viajar sin binario. Los originales usan la sección existente `attachments` solo cuando `include_medical_attachments=true`; este opt-in también incorpora las cuatro dependencias médicas. Attachment conserva nombre sanitizado, MIME, tamaño, SHA-256 y `source_type=medical_document`, nunca URI/ruta interna. El import remapea colisiones, conserva metadata-only cuando falta binario y aplica todo en una transacción.

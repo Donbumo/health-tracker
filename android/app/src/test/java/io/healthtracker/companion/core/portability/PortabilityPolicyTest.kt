@@ -12,8 +12,16 @@ class PortabilityPolicyTest {
         assertFailure("profile_confirmation_required") {
             PortabilityPolicy.validateExportRequest(PortableExportRequest(setOf("profile")))
         }
+        PortabilityPolicy.validateExportRequest(PortableExportRequest(setOf("medical_documents_metadata")))
+        assertFailure("medical_sections_required") {
+            PortabilityPolicy.validateExportRequest(PortableExportRequest(
+                setOf("attachments"), includeMedicalAttachments = true,
+            ))
+        }
         PortabilityPolicy.validateExportRequest(PortableExportRequest(
-            setOf("profile", "attachments"), includeAttachments = true, includeIdentifiableProfile = true,
+            setOf("profile", "attachments", "medical_studies", "lab_panels", "lab_results", "medical_documents_metadata"),
+            includeAttachments = true,
+            includeMedicalAttachments = true, includeIdentifiableProfile = true,
         ))
     }
 

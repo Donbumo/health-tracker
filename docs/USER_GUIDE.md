@@ -69,3 +69,9 @@ Para importar, **Seleccionar paquete** sólo hace una inspección local. Revisa 
 Un `.htpack` puede contener información corporal, alimentaria y de entrenamiento. SHA-256 detecta cambios, pero no demuestra quién lo creó. Consulta [Privacidad de exportación](DATA_EXPORT_PRIVACY.md).
 
 Consulta [Primeros pasos](GETTING_STARTED.md), [Flujo diario](DAILY_WORKFLOW.md), [Import Hub](IMPORT_HUB.md) y [Solución de problemas](TROUBLESHOOTING_USER.md).
+
+## Estudios médicos y laboratorio
+
+En Android abre **Salud del día → Estudios médicos**. Crea un draft con tipo, título, fecha, institución y notas; añade resultados conservando exactamente valor, unidad, rango y estado del informe, y pulsa **Finalizar captura** cuando esté completo. Puedes adjuntar PDF/JPEG/PNG/JSON/CSV mediante el selector del sistema, corregir un resultado conservando revisión, borrar solo un documento o archivar el estudio.
+
+El historial de un marcador conocido permite 30/90/180 días, un año o todo. Si unidad o método no son comparables, la app separa la serie y lo explica. Los estados son descriptivos del informe: la app no diagnostica ni recomienda tratamiento. Para eliminar definitivamente un estudio usa la acción separada y revisa el impacto. Consulta [Alpha 1.9](ALPHA_1_9_MEDICAL_RECORDS.md) y [Privacidad médica](MEDICAL_DATA_PRIVACY.md).

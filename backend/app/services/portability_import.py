@@ -17,7 +17,7 @@ from app.models import (
     PortableImportDecision, PortableImportJob, PortableImportMapping,
     TrainingPlan, TrainingPlanVersion, TrainingPlanWorkout, TrainingSession,
     TrainingSessionExercise, TrainingSet, UploadedFile, User, WeighIn,
-    UserGoal, ReminderRule,
+    UserGoal, ReminderRule, LabPanel, LabResult, MedicalDocument, MedicalStudy,
 )
 from app.services.exercise_identity import normalize_exercise_name
 from app.services.mobile_sync import validate_timezone
@@ -26,6 +26,7 @@ from app.services.portable_archive import (
     PortableLimits, canonical_json_bytes, safe_filename, scrub_portable,
     sha256_bytes, sha256_path,
 )
+from app.services.medical_records import _canonical_unit, _derived_range_status, _refresh_fingerprints
 
 
 STRATEGIES = {
@@ -34,8 +35,9 @@ STRATEGIES = {
 }
 DEPENDENCY_ORDER = (
     "profile", "settings", "custom_foods", "exercises", "plans", "workouts", "goals", "reminder_rules",
+    "medical_studies", "lab_panels", "lab_results",
     "schedules", "sessions", "session_exercises", "sets", "body_stats",
-    "nutrition_entries", "steps", "attachments", "external_sources",
+    "nutrition_entries", "steps", "attachments", "medical_documents_metadata", "external_sources",
 )
 PUBLIC_MODELS = {
     "exercises": Exercise, "plans": TrainingPlan, "workouts": TrainingPlanWorkout,
@@ -43,6 +45,8 @@ PUBLIC_MODELS = {
     "session_exercises": TrainingSessionExercise, "body_stats": WeighIn,
     "custom_foods": FoodProduct, "steps": DailyEnergy,
     "goals": UserGoal, "reminder_rules": ReminderRule,
+    "medical_studies": MedicalStudy, "lab_panels": LabPanel,
+    "lab_results": LabResult, "medical_documents_metadata": MedicalDocument,
 }
 
 
@@ -160,6 +164,30 @@ def _owned_public(section: str, source_id: str, user_id: int):
 
 
 def _existing_data(section: str, row) -> dict:
+    if section == "medical_studies":
+        return {"study_type": row.study_type, "title": row.title,
+            "laboratory_name": row.laboratory_name, "professional_name": row.professional_name,
+            "study_date": row.study_date, "issued_date": row.issued_date,
+            "timezone": row.timezone, "notes": row.notes, "state": row.state,
+            "source": _medical_source(row.source)}
+    if section == "lab_panels":
+        return {"study_public_id": row.study.public_id, "name": row.name,
+            "display_order": row.display_order, "source": _medical_source(row.source)}
+    if section == "lab_results":
+        return {"panel_public_id": row.panel.public_id, "display_name": row.display_name,
+            "canonical_key": row.canonical_key, "value_type": row.value_type,
+            "original_value": row.original_value, "numeric_value": row.numeric_value,
+            "comparator": row.comparator, "original_unit": row.original_unit,
+            "reference_lower": row.reference_lower, "reference_upper": row.reference_upper,
+            "reference_text": row.reference_text, "source_status": row.source_status,
+            "method": row.method, "specimen": row.specimen, "notes": row.notes,
+            "display_order": row.display_order, "source": _medical_source(row.source)}
+    if section == "medical_documents_metadata":
+        return {"study_public_id": row.study.public_id, "document_type": row.document_type,
+            "filename": safe_filename(row.original_filename), "mime_type": row.mime_type,
+            "size_bytes": row.size_bytes, "sha256": row.sha256,
+            "availability": row.availability, "attachment_public_id": None,
+            "source": _medical_source(row.source)}
     if section == "exercises":
         return {"canonical_name": row.canonical_name, "aliases": [item.alias_name for item in row.aliases],
             "load_profile": None if row.load_profile is None else {"public_id": row.load_profile.public_id, "load_mode": row.load_profile.load_mode,
@@ -234,6 +262,10 @@ def _portable_source(value: str | None) -> str:
     return "external"
 
 
+def _medical_source(value: str | None) -> str:
+    return "manual" if value in {"manual", "mobile"} else "portable_import"
+
+
 def _natural_existing(section: str, record: dict, user_id: int):
     data = record["data"]
     if section == "exercises":
@@ -248,6 +280,11 @@ def _natural_existing(section: str, record: dict, user_id: int):
     if section == "attachments":
         return db.session.execute(db.select(UploadedFile).where(UploadedFile.user_id == user_id,
             UploadedFile.sha256 == data["sha256"])).scalar_one_or_none()
+    if section == "medical_documents_metadata":
+        return db.session.execute(db.select(MedicalDocument).where(
+            MedicalDocument.user_id == user_id,
+            MedicalDocument.sha256 == data["sha256"],
+        )).scalar_one_or_none()
     return None
 
 
@@ -279,6 +316,12 @@ def _classify(section: str, record: dict, user: User, package_ids: dict[str, set
     reference_section = None
     references = [("plan_public_id", "plans"), ("session_public_id", "sessions"),
                   ("session_exercise_public_id", "session_exercises")]
+    if section == "lab_panels":
+        references.append(("study_public_id", "medical_studies"))
+    if section == "lab_results":
+        references.append(("panel_public_id", "lab_panels"))
+    if section == "medical_documents_metadata":
+        references.append(("study_public_id", "medical_studies"))
     if section == "reminder_rules":
         references.append(("goal_public_id", "goals"))
     if section == "goals" and data.get("goal_type") == "active_plan_tracking":
@@ -446,6 +489,87 @@ def _apply_record(job, section, record, strategy, maps, created_paths):
     if section == "external_sources":
         _add_mapping(job, section, source_id, source_id, None, maps); return "skipped"
     force_new = strategy == "import_as_new" and next(item for item in job.plan_json["records"] if item["section"] == section and item["source_public_id"] == source_id)["classification"] not in {"new"}
+    if section == "medical_studies":
+        destination, collision = _destination_uuid(MedicalStudy, source_id, user_id, force_new)
+        row = MedicalStudy(
+            public_id=destination, user_id=user_id, study_type=data["study_type"],
+            title=str(data["title"])[:240], laboratory_name=data.get("laboratory_name"),
+            professional_name=data.get("professional_name"), study_date=_date(data["study_date"]),
+            issued_date=_date(data["issued_date"]) if data.get("issued_date") else None,
+            timezone=data.get("timezone"), notes=data.get("notes"),
+            state=data.get("state", "complete"), source="portable_import",
+            revision=max(1, int(record.get("revision", 1))),
+        )
+        db.session.add(row); _add_mapping(job, section, source_id, destination, collision, maps); return "inserted"
+    if section == "lab_panels":
+        study = _resolve(MedicalStudy, user_id, data["study_public_id"], maps, "medical_studies")
+        if study is None:
+            raise PortabilityImportError("broken_reference", "No se pudo remapear el estudio de un panel.", 409)
+        destination, collision = _destination_uuid(LabPanel, source_id, user_id, force_new)
+        display_order = max(0, int(data["display_order"]))
+        occupied = db.session.execute(db.select(LabPanel.id).where(
+            LabPanel.study_id == study.id, LabPanel.display_order == display_order,
+        )).scalar_one_or_none()
+        if occupied is not None:
+            display_order = int(db.session.execute(db.select(db.func.coalesce(db.func.max(LabPanel.display_order), -1)).where(
+                LabPanel.study_id == study.id,
+            )).scalar_one()) + 1
+        row = LabPanel(
+            public_id=destination, user_id=user_id, study_id=study.id,
+            name=str(data["name"])[:200], display_order=display_order,
+            source="portable_import", revision=max(1, int(record.get("revision", 1))),
+        )
+        db.session.add(row); _add_mapping(job, section, source_id, destination, collision, maps); return "inserted"
+    if section == "lab_results":
+        panel = _resolve(LabPanel, user_id, data["panel_public_id"], maps, "lab_panels")
+        if panel is None:
+            raise PortabilityImportError("broken_reference", "No se pudo remapear el panel de un resultado.", 409)
+        destination, collision = _destination_uuid(LabResult, source_id, user_id, force_new)
+        display_order = max(0, int(data["display_order"]))
+        occupied = db.session.execute(db.select(LabResult.id).where(
+            LabResult.panel_id == panel.id, LabResult.display_order == display_order,
+        )).scalar_one_or_none()
+        if occupied is not None:
+            display_order = int(db.session.execute(db.select(db.func.coalesce(db.func.max(LabResult.display_order), -1)).where(
+                LabResult.panel_id == panel.id,
+            )).scalar_one()) + 1
+        numeric = _decimal(data.get("numeric_value"))
+        lower = _decimal(data.get("reference_lower")); upper = _decimal(data.get("reference_upper"))
+        comparator = data.get("comparator", "none")
+        row = LabResult(
+            public_id=destination, user_id=user_id, panel_id=panel.id,
+            display_name=str(data["display_name"])[:200], canonical_key=data.get("canonical_key"),
+            value_type=data["value_type"], original_value=str(data["original_value"])[:500],
+            numeric_value=numeric, comparator=comparator, original_unit=data.get("original_unit"),
+            canonical_unit=_canonical_unit(data.get("original_unit"))[0],
+            reference_lower=lower, reference_upper=upper, reference_text=data.get("reference_text"),
+            source_status=data.get("source_status", "not_provided"),
+            derived_range_status=_derived_range_status(data["value_type"], numeric, lower, upper, comparator),
+            method=data.get("method"), specimen=data.get("specimen"), notes=data.get("notes"),
+            display_order=display_order, source="portable_import",
+            revision=max(1, int(record.get("revision", 1))),
+        )
+        db.session.add(row); _add_mapping(job, section, source_id, destination, collision, maps); return "inserted"
+    if section == "medical_documents_metadata":
+        study = _resolve(MedicalStudy, user_id, data["study_public_id"], maps, "medical_studies")
+        if study is None:
+            raise PortabilityImportError("broken_reference", "No se pudo remapear el estudio de un documento.", 409)
+        destination, collision = _destination_uuid(MedicalDocument, source_id, user_id, force_new)
+        upload = db.session.execute(db.select(UploadedFile).where(
+            UploadedFile.user_id == user_id, UploadedFile.sha256 == data["sha256"],
+        )).scalar_one_or_none()
+        availability = "available" if upload is not None else (
+            "missing" if data.get("availability") == "missing" else "metadata_only"
+        )
+        row = MedicalDocument(
+            public_id=destination, user_id=user_id, study_id=study.id,
+            uploaded_file_id=upload.id if upload else None,
+            document_type=data["document_type"], original_filename=safe_filename(data["filename"]),
+            mime_type=data["mime_type"], size_bytes=int(data["size_bytes"]), sha256=data["sha256"],
+            availability=availability, source="portable_import",
+            revision=max(1, int(record.get("revision", 1))),
+        )
+        db.session.add(row); _add_mapping(job, section, source_id, destination, collision, maps); return "inserted"
     if section == "custom_foods":
         destination, collision = _destination_uuid(FoodProduct, source_id, user_id, force_new)
         name = str(data["name"])[:200]
@@ -628,13 +752,21 @@ def _apply_record(job, section, record, strategy, maps, created_paths):
         package_path = _artifact_path(job.artifact); content = _reader().read_member(package_path, data["archive_path"])
         if sha256_bytes(content) != data["sha256"] or len(content) != int(data["size_bytes"]):
             raise PortabilityImportError("checksum_mismatch", "El attachment cambió después de la inspección.", 409)
-        directory = Path(current_app.config["UPLOAD_ROOT"]) / f"user_{user_id}"; directory.mkdir(parents=True, exist_ok=True)
-        final = directory / data["sha256"]
+        is_medical = data.get("source_type") == "medical_document"
+        directory = Path(current_app.config["UPLOAD_ROOT"]) / f"user_{user_id}" / ("medical" if is_medical else "")
+        directory.mkdir(parents=True, exist_ok=True)
+        stored_name = uuid.uuid4().hex if is_medical else data["sha256"]
+        final = directory / stored_name
         if not final.exists():
             partial = directory / f".{uuid.uuid4().hex}.portability"; partial.write_bytes(content); partial.replace(final); created_paths.append(final)
-        relative = (Path("uploads") / "raw" / f"user_{user_id}" / data["sha256"]).as_posix()
-        db.session.add(UploadedFile(user_id=user_id, original_filename=safe_filename(data.get("filename")), stored_filename=data["sha256"],
-            storage_path=relative, source_type="portable_import", detected_type="unknown", import_status="imported",
+        data_root = Path(current_app.config["DATA_ROOT"]).resolve()
+        try:
+            relative = final.resolve().relative_to(data_root).as_posix()
+        except ValueError as error:
+            raise PortabilityImportError("storage_invalid", "El storage configurado no es seguro.", 500) from error
+        db.session.add(UploadedFile(user_id=user_id, original_filename=safe_filename(data.get("filename")), stored_filename=stored_name,
+            storage_path=relative, source_type="medical_document" if is_medical else "portable_import",
+            detected_type="medical_document" if is_medical else "unknown", import_status="imported",
             sha256=data["sha256"], size_bytes=int(data["size_bytes"]), mime_type=data.get("media_type")))
         _add_mapping(job, section, source_id, source_id, None, maps); return "inserted"
     raise PortabilityImportError("unsupported_section", "La sección no puede importarse en esta versión.")
@@ -698,6 +830,15 @@ def apply_import(job: PortableImportJob, user_id: int, payload: dict, raw_idempo
                 action = _apply_record(job, section, record, strategies[(section, record["public_id"])], maps, created_paths)
                 counts[action] += 1; section_counts[action] += 1
             sections_result[section] = section_counts
+        db.session.flush()
+        for (section, _source_id), destination_id in maps.items():
+            if section != "medical_studies":
+                continue
+            study = db.session.execute(db.select(MedicalStudy).where(
+                MedicalStudy.user_id == user_id, MedicalStudy.public_id == destination_id,
+            )).scalar_one_or_none()
+            if study is not None:
+                _refresh_fingerprints(study)
         db.session.flush()
         counts["remapped"] = sum(1 for item in job.mappings if item.source_public_id != item.destination_public_id)
         state = "completed_with_skips" if counts["skipped"] else "completed"; completed = _now()

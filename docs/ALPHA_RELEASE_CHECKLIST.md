@@ -1,5 +1,20 @@
 # Checklist de release alpha privada
 
+## Alpha 1.9 — estudios médicos, laboratorio y documentos
+
+- [x] API Bearer owner-only con UUID, idempotencia, revisiones, 404 cruzado, paginación/filtros y descargas `no-store`.
+- [x] Alembic 0035 aditiva/reversible con estudios, fuentes, paneles, resultados/revisiones, documentos, duplicados y auditoría sanitizada.
+- [x] Valor/unidad/rango del informe preservados; numeric/text/qualitative, sin NaN/Infinity ni rangos universales.
+- [x] Historial 30/90/180/365/todo y allowlist exacta/versionada; incompatibilidad de unidad/método se explica sin interpretación clínica.
+- [x] PDF/JPEG/PNG/JSON interno/CSV controlado, SHA-256, límites, MIME real, owner-only y eliminación separada.
+- [x] JSON/CSV con schemas, preview read-only, fórmula rechazada, confirmación, transacción y UUID mapping.
+- [x] Room 9, migración 8→9/cadena explícita, nueve entidades cuenta+servidor, cola offline y temporales fuera de SQLite.
+- [x] Salud mantiene cinco pestañas e incorpora estudios, detalle, resultados, correcciones, documentos e historial accesible.
+- [x] Portable v1 añade cuatro secciones; binarios médicos requieren opt-in separado y round-trip owner-scoped.
+- [x] Gate completo: backend local 687/7, Docker/MariaDB 693/1, Alembic cero/0034/check/downgrade/re-upgrade, E2E médico, lint, 157 JVM dos veces, APK y androidTest compilable.
+- [x] APK code 19/name `1.9.0-alpha01-debug`, 20.513.670 bytes, firma v2, SHA-256 `05E624AAE2137F063BD4B3866665DB03FF36DA6FFB109C54AF865F63F770E6F7` y sin fixtures médicas empaquetadas.
+- [ ] QA físico/manual e instrumentación en AVD separado; no forman parte del gate automatizado de esta rama.
+
 ## Alpha 1.8 — objetivos, recordatorios y adherencia
 
 - [x] CRUD Bearer owner-only, UUID, idempotencia, revisión optimista y errores estructurados.

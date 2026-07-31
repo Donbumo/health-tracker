@@ -129,4 +129,8 @@ Export permite secciones y rango; perfil identificable y attachments parten apag
 
 Alpha 1.5 integra únicamente lectura de Health Connect para los tipos documentados. Google Fit, Huawei Health, Xiaomi Home/S400, BLE, Wear OS, fotografía, OCR, IA, códigos de barras, recomendaciones y diagnósticos siguen fuera de alcance. Los objetivos de nutrición o pasos permanecen ausentes cuando el backend no tiene un contrato existente; no se fabrican valores.
 
-Reloj, Bluetooth, escritura hacia Health Connect, sesiones/rutas de ejercicio, sueño, signos vitales, datos médicos, telemetría continua, FIT output, deep links, WebView, analytics, publicidad y vendors Garmin/Huawei/Magene siguen fuera de alcance. Los packages planeados conservan de forma aditiva carga, `load_details`, RIR, RPE y notas cuando están prescritos; clientes anteriores pueden ignorarlos.
+Reloj, escritura hacia Health Connect, sesiones/rutas de ejercicio, sueño, signos vitales, OCR/IA médica, telemetría continua, FIT output, deep links, WebView, analytics, publicidad y vendors Garmin/Huawei/Magene siguen fuera de alcance. Los packages planeados conservan de forma aditiva carga, `load_details`, RIR, RPE y notas cuando están prescritos; clientes anteriores pueden ignorarlos.
+
+## Estudios médicos Alpha 1.9
+
+**Salud → Estudios médicos** mantiene las cinco pestañas y añade lista, draft, detalle, paneles, resultados/revisiones, documentos e historial. Room 9 emite inmediatamente y `MedicalRepository` procesa una cola owner+server scoped mediante endpoints agregados; no hay fetch por recomposición ni nuevo cursor. SAF selecciona PDF/JPEG/PNG/JSON/CSV y el FileProvider `.medical-documents` es privado. VersionCode 19/name `1.9.0-alpha01`; alcance y límites en [ALPHA_1_9_MEDICAL_RECORDS.md](ALPHA_1_9_MEDICAL_RECORDS.md).

@@ -29,6 +29,7 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 
 ## Exportación y portabilidad
 
+- Estudios médicos Alpha 1.9: [ALPHA_1_9_MEDICAL_RECORDS.md](ALPHA_1_9_MEDICAL_RECORDS.md), privacidad [MEDICAL_DATA_PRIVACY.md](MEDICAL_DATA_PRIVACY.md) y formato JSON/CSV [MEDICAL_LAB_FORMAT_V1.md](MEDICAL_LAB_FORMAT_V1.md); contratos `../schemas/medical_*.schema.json` y secciones `portable_medical_*`/`portable_lab_*`.
 - Portabilidad selectiva Alpha 1.7: [ALPHA_1_7_DATA_PORTABILITY.md](ALPHA_1_7_DATA_PORTABILITY.md), contrato [PORTABLE_PACKAGE_FORMAT_V1.md](PORTABLE_PACKAGE_FORMAT_V1.md) y matriz [DATA_EXPORT_PRIVACY.md](DATA_EXPORT_PRIVACY.md); schemas públicos `../schemas/portable_*.schema.json` y CLI `../scripts/portability/`.
 - Objetivos y recordatorios Alpha 1.8: [ALPHA_1_8_GOALS_REMINDERS.md](ALPHA_1_8_GOALS_REMINDERS.md), [NOTIFICATION_PRIVACY.md](NOTIFICATION_PRIVACY.md) y [ADHERENCE_METRICS.md](ADHERENCE_METRICS.md); contratos `../schemas/mobile_goals.schema.json`, `mobile_reminder_rules.schema.json` y `mobile_adherence.schema.json`.
 - Exporters: [project-rules/exporters.md](project-rules/exporters.md), [EXPORTERS.md](EXPORTERS.md), [EXPORT_STORAGE.md](EXPORT_STORAGE.md), [ACTIVITY_ROUTE_EXPORTS.md](ACTIVITY_ROUTE_EXPORTS.md), [TRAINING_EXPORTS.md](TRAINING_EXPORTS.md).

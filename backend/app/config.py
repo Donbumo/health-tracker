@@ -106,6 +106,16 @@ class Config:
     PORTABILITY_MAX_ATTACHMENTS_BYTES = int(
         os.getenv("PORTABILITY_MAX_ATTACHMENTS_MB", "100")
     ) * 1024 * 1024
+    MEDICAL_DOCUMENT_MAX_BYTES = int(
+        os.getenv("MEDICAL_DOCUMENT_MAX_MB", "25")
+    ) * 1024 * 1024
+    MEDICAL_DOCUMENT_USER_MAX_BYTES = int(
+        os.getenv("MEDICAL_DOCUMENT_USER_MAX_MB", "250")
+    ) * 1024 * 1024
+    MEDICAL_CSV_MAX_ROWS = int(os.getenv("MEDICAL_CSV_MAX_ROWS", "1000"))
+    MEDICAL_CSV_MAX_CELL_BYTES = int(
+        os.getenv("MEDICAL_CSV_MAX_CELL_BYTES", "4096")
+    )
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"

@@ -71,9 +71,18 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ReminderScheduleEntity::class,
         ReminderPermissionStateEntity::class,
         AdherenceCacheEntity::class,
+        MedicalStudyEntity::class,
+        MedicalDocumentEntity::class,
+        LabPanelEntity::class,
+        LabResultEntity::class,
+        LabResultRevisionEntity::class,
+        LabMarkerEntity::class,
+        MedicalOperationEntity::class,
+        MedicalHistoryCacheEntity::class,
+        MedicalDuplicateCandidateEntity::class,
         SyncStateEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 abstract class CompanionDatabase : RoomDatabase() {
@@ -84,7 +93,7 @@ abstract class CompanionDatabase : RoomDatabase() {
             context.applicationContext,
             CompanionDatabase::class.java,
             "health_tracker_companion_v1.db",
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9).build()
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -234,6 +243,36 @@ abstract class CompanionDatabase : RoomDatabase() {
                 db.execSQL("""CREATE TABLE IF NOT EXISTS `reminder_permission_state` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `requested` INTEGER NOT NULL, `granted` INTEGER NOT NULL, `rationaleShown` INTEGER NOT NULL, `deniedAt` TEXT, `checkedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`))""")
                 db.execSQL("""CREATE TABLE IF NOT EXISTS `adherence_cache` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `rangeDays` INTEGER NOT NULL, `periodFrom` TEXT NOT NULL, `periodTo` TEXT NOT NULL, `timezone` TEXT NOT NULL, `status` TEXT NOT NULL, `summaryJson` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `rangeDays`))""")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_adherence_cache_accountScope_serverIdentity_updatedAt` ON `adherence_cache` (`accountScope`, `serverIdentity`, `updatedAt`)")
+            }
+        }
+
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `medical_studies` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `publicId` TEXT NOT NULL, `studyType` TEXT NOT NULL, `title` TEXT NOT NULL, `laboratoryName` TEXT, `professionalName` TEXT, `studyDate` TEXT NOT NULL, `issuedDate` TEXT, `timezone` TEXT, `notes` TEXT, `state` TEXT NOT NULL, `source` TEXT NOT NULL, `revision` INTEGER NOT NULL, `localRevision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_medical_studies_accountScope_serverIdentity_studyDate_state` ON `medical_studies` (`accountScope`, `serverIdentity`, `studyDate`, `state`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_medical_studies_accountScope_serverIdentity_syncStatus` ON `medical_studies` (`accountScope`, `serverIdentity`, `syncStatus`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `medical_documents` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `publicId` TEXT NOT NULL, `studyPublicId` TEXT NOT NULL, `documentType` TEXT NOT NULL, `originalFilename` TEXT NOT NULL, `mimeType` TEXT NOT NULL, `sizeBytes` INTEGER NOT NULL, `sha256` TEXT NOT NULL, `availability` TEXT NOT NULL, `localUri` TEXT, `uriPermissionPersisted` INTEGER NOT NULL, `uploadTempFileName` TEXT, `source` TEXT NOT NULL, `revision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_medical_documents_accountScope_serverIdentity_studyPublicId` ON `medical_documents` (`accountScope`, `serverIdentity`, `studyPublicId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_medical_documents_accountScope_serverIdentity_sha256` ON `medical_documents` (`accountScope`, `serverIdentity`, `sha256`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_medical_documents_accountScope_serverIdentity_syncStatus` ON `medical_documents` (`accountScope`, `serverIdentity`, `syncStatus`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `lab_panels` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `publicId` TEXT NOT NULL, `studyPublicId` TEXT NOT NULL, `name` TEXT NOT NULL, `displayOrder` INTEGER NOT NULL, `source` TEXT NOT NULL, `revision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `publicId`))""")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_lab_panels_accountScope_serverIdentity_studyPublicId_displayOrder` ON `lab_panels` (`accountScope`, `serverIdentity`, `studyPublicId`, `displayOrder`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `lab_results` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `publicId` TEXT NOT NULL, `panelPublicId` TEXT NOT NULL, `displayName` TEXT NOT NULL, `canonicalKey` TEXT, `valueType` TEXT NOT NULL, `originalValue` TEXT NOT NULL, `numericValue` TEXT, `comparator` TEXT NOT NULL, `originalUnit` TEXT, `canonicalUnit` TEXT, `referenceLower` TEXT, `referenceUpper` TEXT, `referenceText` TEXT, `sourceStatus` TEXT NOT NULL, `derivedRangeStatus` TEXT NOT NULL, `method` TEXT, `specimen` TEXT, `notes` TEXT, `displayOrder` INTEGER NOT NULL, `source` TEXT NOT NULL, `revision` INTEGER NOT NULL, `localRevision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `publicId`))""")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_lab_results_accountScope_serverIdentity_panelPublicId_displayOrder` ON `lab_results` (`accountScope`, `serverIdentity`, `panelPublicId`, `displayOrder`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_lab_results_accountScope_serverIdentity_canonicalKey` ON `lab_results` (`accountScope`, `serverIdentity`, `canonicalKey`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `lab_result_revisions` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `resultPublicId` TEXT NOT NULL, `revision` INTEGER NOT NULL, `snapshotJson` TEXT NOT NULL, `correctionReason` TEXT, `source` TEXT NOT NULL, `createdAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `resultPublicId`, `revision`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_lab_result_revisions_accountScope_serverIdentity_resultPublicId_createdAt` ON `lab_result_revisions` (`accountScope`, `serverIdentity`, `resultPublicId`, `createdAt`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `lab_markers` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `canonicalKey` TEXT NOT NULL, `displayName` TEXT NOT NULL, `aliasesJson` TEXT NOT NULL, `commonUnitsJson` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `canonicalKey`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_lab_markers_accountScope_serverIdentity_displayName` ON `lab_markers` (`accountScope`, `serverIdentity`, `displayName`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `medical_operations` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `operationId` TEXT NOT NULL, `operationType` TEXT NOT NULL, `entityPublicId` TEXT NOT NULL, `parentPublicId` TEXT, `idempotencyKey` TEXT NOT NULL, `payloadJson` TEXT NOT NULL, `payloadHash` TEXT NOT NULL, `status` TEXT NOT NULL, `attemptCount` INTEGER NOT NULL, `notBeforeEpochMs` INTEGER NOT NULL, `createdAt` TEXT NOT NULL, `lastErrorCode` TEXT, PRIMARY KEY(`accountScope`, `serverIdentity`, `operationId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_medical_operations_accountScope_serverIdentity_status_createdAt` ON `medical_operations` (`accountScope`, `serverIdentity`, `status`, `createdAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_medical_operations_accountScope_serverIdentity_entityPublicId` ON `medical_operations` (`accountScope`, `serverIdentity`, `entityPublicId`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_medical_operations_accountScope_serverIdentity_idempotencyKey` ON `medical_operations` (`accountScope`, `serverIdentity`, `idempotencyKey`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `medical_history_cache` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `canonicalKey` TEXT NOT NULL, `period` TEXT NOT NULL, `seriesJson` TEXT NOT NULL, `comparable` INTEGER NOT NULL, `comparisonNotice` TEXT, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `canonicalKey`, `period`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_medical_history_cache_accountScope_serverIdentity_updatedAt` ON `medical_history_cache` (`accountScope`, `serverIdentity`, `updatedAt`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `medical_duplicate_candidates` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `publicId` TEXT NOT NULL, `leftStudyPublicId` TEXT NOT NULL, `rightStudyPublicId` TEXT NOT NULL, `classification` TEXT NOT NULL, `evidenceJson` TEXT NOT NULL, `resolution` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `resolvedAt` TEXT, PRIMARY KEY(`accountScope`, `serverIdentity`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_medical_duplicate_candidates_accountScope_serverIdentity_resolution` ON `medical_duplicate_candidates` (`accountScope`, `serverIdentity`, `resolution`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_medical_duplicate_candidates_accountScope_serverIdentity_leftStudyPublicId_rightStudyPublicId` ON `medical_duplicate_candidates` (`accountScope`, `serverIdentity`, `leftStudyPublicId`, `rightStudyPublicId`)")
             }
         }
     }

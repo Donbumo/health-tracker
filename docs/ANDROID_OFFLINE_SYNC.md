@@ -1,5 +1,13 @@
 # Android offline y sincronización
 
+## Cola de actividades Alpha 2.0
+
+Seleccionar FIT/GPX/TCX funciona offline: SAF entrega una URI, se valida extensión y límite de 10 MB, se calcula SHA-256 en streaming y se guarda un parcial privado consentido junto con `ActivityImportEntity` y `ActivityOperationEntity`. Un WorkManager único por cuenta+servidor+job espera `CONNECTED`, usa backoff exponencial y verifica hash antes/después de multipart. Si cambia cuenta o servidor el worker falla sin reutilizar datos; URI/archivo perdido queda visible como `source_lost`.
+
+Upload e inspect pueden reanudarse idempotentemente, pero apply siempre requiere confirmación explícita. Cancelar elimina el parcial y libera el permiso persistible cuando existe. Tras apply también se limpia el parcial; cache de actividad/laps/metadatos permanece disponible. Series reducidas y ruta visible se guardan fuera de Room en el scope privado, no se solicitan por recomposición.
+
+Room 10 usa migración 9→10 y la cadena completa 1→10. Logout ejecuta cleanup de filas/archivos del `accountScope`; cambiar servidor conserva particiones históricas aisladas y nunca procesa un job con otra identidad.
+
 ## Cola de engagement Alpha 1.8
 
 Objetivos, reglas y eventos técnicos usan tipos `engagement_*` en `pending_actions`. Create→update reemplaza el payload del create, create→delete elimina ambos y múltiples updates conservan el estado final. `SyncWorker` drena esta familia antes del FIFO histórico y luego refresca objetivos, reglas y adherencia. Room emite sin HTTP desde recomposición; el trabajo de red conserva constraints y backoff existentes.

@@ -1,5 +1,13 @@
 # Pruebas Android Companion
 
+## Alpha 2.0
+
+Las JVM cubren extensión FIT/GPX/TCX, rechazo de doble extensión, hash corto y nombre único de WorkManager por cuenta/servidor/job. Las instrumentadas compilables cubren Room 9→10, cadena 1→10, preservación y aislamiento de un UUID repetido por cuenta e identidad de servidor. Los tests backend cubren el contrato multipart, jobs durables, dedupe, privacidad, linking y portabilidad.
+
+Gate obligatorio: `lintDebug`, JVM forzada, `assembleDebug`, `compileDebugAndroidTestKotlin` y segunda JVM forzada. `connectedDebugAndroidTest` no se ejecuta. Quedan para AVD/dispositivo aislado: permiso URI persistible/perdido, process death durante upload, modo avión→reconexión, cancelación real de WorkManager, FileProvider/chooser, TalkBack, rotación, temas, fuente grande y layouts 320/360/411/600 dp con fixtures ficticias.
+
+El 31 de julio de 2026 pasó el gate final en ese orden: `lintDebug`, 166/166 JVM forzadas, `assembleDebug`, `compileDebugAndroidTestKotlin` y segunda pasada forzada 166/166. El APK mide 18.197.013 bytes, tiene SHA-256 `C32AC0352FDE62EC9144BABEB4A38667E0C9E2E818289E451CC2839AADED21D7`, firma debug v2 y code 20/name `2.0.0-alpha01-debug`. No se instaló ni se ejecutaron pruebas conectadas.
+
 ## Alpha 1.8
 
 La cobertura JVM prueba DST con y sin horario estacional, overlap/gap, dedupe lógico, quiet hours, cooldown, límites, permiso contextual, contenido genérico/privado y política de resumen semanal. Las instrumentadas compilables cubren cadena Room 1/2/3/4/5/6/7→8, preservación 7→8, identidad de servidor, coalescing offline y ledger ante doble worker. No ejecutar `connectedDebugAndroidTest` en este gate; quedan reboot, permisos y entrega bajo ahorro de batería para QA físico.

@@ -1,5 +1,11 @@
 # Formato `health-tracker-portable-v1`
 
+## Extensión Alpha 2.0
+
+Se añaden `activities`, `activity_laps`, `plan_activity_links`, `plan_actual_comparisons` y `activity_series`. Las cuatro primeras pueden incluirse en una exportación normal; `activity_series` exige `include_activity_series=true`. Los puntos de ruta dentro de `activities` exigen de forma independiente `include_activity_coordinates=true`. Sin opt-in, la ruta solo declara estado y `included=false`. Nunca se incluye el archivo FIT/GPX/TCX original, paths de storage ni fingerprints completos.
+
+Import remapea UUID de actividad, laps, links, comparaciones y series antes de resolver referencias. La aplicación sigue siendo atómica y limpia artefactos comprimidos creados si una fila posterior falla.
+
 ## Extensión Alpha 1.8
 
 Alpha 1.8 añade las secciones opcionales `goals` (`records/goals.jsonl`) y `reminder_rules` (`records/reminder_rules.jsonl`). Las reglas conservan hora, días, timezone, quiet hours, snooze y límites, pero omiten próxima ejecución e historial. Import fija `source=portable_import`, `requires_device_confirmation=true` y no agenda en el dispositivo destino hasta revisión explícita.
@@ -28,6 +34,11 @@ schemas/
   portable_import_result.schema.json
   portable_<section>.schema.json
 records/
+  activities.jsonl
+  activity_laps.jsonl
+  plan_activity_links.jsonl
+  plan_actual_comparisons.jsonl
+  activity_series.jsonl  # solo opt-in
   profile.json
   settings.json
   exercises.jsonl

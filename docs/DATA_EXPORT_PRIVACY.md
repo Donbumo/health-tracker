@@ -1,5 +1,9 @@
 # Privacidad de exportación y portabilidad
 
+## Actividades Alpha 2.0
+
+`activities`, `activity_laps`, `plan_activity_links` y `plan_actual_comparisons` son estructuradas y reimportables con remapeo UUID. `activity_series` requiere `include_activity_series=true`. Las coordenadas de ruta requieren además `include_activity_coordinates=true`; por defecto solo viajan estado y `included=false`. El archivo FIT/GPX/TCX original, path, SHA completo, fingerprint técnico y datos de imports/jobs quedan excluidos.
+
 ## Configuración Alpha 1.8
 
 `goals` transporta tipo, valor, periodo, días, timezone, estado y relaciones por UUID público. `reminder_rules` transporta hora, días, quiet hours, snooze y límites, y siempre requiere confirmación en destino. No se exportan eventos enviados, texto, historial, permission state, schedule, WorkManager, PendingIntent, channel IDs o ledger de dedupe.
@@ -10,6 +14,10 @@ Todo `.htpack` puede contener información corporal, alimentaria y de entrenamie
 
 | Dominio | Clasificación | Consentimiento / remapeo / conflicto | Tratamiento |
 | --- | --- | --- | --- |
+| Actividades y laps | Incluido y reimportable | Sensible; UUID mapping y conflictos conservadores | Resumen/procedencia; ruta excluida por defecto. |
+| Coordenadas de actividad | Altamente sensible y opcional | Opt-in separado `include_activity_coordinates` | Solo copia visible según keep/redact; nunca dirección. |
+| Series densas | Sensible y opcional | Opt-in separado `include_activity_series` | Hasta 2,000 muestras por actividad; no archivo original. |
+| Vínculos/comparaciones | Incluido si existen referencias | Remapeo de actividad/plan/link | Evidencia y resultado descriptivo, sin recomendaciones. |
 | Perfil básico | Opcional y reimportable | Consentimiento adicional; update explícito | Nombre visible/email sólo si se elige; nunca username o ID interno. |
 | Preferencias | Incluido y reimportable | Update de lineage compatible | Sólo unidad y timezone no sensibles. |
 | Ejercicios personalizados | Incluido y reimportable | Remapeo y conflicto | UUID, aliases y perfil de carga portable. |

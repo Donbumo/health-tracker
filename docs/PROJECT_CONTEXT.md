@@ -8,6 +8,8 @@ Para trabajo en curso consulta `ACTIVE_HANDOFF.md`. Para localizar contratos y g
 
 Health Tracker es una plataforma privada, self-hosted y multiusuario para normalizar, conservar, analizar e intercambiar datos personales de salud y entrenamiento.
 
+Las actividades de dispositivo siguen el mismo principio: FIT/GPX/TCX se normalizan a un contrato propio auditable, el original permanece privado, las rutas tienen consentimiento separado y la comparación con planes es descriptiva. La plataforma no depende de nubes, mapas externos, APIs privadas ni scraping para este flujo.
+
 Centraliza, según el soporte real del código:
 
 - nutrición y gasto energético;

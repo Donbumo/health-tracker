@@ -11,6 +11,98 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CompanionDao {
+    @Upsert suspend fun upsertActivityImport(value: ActivityImportEntity)
+    @Upsert suspend fun upsertActivities(values: List<ActivityEntity>)
+    @Upsert suspend fun upsertActivity(value: ActivityEntity)
+    @Upsert suspend fun upsertActivityLaps(values: List<ActivityLapEntity>)
+    @Upsert suspend fun upsertActivitySeriesMetadata(value: ActivitySeriesMetadataEntity)
+    @Upsert suspend fun upsertActivityRoute(value: ActivityRouteEntity)
+    @Upsert suspend fun upsertActivityDuplicates(values: List<ActivityDuplicateCandidateEntity>)
+    @Upsert suspend fun upsertPlanActivityLinks(values: List<PlanActivityLinkEntity>)
+    @Upsert suspend fun upsertPlanActualComparison(value: PlanActualComparisonEntity)
+    @Upsert suspend fun upsertActivityOperation(value: ActivityOperationEntity)
+
+    @Query("SELECT * FROM activity_imports WHERE accountScope=:scope AND serverIdentity=:serverIdentity ORDER BY createdAt DESC")
+    fun observeActivityImports(scope: String, serverIdentity: String): Flow<List<ActivityImportEntity>>
+
+    @Query("SELECT * FROM activity_imports WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    suspend fun activityImport(scope: String, serverIdentity: String, publicId: String): ActivityImportEntity?
+
+    @Query("SELECT * FROM activity_imports WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND serverPublicId=:serverPublicId LIMIT 1")
+    suspend fun activityImportByServerId(scope: String, serverIdentity: String, serverPublicId: String): ActivityImportEntity?
+
+    @Query("SELECT * FROM activities WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND status!='archived' ORDER BY startedAt DESC")
+    fun observeActivities(scope: String, serverIdentity: String): Flow<List<ActivityEntity>>
+
+    @Query("SELECT * FROM activities WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    fun observeActivity(scope: String, serverIdentity: String, publicId: String): Flow<ActivityEntity?>
+
+    @Query("SELECT * FROM activity_laps WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND activityPublicId=:publicId ORDER BY lapIndex")
+    fun observeActivityLaps(scope: String, serverIdentity: String, publicId: String): Flow<List<ActivityLapEntity>>
+
+    @Query("SELECT * FROM activity_series_metadata WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND activityPublicId=:publicId")
+    fun observeActivitySeriesMetadata(scope: String, serverIdentity: String, publicId: String): Flow<ActivitySeriesMetadataEntity?>
+
+    @Query("SELECT * FROM activity_routes WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND activityPublicId=:publicId")
+    fun observeActivityRoute(scope: String, serverIdentity: String, publicId: String): Flow<ActivityRouteEntity?>
+
+    @Query("SELECT * FROM activity_duplicate_candidates WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND resolution='pending' ORDER BY createdAt DESC")
+    fun observeActivityDuplicates(scope: String, serverIdentity: String): Flow<List<ActivityDuplicateCandidateEntity>>
+
+    @Query("SELECT * FROM plan_activity_links WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND activityPublicId=:publicId")
+    fun observePlanActivityLink(scope: String, serverIdentity: String, publicId: String): Flow<PlanActivityLinkEntity?>
+
+    @Query("SELECT * FROM plan_actual_comparisons WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND activityPublicId=:publicId ORDER BY createdAt DESC LIMIT 1")
+    fun observePlanActualComparison(scope: String, serverIdentity: String, publicId: String): Flow<PlanActualComparisonEntity?>
+
+    @Query("SELECT * FROM activity_operations WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND importPublicId=:publicId ORDER BY createdAt DESC LIMIT 1")
+    suspend fun activityOperationForImport(scope: String, serverIdentity: String, publicId: String): ActivityOperationEntity?
+
+    @Query("SELECT * FROM activity_operations WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND status IN ('pending','retry') AND notBeforeEpochMs<=:now ORDER BY createdAt")
+    suspend fun readyActivityOperations(scope: String, serverIdentity: String, now: Long): List<ActivityOperationEntity>
+
+    @Query("DELETE FROM activity_imports WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND publicId=:publicId")
+    suspend fun deleteActivityImport(scope: String, serverIdentity: String, publicId: String)
+
+    @Query("DELETE FROM activity_operations WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND importPublicId=:publicId")
+    suspend fun deleteActivityOperationsForImport(scope: String, serverIdentity: String, publicId: String)
+
+    @Query("DELETE FROM activity_laps WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND activityPublicId=:publicId")
+    suspend fun deleteActivityLaps(scope: String, serverIdentity: String, publicId: String)
+
+    @Query("DELETE FROM activity_series_metadata WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND activityPublicId=:publicId")
+    suspend fun deleteActivitySeriesMetadata(scope: String, serverIdentity: String, publicId: String)
+
+    @Query("DELETE FROM activity_routes WHERE accountScope=:scope AND serverIdentity=:serverIdentity AND activityPublicId=:publicId")
+    suspend fun deleteActivityRoute(scope: String, serverIdentity: String, publicId: String)
+
+    @Query("DELETE FROM activity_operations WHERE accountScope=:scope")
+    suspend fun deleteActivityOperationsForAccount(scope: String)
+
+    @Query("DELETE FROM plan_actual_comparisons WHERE accountScope=:scope")
+    suspend fun deletePlanActualComparisonsForAccount(scope: String)
+
+    @Query("DELETE FROM plan_activity_links WHERE accountScope=:scope")
+    suspend fun deletePlanActivityLinksForAccount(scope: String)
+
+    @Query("DELETE FROM activity_duplicate_candidates WHERE accountScope=:scope")
+    suspend fun deleteActivityDuplicatesForAccount(scope: String)
+
+    @Query("DELETE FROM activity_routes WHERE accountScope=:scope")
+    suspend fun deleteActivityRoutesForAccount(scope: String)
+
+    @Query("DELETE FROM activity_series_metadata WHERE accountScope=:scope")
+    suspend fun deleteActivitySeriesForAccount(scope: String)
+
+    @Query("DELETE FROM activity_laps WHERE accountScope=:scope")
+    suspend fun deleteActivityLapsForAccount(scope: String)
+
+    @Query("DELETE FROM activities WHERE accountScope=:scope")
+    suspend fun deleteActivitiesForAccount(scope: String)
+
+    @Query("DELETE FROM activity_imports WHERE accountScope=:scope")
+    suspend fun deleteActivityImportsForAccount(scope: String)
+
     @Upsert suspend fun upsertMedicalStudies(values: List<MedicalStudyEntity>)
     @Upsert suspend fun upsertMedicalStudy(value: MedicalStudyEntity)
     @Upsert suspend fun upsertMedicalDocuments(values: List<MedicalDocumentEntity>)
@@ -1097,6 +1189,15 @@ interface CompanionDao {
 
     @Transaction
     suspend fun clearAccount(scope: String) {
+        deleteActivityOperationsForAccount(scope)
+        deletePlanActualComparisonsForAccount(scope)
+        deletePlanActivityLinksForAccount(scope)
+        deleteActivityDuplicatesForAccount(scope)
+        deleteActivityRoutesForAccount(scope)
+        deleteActivitySeriesForAccount(scope)
+        deleteActivityLapsForAccount(scope)
+        deleteActivitiesForAccount(scope)
+        deleteActivityImportsForAccount(scope)
         deleteMedicalDuplicatesForAccount(scope)
         deleteMedicalHistoryForAccount(scope)
         deleteMedicalOperationsForAccount(scope)

@@ -1,5 +1,18 @@
 # Handoff activo
 
+## Alpha 2.0 en esta rama
+
+- Rama `feature/alpha-2.0-activity-interchange`; checkpoint inicial/HEAD sin modificar `350cf2` (Alpha 1.9 completa). No se cambió de rama ni se usó staging.
+- Backend normaliza FIT/GPX/TCX a `health-tracker-activity-v1`, separa inspección de confirmación, conserva archivos originales privados y guarda series/rutas comprimidas fuera de MariaDB. Alembic `20260731_0036` es aditiva y reversible.
+- API Bearer owner-only ofrece imports, actividades, laps, series paginadas, ruta, exports y vínculo/comparación con planes. Solo duplicados exactos se resuelven automáticamente.
+- Android pasa a code 20/name `2.0.0-alpha01`, Room 10 y nueve tablas cuenta+servidor. Historial abre Actividades; SAF y WorkManager permiten selección/hash/cola offline, y la UI dibuja series y ruta localmente.
+- Portable v1 añade actividades, laps, links, comparaciones y series. Coordenadas y series densas requieren opt-ins separados; los archivos originales nunca viajan.
+- Documentación canónica: `ALPHA_2_0_ACTIVITY_INTERCHANGE.md`, `ACTIVITY_STANDARD_V1.md`, `ACTIVITY_LOCATION_PRIVACY.md` y `PLAN_VS_ACTUAL.md`.
+- Gate final: backend local 716/9; matriz Docker/MariaDB 92/92 con concurrencia y E2E FIT/GPX/plan/portabilidad. Alembic pasó cero→0036, 0035→0036, check y dos ciclos downgrade/re-upgrade.
+- Android pasó en orden `lintDebug`, 166/166 JVM forzadas, `assembleDebug`, `compileDebugAndroidTestKotlin` y segunda JVM forzada 166/166. El APK debug mide 18.197.013 bytes, SHA-256 `C32AC0352FDE62EC9144BABEB4A38667E0C9E2E818289E451CC2839AADED21D7`, firma v2 y code 20/name `2.0.0-alpha01-debug`; el escaneo sensible quedó limpio.
+- MariaDB usó contenedores/red exclusivos, tmpfs y storage temporal externo; todos se eliminaron. Volúmenes antes/después: los mismos dos preexistentes. Compose diario, `.env`, `/data`, NAS y `qa-temp-alpha15*` no se tocaron.
+- QA físico, instrumentación conectada y archivos reales permanecen fuera de alcance.
+
 ## Alpha 1.9 en esta rama
 
 - Rama `feature/alpha-1.9-medical-records`; checkpoint inicial/HEAD sin modificar `2644b58a8cd41c0e516773980697f353102a76db` (Alpha 1.8 completa).

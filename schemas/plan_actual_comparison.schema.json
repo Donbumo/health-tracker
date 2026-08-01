@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/plan_actual_comparison.schema.json",
+  "title": "Plan versus actual comparison",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "status", "comparisons", "messages"],
+  "properties": {
+    "format": {"const": "plan-actual-comparison-v1"},
+    "status": {"enum": ["completed", "partially_completed", "deviated", "insufficient_data", "not_comparable"]},
+    "comparisons": {"type": "object", "additionalProperties": {"type": "object"}},
+    "messages": {"type": "array", "items": {"type": "string", "maxLength": 300}}
+  }
+}

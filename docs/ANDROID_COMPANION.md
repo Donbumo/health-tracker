@@ -1,4 +1,12 @@
-# Android Companion Alpha 1.6
+# Android Companion Alpha 2.0
+
+## Actividades Alpha 2.0
+
+Se mantienen cinco pestañas. **Historial → Actividades** muestra cache Room de actividades/imports, filtros, duplicados y estado offline. El detalle presenta resumen, laps, metadatos de series, gráfica reducida, ruta local sin mapas externos, fuente sanitizada, vínculo/comparación y exportación explícita. La interpretación FIT/GPX/TCX autoritativa sigue en backend.
+
+Room 10 añade `ActivityImportEntity`, `ActivityEntity`, `ActivityLapEntity`, `ActivitySeriesMetadataEntity`, `ActivityRouteEntity`, `ActivityDuplicateCandidateEntity`, `PlanActivityLinkEntity`, `PlanActualComparisonEntity` y `ActivityOperationEntity`, todas con `accountScope` e identidad del servidor. La migración explícita 9→10 completa la cadena 1→10 sin fallback destructivo. Las series densas y puntos de ruta viven en archivos privados; Room conserva metadatos y nombres opacos.
+
+SAF valida extensión/tamaño, calcula SHA-256 en streaming, intenta conservar permiso URI y crea un job offline. WorkManager usa un trabajo único por import con red y backoff, verifica cuenta/servidor/hash antes y después, y no confirma la escritura: el usuario revisa warnings y pulsa confirmar. Cancelar elimina operación y parcial; logout limpia solo el scope efectivo.
 
 ## Infraestructura de fuentes externas Alpha 1.6
 

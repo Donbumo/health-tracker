@@ -1,5 +1,11 @@
 # Seguridad Android Companion
 
+## Ubicación de actividades Alpha 2.0
+
+Las rutas son datos sensibles. La selección ofrece conservar, recortar extremos o descartar sin una activación silenciosa. Android dibuja la copia visible localmente y no usa mapas, tiles, geocodificación ni nombres de calles. Exportar usa un FileProvider privado y chooser explícito; JSON omite ruta por defecto y GPX solo se habilita si existe una ruta visible.
+
+Room no guarda series densas ni coordenadas completas. Los parciales, series reducidas y rutas cacheadas usan almacenamiento privado/no-backup separado por hash del scope. Diagnóstico y UI solo muestran tipo, tamaño, estado, conteos y hash corto; nunca token, path, hash completo, coordenadas, contenido FIT/XML ni nombre completo en logs. Logout limpia el scope efectivo y el cambio de servidor no cruza identidades.
+
 ## Notificaciones Alpha 1.8
 
 No existe push externo. `POST_NOTIFICATIONS` sólo se solicita tras una activación explícita y `RECEIVE_BOOT_COMPLETED` se limita a un receiver no exportado que delega a WorkManager. No hay permisos de alarmas exactas, servicios foreground, ubicación, calendario, contactos o SMS. Los `PendingIntent` son immutable; actions y workers vuelven a validar cuenta, hash del servidor, revisión, regla y recurso en Room. Contenido y diagnóstico siguen la allowlist de [Privacidad de notificaciones](NOTIFICATION_PRIVACY.md).

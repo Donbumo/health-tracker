@@ -80,9 +80,18 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         MedicalOperationEntity::class,
         MedicalHistoryCacheEntity::class,
         MedicalDuplicateCandidateEntity::class,
+        ActivityImportEntity::class,
+        ActivityEntity::class,
+        ActivityLapEntity::class,
+        ActivitySeriesMetadataEntity::class,
+        ActivityRouteEntity::class,
+        ActivityDuplicateCandidateEntity::class,
+        PlanActivityLinkEntity::class,
+        PlanActualComparisonEntity::class,
+        ActivityOperationEntity::class,
         SyncStateEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 abstract class CompanionDatabase : RoomDatabase() {
@@ -93,7 +102,7 @@ abstract class CompanionDatabase : RoomDatabase() {
             context.applicationContext,
             CompanionDatabase::class.java,
             "health_tracker_companion_v1.db",
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10).build()
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -273,6 +282,32 @@ abstract class CompanionDatabase : RoomDatabase() {
                 db.execSQL("""CREATE TABLE IF NOT EXISTS `medical_duplicate_candidates` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `publicId` TEXT NOT NULL, `leftStudyPublicId` TEXT NOT NULL, `rightStudyPublicId` TEXT NOT NULL, `classification` TEXT NOT NULL, `evidenceJson` TEXT NOT NULL, `resolution` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `resolvedAt` TEXT, PRIMARY KEY(`accountScope`, `serverIdentity`, `publicId`))""")
                 db.execSQL("CREATE INDEX IF NOT EXISTS `index_medical_duplicate_candidates_accountScope_serverIdentity_resolution` ON `medical_duplicate_candidates` (`accountScope`, `serverIdentity`, `resolution`)")
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_medical_duplicate_candidates_accountScope_serverIdentity_leftStudyPublicId_rightStudyPublicId` ON `medical_duplicate_candidates` (`accountScope`, `serverIdentity`, `leftStudyPublicId`, `rightStudyPublicId`)")
+            }
+        }
+
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `activity_imports` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `publicId` TEXT NOT NULL, `serverPublicId` TEXT, `displayName` TEXT NOT NULL, `detectedFormat` TEXT, `mimeType` TEXT, `sizeBytes` INTEGER NOT NULL, `sha256` TEXT NOT NULL, `sourceUri` TEXT, `uriPermissionPersisted` INTEGER NOT NULL, `partialFileName` TEXT, `routePolicy` TEXT NOT NULL, `redactStartMeters` INTEGER NOT NULL, `redactEndMeters` INTEGER NOT NULL, `state` TEXT NOT NULL, `warningsJson` TEXT NOT NULL, `errorCode` TEXT, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_activity_imports_accountScope_serverIdentity_state_createdAt` ON `activity_imports` (`accountScope`, `serverIdentity`, `state`, `createdAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_activity_imports_accountScope_serverIdentity_sha256` ON `activity_imports` (`accountScope`, `serverIdentity`, `sha256`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `activities` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `publicId` TEXT NOT NULL, `discipline` TEXT NOT NULL, `subtype` TEXT, `title` TEXT, `startedAt` TEXT NOT NULL, `timezone` TEXT, `durationSeconds` INTEGER, `elapsedSeconds` INTEGER, `distanceMeters` TEXT, `caloriesKcal` TEXT, `averageHeartRate` TEXT, `maxHeartRate` TEXT, `sourceFormat` TEXT NOT NULL, `sourceDevice` TEXT, `sourceFilename` TEXT, `status` TEXT NOT NULL, `revision` INTEGER NOT NULL, `summaryJson` TEXT NOT NULL, `syncStatus` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_activities_accountScope_serverIdentity_startedAt` ON `activities` (`accountScope`, `serverIdentity`, `startedAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_activities_accountScope_serverIdentity_discipline_status` ON `activities` (`accountScope`, `serverIdentity`, `discipline`, `status`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `activity_laps` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `activityPublicId` TEXT NOT NULL, `lapIndex` INTEGER NOT NULL, `startedAt` TEXT, `durationSeconds` TEXT, `distanceMeters` TEXT, `metricsJson` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `activityPublicId`, `lapIndex`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_activity_laps_accountScope_serverIdentity_activityPublicId` ON `activity_laps` (`accountScope`, `serverIdentity`, `activityPublicId`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `activity_series_metadata` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `activityPublicId` TEXT NOT NULL, `sampleCount` INTEGER NOT NULL, `availableMetricsJson` TEXT NOT NULL, `startsAt` TEXT, `endsAt` TEXT, `cachedSeriesFileName` TEXT, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `activityPublicId`))""")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `activity_routes` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `activityPublicId` TEXT NOT NULL, `visibilityState` TEXT NOT NULL, `privacyPolicy` TEXT NOT NULL, `pointCount` INTEGER NOT NULL, `hasElevation` INTEGER NOT NULL, `cachedRouteFileName` TEXT, `deletedAt` TEXT, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `activityPublicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_activity_routes_accountScope_serverIdentity_visibilityState` ON `activity_routes` (`accountScope`, `serverIdentity`, `visibilityState`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `activity_duplicate_candidates` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `publicId` TEXT NOT NULL, `activityPublicId` TEXT NOT NULL, `candidateActivityPublicId` TEXT NOT NULL, `classification` TEXT NOT NULL, `evidenceJson` TEXT NOT NULL, `resolution` TEXT NOT NULL, `createdAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_activity_duplicate_candidates_accountScope_serverIdentity_resolution` ON `activity_duplicate_candidates` (`accountScope`, `serverIdentity`, `resolution`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `plan_activity_links` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `publicId` TEXT NOT NULL, `activityPublicId` TEXT NOT NULL, `plannedWorkoutPublicId` TEXT NOT NULL, `linkType` TEXT NOT NULL, `state` TEXT NOT NULL, `evidenceJson` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `publicId`))""")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_plan_activity_links_accountScope_serverIdentity_activityPublicId` ON `plan_activity_links` (`accountScope`, `serverIdentity`, `activityPublicId`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `plan_actual_comparisons` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `publicId` TEXT NOT NULL, `activityPublicId` TEXT NOT NULL, `planActivityLinkPublicId` TEXT NOT NULL, `status` TEXT NOT NULL, `summaryJson` TEXT NOT NULL, `createdAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `serverIdentity`, `publicId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_plan_actual_comparisons_accountScope_serverIdentity_activityPublicId` ON `plan_actual_comparisons` (`accountScope`, `serverIdentity`, `activityPublicId`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `activity_operations` (`accountScope` TEXT NOT NULL, `serverIdentity` TEXT NOT NULL, `operationId` TEXT NOT NULL, `importPublicId` TEXT NOT NULL, `operationType` TEXT NOT NULL, `idempotencyKey` TEXT NOT NULL, `payloadJson` TEXT NOT NULL, `payloadHash` TEXT NOT NULL, `status` TEXT NOT NULL, `attemptCount` INTEGER NOT NULL, `notBeforeEpochMs` INTEGER NOT NULL, `createdAt` TEXT NOT NULL, `lastErrorCode` TEXT, PRIMARY KEY(`accountScope`, `serverIdentity`, `operationId`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_activity_operations_accountScope_serverIdentity_status_createdAt` ON `activity_operations` (`accountScope`, `serverIdentity`, `status`, `createdAt`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_activity_operations_accountScope_serverIdentity_importPublicId` ON `activity_operations` (`accountScope`, `serverIdentity`, `importPublicId`)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_activity_operations_accountScope_serverIdentity_idempotencyKey` ON `activity_operations` (`accountScope`, `serverIdentity`, `idempotencyKey`)")
             }
         }
     }

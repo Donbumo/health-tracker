@@ -39,9 +39,15 @@ def prepare_request():
         and "multipart/form-data" in (request.content_type or "")
     )
     is_medical_confirm = request.path == "/api/v1/mobile/medical-imports/confirm"
+    is_activity_upload = (
+        request.path == "/api/v1/mobile/activities/imports"
+        and "multipart/form-data" in (request.content_type or "")
+    )
     maximum = (
         current_app.config["PORTABILITY_MAX_COMPRESSED_BYTES"] + 1024 * 1024
         if is_portability_upload
+        else current_app.config.get("ACTIVITY_FILE_MAX_BYTES", 10 * 1024 * 1024) + 1024 * 1024
+        if is_activity_upload
         else current_app.config["MEDICAL_DOCUMENT_MAX_BYTES"] + 1024 * 1024
         if is_medical_upload
         else min(current_app.config["MEDICAL_DOCUMENT_MAX_BYTES"], 8 * 1024 * 1024)

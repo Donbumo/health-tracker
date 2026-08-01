@@ -4,6 +4,8 @@ Este documento reúne trabajo futuro o no comprobado. No describe funcionalidade
 
 ## Próximos cierres operativos
 
+- Completar QA manual Alpha 2.0 con fixtures ficticias: SAF persistido/perdido, process death, modo avión→reconexión, cancelación/reintento WorkManager, ruta keep/redact/drop/delete, FileProvider, plan sugerido, TalkBack, rotación, fuente grande y 320/360/411/600 dp. FIT de salida, TCX de salida sin semántica demostrada, mapas externos y archivos reales siguen fuera de alcance.
+
 - Completar QA manual Alpha 1.9 con datos ficticios: SAF persistido/perdido, process death, upload interrumpido, modo avión→reconexión, documentos con visor externo, portabilidad con/sin binarios, TalkBack, rotación, fuente grande y 320/360/411/600 dp. OCR, IA, FHIR, antivirus administrado e interpretación clínica requieren fases contractuales independientes.
 - Completar QA manual Alpha 1.7 en Android y round-trip entre dos instancias efímeras; firma/autenticidad criptográfica y cifrado estándar quedan para una fase contractual posterior.
 - Completar QA físico Alpha 1.8 de permiso concedido/denegado, reboot, cambio de timezone/DST, restricciones OEM de batería, snooze y privacidad en lockscreen. Push remoto y alarmas exactas permanecen fuera de alcance.

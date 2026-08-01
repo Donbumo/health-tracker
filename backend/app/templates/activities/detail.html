@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Actividad {{ activity.id }} · Health Tracker{% endblock %}
+{% block title %}Actividad · Health Tracker{% endblock %}
 {% block content %}
   <section class="page-heading">
     <div>
-      <h1>Actividad {{ activity.id }}</h1>
-      <p>{{ activity.activity_type }} · {{ activity.started_at.isoformat() }}</p>
+      <h1>{{ activity.title or 'Actividad' }}</h1>
+      <p>{{ activity.discipline or activity.activity_type }} · {{ activity.started_at.isoformat() }}</p>
     </div>
     <div class="page-actions">
-      <a class="button" href="{{ url_for('exports.create', domain='activity', source_id=activity.id) }}">Exportar actividad</a>
+      <a class="button" href="{{ url_for('activities.export_activity_json', activity_id=activity.id) }}">Exportar JSON</a>
     </div>
   </section>
 
@@ -24,27 +24,53 @@
       <dt>Cadencia promedio/máxima</dt><dd>{{ activity.avg_cadence_rpm or '—' }} / {{ activity.max_cadence_rpm or '—' }}</dd>
       <dt>Potencia promedio/máxima</dt><dd>{{ activity.avg_power_watts or '—' }} / {{ activity.max_power_watts or '—' }}</dd>
       <dt>Puntos</dt><dd>{{ activity.point_count }}</dd>
-      <dt>Dispositivo</dt><dd>{{ activity.manufacturer or '—' }} {{ activity.product or '' }}</dd>
-      <dt>Archivo fuente</dt><dd>{% if activity.source_file_id %}Upload #{{ activity.source_file_id }}{% else %}—{% endif %}</dd>
+      <dt>Fuente</dt><dd>{{ activity.source_format or activity.source_type }}{% if activity.source_device %} · {{ activity.source_device }}{% endif %}</dd>
+      <dt>Archivo original</dt><dd>{% if activity.original_file_public_id %}Conservado de forma privada{% else %}No disponible{% endif %}</dd>
       <dt>Huella</dt><dd><code>{{ activity.fingerprint_sha256[:12] }}…</code></dd>
     </dl>
+    {% if activity.warnings_json %}
+      <h3>Advertencias</h3>
+      <ul>{% for warning in activity.warnings_json %}<li>{{ warning }}</li>{% endfor %}</ul>
+    {% endif %}
   </section>
 
   <section class="card">
-    <h2>Track</h2>
-    {% if activity.bounds_json %}
-      <dl class="metadata">
-        <dt>Bounds</dt><dd>{{ activity.bounds_json }}</dd>
-      </dl>
+    <h2>Ruta local</h2>
+    <p class="help">Las rutas pueden revelar ubicaciones sensibles. No se consulta ningún mapa externo ni se muestra una dirección postal.</p>
+    {% if route.present and route_svg_points %}
+      <svg viewBox="0 0 100 100" role="img" aria-label="Ruta local con inicio y final genéricos" style="width:100%;max-height:22rem">
+        <polyline points="{{ route_svg_points }}" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke"></polyline>
+      </svg>
+      <p>Inicio y final genéricos · {{ route.points|length }} puntos visibles · política {{ route.policy }}.</p>
+    {% elif route.state == 'removed' %}
+      <p>La ruta fue eliminada. El resumen y los laps se conservan.</p>
+    {% else %}
+      <p>Actividad indoor o sin ruta disponible.</p>
     {% endif %}
-    {% if activity.warnings_json %}
-      <h3>Warnings</h3>
-      <ul>
-        {% for warning in activity.warnings_json %}
-          <li>{{ warning }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-    <p class="help">No se muestra mapa en Alpha 0.3; se conserva resumen, bounds, laps y track JSON.</p>
   </section>
+
+  <section class="card">
+    <h2>Laps</h2>
+    {% if laps %}
+      <ol>{% for lap in laps %}<li>Lap {{ lap.index + 1 }}: {{ lap.durationSeconds or '—' }} s · {{ lap.distanceMeters or '—' }} m</li>{% endfor %}</ol>
+    {% else %}<p>Sin laps detectados.</p>{% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Series reducidas</h2>
+    {% if series_svg_points %}
+      <svg viewBox="0 0 100 100" role="img" aria-label="{{ metric_name }} en el tiempo; {{ series.items|length }} puntos reducidos" style="width:100%;max-height:18rem">
+        <polyline points="{{ series_svg_points }}" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke"></polyline>
+      </svg>
+      <p>{{ metric_name }} · {{ series.items|length }} puntos mostrados de {{ series.sample_count }} muestras.</p>
+    {% else %}<p>No hay muestras suficientes para una gráfica.</p>{% endif %}
+  </section>
+
+  {% if activity.plan_link %}
+    <section class="card">
+      <h2>Plan contra realidad</h2>
+      <p>Vínculo {{ activity.plan_link.state }}. La comparación es descriptiva y no ofrece recomendaciones médicas ni de entrenamiento.</p>
+      {% if comparison %}<p>Estado: {{ comparison.status }}.</p>{% endif %}
+    </section>
+  {% endif %}
 {% endblock %}

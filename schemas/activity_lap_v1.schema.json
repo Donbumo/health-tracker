@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/activity_lap_v1.schema.json",
+  "title": "Health Tracker Activity Lap v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["publicId", "index", "metrics", "provenance"],
+  "properties": {
+    "publicId": {"type": "string", "format": "uuid"},
+    "index": {"type": "integer", "minimum": 1},
+    "startTime": {"type": "string", "format": "date-time"},
+    "endTime": {"type": "string", "format": "date-time"},
+    "durationSeconds": {"type": "number", "minimum": 0},
+    "distanceMeters": {"type": "number", "minimum": 0},
+    "metrics": {"type": "object", "additionalProperties": {"type": ["string", "number", "boolean", "null"]}},
+    "provenance": {"oneOf": [
+      {"enum": ["source_provided", "derived_exact", "derived_estimate", "unavailable"]},
+      {"type": "object", "additionalProperties": {"enum": ["source_provided", "derived_exact", "derived_estimate", "unavailable"]}}
+    ]}
+  }
+}

@@ -29,6 +29,8 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 
 ## Exportación y portabilidad
 
+- Actividades Alpha 2.0: [ALPHA_2_0_ACTIVITY_INTERCHANGE.md](ALPHA_2_0_ACTIVITY_INTERCHANGE.md), contrato [ACTIVITY_STANDARD_V1.md](ACTIVITY_STANDARD_V1.md), ubicación [ACTIVITY_LOCATION_PRIVACY.md](ACTIVITY_LOCATION_PRIVACY.md) y comparación [PLAN_VS_ACTUAL.md](PLAN_VS_ACTUAL.md); schemas `../schemas/activity_*.schema.json`, `../schemas/plan_actual_comparison.schema.json` y secciones `portable_activities`/`portable_activity_*`.
+
 - Estudios médicos Alpha 1.9: [ALPHA_1_9_MEDICAL_RECORDS.md](ALPHA_1_9_MEDICAL_RECORDS.md), privacidad [MEDICAL_DATA_PRIVACY.md](MEDICAL_DATA_PRIVACY.md) y formato JSON/CSV [MEDICAL_LAB_FORMAT_V1.md](MEDICAL_LAB_FORMAT_V1.md); contratos `../schemas/medical_*.schema.json` y secciones `portable_medical_*`/`portable_lab_*`.
 - Portabilidad selectiva Alpha 1.7: [ALPHA_1_7_DATA_PORTABILITY.md](ALPHA_1_7_DATA_PORTABILITY.md), contrato [PORTABLE_PACKAGE_FORMAT_V1.md](PORTABLE_PACKAGE_FORMAT_V1.md) y matriz [DATA_EXPORT_PRIVACY.md](DATA_EXPORT_PRIVACY.md); schemas públicos `../schemas/portable_*.schema.json` y CLI `../scripts/portability/`.
 - Objetivos y recordatorios Alpha 1.8: [ALPHA_1_8_GOALS_REMINDERS.md](ALPHA_1_8_GOALS_REMINDERS.md), [NOTIFICATION_PRIVACY.md](NOTIFICATION_PRIVACY.md) y [ADHERENCE_METRICS.md](ADHERENCE_METRICS.md); contratos `../schemas/mobile_goals.schema.json`, `mobile_reminder_rules.schema.json` y `mobile_adherence.schema.json`.

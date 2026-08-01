@@ -31,6 +31,7 @@ import io.healthtracker.companion.core.notifications.AndroidReminderScheduler
 import io.healthtracker.companion.core.notifications.EngagementRepository
 import io.healthtracker.companion.core.notifications.NotificationChannelRegistrar
 import io.healthtracker.companion.core.medical.MedicalRepository
+import io.healthtracker.companion.core.activity.ActivityRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -81,6 +82,7 @@ class AppContainer(application: Application) {
     val connectivity = ConnectivityObserver(application)
     val portabilityRepository = PortabilityRepository(application, database, api)
     val medicalRepository = MedicalRepository(application, database, api).also { it.cleanupSharedDocuments() }
+    val activityRepository = ActivityRepository(application, database, api).also { it.cleanupExports() }
     val bleCaptureStore = EncryptedBleCaptureStore(application)
     val reminderScheduler = AndroidReminderScheduler(application, database)
     val engagementRepository = EngagementRepository(database, api, reminderScheduler)
@@ -98,6 +100,7 @@ class AppContainer(application: Application) {
             }
             portabilityRepository.fileStore.deleteScope(scope)
             medicalRepository.cleanupScopeFiles(scope)
+            activityRepository.cleanupScopeFiles(scope)
             database.companionDao().bleCaptureMetadataForAccount(scope).forEach { metadata ->
                 check(bleCaptureStore.deleteEncryptedFile(metadata.encryptedFileName)) { "capture_cleanup_failed" }
             }

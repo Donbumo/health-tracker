@@ -116,6 +116,8 @@ class Config:
     MEDICAL_CSV_MAX_CELL_BYTES = int(
         os.getenv("MEDICAL_CSV_MAX_CELL_BYTES", "4096")
     )
+    ACTIVITY_FILE_MAX_BYTES = int(os.getenv("ACTIVITY_FILE_MAX_MB", "10")) * 1024 * 1024
+    ACTIVITY_USER_MAX_BYTES = int(os.getenv("ACTIVITY_USER_MAX_MB", "250")) * 1024 * 1024
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"

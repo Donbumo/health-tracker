@@ -12,6 +12,8 @@ from werkzeug.datastructures import FileStorage
 
 from app.extensions import db
 from app.models import (
+    Activity, ActivityLap, ActivityRouteMetadata, ActivitySeriesArtifact,
+    PlanActivityLink, PlanActualComparisonSnapshot,
     DailyEnergy, DailyNutrition, Exercise, ExerciseAlias, ExerciseLoadProfile,
     FoodProduct, NutritionItem, NutritionMeal, PlannedWorkout, PortableArtifact,
     PortableImportDecision, PortableImportJob, PortableImportMapping,
@@ -19,6 +21,7 @@ from app.models import (
     TrainingSessionExercise, TrainingSet, UploadedFile, User, WeighIn,
     UserGoal, ReminderRule, LabPanel, LabResult, MedicalDocument, MedicalStudy,
 )
+from app.services.activity_interchange import SERIES_FORMAT, _write_json_gzip
 from app.services.exercise_identity import normalize_exercise_name
 from app.services.mobile_sync import validate_timezone
 from app.services.portable_archive import (
@@ -36,7 +39,8 @@ STRATEGIES = {
 DEPENDENCY_ORDER = (
     "profile", "settings", "custom_foods", "exercises", "plans", "workouts", "goals", "reminder_rules",
     "medical_studies", "lab_panels", "lab_results",
-    "schedules", "sessions", "session_exercises", "sets", "body_stats",
+    "schedules", "activities", "activity_laps", "activity_series", "plan_activity_links", "plan_actual_comparisons",
+    "sessions", "session_exercises", "sets", "body_stats",
     "nutrition_entries", "steps", "attachments", "medical_documents_metadata", "external_sources",
 )
 PUBLIC_MODELS = {
@@ -47,6 +51,10 @@ PUBLIC_MODELS = {
     "goals": UserGoal, "reminder_rules": ReminderRule,
     "medical_studies": MedicalStudy, "lab_panels": LabPanel,
     "lab_results": LabResult, "medical_documents_metadata": MedicalDocument,
+    "activities": Activity, "activity_laps": ActivityLap,
+    "plan_activity_links": PlanActivityLink,
+    "plan_actual_comparisons": PlanActualComparisonSnapshot,
+    "activity_series": ActivitySeriesArtifact,
 }
 
 
@@ -164,6 +172,43 @@ def _owned_public(section: str, source_id: str, user_id: int):
 
 
 def _existing_data(section: str, row) -> dict:
+    if section == "activities":
+        route = row.route_metadata
+        return {
+            "discipline": row.discipline, "subtype": row.subtype,
+            "original_type": row.original_type or row.activity_type, "title": row.title,
+            "started_at": row.started_at, "ended_at": row.ended_at,
+            "timezone": row.timezone_name, "utc_offset_minutes": row.utc_offset_minutes,
+            "local_date": row.local_date, "duration_seconds": row.duration_seconds,
+            "elapsed_time_seconds": row.elapsed_time_seconds, "moving_time_seconds": row.moving_time_seconds,
+            "distance_meters": row.distance_meters, "calories_kcal": row.calories_kcal,
+            "ascent_meters": row.elevation_gain_meters, "descent_meters": row.elevation_loss_meters,
+            "average_heart_rate_bpm": row.avg_heart_rate_bpm, "maximum_heart_rate_bpm": row.max_heart_rate_bpm,
+            "average_cadence_rpm": row.avg_cadence_rpm, "maximum_cadence_rpm": row.max_cadence_rpm,
+            "average_speed_mps": row.avg_speed_mps, "maximum_speed_mps": row.max_speed_mps,
+            "average_power_watts": row.avg_power_watts, "maximum_power_watts": row.max_power_watts,
+            "environment": row.environment, "status": row.status,
+            "source_format": row.source_format, "source_application": row.source_app,
+            "source_device": row.source_device, "metrics_provenance": row.metrics_provenance_json or {},
+            "warnings": row.warnings_json or [],
+            "route": {"included": False, "state": route.state if route else "unavailable"},
+        }
+    if section == "activity_laps":
+        return {"activity_public_id": row.activity.public_id, "lap_index": row.lap_index,
+            "started_at": row.started_at, "ended_at": row.ended_at,
+            "duration_seconds": row.duration_seconds, "distance_meters": row.distance_meters,
+            "metrics": row.metrics_json or {}, "provenance": row.provenance_json or {}}
+    if section == "plan_activity_links":
+        return {"activity_public_id": row.activity.public_id,
+            "schedule_public_id": row.planned_workout.public_id,
+            "state": row.state, "evidence": row.evidence_json or {}}
+    if section == "plan_actual_comparisons":
+        return {"plan_activity_link_public_id": row.link.public_id, "status": row.status,
+            "activity_revision": row.activity_revision, "plan_revision": row.plan_revision,
+            "comparison": row.comparison_json}
+    if section == "activity_series":
+        return {"activity_public_id": row.activity.public_id, "format": row.format_version,
+            "fields": row.fields_json or [], "samples": []}
     if section == "medical_studies":
         return {"study_type": row.study_type, "title": row.title,
             "laboratory_name": row.laboratory_name, "professional_name": row.professional_name,
@@ -268,6 +313,11 @@ def _medical_source(value: str | None) -> str:
 
 def _natural_existing(section: str, record: dict, user_id: int):
     data = record["data"]
+    if section == "activities":
+        return db.session.execute(db.select(Activity).where(
+            Activity.user_id == user_id,
+            Activity.fingerprint_sha256 == _portable_activity_fingerprint(data),
+        )).scalar_one_or_none()
     if section == "exercises":
         return db.session.execute(db.select(Exercise).where(Exercise.user_id == user_id,
             Exercise.normalized_name == normalize_exercise_name(data["canonical_name"]))).scalar_one_or_none()
@@ -316,6 +366,10 @@ def _classify(section: str, record: dict, user: User, package_ids: dict[str, set
     reference_section = None
     references = [("plan_public_id", "plans"), ("session_public_id", "sessions"),
                   ("session_exercise_public_id", "session_exercises")]
+    if section in {"activity_laps", "activity_series", "plan_activity_links"}:
+        references.insert(0, ("activity_public_id", "activities"))
+    if section == "plan_actual_comparisons":
+        references.insert(0, ("plan_activity_link_public_id", "plan_activity_links"))
     if section == "lab_panels":
         references.append(("study_public_id", "medical_studies"))
     if section == "lab_results":
@@ -335,6 +389,11 @@ def _classify(section: str, record: dict, user: User, package_ids: dict[str, set
             return _plan_row(section, source_id, "broken_reference", "require_manual_resolution", None,
                 ["La referencia padre no existe en el paquete ni en la cuenta destino."])
     return _plan_row(section, source_id, "new", "import_as_new", source_id)
+
+
+def _portable_activity_fingerprint(data: dict) -> str:
+    stable = {key: value for key, value in data.items() if key not in {"route", "warnings", "title"}}
+    return hashlib.sha256(canonical_json_bytes(stable)).hexdigest()
 
 
 def _plan_row(section: str, source_id: str, classification: str, strategy: str,
@@ -489,6 +548,107 @@ def _apply_record(job, section, record, strategy, maps, created_paths):
     if section == "external_sources":
         _add_mapping(job, section, source_id, source_id, None, maps); return "skipped"
     force_new = strategy == "import_as_new" and next(item for item in job.plan_json["records"] if item["section"] == section and item["source_public_id"] == source_id)["classification"] not in {"new"}
+    if section == "activities":
+        destination, collision = _destination_uuid(Activity, source_id, user_id, force_new)
+        started = _datetime(data["started_at"], required=True)
+        ended = _datetime(data.get("ended_at"))
+        fingerprint = _portable_activity_fingerprint(data)
+        if force_new:
+            fingerprint = hashlib.sha256(f"{fingerprint}:{destination}".encode()).hexdigest()
+        canonical_data = {
+            "activity_type": str(data["original_type"])[:64], "started_at": data["started_at"],
+            "source_app": data.get("source_application") or "portable_import", "warnings": data.get("warnings") or [],
+        }
+        if ended: canonical_data["ended_at"] = data["ended_at"]
+        for source, target in (("duration_seconds", "duration_seconds"), ("moving_time_seconds", "moving_time_seconds"),
+            ("distance_meters", "distance_meters"), ("calories_kcal", "calories_kcal"),
+            ("ascent_meters", "elevation_gain_meters"), ("descent_meters", "elevation_loss_meters"),
+            ("average_heart_rate_bpm", "avg_heart_rate_bpm"), ("maximum_heart_rate_bpm", "max_heart_rate_bpm"),
+            ("average_cadence_rpm", "avg_cadence_rpm"), ("maximum_cadence_rpm", "max_cadence_rpm"),
+            ("average_speed_mps", "avg_speed_mps"), ("maximum_speed_mps", "max_speed_mps"),
+            ("average_power_watts", "avg_power_watts"), ("maximum_power_watts", "max_power_watts")):
+            if data.get(source) is not None: canonical_data[target] = data[source]
+        row = Activity(
+            public_id=destination, user_id=user_id, activity_type=str(data["original_type"])[:64],
+            discipline=data["discipline"], subtype=data.get("subtype"), original_type=data["original_type"],
+            title=data.get("title"), started_at=started, ended_at=ended,
+            timezone_name=data.get("timezone"), utc_offset_minutes=data.get("utc_offset_minutes"),
+            local_date=_date(data["local_date"]) if data.get("local_date") else started.date(),
+            duration_seconds=data.get("duration_seconds"), elapsed_time_seconds=data.get("elapsed_time_seconds"),
+            moving_time_seconds=data.get("moving_time_seconds"), distance_meters=_decimal(data.get("distance_meters")),
+            calories_kcal=_decimal(data.get("calories_kcal")), elevation_gain_meters=_decimal(data.get("ascent_meters")),
+            elevation_loss_meters=_decimal(data.get("descent_meters")), avg_heart_rate_bpm=data.get("average_heart_rate_bpm"),
+            max_heart_rate_bpm=data.get("maximum_heart_rate_bpm"), avg_cadence_rpm=_decimal(data.get("average_cadence_rpm")),
+            max_cadence_rpm=_decimal(data.get("maximum_cadence_rpm")), avg_speed_mps=_decimal(data.get("average_speed_mps")),
+            max_speed_mps=_decimal(data.get("maximum_speed_mps")), avg_power_watts=data.get("average_power_watts"),
+            max_power_watts=data.get("maximum_power_watts"), source_app=data.get("source_application"),
+            source_device=data.get("source_device"), source_type="uploaded", source_format=data.get("source_format", "unknown"),
+            fingerprint_sha256=fingerprint,
+            canonical_json={"schema_version": "1.0", "record_type": "activity", "user_id": user_id, "source_type": "uploaded", "data": canonical_data},
+            point_count=0, warnings_json=data.get("warnings") or [], metrics_provenance_json=data.get("metrics_provenance") or {},
+            environment=data.get("environment", "unknown"), status=data.get("status", "imported"),
+            revision=max(1, int(record.get("revision", 1))),
+        )
+        db.session.add(row); db.session.flush()
+        route = data.get("route") or {}
+        if route.get("included") and route.get("points"):
+            points = route["points"]
+            original_path, original_sha, _ = _write_json_gzip(user_id, f"{destination}.route.original.json.gz", {"format": "activity-route-v1", "points": points})
+            visible_path, visible_sha, _ = _write_json_gzip(user_id, f"{destination}.route.visible.json.gz", {"format": "activity-route-v1", "points": points})
+            created_paths.extend([Path(current_app.config["GENERATED_UPLOAD_ROOT"]) / original_path, Path(current_app.config["GENERATED_UPLOAD_ROOT"]) / visible_path])
+            db.session.add(ActivityRouteMetadata(
+                user_id=user_id, activity=row, state="available", policy=route.get("policy", "keep"),
+                original_storage_path=original_path, visible_storage_path=visible_path,
+                original_sha256=original_sha, visible_sha256=visible_sha,
+                original_point_count=len(points), visible_point_count=len(points),
+                redact_start_meters=int(route.get("redact_start_meters", 0)),
+                redact_end_meters=int(route.get("redact_end_meters", 0)),
+            ))
+        _add_mapping(job, section, source_id, destination, collision, maps); return "inserted"
+    if section == "activity_laps":
+        activity = _resolve(Activity, user_id, data["activity_public_id"], maps, "activities")
+        if activity is None: raise PortabilityImportError("broken_reference", "No se pudo remapear la actividad de un lap.", 409)
+        destination, collision = _destination_uuid(ActivityLap, source_id, user_id, force_new)
+        lap_index = int(data["lap_index"])
+        if db.session.execute(db.select(ActivityLap.id).where(ActivityLap.activity_id == activity.id, ActivityLap.lap_index == lap_index)).scalar_one_or_none():
+            lap_index = int(db.session.execute(db.select(db.func.coalesce(db.func.max(ActivityLap.lap_index), 0)).where(ActivityLap.activity_id == activity.id)).scalar_one()) + 1
+        row = ActivityLap(public_id=destination, user_id=user_id, activity=activity, lap_index=lap_index,
+            started_at=_datetime(data.get("started_at")), ended_at=_datetime(data.get("ended_at")),
+            duration_seconds=data.get("duration_seconds"), distance_meters=_decimal(data.get("distance_meters")),
+            metrics_json=data.get("metrics") or {}, provenance_json=data.get("provenance") or {})
+        db.session.add(row); _add_mapping(job, section, source_id, destination, collision, maps); return "inserted"
+    if section == "activity_series":
+        activity = _resolve(Activity, user_id, data["activity_public_id"], maps, "activities")
+        if activity is None: raise PortabilityImportError("broken_reference", "No se pudo remapear la actividad de una serie.", 409)
+        if activity.series_artifact:
+            _add_mapping(job, section, source_id, activity.series_artifact.public_id, "same_record", maps); return "skipped"
+        destination, collision = _destination_uuid(ActivitySeriesArtifact, source_id, user_id, force_new)
+        samples = data.get("samples") or []
+        relative, digest, size = _write_json_gzip(user_id, f"{activity.public_id}.series.json.gz", {"format": SERIES_FORMAT, "samples": samples})
+        created_paths.append(Path(current_app.config["GENERATED_UPLOAD_ROOT"]) / relative)
+        row = ActivitySeriesArtifact(public_id=destination, user_id=user_id, activity=activity,
+            storage_path=relative, sha256=digest, size_bytes=size, sample_count=len(samples),
+            fields_json=data.get("fields") or [], started_at=activity.started_at, ended_at=activity.ended_at)
+        activity.point_count = len(samples); db.session.add(row)
+        _add_mapping(job, section, source_id, destination, collision, maps); return "inserted"
+    if section == "plan_activity_links":
+        activity = _resolve(Activity, user_id, data["activity_public_id"], maps, "activities")
+        schedule = _resolve(PlannedWorkout, user_id, data["schedule_public_id"], maps, "schedules")
+        if activity is None or schedule is None: raise PortabilityImportError("broken_reference", "No se pudo remapear el vínculo plan-actividad.", 409)
+        if activity.plan_link:
+            _add_mapping(job, section, source_id, activity.plan_link.public_id, "same_record", maps); return "skipped"
+        destination, collision = _destination_uuid(PlanActivityLink, source_id, user_id, force_new)
+        row = PlanActivityLink(public_id=destination, user_id=user_id, activity=activity, planned_workout=schedule,
+            state=data["state"], evidence_json=data.get("evidence") or {}, revision=max(1, int(record.get("revision", 1))))
+        db.session.add(row); _add_mapping(job, section, source_id, destination, collision, maps); return "inserted"
+    if section == "plan_actual_comparisons":
+        link = _resolve(PlanActivityLink, user_id, data["plan_activity_link_public_id"], maps, "plan_activity_links")
+        if link is None: raise PortabilityImportError("broken_reference", "No se pudo remapear la comparación plan-actividad.", 409)
+        destination, collision = _destination_uuid(PlanActualComparisonSnapshot, source_id, user_id, force_new)
+        row = PlanActualComparisonSnapshot(public_id=destination, user_id=user_id, link=link,
+            status=data["status"], activity_revision=int(data["activity_revision"]), plan_revision=int(data["plan_revision"]),
+            comparison_json=data["comparison"])
+        db.session.add(row); _add_mapping(job, section, source_id, destination, collision, maps); return "inserted"
     if section == "medical_studies":
         destination, collision = _destination_uuid(MedicalStudy, source_id, user_id, force_new)
         row = MedicalStudy(

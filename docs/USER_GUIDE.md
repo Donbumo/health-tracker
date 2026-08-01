@@ -1,5 +1,13 @@
 # Guía de usuario
 
+## Actividades FIT/GPX/TCX Alpha 2.0
+
+En Android abre **Historial → Actividades**. Elige primero si conservar, recortar extremos o descartar la ruta; después pulsa **Importar FIT/GPX/TCX**. Puedes seleccionar el archivo sin red: la app valida extensión/tamaño, calcula un hash corto visible y deja el upload en cola. Al reconectar espera a que el estado sea “Inspeccionada” y revisa warnings antes de **Confirmar**. Cancelar elimina la copia parcial local.
+
+El detalle muestra resumen, laps, gráfica reducida, ruta local y vínculo con un entrenamiento planeado. Una sugerencia de plan no es automática: confírmala o recházala. **Eliminar ruta** conserva actividad/laps pero elimina ubicación extraída; **Archivar** solo oculta de recientes. JSON se comparte sin ruta por defecto; GPX visible requiere una acción explícita. Las comparaciones son descriptivas, no recomendaciones.
+
+En web, **Salud y actividad → Actividades** permite consultar las mismas importaciones normalizadas, laps, gráfica y trazado local. Los scripts de `scripts/activities/` sirven para QA/escritorio; nunca agregues sus salidas con datos personales al repositorio.
+
 ## Objetivos y recordatorios Alpha 1.8
 
 En Android abre **Ajustes → Objetivos y recordatorios**. Puedes crear objetivos personales, pausarlos o archivarlos y guardar reglas aun sin red. Una regla nueva parte desactivada para que revises hora, días y quiet hours. Al activarla por primera vez Android explica y, sólo entonces, puede solicitar permiso; si lo deniegas la regla permanece guardada y puedes abrir los ajustes después.

@@ -1,5 +1,18 @@
 # Checklist de release alpha privada
 
+## Alpha 2.0 — intercambio de actividades
+
+- [x] FIT/GPX/TCX → `health-tracker-activity-v1` con detección real, límites, XML endurecido, procedencia y sin valores inventados.
+- [x] API Bearer owner-only con UUID, inspect/apply, idempotencia, revisión, paginación, filtros, laps, series, ruta, exports, links y comparación.
+- [x] Alembic 0036 aditiva/reversible; series/rutas fuera de DB y archivos originales privados con nombres aleatorios.
+- [x] Dedupe exacto automático y probable/posible conservador; strong link verificable y weak link bajo confirmación.
+- [x] Ruta keep/drop/redact/delete, trazado local y opt-ins independientes de coordenadas/series en portable.
+- [x] Android code 20/name `2.0.0-alpha01`, Room 10, SAF, FileProvider, WorkManager único y cinco pestañas.
+- [x] Cuatro CLI de actividad, cuatro documentos canónicos y schemas activity/portable locales.
+- [x] Gate final: backend local 716/9; MariaDB 92/92 con migración, concurrencia y E2E; Android lint, 166 JVM dos veces, APK y androidTest compilable, sin ejecutar `connectedDebugAndroidTest`.
+- [x] APK code 20/name `2.0.0-alpha01-debug`, 18.197.013 bytes, firma v2, SHA-256 `C32AC0352FDE62EC9144BABEB4A38667E0C9E2E818289E451CC2839AADED21D7` y escaneo sensible limpio.
+- [ ] QA físico/manual en AVD/dispositivo separado; no se considera realizado por compilación automatizada.
+
 ## Alpha 1.9 — estudios médicos, laboratorio y documentos
 
 - [x] API Bearer owner-only con UUID, idempotencia, revisiones, 404 cruzado, paginación/filtros y descargas `no-store`.

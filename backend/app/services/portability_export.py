@@ -12,12 +12,14 @@ from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.models import (
+    Activity, ActivityLap, PlanActivityLink, PlanActualComparisonSnapshot,
     DailyEnergy, DailyNutrition, Exercise, FoodProduct, NutritionItem, NutritionMeal, PlannedWorkout,
     PortableArtifact, PortableExportJob, TrainingPlan, TrainingPlanWorkout,
     TrainingSession, TrainingSessionExercise, TrainingSet, UploadedFile, User,
     UserGoal, ReminderRule, WeighIn,
     LabPanel, LabResult, MedicalDocument, MedicalStudy,
 )
+from app.services.activity_interchange import activity_route, activity_series
 from app.services.portable_archive import (
     ALL_SECTIONS, MEDIA_TYPE, PortableArchiveError, PortableArchiveWriter,
     canonical_json_bytes, safe_filename, scrub_portable, sha256_path,
@@ -25,7 +27,7 @@ from app.services.portable_archive import (
 
 
 PORTABLE_NAMESPACE = uuid.UUID("9b1de0a5-73e7-4eb7-a2ac-e9dd6cfed24a")
-DEFAULT_SECTIONS = tuple(section for section in ALL_SECTIONS if section not in {"profile", "attachments", "external_sources"})
+DEFAULT_SECTIONS = tuple(section for section in ALL_SECTIONS if section not in {"profile", "attachments", "external_sources", "activity_series"})
 
 
 class PortabilityExportError(ValueError):
@@ -98,8 +100,8 @@ def _parse_date(value, field: str) -> date | None:
         raise PortabilityExportError("invalid_date", f"{field} debe usar YYYY-MM-DD.") from error
 
 
-def _request(payload: dict) -> tuple[list[str], date | None, date | None, bool, bool, bool]:
-    allowed = {"sections", "date_from", "date_to", "include_attachments", "include_medical_attachments", "include_identifiable_profile", "format"}
+def _request(payload: dict) -> tuple[list[str], date | None, date | None, bool, bool, bool, bool, bool]:
+    allowed = {"sections", "date_from", "date_to", "include_attachments", "include_medical_attachments", "include_identifiable_profile", "include_activity_series", "include_activity_coordinates", "format"}
     if set(payload) - allowed:
         raise PortabilityExportError("invalid_request", "La solicitud contiene campos no reconocidos.")
     if payload.get("format", "health-tracker-portable-v1") != "health-tracker-portable-v1":
@@ -116,7 +118,9 @@ def _request(payload: dict) -> tuple[list[str], date | None, date | None, bool, 
     include_attachments = payload.get("include_attachments", False)
     include_medical_attachments = payload.get("include_medical_attachments", False)
     identifiable = payload.get("include_identifiable_profile", False)
-    if type(include_attachments) is not bool or type(include_medical_attachments) is not bool or type(identifiable) is not bool:
+    include_activity_series = payload.get("include_activity_series", False)
+    include_activity_coordinates = payload.get("include_activity_coordinates", False)
+    if any(type(value) is not bool for value in (include_attachments, include_medical_attachments, identifiable, include_activity_series, include_activity_coordinates)):
         raise PortabilityExportError("invalid_request", "Las opciones de privacidad deben ser booleanas.")
     if "attachments" in sections and not (include_attachments or include_medical_attachments):
         raise PortabilityExportError("attachments_not_confirmed", "Los attachments requieren selección explícita.")
@@ -126,12 +130,20 @@ def _request(payload: dict) -> tuple[list[str], date | None, date | None, bool, 
         for required in ("medical_studies", "lab_panels", "lab_results", "medical_documents_metadata"):
             if required not in sections:
                 sections.append(required)
+    if include_activity_series and "activity_series" not in sections:
+        sections.append("activity_series")
+    if "activity_series" in sections and not include_activity_series:
+        raise PortabilityExportError("activity_series_not_confirmed", "Las series de actividad requieren selección explícita por su tamaño.")
+    if include_activity_coordinates and "activities" not in sections:
+        raise PortabilityExportError("activity_coordinates_without_activities", "Las coordenadas requieren incluir la sección activities.")
+    if any(section in sections for section in ("activity_laps", "plan_activity_links", "plan_actual_comparisons", "activity_series")) and "activities" not in sections:
+        sections.append("activities")
     if "profile" in sections and not identifiable:
         raise PortabilityExportError("profile_not_confirmed", "El perfil identificable requiere selección explícita.")
     start, end = _parse_date(payload.get("date_from"), "date_from"), _parse_date(payload.get("date_to"), "date_to")
     if start and end and start > end:
         raise PortabilityExportError("invalid_date_range", "date_from no puede ser posterior a date_to.")
-    return sections, start, end, include_attachments, include_medical_attachments, identifiable
+    return sections, start, end, include_attachments, include_medical_attachments, identifiable, include_activity_series, include_activity_coordinates
 
 
 def _query(model, user_id: int, *order, loaders=()):
@@ -151,12 +163,90 @@ def _serialize_records(
     identifiable: bool,
     include_attachments: bool,
     include_medical_attachments: bool,
+    include_activity_series: bool,
+    include_activity_coordinates: bool,
 ) -> tuple[dict[str, list[dict]], dict[str, Path]]:
     output: dict[str, list[dict]] = {}
     attachment_files: dict[str, Path] = {}
     sources: dict[str, set[str]] = {}
     medical_upload_ids: set[int] = set()
     medical_attachment_ids: dict[int, str] = {}
+
+    activity_rows = [
+        row for row in _query(
+            Activity, user.id, Activity.started_at, Activity.public_id,
+            loaders=(
+                selectinload(Activity.laps), selectinload(Activity.series_artifact),
+                selectinload(Activity.route_metadata),
+                selectinload(Activity.plan_link).selectinload(PlanActivityLink.planned_workout),
+                selectinload(Activity.plan_link).selectinload(PlanActivityLink.comparisons),
+            ),
+        ) if row.public_id and _in_range(row.started_at, start, end)
+    ]
+    if "activities" in sections:
+        output["activities"] = []
+        for row in activity_rows:
+            route_data = {"included": False, "state": row.route_metadata.state if row.route_metadata else "unavailable"}
+            if include_activity_coordinates and row.route_metadata and row.route_metadata.state == "available":
+                visible = activity_route(row, user.id)
+                route_data = {
+                    "included": visible["present"], "policy": visible.get("policy"),
+                    "redact_start_meters": visible.get("redact_start_meters", 0),
+                    "redact_end_meters": visible.get("redact_end_meters", 0),
+                    "points": visible.get("points", []),
+                }
+            output["activities"].append(_record("activities", row.public_id, {
+                "discipline": row.discipline, "subtype": row.subtype,
+                "original_type": row.original_type or row.activity_type, "title": row.title,
+                "started_at": row.started_at, "ended_at": row.ended_at,
+                "timezone": row.timezone_name, "utc_offset_minutes": row.utc_offset_minutes,
+                "local_date": row.local_date, "duration_seconds": row.duration_seconds,
+                "elapsed_time_seconds": row.elapsed_time_seconds,
+                "moving_time_seconds": row.moving_time_seconds,
+                "distance_meters": row.distance_meters, "calories_kcal": row.calories_kcal,
+                "ascent_meters": row.elevation_gain_meters, "descent_meters": row.elevation_loss_meters,
+                "average_heart_rate_bpm": row.avg_heart_rate_bpm, "maximum_heart_rate_bpm": row.max_heart_rate_bpm,
+                "average_cadence_rpm": row.avg_cadence_rpm, "maximum_cadence_rpm": row.max_cadence_rpm,
+                "average_speed_mps": row.avg_speed_mps, "maximum_speed_mps": row.max_speed_mps,
+                "average_power_watts": row.avg_power_watts, "maximum_power_watts": row.max_power_watts,
+                "environment": row.environment, "status": row.status,
+                "source_format": row.source_format,
+                "source_application": row.source_app, "source_device": row.source_device,
+                "metrics_provenance": row.metrics_provenance_json or {},
+                "warnings": row.warnings_json or [], "route": route_data,
+            }, row.revision))
+    if "activity_laps" in sections:
+        output["activity_laps"] = [_record("activity_laps", lap.public_id, {
+            "activity_public_id": row.public_id, "lap_index": lap.lap_index,
+            "started_at": lap.started_at, "ended_at": lap.ended_at,
+            "duration_seconds": lap.duration_seconds, "distance_meters": lap.distance_meters,
+            "metrics": lap.metrics_json or {}, "provenance": lap.provenance_json or {},
+        }) for row in activity_rows for lap in row.laps]
+    if "plan_activity_links" in sections:
+        output["plan_activity_links"] = [_record("plan_activity_links", row.plan_link.public_id, {
+            "activity_public_id": row.public_id,
+            "schedule_public_id": row.plan_link.planned_workout.public_id,
+            "state": row.plan_link.state, "evidence": row.plan_link.evidence_json or {},
+        }, row.plan_link.revision) for row in activity_rows if row.plan_link and row.plan_link.state != "detached"]
+    if "plan_actual_comparisons" in sections:
+        links = [row.plan_link for row in activity_rows if row.plan_link]
+        output["plan_actual_comparisons"] = [_record("plan_actual_comparisons", snapshot.public_id, {
+            "plan_activity_link_public_id": link.public_id, "status": snapshot.status,
+            "activity_revision": snapshot.activity_revision, "plan_revision": snapshot.plan_revision,
+            "comparison": snapshot.comparison_json,
+        }) for link in links for snapshot in link.comparisons]
+    if "activity_series" in sections and include_activity_series:
+        output["activity_series"] = []
+        for row in activity_rows:
+            if not row.series_artifact:
+                continue
+            page = activity_series(row, user.id, offset=0, limit=2000, downsample=None)
+            if page["sample_count"] > len(page["items"]):
+                raise PortabilityExportError("activity_series_too_large", "Una serie supera el límite portable de 2000 muestras.", 413)
+            output["activity_series"].append(_record("activity_series", row.series_artifact.public_id, {
+                "activity_public_id": row.public_id, "format": "activity-series-v1",
+                "fields": page.get("fields", []), "samples": page["items"],
+            }))
 
     if "profile" in sections:
         output["profile"] = [_record("profile", _stable_uuid("profile", user.public_id), {
@@ -453,10 +543,11 @@ def _serialize_records(
 def create_export(user: User, payload: dict, raw_idempotency_key: str) -> tuple[PortableExportJob, bool]:
     if not isinstance(raw_idempotency_key, str) or not raw_idempotency_key.strip() or len(raw_idempotency_key) > 200:
         raise PortabilityExportError("idempotency_required", "Se requiere Idempotency-Key.")
-    sections, start, end, include_attachments, include_medical_attachments, identifiable = _request(payload)
+    sections, start, end, include_attachments, include_medical_attachments, identifiable, include_activity_series, include_activity_coordinates = _request(payload)
     normalized = {"sections": sections, "date_from": start.isoformat() if start else None, "date_to": end.isoformat() if end else None,
         "include_attachments": include_attachments, "include_medical_attachments": include_medical_attachments,
-        "include_identifiable_profile": identifiable, "format": "health-tracker-portable-v1"}
+        "include_identifiable_profile": identifiable, "include_activity_series": include_activity_series,
+        "include_activity_coordinates": include_activity_coordinates, "format": "health-tracker-portable-v1"}
     request_hash = _hash(canonical_json_bytes(normalized))
     key_hash = _hash(raw_idempotency_key.strip().encode("utf-8"))
     existing = db.session.execute(db.select(PortableExportJob).where(
@@ -491,6 +582,7 @@ def create_export(user: User, payload: dict, raw_idempotency_key: str) -> tuple[
         records, attachments = _serialize_records(
             user, sections, start, end, identifiable,
             include_attachments, include_medical_attachments,
+            include_activity_series, include_activity_coordinates,
         )
         omitted = [section for section in ALL_SECTIONS if section not in records]
         manifest = PortableArchiveWriter(Path(current_app.config["SCHEMA_ROOT"])).write(

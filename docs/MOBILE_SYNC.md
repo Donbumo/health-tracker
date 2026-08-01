@@ -1,5 +1,7 @@
 # Mobile Sync Foundation
 
+Alpha 2.0 no añade actividades al cursor/push genérico. Usa endpoints agregados Bearer bajo `/api/v1/mobile/activities`, UUID público, idempotencia y revisión optimista. Android mantiene `activity_operations` y WorkManager separado porque el upload multipart y la barrera inspect→apply no son una mutación JSON de Mobile Sync. La caché sigue aislada por cuenta+servidor; un recurso ajeno responde 404.
+
 Mobile Sync 1.0 extiende Bearer API v1 con planned workouts, completed upload, bootstrap/pull/push/status, revisiones, tombstones, cursor por dispositivo e idempotencia.
 
 `client_submission_id` pertenece al flujo web; no sustituye ni colisiona con `client_event_id` móvil. Las preferencias web y el Import Hub tampoco amplían las entidades sincronizables.

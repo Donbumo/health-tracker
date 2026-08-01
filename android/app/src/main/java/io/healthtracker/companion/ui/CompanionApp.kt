@@ -75,7 +75,8 @@ private enum class Destination(val route: String, val label: String, val symbol:
     STEPS_HISTORY("steps_history", "Pasos", ""), EXTERNAL_SOURCES("external_sources", "Fuentes externas", ""),
     DATA_PRIVACY("data_privacy", "Datos y privacidad", ""), ENGAGEMENT("engagement", "Objetivos y recordatorios", ""),
     MEDICAL_RECORDS("medical_records", "Estudios médicos", ""), MEDICAL_DETAIL("medical_detail", "Estudio médico", ""),
-    MEDICAL_HISTORY("medical_history", "Historial de laboratorio", "")
+    MEDICAL_HISTORY("medical_history", "Historial de laboratorio", ""),
+    ACTIVITIES("activities", "Actividades", ""), ACTIVITY_DETAIL("activity_detail", "Actividad", "")
 }
 
 @Composable
@@ -218,7 +219,7 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            if (route !in setOf(Destination.WORKOUT.route, Destination.PLAN_DETAIL.route, Destination.PLAN_WORKOUT.route, Destination.HISTORY_DETAIL.route, Destination.EXERCISE_DETAIL.route, Destination.HEALTH_DAY.route, Destination.BODY_HISTORY.route, Destination.NUTRITION_DAY.route, Destination.FOOD_CATALOG.route, Destination.STEPS_HISTORY.route, Destination.EXTERNAL_SOURCES.route, Destination.DATA_PRIVACY.route, Destination.ENGAGEMENT.route, Destination.MEDICAL_RECORDS.route, Destination.MEDICAL_DETAIL.route, Destination.MEDICAL_HISTORY.route)) NavigationBar {
+            if (route !in setOf(Destination.WORKOUT.route, Destination.PLAN_DETAIL.route, Destination.PLAN_WORKOUT.route, Destination.HISTORY_DETAIL.route, Destination.EXERCISE_DETAIL.route, Destination.HEALTH_DAY.route, Destination.BODY_HISTORY.route, Destination.NUTRITION_DAY.route, Destination.FOOD_CATALOG.route, Destination.STEPS_HISTORY.route, Destination.EXTERNAL_SOURCES.route, Destination.DATA_PRIVACY.route, Destination.ENGAGEMENT.route, Destination.MEDICAL_RECORDS.route, Destination.MEDICAL_DETAIL.route, Destination.MEDICAL_HISTORY.route, Destination.ACTIVITIES.route, Destination.ACTIVITY_DETAIL.route)) NavigationBar {
                 listOf(Destination.TODAY, Destination.PLAN, Destination.HISTORY, Destination.PROGRESS, Destination.SETTINGS).forEach { destination ->
                     NavigationBarItem(
                         selected = route == destination.route,
@@ -252,9 +253,9 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
                 viewModel,
                 close = { viewModel.selectPlanWorkout(null); nav.popBackStack() },
             ) }
-            composable(Destination.HISTORY.route) { HistoryScreen(viewModel) { id ->
+            composable(Destination.HISTORY.route) { HistoryScreen(viewModel, { id ->
                 viewModel.openHistory(id); nav.navigate(Destination.HISTORY_DETAIL.route)
-            } }
+            }, { nav.navigate(Destination.ACTIVITIES.route) }) }
             composable(Destination.HISTORY_DETAIL.route) { HistoryDetailScreen(viewModel) {
                 viewModel.closeHistory(); nav.popBackStack()
             } }
@@ -288,6 +289,12 @@ private fun Home(viewModel: CompanionViewModel, snackbar: SnackbarHostState) {
                 viewModel.selectMedicalHistory(key); nav.navigate(Destination.MEDICAL_HISTORY.route)
             } }
             composable(Destination.MEDICAL_HISTORY.route) { MedicalHistoryScreen(viewModel) { nav.popBackStack() } }
+            composable(Destination.ACTIVITIES.route) { ActivitiesScreen(viewModel, { nav.popBackStack() }) { id ->
+                viewModel.openActivity(id); nav.navigate(Destination.ACTIVITY_DETAIL.route)
+            } }
+            composable(Destination.ACTIVITY_DETAIL.route) { ActivityDetailScreen(viewModel) {
+                viewModel.openActivity(null); nav.popBackStack()
+            } }
         }
     }
 }
@@ -1714,7 +1721,7 @@ private fun MetricField(
 }
 
 @Composable
-private fun HistoryScreen(viewModel: CompanionViewModel, openDetail: (String) -> Unit) {
+private fun HistoryScreen(viewModel: CompanionViewModel, openDetail: (String) -> Unit, openActivities: () -> Unit) {
     val history by viewModel.history.collectAsState()
     val connected by viewModel.connected.collectAsState()
     val refreshing by viewModel.historyRefreshing.collectAsState()
@@ -1732,6 +1739,7 @@ private fun HistoryScreen(viewModel: CompanionViewModel, openDetail: (String) ->
         contentPadding = PaddingValues(vertical = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item { Text("Historial", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.semantics { heading() }) }
+        item { OutlinedButton(onClick = openActivities, modifier = Modifier.fillMaxWidth().heightIn(min = 50.dp)) { Text("Actividades FIT, GPX y TCX") } }
         item {
             Text(if (connected) "Room muestra la copia local mientras se actualiza." else "Sin conexión: datos guardados en este dispositivo.")
             if (pending > 0) Text("Hay cambios pendientes; el historial se actualizará al sincronizar.")

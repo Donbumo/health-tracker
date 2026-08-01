@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/activity_v1.schema.json",
+  "title": "Health Tracker Activity v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "formatVersion", "activity", "summary", "laps", "intervals", "sampleSeries", "route", "events", "sourceReference", "warnings"],
+  "properties": {
+    "format": {"const": "health-tracker-activity-v1"},
+    "formatVersion": {"const": "1.0"},
+    "activity": {"$ref": "#/$defs/activity"},
+    "summary": {"type": "object", "additionalProperties": {"$ref": "#/$defs/metric"}},
+    "laps": {"type": "array", "maxItems": 2000, "items": {"$ref": "#/$defs/lap"}},
+    "intervals": {"type": "array", "maxItems": 5000, "items": {"type": "object"}},
+    "sampleSeries": {"$ref": "#/$defs/seriesMetadata"},
+    "series": {"$ref": "#/$defs/series"},
+    "route": {"$ref": "#/$defs/route"},
+    "events": {"type": "array", "maxItems": 10000, "items": {"type": "object"}},
+    "sourceReference": {"$ref": "#/$defs/sourceReference"},
+    "deviceReference": {"type": "object", "additionalProperties": false, "properties": {"manufacturer": {"type": "string", "maxLength": 128}, "product": {"type": "string", "maxLength": 128}}},
+    "planLink": {"type": "object", "additionalProperties": true},
+    "comparison": {"type": "object", "additionalProperties": true},
+    "warnings": {"type": "array", "maxItems": 100, "items": {"type": "string", "maxLength": 300}}
+  },
+  "$defs": {
+    "activity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["publicId", "discipline", "originalType", "startTime", "localDate", "environment", "status", "sourceFormat", "revision"],
+      "properties": {
+        "publicId": {"type": "string", "format": "uuid"},
+        "discipline": {"enum": ["cycling", "running", "walking", "hiking", "strength", "indoor_cycling", "other", "unknown"]},
+        "subtype": {"type": "string", "maxLength": 64},
+        "originalType": {"type": "string", "minLength": 1, "maxLength": 128},
+        "title": {"type": "string", "maxLength": 200},
+        "startTime": {"type": "string", "format": "date-time"},
+        "endTime": {"type": "string", "format": "date-time"},
+        "timezone": {"type": "string", "maxLength": 64},
+        "utcOffsetMinutes": {"type": "integer", "minimum": -840, "maximum": 840},
+        "localDate": {"type": "string", "format": "date"},
+        "environment": {"enum": ["indoor", "outdoor", "unknown"]},
+        "status": {"enum": ["uploaded", "inspecting", "ready_to_import", "imported", "invalid", "duplicate", "archived"]},
+        "sourceFormat": {"enum": ["fit", "gpx", "tcx", "json", "csv", "unknown"]},
+        "sourceApplication": {"type": "string", "maxLength": 128},
+        "sourceDevice": {"type": "string", "maxLength": 128},
+        "originalFileId": {"type": "string", "format": "uuid"},
+        "contentFingerprint": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "revision": {"type": "integer", "minimum": 1},
+        "createdAt": {"type": "string", "format": "date-time"},
+        "updatedAt": {"type": "string", "format": "date-time"}
+      }
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "unit", "provenance"],
+      "properties": {"value": {"type": "number"}, "unit": {"type": "string", "minLength": 1, "maxLength": 16}, "provenance": {"enum": ["source_provided", "derived_exact", "derived_estimate", "unavailable"]}}
+    },
+    "lap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["publicId", "index", "metrics", "provenance"],
+      "properties": {
+        "publicId": {"type": "string", "format": "uuid"}, "index": {"type": "integer", "minimum": 1},
+        "startTime": {"type": "string", "format": "date-time"}, "endTime": {"type": "string", "format": "date-time"},
+        "durationSeconds": {"type": "number", "minimum": 0}, "distanceMeters": {"type": "number", "minimum": 0},
+        "metrics": {"type": "object", "additionalProperties": {"type": ["string", "number", "boolean", "null"]}},
+        "provenance": {"oneOf": [{"enum": ["source_provided", "derived_exact", "derived_estimate", "unavailable"]}, {"type": "object", "additionalProperties": {"enum": ["source_provided", "derived_exact", "derived_estimate", "unavailable"]}}]}
+      }
+    },
+    "seriesMetadata": {
+      "type": "object", "additionalProperties": false, "required": ["format", "sampleCount", "fields"],
+      "properties": {"format": {"const": "activity-series-v1"}, "sampleCount": {"type": "integer", "minimum": 0}, "fields": {"type": "array", "uniqueItems": true, "items": {"type": "string"}}, "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "compression": {"enum": ["gzip", "none"]}}
+    },
+    "series": {
+      "type": "object", "additionalProperties": false, "required": ["format", "samples"],
+      "properties": {"format": {"const": "activity-series-v1"}, "samples": {"type": "array", "maxItems": 100000, "items": {"$ref": "#/$defs/sample"}}, "truncated": {"type": "boolean"}, "totalSampleCount": {"type": "integer", "minimum": 0}}
+    },
+    "sample": {
+      "type": "object", "additionalProperties": false, "minProperties": 1,
+      "properties": {"t": {"type": "number"}, "distance": {"type": "number", "minimum": 0}, "elevation": {"type": "number"}, "speed": {"type": "number", "minimum": 0}, "heart_rate": {"type": "number", "minimum": 0, "maximum": 255}, "cadence": {"type": "number", "minimum": 0, "maximum": 300}, "power": {"type": "number", "minimum": 0}, "temperature": {"type": "number"}}
+    },
+    "route": {
+      "type": "object", "additionalProperties": false, "required": ["present"],
+      "properties": {"present": {"type": "boolean"}, "state": {"enum": ["available", "removed", "unavailable"]}, "policy": {"enum": ["keep", "drop", "redact"]}, "pointCount": {"type": "integer", "minimum": 0}, "distanceMeters": {"type": "number", "minimum": 0}, "redactStartMeters": {"type": "integer", "minimum": 0}, "redactEndMeters": {"type": "integer", "minimum": 0}, "points": {"type": "array", "maxItems": 100000, "items": {"$ref": "#/$defs/routePoint"}}}
+    },
+    "routePoint": {
+      "type": "object", "additionalProperties": false, "required": ["lat", "lon"],
+      "properties": {"t": {"type": "number"}, "lat": {"type": "number", "minimum": -90, "maximum": 90}, "lon": {"type": "number", "minimum": -180, "maximum": 180}, "distance": {"type": "number", "minimum": 0}, "elevation": {"type": "number"}}
+    },
+    "sourceReference": {
+      "type": "object", "additionalProperties": false, "required": ["format"],
+      "properties": {"format": {"enum": ["fit", "gpx", "tcx", "json", "csv", "unknown"]}, "application": {"type": "string", "maxLength": 128}, "originalFileId": {"type": "string", "format": "uuid"}, "sourceActivityId": {"type": "string", "maxLength": 128}, "plannedWorkoutId": {"type": "string", "format": "uuid"}, "packageId": {"type": "string", "format": "uuid"}, "deliveryId": {"type": "string", "format": "uuid"}, "clientEventId": {"type": "string", "format": "uuid"}}
+    }
+  }
+}

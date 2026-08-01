@@ -11,3 +11,4 @@ from app.api_v1 import mobile_health_routes  # noqa: E402,F401
 from app.api_v1 import portability_routes  # noqa: E402,F401
 from app.api_v1 import engagement_routes  # noqa: E402,F401
 from app.api_v1 import medical_routes  # noqa: E402,F401
+from app.api_v1 import activity_routes  # noqa: E402,F401

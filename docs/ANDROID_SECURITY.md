@@ -4,7 +4,11 @@
 
 Toda caché médica, ruta/serie y export de actividad deriva el nombre de un SHA-256 opaco separado por propósito; un UUID/ID remoto nunca se interpola como path. La escritura valida el parent canónico y un export fallido elimina su parcial. La cancelación estructurada se propaga desde gateway/colas/workers para que logout o cambio de servidor no se conviertan en retry silencioso.
 
-El auditor Beta inspecciona package, versión, SDK, debuggable, firma v2/v3, permisos, ZIP y patrones sensibles sin imprimir coincidencias. Los reportes viven fuera del repositorio y solo contienen nombres de patrones, conteos y clasificación.
+El upgrade real reprodujo una ventana de durabilidad: `SharedPreferences.apply()` podía no escribir el refresh token cifrado antes de un force-stop inmediato. Las mutaciones críticas de `SecureTokenStore` (`set`, `clear` y binding legacy) usan ahora `commit=true`; la regresión verifica el archivo persistido sin imprimir el token. La APK anterior y Beta compartieron el certificado debug esperado, y `adb install -r` conservó Keystore, server identity, sesión y datos ficticios sin uninstall ni `pm clear`.
+
+El inspector portable normaliza `ZipException`: las rutas inseguras se clasifican como `unsafe_path` y el resto como `invalid_archive`, sin revelar el nombre conflictivo. La instrumentación conectada confirmó providers no exportados, aislamiento y contratos de archivos, pero chooser, grants persistibles/revocación y la matriz manual de formatos siguen pendientes.
+
+El auditor Beta inspeccionó package, versión, SDK, debuggable, firma v2/v3, permisos, ZIP y patrones sensibles sin imprimir coincidencias. La APK final tiene 173 entradas, 19 permisos, firma v2 y cero hallazgos bloqueantes. Los reportes viven fuera del repositorio y solo contienen nombres de patrones, conteos y clasificación.
 
 ## Ubicación de actividades Alpha 2.0
 

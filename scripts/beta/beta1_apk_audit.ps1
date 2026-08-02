@@ -36,8 +36,9 @@ try {
     try { $aapt = Find-Beta1AndroidTool $resolvedSdk 'build-tools' 'aapt' }
     catch { $aapt = Find-Beta1AndroidTool $resolvedSdk 'build-tools' 'aapt2' }
     $apksigner = Find-Beta1AndroidTool $resolvedSdk 'build-tools' 'apksigner'
-    $badging = (& $aapt dump badging $resolvedApk 2>&1) -join "`n"
-    if ($LASTEXITCODE -ne 0) { throw 'aapt_badging_failed' }
+    $badgingResult = Invoke-Beta1NativeCommand $aapt @('dump', 'badging', $resolvedApk)
+    $badging = $badgingResult.Output -join "`n"
+    if ($badgingResult.ExitCode -ne 0) { throw 'aapt_badging_failed' }
     $packageMatch = [regex]::Match($badging, "package: name='([^']+)' versionCode='([^']+)' versionName='([^']*)'")
     $minMatch = [regex]::Match($badging, "sdkVersion:'([^']+)'")
     $targetMatch = [regex]::Match($badging, "targetSdkVersion:'([^']+)'")
@@ -47,8 +48,9 @@ try {
         if ($packageMatch.Groups[3].Value -ne '2.0.0-beta01-debug') { throw 'apk_version_name_mismatch' }
     }
 
-    $signature = (& $apksigner verify --verbose $resolvedApk 2>&1) -join "`n"
-    if ($LASTEXITCODE -ne 0) { throw 'apk_signature_invalid' }
+    $signatureResult = Invoke-Beta1NativeCommand $apksigner @('verify', '--verbose', $resolvedApk)
+    $signature = $signatureResult.Output -join "`n"
+    if ($signatureResult.ExitCode -ne 0) { throw 'apk_signature_invalid' }
     $v2 = $signature -match '(?im)Verified using v2 scheme.*:\s*true'
     $v3 = $signature -match '(?im)Verified using v3 scheme.*:\s*true'
     if (-not $v2 -and -not $v3) { throw 'apk_modern_signature_missing' }

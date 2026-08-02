@@ -2,6 +2,7 @@ package io.healthtracker.companion.core.security
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -30,6 +31,8 @@ class SecureTokenStoreTest {
             it.setTokens("access-qa", "refresh-secret-qa", "https://nas-a.example")
         }
         val restored = SecureTokenStore(context)
+        val persisted = File(context.applicationInfo.dataDir, "shared_prefs/secure_session_v1.xml")
+        assertEquals(true, persisted.readText().contains("refresh_cipher"))
         assertEquals("refresh-secret-qa", restored.refreshToken("https://nas-a.example"))
         assertNull(restored.refreshToken("https://nas-b.example"))
         assertNull(restored.accessToken("https://nas-a.example"))

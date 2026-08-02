@@ -26,7 +26,7 @@ class CompanionHealthMigrationTest {
         val name = "alpha14-health-immediate"
         helper.createDatabase(name, 3).apply {
             execSQL(
-                "INSERT INTO mobile_plans(accountScope,publicId,name,description,status,revision,activeVersionId,archivedAt,syncStatus,createdAt,updatedAt,lastErrorCode) " +
+                "INSERT INTO mobile_plans(accountScope,publicId,name,description,status,revision,activeVersionId,activeVersion,syncStatus,createdAt,updatedAt,archivedAt) " +
                     "VALUES('qa-scope','qa-plan','Plan QA',NULL,'active',1,NULL,NULL,'synced','2026-07-26T00:00:00Z','2026-07-26T00:00:00Z',NULL)",
             )
             close()

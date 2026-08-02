@@ -34,8 +34,10 @@ class CompanionDatabaseTest {
     private lateinit var database: CompanionDatabase
 
     @Before fun create() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        SyncScheduler.cancelAll()
         database = Room.inMemoryDatabaseBuilder(
-            ApplicationProvider.getApplicationContext(), CompanionDatabase::class.java,
+            context, CompanionDatabase::class.java,
         ).allowMainThreadQueries().build()
     }
 
@@ -260,16 +262,18 @@ class CompanionDatabaseTest {
         val server = MockWebServer().also { it.start() }
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val preferences = PreferenceStore(context)
-        val tokens = SecureTokenStore(context).also { it.clear(); it.setTokens("qa-access", "qa-refresh") }
+        val tokens = SecureTokenStore(context).also { it.clear() }
         try {
-            preferences.configureServer(server.url("/").toString().trimEnd('/'), true)
+            val serverUrl = server.url("/").toString().trimEnd('/')
+            preferences.configureServer(serverUrl, true)
+            tokens.setTokens("qa-access", "qa-refresh", serverUrl)
             preferences.setAccountScope(TEST_SCOPE)
             val deviceId = preferences.ensureDeviceId()
             val (packageHash, packageEnvelope) = verifiedPackageEnvelope()
             server.enqueue(jsonResponse(deliveryEnvelope(deviceId, packageHash, "created", 1)))
             server.enqueue(jsonResponse(packageEnvelope))
             server.enqueue(jsonResponse(deliveryEnvelope(deviceId, packageHash, "acknowledged", 2)))
-            val repository = CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens))
+            val repository = CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens), enqueueSync = {}, refreshSupplementalOnSync = false)
             database.companionDao().upsertPlanned(
                 listOf(
                     PlannedWorkoutEntity(
@@ -335,7 +339,8 @@ class CompanionDatabaseTest {
         preferences.setOfflineSessionEligible(true)
         val tokens = SecureTokenStore(context).also { it.clear(); it.setTokens("qa-access", "qa-refresh") }
 
-        CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens)).clearLocal(TEST_SCOPE)
+        CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens), enqueueSync = {}, refreshSupplementalOnSync = false)
+            .clearLocal(TEST_SCOPE)
         val saved = preferences.values.first()
 
         assertNull(saved.accountScope)
@@ -363,7 +368,7 @@ class CompanionDatabaseTest {
             ),
         )
 
-        CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens))
+        CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens), enqueueSync = {}, refreshSupplementalOnSync = false)
             .detachForServerSwitch(TEST_SCOPE)
 
         val saved = preferences.values.first()
@@ -386,12 +391,12 @@ class CompanionDatabaseTest {
             WorkoutDraftEntity(
                 "scope-a", "delivery-a", "package-a", "submission-a", "event-a", "1.0", "different-hash",
                 "active", "2026-07-17T00:00:00Z", null, 0, null, null, null, 0, "payload-hash",
-                "2026-07-17T00:00:00Z", "2026-07-24T00:00:00Z", null,
+                "2026-07-17T00:00:00Z", "2099-07-24T00:00:00Z", null,
             ),
         )
         val preferences = PreferenceStore(context)
         val tokens = SecureTokenStore(context)
-        val repository = CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens))
+        val repository = CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens), enqueueSync = {}, refreshSupplementalOnSync = false)
 
         val recovered = repository.observeActiveDraft("scope-a").first()
 
@@ -463,7 +468,7 @@ class CompanionDatabaseTest {
         val afterProcessDeath = repository().observeActiveDraft(TEST_SCOPE).first()
 
         assertEquals(started.clientSubmissionId, afterProcessDeath?.clientSubmissionId)
-        assertEquals("active", afterProcessDeath?.status)
+        assertEquals("saved", afterProcessDeath?.status)
         assertEquals(2, dao.draftSets(TEST_SCOPE, TEST_DELIVERY).size)
         assertEquals(9, dao.draftSet(TEST_SCOPE, TEST_DELIVERY, 1, 1)?.reps)
         assertEquals("12.5", dao.draftSet(TEST_SCOPE, TEST_DELIVERY, 1, 1)?.weightKg)
@@ -631,13 +636,15 @@ class CompanionDatabaseTest {
         val server = MockWebServer().also { it.start() }
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val preferences = PreferenceStore(context)
-        val tokens = SecureTokenStore(context).also { it.clear(); it.setTokens("qa-access", "qa-refresh") }
+        val tokens = SecureTokenStore(context).also { it.clear() }
         try {
-            preferences.configureServer(server.url("/").toString().trimEnd('/'), true)
+            val serverUrl = server.url("/").toString().trimEnd('/')
+            preferences.configureServer(serverUrl, true)
+            tokens.setTokens("qa-access", "qa-refresh", serverUrl)
             preferences.setAccountScope(TEST_SCOPE)
             val deviceId = preferences.ensureDeviceId()
             seedDownload(status = "acknowledged")
-            val repository = CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens))
+            val repository = CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens), enqueueSync = {}, refreshSupplementalOnSync = false)
             repository.startWorkout(TEST_SCOPE, TEST_DELIVERY)
             val dao = database.companionDao()
             val start = dao.readyPending(TEST_SCOPE, System.currentTimeMillis(), 10).single()
@@ -669,13 +676,15 @@ class CompanionDatabaseTest {
         val server = MockWebServer().also { it.start() }
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val preferences = PreferenceStore(context)
-        val tokens = SecureTokenStore(context).also { it.clear(); it.setTokens("qa-access", "qa-refresh") }
+        val tokens = SecureTokenStore(context).also { it.clear() }
         try {
-            preferences.configureServer(server.url("/").toString().trimEnd('/'), true)
+            val serverUrl = server.url("/").toString().trimEnd('/')
+            preferences.configureServer(serverUrl, true)
+            tokens.setTokens("qa-access", "qa-refresh", serverUrl)
             preferences.setAccountScope(TEST_SCOPE)
             val deviceId = preferences.ensureDeviceId()
             seedDownload(status = "acknowledged")
-            val repository = CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens))
+            val repository = CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens), enqueueSync = {}, refreshSupplementalOnSync = false)
             val original = repository.startWorkout(TEST_SCOPE, TEST_DELIVERY)
             SyncScheduler.cancelAll()
             database.companionDao().upsertSyncState(
@@ -708,13 +717,15 @@ class CompanionDatabaseTest {
         val server = MockWebServer().also { it.start() }
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val preferences = PreferenceStore(context)
-        val tokens = SecureTokenStore(context).also { it.clear(); it.setTokens("qa-access", "qa-refresh") }
+        val tokens = SecureTokenStore(context).also { it.clear() }
         try {
-            preferences.configureServer(server.url("/").toString().trimEnd('/'), true)
+            val serverUrl = server.url("/").toString().trimEnd('/')
+            preferences.configureServer(serverUrl, true)
+            tokens.setTokens("qa-access", "qa-refresh", serverUrl)
             preferences.setAccountScope(TEST_SCOPE)
             val deviceId = preferences.ensureDeviceId()
             seedDownload(status = "acknowledged")
-            val repository = CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens))
+            val repository = CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens), enqueueSync = {}, refreshSupplementalOnSync = false)
             val original = repository.startWorkout(TEST_SCOPE, TEST_DELIVERY)
             SyncScheduler.cancelAll()
             val dao = database.companionDao()
@@ -746,15 +757,17 @@ class CompanionDatabaseTest {
         val server = MockWebServer().also { it.start() }
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val preferences = PreferenceStore(context)
-        val tokens = SecureTokenStore(context).also { it.clear(); it.setTokens("qa-access", "qa-refresh") }
+        val tokens = SecureTokenStore(context).also { it.clear() }
         try {
-            preferences.configureServer(server.url("/").toString().trimEnd('/'), true)
+            val serverUrl = server.url("/").toString().trimEnd('/')
+            preferences.configureServer(serverUrl, true)
+            tokens.setTokens("qa-access", "qa-refresh", serverUrl)
             preferences.setAccountScope(TEST_SCOPE)
             val deviceId = preferences.ensureDeviceId()
             database.companionDao().upsertSyncState(
                 SyncStateEntity(TEST_SCOPE, deviceId, "qa-cursor", "2099-07-20T00:00:00Z", "2099-07-20T00:00:00Z", null),
             )
-            val repository = CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens))
+            val repository = CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens), enqueueSync = {}, refreshSupplementalOnSync = false)
             server.enqueue(jsonResponse(pullEnvelope()).setBodyDelay(200, TimeUnit.MILLISECONDS))
             server.enqueue(jsonResponse(statusEnvelope(deviceId)))
 
@@ -777,9 +790,11 @@ class CompanionDatabaseTest {
         val server = MockWebServer().also { it.start() }
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val preferences = PreferenceStore(context)
-        val tokens = SecureTokenStore(context).also { it.clear(); it.setTokens("qa-access", "qa-refresh") }
+        val tokens = SecureTokenStore(context).also { it.clear() }
         try {
-            preferences.configureServer(server.url("/").toString().trimEnd('/'), true)
+            val serverUrl = server.url("/").toString().trimEnd('/')
+            preferences.configureServer(serverUrl, true)
+            tokens.setTokens("qa-access", "qa-refresh", serverUrl)
             preferences.setAccountScope(TEST_SCOPE)
             val deviceId = preferences.ensureDeviceId()
             val dao = database.companionDao()
@@ -787,7 +802,7 @@ class CompanionDatabaseTest {
                 SyncStateEntity(TEST_SCOPE, deviceId, "qa-cursor", "2099-07-20T00:00:00Z", "2099-07-20T00:00:00Z", null),
             )
             seedDownload(status = "acknowledged")
-            val repository = CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens))
+            val repository = CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens), enqueueSync = {}, refreshSupplementalOnSync = false)
             repository.startWorkout(TEST_SCOPE, TEST_DELIVERY)
             SyncScheduler.cancelAll()
             val set = dao.draftSet(TEST_SCOPE, TEST_DELIVERY, 1, 1)!!
@@ -877,7 +892,7 @@ class CompanionDatabaseTest {
         dao.clearAccount("scope-a")
         assertNull(dao.observeDailyHealthSummary("scope-a", "2026-07-26").first())
         assertTrue(dao.observeHealthProgress("scope-a", "2026-07-01", "2026-07-31").first().isEmpty())
-        assertEquals(9000, dao.observeDailyHealthSummary("scope-b", "2026-07-26").first()?.steps)
+        assertEquals(9000L, dao.observeDailyHealthSummary("scope-b", "2026-07-26").first()?.steps)
     }
 
     @Test fun offlineBodyCreateUpdateAndDeleteCoalesceWithoutDuplicate() = runBlocking {
@@ -932,10 +947,10 @@ class CompanionDatabaseTest {
         SyncScheduler.cancelAll()
 
         assertEquals(firstId, secondId)
-        assertEquals(7500, dao.dailyStep(TEST_SCOPE, firstId)?.steps)
+        assertEquals(7500L, dao.dailyStep(TEST_SCOPE, firstId)?.steps)
         assertEquals(listOf("health_steps_create"), dao.queuedActions(TEST_SCOPE, 10).map { it.actionType })
         assertTrue(dao.queuedActions(TEST_SCOPE, 10).single().payloadJson.contains("7500"))
-        assertEquals(7500, dao.observeDailyHealthSummary(TEST_SCOPE, day.toString()).first()?.steps)
+        assertEquals(7500L, dao.observeDailyHealthSummary(TEST_SCOPE, day.toString()).first()?.steps)
 
         repository.deleteStepsOffline(TEST_SCOPE, firstId)
         SyncScheduler.cancelAll()
@@ -988,7 +1003,7 @@ class CompanionDatabaseTest {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val preferences = PreferenceStore(context)
         val tokens = SecureTokenStore(context)
-        return CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens))
+        return CompanionRepository(database, preferences, tokens, ApiClient(preferences, tokens), enqueueSync = {}, refreshSupplementalOnSync = false)
     }
 
     private fun history(scope: String, id: String, event: String, completedAt: String, status: String = "synced") =

@@ -2,50 +2,47 @@
 
 ## Freeze y contratos
 
-- [x] Rama/HEAD inicial exactos y staging vacío.
+- [x] Rama `beta/android-1.0-stabilization`, HEAD `1093d4d14c7aa52f180ed7d1ba17cea5437dc896` y staging vacío.
 - [x] Sin Alpha 2.1 ni funciones nuevas.
-- [x] Room 10 y Alembic 0036 sin cambio de schema.
+- [x] Room 10, Alembic 0036 y schemas públicos sin cambio.
 - [x] applicationId, firma, SDKs y toolchain conservados.
-- [x] VersionCode 21 y versionName `2.0.0-beta01`.
+- [x] Code 21 y name `2.0.0-beta01-debug`.
 
-## Defectos
+## Gates automáticos
 
-- [x] Cancelación estructurada no se transforma en retry/failure.
-- [x] IDs remotos no forman paths de caché/FileProvider.
-- [x] Mensaje de límite de exportación sin mojibake.
-- [x] Regresiones JVM añadidas.
-- [ ] Carreras logout/cambio de servidor ejecutadas en AVD.
+- [x] Android lint final.
+- [x] JVM final forzada dos veces: 172/172, cero skips/fallos.
+- [x] APK y `compileDebugAndroidTestKotlin` finales.
+- [x] Harness seguro PowerShell 5.1: 60/60.
+- [x] Imagen API 36 `google_apis` x86_64 no-Play instalada y verificada.
+- [x] AVD desechable creado, validado y eliminado; `Pixel_7` intacto y cero teléfono físico.
+- [x] Instrumentación: 123/123 aprobados, cero skips/fallos.
+- [x] Room 1/2/3/4/5/6/7/8/9→10 y reapertura v10 ejecutados.
+- [x] Upgrade code 19/Room 9→code 21/Room 10 con `adb install -r`, misma firma y datos ficticios preservados.
+- [x] APK audit: 18.886.619 bytes, 173 entradas, v2, 19 permisos y cero hallazgos bloqueantes.
 
-## Gates locales
+## Recorridos conectados
 
-- [x] Backend `compileall`.
-- [x] Backend completo: 716 passed, 9 skipped.
-- [x] 77 schemas válidos y refs locales presentes.
-- [x] Android `lintDebug` final.
-- [x] JVM final forzada: 172/172.
-- [x] `assembleDebug` final.
-- [x] `compileDebugAndroidTestKotlin` final: 123 tests fuente compilados, no ejecutados.
-- [x] Segunda JVM final forzada: 172/172.
-- [x] APK audit/manifest externo: 173 entradas, firma v2, cero hallazgos bloqueantes.
-- [x] MariaDB efímera completa y limpia: 724 passed/1 skipped, cero volúmenes.
+- [x] Modo avión real, force-stop, reapertura y restauración de conectividad.
+- [x] Reboot del AVD y readiness posterior.
+- [x] WorkManager real observado y cobertura de scheduler/cancelación/dedupe.
+- [x] Permiso de notificaciones denegado/concedido y cuatro canales observados.
+- [x] SAF/FileProvider/portabilidad cubiertos por instrumentación.
+- [x] Dataset Room de 38.500 filas y consultas medidos; DB temporal eliminada.
+- [x] Diez configuraciones automatizadas de layout; ajustes restaurados.
+- [ ] Recorrido UI completo offline→backend fake→autosync con pendientes cero.
+- [ ] SAF chooser/grants/URI perdida y variantes de archivos recorridos manualmente.
+- [ ] Snooze/dismiss/acknowledge y batería/OEM recorridos de extremo a extremo.
+- [ ] Todas las pantallas críticas y TalkBack manual.
+- [ ] Health Connect real y teléfono físico autorizado.
 
-## AVD y dispositivo
+## Infraestructura y repositorio
 
-- [x] Harness seguro PowerShell 5.1 (25 aserciones).
-- [ ] AVD permitido creado/serial validado — bloqueado por imagen instalada.
-- [ ] Instrumentación ejecutada — bloqueada.
-- [ ] Room 1→10 y reapertura ejecutados — bloqueados.
-- [ ] Upgrade `install -r` ejecutado — bloqueado.
-- [ ] Offline/process death/WorkManager/reboot/notificaciones/SAF ejecutados — bloqueados.
-- [ ] Rendimiento y layouts medidos — bloqueados.
-- [ ] TalkBack físico — pendiente, no aprobado.
-
-## Repositorio e infraestructura
-
-- [x] Cero `git add`, commit, push, merge, tag o cambio de rama.
+- [x] Backend/MariaDB/schemas sin cambios; evidencia previa conservada, no repetida sin motivo.
 - [x] Compose diario, `.env`, `/data`, NAS y `qa-temp-alpha15*` intactos.
-- [x] Recursos efímeros Beta eliminados y baseline Docker restaurado.
-- [x] `git diff --check` final verde.
-- [x] `git diff --cached --name-only` final vacío.
+- [x] Worktree/APKs/fixtures/capturas/AVD temporales propios eliminados; solo reportes externos finales conservados.
+- [x] Imagen SDK autorizada conservada.
+- [x] `git diff --check` final verde y staging vacío.
+- [x] Cero add, commit, push, merge, tag, reset, restore, checkout de archivos o cambio de rama.
 
-Beta 1 no es una release final. Los checks bloqueados deben cerrarse en un entorno que cumpla el runbook; no se convierten en aprobados por compilación.
+Beta 1 queda lista para QA físico controlado, no para declararse release final.

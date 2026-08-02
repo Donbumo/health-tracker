@@ -42,20 +42,25 @@ try {
     $avdManager = Find-Beta1AndroidTool $resolvedSdk 'cmdline-tools' 'avdmanager'
     [Environment]::SetEnvironmentVariable('ANDROID_AVD_HOME', $avdHome)
 
-    $devices = Add-Beta1AvdNames $adb (Get-Beta1ConnectedDevices $adb)
+    $devices = @(Add-Beta1AvdNames $adb @(Get-Beta1ConnectedDevices $adb))
     $matching = @($devices | Where-Object { $_.Kind -eq 'emulator' -and $_.AvdName -eq $expectedName })
     if ($matching.Count -gt 1) { throw 'duplicate_disposable_avd_runtime' }
     if ($matching.Count -eq 1) {
-        & $adb -s $matching[0].Serial emu kill 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw 'disposable_avd_stop_failed' }
+        $stopResult = Invoke-Beta1NativeCommand $adb @('-s', $matching[0].Serial, 'emu', 'kill')
+        if ($stopResult.ExitCode -ne 0) { throw 'disposable_avd_stop_failed' }
         Wait-Beta1Condition -TimeoutSeconds $TimeoutSeconds -TimeoutCode 'disposable_avd_stop_timeout' -Probe {
-            $remaining = Add-Beta1AvdNames $adb (Get-Beta1ConnectedDevices $adb)
+            $remaining = @(Add-Beta1AvdNames $adb @(Get-Beta1ConnectedDevices $adb))
             return @($remaining | Where-Object { $_.Kind -eq 'emulator' -and $_.AvdName -eq $expectedName }).Count -eq 0
         }
     }
 
-    & $avdManager delete avd --name $expectedName 2>&1 | Out-Null
-    if ($LASTEXITCODE -ne 0 -and (Test-Path -LiteralPath $profilePath)) { throw 'disposable_avd_delete_failed' }
+    $deleteResult = Invoke-Beta1NativeCommand $avdManager @('delete', 'avd', '--name', $expectedName)
+    if ($deleteResult.ExitCode -ne 0) {
+        $postDeleteDevices = @(Add-Beta1AvdNames $adb @(Get-Beta1ConnectedDevices $adb))
+        if (@($postDeleteDevices | Where-Object { $_.AvdName -eq $expectedName }).Count -gt 0) {
+            throw 'disposable_avd_delete_failed'
+        }
+    }
 
     foreach ($owned in @($profilePath, $avdHome)) {
         if (Test-Path -LiteralPath $owned) {
@@ -68,6 +73,8 @@ try {
         session_id = $SessionId
         avd_name = $expectedName
         running_instance_removed = ($matching.Count -eq 1)
+        avdmanager_exit_code = $deleteResult.ExitCode
+        direct_owned_profile_cleanup = ($deleteResult.ExitCode -ne 0)
         profile_removed = -not (Test-Path -LiteralPath $profilePath)
         avd_home_removed = -not (Test-Path -LiteralPath $avdHome)
         completed_at_utc = [DateTime]::UtcNow.ToString('o')

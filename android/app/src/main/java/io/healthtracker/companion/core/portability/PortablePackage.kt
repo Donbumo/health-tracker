@@ -12,6 +12,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 import java.util.UUID
+import java.util.zip.ZipException
 import java.util.zip.ZipInputStream
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -69,36 +70,43 @@ class PortablePackageInspector(
         var manifestBytes: ByteArray? = null
         var checksumsBytes: ByteArray? = null
         var total = 0L
-        resolver.openInputStream(uri)?.use { raw ->
-            ZipInputStream(raw).use { zip ->
-                while (true) {
-                    val entry = zip.nextEntry ?: break
-                    val name = entry.name
-                    validateName(name)
-                    if (entry.isDirectory) fail("special_file", "No se permiten directorios explícitos.")
-                    val folded = name.lowercase(Locale.ROOT)
-                    if (!names.add(folded)) fail("duplicate_file", "Hay archivos duplicados o ambiguos.")
-                    if (names.size > maxFiles) fail("too_many_files", "El paquete contiene demasiados archivos.")
-                    val digest = MessageDigest.getInstance("SHA-256")
-                    val collected = if (name == "manifest.json" || name == "checksums.json") java.io.ByteArrayOutputStream() else null
-                    var size = 0L
-                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        try {
+            resolver.openInputStream(uri)?.use { raw ->
+                ZipInputStream(raw).use { zip ->
                     while (true) {
-                        val read = zip.read(buffer)
-                        if (read < 0) break
-                        size += read; total += read
-                        if (size > maxFileBytes) fail("file_too_large", "Un archivo supera el límite local.")
-                        if (total > maxUncompressedBytes) fail("archive_too_large", "El paquete descomprimido supera el límite local.")
-                        digest.update(buffer, 0, read)
-                        collected?.write(buffer, 0, read)
+                        val entry = zip.nextEntry ?: break
+                        val name = entry.name
+                        validateName(name)
+                        if (entry.isDirectory) fail("special_file", "No se permiten directorios explícitos.")
+                        val folded = name.lowercase(Locale.ROOT)
+                        if (!names.add(folded)) fail("duplicate_file", "Hay archivos duplicados o ambiguos.")
+                        if (names.size > maxFiles) fail("too_many_files", "El paquete contiene demasiados archivos.")
+                        val digest = MessageDigest.getInstance("SHA-256")
+                        val collected = if (name == "manifest.json" || name == "checksums.json") java.io.ByteArrayOutputStream() else null
+                        var size = 0L
+                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                        while (true) {
+                            val read = zip.read(buffer)
+                            if (read < 0) break
+                            size += read; total += read
+                            if (size > maxFileBytes) fail("file_too_large", "Un archivo supera el límite local.")
+                            if (total > maxUncompressedBytes) fail("archive_too_large", "El paquete descomprimido supera el límite local.")
+                            digest.update(buffer, 0, read)
+                            collected?.write(buffer, 0, read)
+                        }
+                        members[name] = digest.hex() to size
+                        if (name == "manifest.json") manifestBytes = collected!!.toByteArray()
+                        if (name == "checksums.json") checksumsBytes = collected!!.toByteArray()
+                        zip.closeEntry()
                     }
-                    members[name] = digest.hex() to size
-                    if (name == "manifest.json") manifestBytes = collected!!.toByteArray()
-                    if (name == "checksums.json") checksumsBytes = collected!!.toByteArray()
-                    zip.closeEntry()
                 }
+            } ?: fail("file_unavailable", "Ya no se puede leer el archivo seleccionado.")
+        } catch (error: ZipException) {
+            if (error.message.orEmpty().contains("entry path", ignoreCase = true)) {
+                fail("unsafe_path", "El paquete contiene traversal o una ruta absoluta.")
             }
-        } ?: fail("file_unavailable", "Ya no se puede leer el archivo seleccionado.")
+            fail("invalid_archive", "El archivo ZIP no es válido.")
+        }
         val manifestRaw = manifestBytes ?: fail("manifest_missing", "Falta manifest.json.")
         val checksumRaw = checksumsBytes ?: fail("checksums_missing", "Falta checksums.json.")
         val manifest = decodeObject(manifestRaw, "manifest.json")

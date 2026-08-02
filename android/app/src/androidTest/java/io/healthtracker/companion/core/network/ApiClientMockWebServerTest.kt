@@ -8,8 +8,10 @@ import io.healthtracker.companion.core.model.LoginRequest
 import io.healthtracker.companion.core.model.AppErrorCode
 import io.healthtracker.companion.core.model.AppFailure
 import io.healthtracker.companion.core.security.SecureTokenStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.async
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.put
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -95,9 +97,11 @@ class ApiClientMockWebServerTest {
     @Test fun temporaryRefreshFailureKeepsEncryptedSessionForOfflineUse() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val preferences = PreferenceStore(context)
-        preferences.configureServer(server.url("/").toString().trimEnd('/'), true)
-        SecureTokenStore(context).also { it.clear(); it.setTokens("qa-expired", "qa-refresh-retained") }
+        val base = server.url("/").toString().trimEnd('/')
+        preferences.configureServer(base, true)
+        SecureTokenStore(context).also { it.clear(); it.setTokens("qa-expired", "qa-refresh-retained", base) }
         val afterProcessDeath = SecureTokenStore(context)
+        assertEquals("qa-refresh-retained", afterProcessDeath.refreshToken(base))
         val client = ApiClient(preferences, afterProcessDeath)
         server.enqueue(
             MockResponse().setResponseCode(503).setHeader("Content-Type", "application/json")
@@ -114,9 +118,11 @@ class ApiClientMockWebServerTest {
     @Test fun invalidRefreshTokenIsDefinitiveAndClearsEncryptedSession() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val preferences = PreferenceStore(context)
-        preferences.configureServer(server.url("/").toString().trimEnd('/'), true)
-        SecureTokenStore(context).also { it.clear(); it.setTokens("qa-expired", "qa-invalid-refresh") }
+        val base = server.url("/").toString().trimEnd('/')
+        preferences.configureServer(base, true)
+        SecureTokenStore(context).also { it.clear(); it.setTokens("qa-expired", "qa-invalid-refresh", base) }
         val afterProcessDeath = SecureTokenStore(context)
+        assertEquals("qa-invalid-refresh", afterProcessDeath.refreshToken(base))
         val client = ApiClient(preferences, afterProcessDeath)
         server.enqueue(
             MockResponse().setResponseCode(401).setHeader("Content-Type", "application/json")
@@ -187,12 +193,12 @@ class ApiClientMockWebServerTest {
                 .setBody(tokenEnvelope("stale-access", "stale-refresh")),
         )
 
-        val pending = async { runCatching { client.me() }.exceptionOrNull() }
-        server.takeRequest()
-        server.takeRequest()
+        val pending = async(Dispatchers.IO) { runCatching { client.me() }.exceptionOrNull() }
+        assertTrue(server.takeRequest(5, TimeUnit.SECONDS) != null)
+        assertTrue(server.takeRequest(5, TimeUnit.SECONDS) != null)
         tokenStore.clear()
         tokenStore.setTokens("new-access", "new-refresh", newBase)
-        assertTrue(pending.await() is AppFailure)
+        assertTrue(withTimeout(5_000) { pending.await() } is AppFailure)
         assertEquals("new-access", tokenStore.accessToken(newBase))
         assertEquals("new-refresh", tokenStore.refreshToken(newBase))
         tokenStore.clear()
@@ -213,11 +219,11 @@ class ApiClientMockWebServerTest {
             MockResponse().setResponseCode(401).setBodyDelay(300, TimeUnit.MILLISECONDS)
                 .setBody(errorEnvelope("session_revoked")),
         )
-        val pending = async { runCatching { client.me() }.exceptionOrNull() }
-        server.takeRequest()
+        val pending = async(Dispatchers.IO) { runCatching { client.me() }.exceptionOrNull() }
+        assertTrue(server.takeRequest(5, TimeUnit.SECONDS) != null)
         tokenStore.clear()
         tokenStore.setTokens("new-access", "new-refresh", newBase)
-        assertTrue(pending.await() is AppFailure)
+        assertTrue(withTimeout(5_000) { pending.await() } is AppFailure)
         assertEquals("new-access", tokenStore.accessToken(newBase))
         assertEquals("new-refresh", tokenStore.refreshToken(newBase))
         tokenStore.clear()

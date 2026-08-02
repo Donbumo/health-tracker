@@ -2,38 +2,33 @@
 
 ## Beta 1 Android en esta rama
 
-- Rama `beta/android-1.0-stabilization`; HEAD inicial `28299103477b22eac6f569153236fa426d2a0619`; freeze de Alpha 2.0 sin funciones nuevas y sin staging.
-- Android pasa a code 21/name `2.0.0-beta01`; Room continúa 10, Alembic continúa 0036 y no cambian firma, applicationId, SDKs ni toolchain.
-- Se corrigieron dos P1: cancelación absorbida por workers/colas y path traversal mediante IDs remotos en cachés médicas/de actividad. Un P2 corrige el mensaje UTF-8 de límite de exportación. Hay seis nuevas regresiones JVM.
-- La matriz instrumentada declara por separado Room 1/2/3/4/5/6/7/8/9→10 y reapertura v10 con fixtures ficticias preservadas.
-- Herramientas en `scripts/beta/` crean/validan/eliminan exclusivamente un AVD `health-tracker-beta1-qa-<id>`, fijan serial, auditan APK/MariaDB y escriben reportes bajo `%TEMP%`; su harness PowerShell 5.1 pasa 25 aserciones.
-- Gates finales: backend local 716/9; Docker/MariaDB 724/1 con cero→0036 y dos ciclos 0036↔0035; 77 schemas correctos; Android `lintDebug`, 172/172 JVM, APK, 123 androidTest compilados y segunda JVM 172/172.
-- APK Beta debug: 18.213.405 bytes, SHA-256 `3758030fa28acbe579b90fc6ddcbfaa5a8b2d60d53cb6ba64592917ac4ebf5f9`, code 21/name `2.0.0-beta01-debug`, firma v2, 173 entradas y escaneo sensible limpio.
-- MariaDB usó contenedor/red exclusivos y tmpfs; contenedor, red, imagen y storage propios se eliminaron. Los dos volúmenes y ambos contenedores diarios quedaron intactos; Compose diario no se ejecutó.
-- AVD e instrumentación están bloqueados honestamente: el SDK solo tiene una imagen API 37.1 Play Store y no tiene `avdmanager`; `Pixel_7` no se tocó. Upgrade, reboot, rendimiento medido, layouts y TalkBack permanecen pendientes.
-- QA físico no se ejecutó. Seguir `BETA_1_PHYSICAL_QA_RUNBOOK.md`; no declarar release final.
+- Rama `beta/android-1.0-stabilization`; HEAD inicial/final `1093d4d14c7aa52f180ed7d1ba17cea5437dc896`; freeze de Alpha 2.0 sin funciones nuevas.
+- Android conserva code 21/name `2.0.0-beta01`, Room 10, Alembic 0036, applicationId, firma, SDKs y toolchain.
+- La imagen autorizada API 36 `google_apis` x86_64 se instaló con `sdkmanager.bat` después de que el nuevo Android CLI fallara nativamente. La imagen no-Play se conserva.
+- Se usó únicamente el AVD desechable `health-tracker-beta1-qa-qa-a5cd1219035b`; fingerprint sanitizado `04ab3fc3`. No se usaron teléfono físico ni `Pixel_7`.
+- Gates finales: lint; JVM 172/172 dos veces; APK; androidTest compile; harness 60/60; instrumentación 123/123 en 22 clases, cero skips/fallos.
+- Room ejecutó 1/2/3/4/5/6/7/8/9→10 y reapertura v10, sin fallback destructivo.
+- Upgrade real: APK reproducible code 19/Room 9 del commit `350cf2ced53bc2ba6a7c18421780ce8045b8c07f` a code 21/Room 10 con `adb install -r`, misma firma y sin uninstall/clear. Se preservaron Room, DataStore, Keystore, draft, pendiente y archivo marcador ficticios, sin duplicados.
+- Se corrigió la ventana de pérdida del refresh token tras force-stop usando persistencia síncrona para las mutaciones críticas. También se corrigieron packaging de schemas Room, deadlocks/fixtures de instrumentación, clasificación de ZIP inseguro y aislamiento de scheduling en tests.
+- Se ejecutaron modo avión y reapertura, reboot, estados denegado/concedido de notificaciones, canales y WorkManager real. La suite automatizada cubre sync/cola/dedupe; el recorrido UI completo contra backend fake hasta pendientes cero sigue pendiente.
+- Rendimiento medido con 38.500 filas Room sintéticas: consultas observadas 0–20 ms, PSS 130.702→135.766 KiB y DB 9.637.888 bytes. Series densas, paquetes al límite y pantallas completas siguen sin medir.
+- Layouts: diez configuraciones 320/360/411/600 dp, portrait/landscape, fuentes 1,0/1,3/2,0 y temas claro/oscuro/sistema; cero overflow/targets pequeños en la pantalla alcanzable. No equivale a la matriz completa ni a TalkBack.
+- APK final: 18.886.619 bytes, SHA-256 `40eafddc91bc6f83ab53aed17b87df6d3dc2bf176ef5b05ffa563f6b18751d58`, firma v2, 173 entradas, 19 permisos y cero hallazgos sensibles bloqueantes.
+- Backend/MariaDB/schemas no cambiaron; se conserva evidencia del checkpoint: 716/9, 724/1 y 77 schemas válidos.
 
 ## Estado actual
 
-- Beta 1 está técnicamente estabilizada para iniciar QA físico controlado; no es release final.
-- El mapa canónico de contexto permanece en `DOCUMENTATION_INDEX.md`; el detalle Beta está en `BETA_1_ANDROID_STABILIZATION.md` y `ANDROID_RELEASE_READINESS.md`.
+Los gates Android conectados automatizables están cerrados. El AVD, worktree, APKs y fixtures temporales propios se eliminan en el cierre y los reportes finales quedan fuera del repositorio. Compose diario, volúmenes, `.env`, `/data`, NAS y `qa-temp-alpha15*` permanecen intactos.
 
-## Pruebas relevantes
+## Trabajo pendiente
 
-- Backend local 716/9; Docker/MariaDB 724/1; 77 schemas públicos válidos.
-- Android: lint, dos JVM forzadas 172/172, APK y 123 tests instrumentados compilados.
-- APK Beta: code 21/name `2.0.0-beta01-debug`, 18.213.405 bytes, firma v2 y escaneo sensible limpio.
-
-## Trabajo en curso
-
-- Sólo quedan revisión humana del diff y los gates conectados/manuales del runbook físico Beta 1.
-
-## Bloqueadores y riesgos
-
-- Falta una imagen Android instalada sin Play Store y falta `avdmanager`; no se creó AVD ni se seleccionó serial.
-- Instrumentación, `adb install -r`, process death/reboot, rendimiento medido, layouts y TalkBack siguen pendientes.
-- Los directorios inaccesibles `qa-temp-alpha15*` son preexistentes y deben permanecer intactos.
+- QA físico autorizado y restricciones OEM/batería.
+- TalkBack manual y matriz visual de todas las pantallas críticas.
+- Health Connect real.
+- SAF/chooser, grants, URI perdida y variantes de archivos recorridos manualmente.
+- Recorrido UI completo modo avión→process death→reconexión→autosync contra backend fake hasta pendientes cero.
+- Snooze/dismiss/acknowledge de notificaciones de extremo a extremo.
 
 ## Siguiente paso
 
-Revisar el diff sin añadirlo al staging e instalar, fuera de esta tanda, cmdline-tools y una imagen API 35/36 no-Play para ejecutar `BETA_1_PHYSICAL_QA_RUNBOOK.md` en un recurso autorizado.
+Revisar el working-tree diff sin añadirlo al staging y ejecutar `BETA_1_PHYSICAL_QA_RUNBOOK.md` en un recurso físico explícitamente autorizado. Beta 1 está lista para ese QA controlado; no es una release final.

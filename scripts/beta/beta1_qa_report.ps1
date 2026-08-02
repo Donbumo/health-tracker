@@ -88,7 +88,7 @@ try {
         session_id = $SessionId
         branch = $branch
         head = $head
-        expected_initial_head = '28299103477b22eac6f569153236fa426d2a0619'
+        expected_initial_head = '1093d4d14c7aa52f180ed7d1ba17cea5437dc896'
         freeze = 'android-2.0-beta1-stabilization-no-new-product-features'
         backend = [ordered]@{ passed = $BackendPassed; skipped = $BackendSkipped }
         android_jvm = [ordered]@{ passed = $AndroidJvmPassed; skipped = $AndroidJvmSkipped }

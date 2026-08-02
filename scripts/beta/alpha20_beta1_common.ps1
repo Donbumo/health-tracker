@@ -107,7 +107,7 @@ function Find-Beta1AndroidTool {
     $fileNames = if ($Name.EndsWith('.bat') -or $Name.EndsWith('.exe')) {
         @($Name)
     } elseif ($Area -eq 'cmdline-tools') {
-        @($Name + '.bat')
+        @("$Name.exe", "$Name.bat", $Name)
     } elseif ($Area -eq 'build-tools') {
         @("$Name.exe", "$Name.bat")
     } else {
@@ -136,6 +136,30 @@ function Find-Beta1AndroidTool {
         if (Test-Path -LiteralPath $candidate -PathType Leaf) { return $candidate }
     }
     throw "android_tool_not_found:$Area/$Name"
+}
+
+function Invoke-Beta1NativeCommand {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [string[]]$Arguments = @(),
+        [AllowNull()][object[]]$InputObject = $null
+    )
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        if ($null -eq $InputObject) {
+            $output = @(& $FilePath @Arguments 2>&1)
+        } else {
+            $output = @($InputObject | & $FilePath @Arguments 2>&1)
+        }
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousPreference
+    }
+    return [pscustomobject]@{
+        ExitCode = $exitCode
+        Output = @($output | ForEach-Object { $_.ToString() })
+    }
 }
 
 function Get-Beta1SystemImages {
@@ -169,19 +193,73 @@ function Select-Beta1SystemImage {
         [string]$Abi = 'x86_64'
     )
     $eligible = @($Images | Where-Object {
+        $expectedPackage = "system-images;android-$($_.Api);google_apis;x86_64"
+        $_.Api -in @(36, 35) -and
+        $_.Platform -eq "android-$($_.Api)" -and
+        $_.Tag -eq 'google_apis' -and
+        $_.Abi -eq 'x86_64' -and
         $_.Abi -eq $Abi -and
-        $_.Tag -notmatch 'playstore' -and
+        $_.Package -eq $expectedPackage -and
+        $_.Path -notmatch '(?i)playstore|google_apis_playstore|google_play|play store' -and
         ($ApiLevel -eq 0 -or $_.Api -eq $ApiLevel)
     })
     if ($eligible.Count -eq 0) { throw 'compatible_non_play_system_image_not_found' }
-    return $eligible | Sort-Object @{ Expression = { if ($_.Api -in @(36, 35)) { 0 } else { 1 } } },
-        @{ Expression = { $_.Api }; Descending = $true }, Tag | Select-Object -First 1
+    return $eligible | Sort-Object @{ Expression = { $_.Api }; Descending = $true } | Select-Object -First 1
+}
+
+function Assert-Beta1SystemImageMetadata {
+    param([Parameter(Mandatory = $true)]$Image)
+    $expectedPackage = "system-images;android-$($Image.Api);google_apis;x86_64"
+    if ($Image.Api -notin @(36, 35) -or $Image.Tag -ne 'google_apis' -or
+        $Image.Abi -ne 'x86_64' -or $Image.Package -ne $expectedPackage -or
+        $Image.Path -match '(?i)playstore|google_apis_playstore|google_play|play store') {
+        throw 'system_image_identity_invalid'
+    }
+    $sourcePath = Join-Path $Image.Path 'source.properties'
+    $packagePath = Join-Path $Image.Path 'package.xml'
+    if (-not (Test-Path -LiteralPath $sourcePath -PathType Leaf)) { throw 'system_image_source_properties_missing' }
+    if (-not (Test-Path -LiteralPath $packagePath -PathType Leaf)) { throw 'system_image_package_xml_missing' }
+    $source = Get-Content -Raw -Encoding UTF8 -LiteralPath $sourcePath
+    $package = Get-Content -Raw -Encoding UTF8 -LiteralPath $packagePath
+    if ($source -notmatch "(?m)^AndroidVersion\.ApiLevel=$($Image.Api)\s*$" -or
+        $source -notmatch '(?m)^SystemImage\.TagId=google_apis\s*$' -or
+        $source -notmatch '(?m)^SystemImage\.Abi=x86_64\s*$') {
+        throw 'system_image_source_properties_mismatch'
+    }
+    $declaredPackage = [regex]::Match($source, '(?m)^Pkg\.Path=(.+?)\s*$')
+    if ($declaredPackage.Success -and $declaredPackage.Groups[1].Value -ne $expectedPackage) {
+        throw 'system_image_source_properties_mismatch'
+    }
+    if ($package -notmatch ('(?i)<localPackage\s+path="' + [regex]::Escape($expectedPackage) + '"')) {
+        throw 'system_image_package_xml_mismatch'
+    }
+    return $true
+}
+
+function Assert-Beta1AvdConfig {
+    param(
+        [Parameter(Mandatory = $true)][string]$ConfigPath,
+        [Parameter(Mandatory = $true)][string]$ExpectedAvdName,
+        [Parameter(Mandatory = $true)][int]$ExpectedApi
+    )
+    if (-not (Test-Path -LiteralPath $ConfigPath -PathType Leaf)) { throw 'avd_config_missing' }
+    $config = (Get-Content -Raw -Encoding UTF8 -LiteralPath $ConfigPath) -replace '\\', '/'
+    $expectedImage = "system-images/android-$ExpectedApi/google_apis/x86_64/"
+    $declaredId = [regex]::Match($config, '(?m)^AvdId=(.+?)\s*$')
+    if (($declaredId.Success -and $declaredId.Groups[1].Value -ne $ExpectedAvdName) -or
+        $config -notmatch '(?m)^tag\.id=google_apis\s*$' -or
+        $config -notmatch ('(?m)^image\.sysdir\.1=' + [regex]::Escape($expectedImage) + '\s*$') -or
+        $config -match '(?im)^PlayStore\.enabled=true\s*$') {
+        throw 'avd_config_identity_mismatch'
+    }
+    return $true
 }
 
 function Get-Beta1ConnectedDevices {
     param([Parameter(Mandatory = $true)][string]$AdbPath)
-    $lines = & $AdbPath devices 2>&1
-    if ($LASTEXITCODE -ne 0) { throw 'adb_devices_failed' }
+    $result = Invoke-Beta1NativeCommand $AdbPath @('devices')
+    if ($result.ExitCode -ne 0) { throw 'adb_devices_failed' }
+    $lines = $result.Output
     $devices = @()
     foreach ($line in $lines | Select-Object -Skip 1) {
         $parts = @($line.ToString().Trim() -split '\s+')
@@ -200,24 +278,33 @@ function Get-Beta1ConnectedDevices {
 function Add-Beta1AvdNames {
     param(
         [Parameter(Mandatory = $true)][string]$AdbPath,
-        [Parameter(Mandatory = $true)][object[]]$Devices
+        [Parameter(Mandatory = $true)][AllowNull()][AllowEmptyCollection()][object[]]$Devices
     )
-    foreach ($device in $Devices) {
+    $inventory = @($Devices | Where-Object { $null -ne $_ })
+    foreach ($device in $inventory) {
+        if (-not ($device.PSObject.Properties.Name -contains 'Kind')) { throw 'device_inventory_contract_invalid' }
         if ($device.Kind -eq 'emulator' -and $device.State -eq 'device') {
-            $name = ((& $AdbPath -s $device.Serial emu avd name 2>$null) | Select-Object -First 1).ToString().Trim()
-            if ($LASTEXITCODE -eq 0) { $device.AvdName = $name }
+            $result = Invoke-Beta1NativeCommand $AdbPath @('-s', $device.Serial, 'emu', 'avd', 'name')
+            $name = @($result.Output | Where-Object { $_ -and $_ -ne 'OK' } | Select-Object -First 1)
+            if ($result.ExitCode -eq 0 -and $name.Count -eq 1) { $device.AvdName = $name[0].Trim() }
         }
     }
-    return $Devices
+    return $inventory
 }
 
 function Select-Beta1DisposableDevice {
     param(
-        [Parameter(Mandatory = $true)][object[]]$Devices,
+        [Parameter(Mandatory = $true)][AllowNull()][AllowEmptyCollection()][object[]]$Devices,
         [Parameter(Mandatory = $true)][string]$ExpectedAvdName
     )
-    if (@($Devices | Where-Object { $_.Kind -ne 'emulator' }).Count -gt 0) { throw 'physical_device_detected' }
-    $authorized = @($Devices | Where-Object { $_.State -eq 'device' })
+    $inventory = @($Devices | Where-Object { $null -ne $_ })
+    foreach ($device in $inventory) {
+        foreach ($property in @('Kind', 'State', 'AvdName')) {
+            if (-not ($device.PSObject.Properties.Name -contains $property)) { throw 'device_inventory_contract_invalid' }
+        }
+    }
+    if (@($inventory | Where-Object { $_.Kind -ne 'emulator' }).Count -gt 0) { throw 'physical_device_detected' }
+    $authorized = @($inventory | Where-Object { $_.State -eq 'device' })
     if ($authorized.Count -ne 1) { throw "ambiguous_device_count:$($authorized.Count)" }
     $selected = $authorized[0]
     if ($selected.Kind -ne 'emulator' -or $selected.AvdName -ne $ExpectedAvdName) { throw 'disposable_avd_identity_mismatch' }
@@ -261,6 +348,55 @@ function Test-Beta1ApkIdentity {
     )
     if ($Package -ne $ExpectedPackage) { throw 'apk_package_mismatch' }
     if ($VersionCode -ne $ExpectedVersionCode) { throw 'apk_version_mismatch' }
+}
+
+function Get-Beta1JUnitSummary {
+    param([Parameter(Mandatory = $true)][string[]]$Paths)
+    $total = 0; $failed = 0; $skipped = 0; $errors = 0
+    $failedClasses = @(); $failedMethods = @(); $executedClasses = @()
+    foreach ($path in $Paths) {
+        [xml]$document = Get-Content -Raw -Encoding UTF8 -LiteralPath $path
+        $root = $document.DocumentElement
+        if ($null -eq $root) { continue }
+        $suites = if ($root.LocalName -eq 'testsuite') {
+            @($root)
+        } elseif ($root.LocalName -eq 'testsuites') {
+            @($root.ChildNodes | Where-Object { $_.LocalName -eq 'testsuite' })
+        } else {
+            @()
+        }
+        foreach ($suite in $suites) {
+            $suiteTests = $suite.GetAttribute('tests')
+            if ([string]::IsNullOrWhiteSpace($suiteTests)) { continue }
+            $suiteFailures = $suite.GetAttribute('failures')
+            $suiteErrors = $suite.GetAttribute('errors')
+            $suiteSkipped = $suite.GetAttribute('skipped')
+            $suiteFailureCount = if ([string]::IsNullOrWhiteSpace($suiteFailures)) { 0 } else { [int]$suiteFailures }
+            $suiteErrorCount = if ([string]::IsNullOrWhiteSpace($suiteErrors)) { 0 } else { [int]$suiteErrors }
+            $total += [int]$suiteTests
+            $failed += $suiteFailureCount
+            $errors += $suiteErrorCount
+            $skipped += if ([string]::IsNullOrWhiteSpace($suiteSkipped)) { 0 } else { [int]$suiteSkipped }
+            foreach ($case in @($suite.SelectNodes('./testcase'))) {
+                $className = $case.GetAttribute('classname')
+                $methodName = $case.GetAttribute('name')
+                if ($className) { $executedClasses += $className }
+                if ($case.SelectSingleNode('./failure') -or $case.SelectSingleNode('./error')) {
+                    if ($className) { $failedClasses += $className }
+                    $failedMethods += ($className + '#' + $methodName)
+                }
+            }
+        }
+    }
+    return [pscustomobject]@{
+        Total = $total
+        Passed = $total - $failed - $errors - $skipped
+        Skipped = $skipped
+        Failed = $failed + $errors
+        ExecutedClasses = @($executedClasses | Sort-Object -Unique)
+        FailedClasses = @($failedClasses | Where-Object { $_ } | Sort-Object -Unique)
+        FailedMethods = @($failedMethods | Sort-Object -Unique)
+    }
 }
 
 function Invoke-Beta1WithCleanup {

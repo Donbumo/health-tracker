@@ -1,28 +1,27 @@
 # Android release readiness — Beta 1
 
-Estado de salida técnica para `2.0.0-beta01-debug`. “Compilado” no significa “ejecutado en dispositivo”.
+Estado técnico de `2.0.0-beta01-debug` después del cierre conectado del 1 de agosto de 2026.
 
-| Gate | Estado | Evidencia o bloqueo |
+| Gate | Estado | Evidencia o límite |
 | --- | --- | --- |
-| Freeze funcional | Aprobado | Sin módulos/capacidades nuevas. |
-| P0/P1 local | Aprobado con límites | Cero P0 reproducibles; dos P1 corregidos con regresión. |
-| Backend local | Aprobado | 716 passed, 9 skipped. |
-| Schemas | Aprobado | 77 Draft 2020-12 y refs locales. |
-| Android lint/JVM/build/androidTest compile | Aprobado | `lintDebug`; 172/172 JVM; `assembleDebug`; 123 androidTest compilados; segunda JVM 172/172. |
-| Room schemas | Aprobado estáticamente | Versiones 1–10 presentes; Room permanece 10. |
-| Room 1→10 ejecutado | Bloqueado | No hay imagen instalada sin Play Store ni `avdmanager`. |
-| AVD desechable | Bloqueado | Única imagen instalada: API 37.1 Play Store; `Pixel_7` protegido. |
-| Instrumentación | Bloqueado | Cero tests conectados ejecutados. |
-| Upgrade `adb install -r` | Bloqueado | Requiere AVD permitido y APK anterior reproducible con misma firma. |
-| Offline/process death/WorkManager/reboot | Bloqueado en dispositivo | Cobertura JVM/androidTest compilable; recorrido real pendiente. |
-| SAF/FileProvider/notificaciones | Bloqueado en dispositivo | Auditoría estática completa; interacción real pendiente. |
-| Rendimiento Android medido | Bloqueado | No publicar métricas sin AVD. |
-| Accesibilidad automatizada/layout | Bloqueado | Compilación disponible; configuraciones y TalkBack pendientes. |
-| Seguridad manifest/red/archivos | Aprobado estáticamente | Sin expansión de permisos; paths remotos endurecidos. |
-| APK audit | Aprobado | 18.213.405 bytes; 173 entradas; v2; cero hallazgos bloqueantes; SHA-256 publicado en el reporte Beta. |
-| MariaDB efímera | Aprobado | 724 passed/1 skipped; cero→0036, check y dos ciclos 0036↔0035; tmpfs; cleanup completo; cero volúmenes. |
-| QA físico | Pendiente | Seguir `BETA_1_PHYSICAL_QA_RUNBOOK.md`; ningún punto preaprobado. |
+| Freeze funcional | Aprobado | Sin funciones nuevas ni Alpha 2.1. |
+| Android local | Aprobado | Lint; JVM 172/172 dos veces; assemble; androidTest compile. |
+| Harness Beta | Aprobado | 60/60 aserciones en PowerShell 5.1. |
+| Imagen/AVD | Aprobado y limpiado | API 36 `google_apis` x86_64 no-Play; AVD exclusivo, identidad validada y eliminación obligatoria. |
+| Instrumentación | Aprobado | 123 fuente/123 ejecutados/123 aprobados; 0 omitidos y 0 fallidos en 22 clases. |
+| Room 1→10/reapertura | Aprobado | Rutas 1/2/3/4/5/6/7/8/9→10 y reapertura v10 ejecutadas; cero fallback destructivo. |
+| Upgrade `adb install -r` | Aprobado | Code 19/Room 9→code 21/Room 10, misma firma, DataStore/Keystore/Room/draft/pendiente/archivo preservados y cero duplicados. |
+| Modo avión/process death | Aprobado con límites | Modo avión, force-stop y reapertura reales; persistencia verificada. El recorrido UI completo contra backend fake hasta cola cero sigue pendiente. |
+| WorkManager/reboot | Aprobado con límites | Jobs reales y reboot observados; batería/restricciones OEM pendientes. |
+| Notificaciones | Aprobado con límites | Permiso denegado/concedido y cuatro canales reales; políticas JVM verdes. Snooze/dismiss/ack manuales pendientes. |
+| SAF/FileProvider | Aprobado automatizado | Suite instrumentada verde; chooser/grants/URI perdida y matriz de archivos manuales pendientes. |
+| Rendimiento | Aprobado parcial | Dataset Room 38.500 filas, consultas 0–20 ms, PSS y DB medidos; series densas, límites portables y pantallas completas pendientes. |
+| Layout automatizado | Aprobado parcial | Diez configuraciones, cero overflow/targets pequeños en la pantalla alcanzable; matriz completa pendiente. |
+| TalkBack | Pendiente | Requiere recorrido manual; no está aprobado. |
+| Health Connect/OEM/teléfono | Pendiente | Requiere QA físico autorizado. |
+| Seguridad/APK | Aprobado | 18.886.619 bytes; 173 entradas; firma v2; 19 permisos; cero hallazgos sensibles bloqueantes. |
+| Backend/MariaDB/schemas | Evidencia conservada | Sin cambios del área: backend 716/9, MariaDB efímera 724/1, Alembic 0036 y 77 schemas válidos. |
 
 ## Criterio de promoción
 
-El resultado de esta rama está técnicamente estabilizado y puede iniciar QA físico controlado. No puede declararse release final ni QA físico aprobado mientras permanezcan bloqueados los gates conectados.
+Los gates Android conectados automatizables quedan cerrados y Beta 1 puede pasar a QA físico controlado. No debe declararse release final hasta completar TalkBack, la matriz física/OEM, Health Connect real, SAF interactivo y el recorrido completo offline→autosync contra un backend fake.

@@ -33,6 +33,8 @@ $metadataPath = Join-Path $sessionRoot 'avd.json'
 $reportPath = Join-Path $sessionRoot 'instrumentation.json'
 $logPath = Join-Path $sessionRoot 'instrumentation.log'
 $resultRoot = Join-Path $sessionRoot 'instrumentation-results'
+$historyRoot = Join-Path $sessionRoot 'instrumentation-history'
+$runId = [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss-fff') + '-' + [Guid]::NewGuid().ToString('N').Substring(0, 6)
 $previousSerial = [Environment]::GetEnvironmentVariable('ANDROID_SERIAL')
 $previousAvdHome = [Environment]::GetEnvironmentVariable('ANDROID_AVD_HOME')
 $startedAt = [DateTime]::UtcNow
@@ -43,6 +45,15 @@ try {
     if (-not (Test-Path -LiteralPath $metadataPath -PathType Leaf)) { throw 'session_metadata_missing' }
     $metadata = Get-Content -Raw -Encoding UTF8 -LiteralPath $metadataPath | ConvertFrom-Json
     if ($metadata.session_id -ne $SessionId -or $metadata.avd_name -ne $expectedAvd) { throw 'session_metadata_mismatch' }
+    if ((Test-Path -LiteralPath $reportPath) -or (Test-Path -LiteralPath $logPath) -or (Test-Path -LiteralPath $resultRoot)) {
+        New-Item -ItemType Directory -Path $historyRoot -Force | Out-Null
+        foreach ($artifact in @($reportPath, $logPath, $resultRoot)) {
+            if (-not (Test-Path -LiteralPath $artifact)) { continue }
+            Assert-Beta1OwnedPath $sessionRoot $artifact | Out-Null
+            $leaf = Split-Path -Leaf $artifact
+            Move-Item -LiteralPath $artifact -Destination (Join-Path $historyRoot ($runId + '-' + $leaf))
+        }
+    }
 
     $resolvedSdk = Resolve-Beta1SdkRoot $SdkRoot $ProjectRoot
     $adb = Find-Beta1AndroidTool $resolvedSdk 'platform-tools' 'adb'
@@ -55,10 +66,12 @@ try {
     $androidRoot = Join-Path $ProjectRoot 'android'
     $gradle = Join-Path $androidRoot 'gradlew.bat'
     if (-not (Test-Path -LiteralPath $gradle -PathType Leaf)) { throw 'gradle_wrapper_missing' }
-    $arguments = @(':app:connectedDebugAndroidTest', '--no-parallel', '--stacktrace')
+    $arguments = @('--project-dir', $androidRoot, ':app:connectedDebugAndroidTest', '--no-parallel', '--stacktrace')
     if ($TestClass) { $arguments += "-Pandroid.testInstrumentationRunnerArguments.class=$TestClass" }
-    $rawOutput = @(& $gradle @arguments 2>&1)
-    $gradleExit = $LASTEXITCODE
+    $gradleResult = Invoke-Beta1NativeCommand $gradle $arguments
+    $rawOutput = $gradleResult.Output
+    $gradleExit = $gradleResult.ExitCode
+    if ($gradleExit -eq 0 -and ($rawOutput -join "`n") -match '(?m)^BUILD FAILED') { $gradleExit = 1 }
     $safeOutput = ($rawOutput -join [Environment]::NewLine) -replace [regex]::Escape($selected.Serial), "emulator-fp:$($selected.Fingerprint)"
     [IO.File]::WriteAllText($logPath, $safeOutput + [Environment]::NewLine, (New-Object Text.UTF8Encoding($false)))
     Write-Output $safeOutput
@@ -68,19 +81,28 @@ try {
     if (-not (Test-Path -LiteralPath $targetApk -PathType Leaf) -or -not (Test-Path -LiteralPath $testApk -PathType Leaf)) {
         throw 'instrumentation_apk_missing'
     }
-    $targetBadging = (& $aapt dump badging $targetApk 2>&1) -join "`n"
-    if ($LASTEXITCODE -ne 0) { throw 'target_apk_inspection_failed' }
+    $targetBadgingResult = Invoke-Beta1NativeCommand $aapt @('dump', 'badging', $targetApk)
+    $targetBadging = $targetBadgingResult.Output -join "`n"
+    if ($targetBadgingResult.ExitCode -ne 0) { throw 'target_apk_inspection_failed' }
     $targetMatch = [regex]::Match($targetBadging, "package: name='([^']+)' versionCode='([^']+)' versionName='([^']*)'")
     if (-not $targetMatch.Success) { throw 'target_apk_metadata_missing' }
     Test-Beta1ApkIdentity $targetMatch.Groups[1].Value ([long]$targetMatch.Groups[2].Value)
-    $testBadging = (& $aapt dump badging $testApk 2>&1) -join "`n"
-    $testMatch = [regex]::Match($testBadging, "package: name='([^']+)' versionCode='([^']+)' versionName='([^']*)'")
-    if ($LASTEXITCODE -ne 0 -or -not $testMatch.Success -or $testMatch.Groups[1].Value -ne 'io.healthtracker.companion.debug.test') {
+    $testBadgingResult = Invoke-Beta1NativeCommand $aapt @('dump', 'badging', $testApk)
+    $testBadging = $testBadgingResult.Output -join "`n"
+    $testMatch = [regex]::Match($testBadging, "package: name='([^']+)'")
+    if ($testBadgingResult.ExitCode -ne 0 -or -not $testMatch.Success -or $testMatch.Groups[1].Value -ne 'io.healthtracker.companion.debug.test') {
         throw 'test_apk_package_mismatch'
     }
+    $testManifestResult = Invoke-Beta1NativeCommand $aapt @('dump', 'xmltree', $testApk, 'AndroidManifest.xml')
+    $testManifest = $testManifestResult.Output -join "`n"
+    $targetPackageMatch = [regex]::Match($testManifest, 'android:targetPackage[^=]*="([^"]+)"')
+    if ($testManifestResult.ExitCode -ne 0 -or -not $targetPackageMatch.Success -or
+        $targetPackageMatch.Groups[1].Value -ne 'io.healthtracker.companion.debug') {
+        throw 'test_apk_target_package_mismatch'
+    }
 
-    $installed = ((& $adb -s $selected.Serial shell pm list packages io.healthtracker.companion.debug 2>$null) -join '').Trim()
-    if ($installed -notmatch 'package:io\.healthtracker\.companion\.debug') { throw 'expected_debug_package_not_installed' }
+    $postRunSelected = Select-Beta1DisposableDevice (Add-Beta1AvdNames $adb (Get-Beta1ConnectedDevices $adb)) $expectedAvd
+    if ($postRunSelected.Fingerprint -ne $selected.Fingerprint) { throw 'disposable_avd_identity_changed' }
 
     New-Item -ItemType Directory -Path $resultRoot -Force | Out-Null
     $sourceResults = Join-Path $androidRoot 'app\build\outputs\androidTest-results'
@@ -92,43 +114,45 @@ try {
             $xmlFiles += $destination
         }
     }
-    $total = 0; $failed = 0; $skipped = 0; $errors = 0; $failedClasses = @()
-    foreach ($path in $xmlFiles) {
-        [xml]$document = Get-Content -Raw -Encoding UTF8 -LiteralPath $path
-        foreach ($suite in @($document.testsuites.testsuite) + @($document.testsuite)) {
-            if ($null -eq $suite -or -not $suite.tests) { continue }
-            $total += [int]$suite.tests
-            $failed += [int]$suite.failures
-            $errors += [int]$suite.errors
-            $skipped += [int]$suite.skipped
-            if ([int]$suite.failures + [int]$suite.errors -gt 0) { $failedClasses += [string]$suite.name }
-        }
+    $summary = Get-Beta1JUnitSummary $xmlFiles
+    $sourceTestRoot = Join-Path $androidRoot 'app\src\androidTest'
+    $sourceTestMethods = 0; $sourceTestFiles = 0
+    foreach ($sourceFile in Get-ChildItem -LiteralPath $sourceTestRoot -Filter '*.kt' -File -Recurse) {
+        $sourceText = Get-Content -Raw -Encoding UTF8 -LiteralPath $sourceFile.FullName
+        $count = [regex]::Matches($sourceText, '(?m)^\s*@Test\b').Count
+        if ($count -gt 0) { $sourceTestMethods += $count; $sourceTestFiles++ }
     }
-    $passed = $total - $failed - $errors - $skipped
     $report = [ordered]@{
         schema = 'health-tracker-beta1-instrumentation-v1'
         session_id = $SessionId
         avd_name = $expectedAvd
         serial_fingerprint = $selected.Fingerprint
         device_kind = 'disposable-emulator'
+        api = [int]$metadata.api
         package = $targetMatch.Groups[1].Value
+        test_package = $testMatch.Groups[1].Value
+        test_target_package = $targetPackageMatch.Groups[1].Value
         version_code = [long]$targetMatch.Groups[2].Value
         version_name = $targetMatch.Groups[3].Value
         target_apk_sha256 = (Get-FileHash -LiteralPath $targetApk -Algorithm SHA256).Hash.ToLowerInvariant()
         test_apk_sha256 = (Get-FileHash -LiteralPath $testApk -Algorithm SHA256).Hash.ToLowerInvariant()
-        total = $total
-        passed = $passed
-        skipped = $skipped
-        failed = $failed + $errors
-        failed_classes = @($failedClasses | Select-Object -Unique)
+        total = $summary.Total
+        passed = $summary.Passed
+        skipped = $summary.Skipped
+        failed = $summary.Failed
+        source_test_methods = $sourceTestMethods
+        source_test_files = $sourceTestFiles
+        executed_classes = $summary.ExecutedClasses
+        failed_classes = $summary.FailedClasses
+        failed_methods = $summary.FailedMethods
         gradle_exit_code = $gradleExit
         result_xml_files = $xmlFiles.Count
         duration_seconds = [math]::Round(([DateTime]::UtcNow - $startedAt).TotalSeconds, 3)
         completed_at_utc = [DateTime]::UtcNow.ToString('o')
     }
     Write-Beta1Json $report $reportPath
-    if ($gradleExit -ne 0 -or $report.failed -gt 0 -or $total -eq 0) { throw 'instrumentation_failed_or_empty' }
-    Write-Output "Instrumentation passed on ${expectedAvd}: $passed passed, $skipped skipped, 0 failed."
+    if ($gradleExit -ne 0 -or $report.failed -gt 0 -or $report.total -eq 0) { throw 'instrumentation_failed_or_empty' }
+    Write-Output "Instrumentation passed on ${expectedAvd}: $($report.passed) passed, $($report.skipped) skipped, 0 failed."
     exit 0
 } catch {
     if (-not (Test-Path -LiteralPath $reportPath)) {

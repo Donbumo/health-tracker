@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit
 
 data class VerifiedPackage(val value: WorkoutPackageDto, val calculatedHash: String)
 data class PortableDownloadResult(val sha256: String, val sizeBytes: Long)
+internal const val ACTIVITY_EXPORT_TOO_LARGE_MESSAGE = "La exportación supera el límite local."
 
 class ApiClient(
     private val preferences: PreferenceStore,
@@ -188,7 +189,7 @@ class ApiClient(
                 val input = response.body.byteStream(); val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                 while (true) {
                     val read = input.read(buffer); if (read < 0) break
-                    size += read; if (size > MAX_ACTIVITY_EXPORT_BYTES) throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "La exportaciÃ³n supera el lÃ­mite local.", false)
+                    size += read; if (size > MAX_ACTIVITY_EXPORT_BYTES) throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, ACTIVITY_EXPORT_TOO_LARGE_MESSAGE, false)
                     digest.update(buffer, 0, read); output.write(buffer, 0, read)
                 }
             }

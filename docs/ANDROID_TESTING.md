@@ -1,5 +1,13 @@
 # Pruebas Android Companion
 
+## Beta 1
+
+Beta 1 añade regresiones JVM para propagación de `CancellationException`, nombres opacos de archivos remotos y texto UTF-8. La instrumentación ahora declara 1/2/3/4/5/6/7/8/9→10 y reapertura v10. El harness de `scripts/beta/` prueba 25 casos sin dispositivo: SDK/rutas con espacios, imágenes disponibles/ausentes/Play, selección/rechazo de dispositivos, timeout, cleanup, cancelación, JSON sin BOM, serial sanitizado, APK/package/version, aislamiento MariaDB y staging.
+
+El 1 de agosto de 2026 pasó el gate Beta en orden: `lintDebug`, 172/172 JVM forzadas, `assembleDebug`, compilación de 123 tests `androidTest` y segunda pasada forzada 172/172. Compilar esos 123 tests no los marca ejecutados. El APK Beta tiene code 21/name `2.0.0-beta01-debug`, 18.213.405 bytes, firma v2 y SHA-256 `3758030fa28acbe579b90fc6ddcbfaa5a8b2d60d53cb6ba64592917ac4ebf5f9`.
+
+La ejecución conectada permanece bloqueada: solo hay una imagen API 37.1 Play Store y falta `avdmanager`. Compilar `androidTest` no cuenta como ejecución. Resultados exactos y bloqueos: [Android release readiness](ANDROID_RELEASE_READINESS.md); recorrido posterior: [runbook físico Beta 1](BETA_1_PHYSICAL_QA_RUNBOOK.md).
+
 ## Alpha 2.0
 
 Las JVM cubren extensión FIT/GPX/TCX, rechazo de doble extensión, hash corto y nombre único de WorkManager por cuenta/servidor/job. Las instrumentadas compilables cubren Room 9→10, cadena 1→10, preservación y aislamiento de un UUID repetido por cuenta e identidad de servidor. Los tests backend cubren el contrato multipart, jobs durables, dedupe, privacidad, linking y portabilidad.

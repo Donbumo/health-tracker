@@ -20,6 +20,7 @@ import io.healthtracker.companion.core.database.PortableImportPlanEntity
 import io.healthtracker.companion.core.database.PortableInspectionEntity
 import io.healthtracker.companion.core.model.AppFailure
 import io.healthtracker.companion.core.network.ApiClient
+import io.healthtracker.companion.core.sync.rethrowIfCancellation
 import java.io.File
 import java.time.Instant
 import java.util.UUID
@@ -301,6 +302,7 @@ class PortabilityRepository(
                 if (failure.retryable && retryable == null) retryable = failure
                 else if (!failure.retryable && terminal == null) terminal = failure
             } catch (failure: Throwable) {
+                failure.rethrowIfCancellation()
                 if (terminal == null) terminal = failure
             }
         }
@@ -382,7 +384,8 @@ class PortabilityWorker(context: Context, params: WorkerParameters) : CoroutineW
             Result.success()
         } catch (failure: AppFailure) {
             if (failure.retryable) Result.retry() else Result.failure()
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            error.rethrowIfCancellation()
             Result.failure()
         }
     }

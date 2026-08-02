@@ -1,6 +1,7 @@
 package io.healthtracker.companion.core.healthconnect
 
 import io.healthtracker.companion.core.external.shortFingerprint
+import io.healthtracker.companion.core.sync.rethrowIfCancellation
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -91,6 +92,7 @@ class HealthConnectScaleDiagnosticService(
                 } while (pageToken != null && pageCount < 10 && records.size < 5_000)
             }
         } catch (failure: Exception) {
+            failure.rethrowIfCancellation()
             return ScaleDiagnosticResult(status = ScaleDiagnosticStatus.TEMPORARY_ERROR, errorCode = sanitizedError(failure))
         }
         if (records.isEmpty()) return ScaleDiagnosticResult(status = ScaleDiagnosticStatus.NO_COMPATIBLE_MEASUREMENTS)

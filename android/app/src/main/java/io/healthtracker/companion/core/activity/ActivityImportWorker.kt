@@ -13,6 +13,7 @@ import androidx.work.WorkerParameters
 import io.healthtracker.companion.HealthTrackerApplication
 import io.healthtracker.companion.core.model.AppFailure
 import io.healthtracker.companion.core.network.CanonicalJson
+import io.healthtracker.companion.core.sync.rethrowIfCancellation
 import java.util.concurrent.TimeUnit
 import java.security.MessageDigest
 import kotlinx.coroutines.flow.first
@@ -32,7 +33,10 @@ class ActivityImportWorker(context: Context, parameters: WorkerParameters) : Cor
             Result.success()
         } catch (failure: AppFailure) {
             if (failure.retryable) Result.retry() else Result.failure()
-        } catch (_: Exception) { Result.retry() }
+        } catch (error: Exception) {
+            error.rethrowIfCancellation()
+            Result.retry()
+        }
     }
 
     companion object {

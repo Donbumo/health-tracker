@@ -1,5 +1,11 @@
 # Seguridad Android Companion
 
+## Endurecimiento Beta 1
+
+Toda caché médica, ruta/serie y export de actividad deriva el nombre de un SHA-256 opaco separado por propósito; un UUID/ID remoto nunca se interpola como path. La escritura valida el parent canónico y un export fallido elimina su parcial. La cancelación estructurada se propaga desde gateway/colas/workers para que logout o cambio de servidor no se conviertan en retry silencioso.
+
+El auditor Beta inspecciona package, versión, SDK, debuggable, firma v2/v3, permisos, ZIP y patrones sensibles sin imprimir coincidencias. Los reportes viven fuera del repositorio y solo contienen nombres de patrones, conteos y clasificación.
+
 ## Ubicación de actividades Alpha 2.0
 
 Las rutas son datos sensibles. La selección ofrece conservar, recortar extremos o descartar sin una activación silenciosa. Android dibuja la copia visible localmente y no usa mapas, tiles, geocodificación ni nombres de calles. Exportar usa un FileProvider privado y chooser explícito; JSON omite ruta por defecto y GPX solo se habilita si existe una ruta visible.

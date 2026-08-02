@@ -1,5 +1,9 @@
 # Guía de usuario
 
+## Android Beta 1
+
+Beta 1 conserva exactamente los flujos Alpha 2.0 y cambia la versión a `2.0.0-beta01-debug` para QA controlado. No es una release final. Una actualización debe usar `adb install -r` sobre un recurso QA autorizado y nunca uninstall/`pm clear`; sigue el [runbook físico Beta 1](BETA_1_PHYSICAL_QA_RUNBOOK.md) con cuenta y archivos ficticios.
+
 ## Actividades FIT/GPX/TCX Alpha 2.0
 
 En Android abre **Historial → Actividades**. Elige primero si conservar, recortar extremos o descartar la ruta; después pulsa **Importar FIT/GPX/TCX**. Puedes seleccionar el archivo sin red: la app valida extensión/tamaño, calcula un hash corto visible y deja el upload en cola. Al reconectar espera a que el estado sea “Inspeccionada” y revisa warnings antes de **Confirmar**. Cancelar elimina la copia parcial local.

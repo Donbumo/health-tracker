@@ -1,4 +1,8 @@
-# Android Companion Alpha 2.0
+# Android Companion
+
+## Beta 1
+
+Beta 1 congela las capacidades Alpha 2.0 y cambia únicamente versionCode/name a 21/`2.0.0-beta01`. Endurece cancelación de workers y nombres privados derivados de IDs remotos, amplía la matriz de migración 1–10 y añade harness/QA reproducible. No cambia navegación, contratos, Room, Alembic, applicationId, SDKs ni soporte de producto. Véase [estabilización Beta 1](BETA_1_ANDROID_STABILIZATION.md).
 
 ## Actividades Alpha 2.0
 

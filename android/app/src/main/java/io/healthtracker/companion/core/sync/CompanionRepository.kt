@@ -2224,6 +2224,7 @@ class CompanionRepository(
                 ),
             )
         } catch (error: Exception) {
+            error.rethrowIfCancellation()
             val concurrent = dao.pendingByKey(scope, key)
             if (concurrent != null && concurrent.payloadHash == hash && concurrent.actionType == type && concurrent.entityId == entityId) return
             throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "No fue posible conservar la operación pendiente.", true)

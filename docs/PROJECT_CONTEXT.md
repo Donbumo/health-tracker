@@ -148,4 +148,8 @@ Alpha 1.8 incorpora engagement no clínico. El servidor persiste objetivos y reg
 
 Consulta `DOCUMENTATION_INDEX.md` para el mapa completo por dominio.
 
+## Freeze Android Beta 1
+
+Android `2.0.0-beta01` es una estabilización de Alpha 2.0, no una nueva fase funcional. Room 10, Alembic 0036, contratos, cinco pestañas y límites de producto permanecen congelados. Los gates conectados y QA físico se documentan como pendientes cuando no se han ejecutado; consulta [BETA_1_ANDROID_STABILIZATION.md](BETA_1_ANDROID_STABILIZATION.md).
+
 Alpha 1.9 incorpora documentación médica privada sin convertir Health Tracker en herramienta clínica: conserva estudios, resultados y originales, compara únicamente unidades/métodos técnicamente compatibles y mantiene rangos/estados como procedencia del informe. OCR, IA, diagnóstico, recomendaciones, FHIR obligatorio y rangos universales siguen fuera de los límites del producto. Véase [ALPHA_1_9_MEDICAL_RECORDS.md](ALPHA_1_9_MEDICAL_RECORDS.md).

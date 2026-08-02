@@ -40,6 +40,8 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 
 ## API, sync y companion
 
+- Beta 1 Android: [BETA_1_ANDROID_STABILIZATION.md](BETA_1_ANDROID_STABILIZATION.md), [ANDROID_RELEASE_READINESS.md](ANDROID_RELEASE_READINESS.md), [BETA_RELEASE_CHECKLIST.md](BETA_RELEASE_CHECKLIST.md) y [BETA_1_PHYSICAL_QA_RUNBOOK.md](BETA_1_PHYSICAL_QA_RUNBOOK.md).
+
 - API v1: [project-rules/api-v1.md](project-rules/api-v1.md), [API_V1.md](API_V1.md), [API_AUTH.md](API_AUTH.md), [API_DEVICE_SESSIONS.md](API_DEVICE_SESSIONS.md), [API_SECURITY.md](API_SECURITY.md), [COMPANION_BOOTSTRAP.md](COMPANION_BOOTSTRAP.md).
 - Mobile Sync: [project-rules/mobile-sync.md](project-rules/mobile-sync.md), [MOBILE_SYNC.md](MOBILE_SYNC.md), [SYNC_PROTOCOL_1_0.md](SYNC_PROTOCOL_1_0.md), [SYNC_IDEMPOTENCY.md](SYNC_IDEMPOTENCY.md), [SYNC_CONFLICTS.md](SYNC_CONFLICTS.md), [PLANNED_WORKOUTS.md](PLANNED_WORKOUTS.md).
 - Companion delivery: [project-rules/companion-protocol.md](project-rules/companion-protocol.md), [COMPANION_PROTOCOL_1_0.md](COMPANION_PROTOCOL_1_0.md), [COMPANION_CAPABILITIES.md](COMPANION_CAPABILITIES.md), [COMPANION_WORKOUT_PACKAGE.md](COMPANION_WORKOUT_PACKAGE.md), [COMPANION_DELIVERY.md](COMPANION_DELIVERY.md), [COMPANION_PROGRESS.md](COMPANION_PROGRESS.md).

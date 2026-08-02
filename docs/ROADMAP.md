@@ -4,6 +4,8 @@ Este documento reúne trabajo futuro o no comprobado. No describe funcionalidade
 
 ## Próximos cierres operativos
 
+- Completar los gates conectados de Beta 1 en una imagen ya instalada sin Play Store: instrumentación, Room 1–10, upgrade `adb install -r`, offline/process death, WorkManager, reboot, notificaciones, SAF/FileProvider, rendimiento, layouts y TalkBack. Seguir [BETA_1_PHYSICAL_QA_RUNBOOK.md](BETA_1_PHYSICAL_QA_RUNBOOK.md); no abrir Alpha 2.1 como sustituto de este cierre.
+
 - Completar QA manual Alpha 2.0 con fixtures ficticias: SAF persistido/perdido, process death, modo avión→reconexión, cancelación/reintento WorkManager, ruta keep/redact/drop/delete, FileProvider, plan sugerido, TalkBack, rotación, fuente grande y 320/360/411/600 dp. FIT de salida, TCX de salida sin semántica demostrada, mapas externos y archivos reales siguen fuera de alcance.
 
 - Completar QA manual Alpha 1.9 con datos ficticios: SAF persistido/perdido, process death, upload interrumpido, modo avión→reconexión, documentos con visor externo, portabilidad con/sin binarios, TalkBack, rotación, fuente grande y 320/360/411/600 dp. OCR, IA, FHIR, antivirus administrado e interpretación clínica requieren fases contractuales independientes.

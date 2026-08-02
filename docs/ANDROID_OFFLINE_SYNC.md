@@ -1,5 +1,11 @@
 # Android offline y sincronización
 
+## Estabilización Beta 1
+
+`CancellationException` vuelve a propagarse desde SyncWorker, ActivityImportWorker, HealthConnectWorker, PortabilityWorker y las colas/adaptadores intermedios. Cancelar WorkManager por logout o cambio de servidor ya no se clasifica como retry/failure común. Los IDs remotos tampoco forman nombres de archivos: caché y shares usan nombres SHA-256 opacos, manteniendo partición por scope.
+
+Las carreras reales logout/worker, cambio de servidor/worker, process death y reconnect siguen pendientes de ejecución en AVD permitido; la cobertura compilable no equivale a ese gate.
+
 ## Cola de actividades Alpha 2.0
 
 Seleccionar FIT/GPX/TCX funciona offline: SAF entrega una URI, se valida extensión y límite de 10 MB, se calcula SHA-256 en streaming y se guarda un parcial privado consentido junto con `ActivityImportEntity` y `ActivityOperationEntity`. Un WorkManager único por cuenta+servidor+job espera `CONNECTED`, usa backoff exponencial y verifica hash antes/después de multipart. Si cambia cuenta o servidor el worker falla sin reutilizar datos; URI/archivo perdido queda visible como `source_lost`.

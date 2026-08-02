@@ -1,5 +1,7 @@
 # Checklist de release alpha privada
 
+> El desarrollo funcional Alpha terminó en 2.0. Los puntos operativos no cerrados pasan al checklist/runbook Beta 1; este archivo queda como registro Alpha y no autoriza marcar QA físico no ejecutado.
+
 ## Alpha 2.0 — intercambio de actividades
 
 - [x] FIT/GPX/TCX → `health-tracker-activity-v1` con detección real, límites, XML endurecido, procedencia y sin valores inventados.

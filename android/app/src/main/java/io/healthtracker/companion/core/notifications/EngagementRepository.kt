@@ -9,6 +9,7 @@ import io.healthtracker.companion.core.database.ReminderEventEntity
 import io.healthtracker.companion.core.database.ReminderRuleEntity
 import io.healthtracker.companion.core.network.ApiClient
 import io.healthtracker.companion.core.network.CanonicalJson
+import io.healthtracker.companion.core.sync.rethrowIfCancellation
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
@@ -198,6 +199,7 @@ class EngagementRepository(
                 }
                 dao.deletePending(pending.localId)
             } catch (error: Exception) {
+                error.rethrowIfCancellation()
                 dao.updatePending(pending.localId, "pending", "engagement_sync_failed", System.currentTimeMillis() + 60_000L)
                 return@repeat
             }

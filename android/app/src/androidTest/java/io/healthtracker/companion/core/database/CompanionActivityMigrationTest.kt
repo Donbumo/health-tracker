@@ -16,17 +16,38 @@ class CompanionActivityMigrationTest {
         InstrumentationRegistry.getInstrumentation(), CompanionDatabase::class.java,
     )
 
-    @Test fun migration1To10RunsEveryExplicitStep() {
-        val name = "alpha20-activity-v1"
-        helper.createDatabase(name, 1).close()
-        val migrations = arrayOf<Migration>(
+    @Test fun migration1To10RunsEveryExplicitStep() = migrateFrom(1)
+    @Test fun migration2To10RunsEveryExplicitStep() = migrateFrom(2)
+    @Test fun migration3To10RunsEveryExplicitStep() = migrateFrom(3)
+    @Test fun migration4To10RunsEveryExplicitStep() = migrateFrom(4)
+    @Test fun migration5To10RunsEveryExplicitStep() = migrateFrom(5)
+    @Test fun migration6To10RunsEveryExplicitStep() = migrateFrom(6)
+    @Test fun migration7To10RunsEveryExplicitStep() = migrateFrom(7)
+    @Test fun migration8To10RunsEveryExplicitStep() = migrateFrom(8)
+
+    @Test fun migratedVersion10ReopensWithoutSchemaMutation() {
+        val name = "beta1-activity-reopen-v10"
+        migrateFrom(1, name)
+        assertPreservedAccountAndActivityTables(helper.runMigrationsAndValidate(name, 10, true))
+    }
+
+    private fun migrateFrom(from: Int, name: String = "beta1-activity-v$from") {
+        helper.createDatabase(name, from).apply {
+            execSQL("INSERT INTO accounts(scope,serverUrl,userPublicId,displayEmail,deviceId,timezone,createdAt) VALUES('qa-scope-$from','https://qa.invalid','qa-user-$from','qa-$from@example.invalid','qa-device-$from','UTC','2026-08-01T00:00:00Z')")
+            close()
+        }
+        val migrations = listOf<Migration>(
             CompanionDatabase.MIGRATION_1_2, CompanionDatabase.MIGRATION_2_3,
             CompanionDatabase.MIGRATION_3_4, CompanionDatabase.MIGRATION_4_5,
             CompanionDatabase.MIGRATION_5_6, CompanionDatabase.MIGRATION_6_7,
             CompanionDatabase.MIGRATION_7_8, CompanionDatabase.MIGRATION_8_9,
             CompanionDatabase.MIGRATION_9_10,
         )
-        assertActivityTables(helper.runMigrationsAndValidate(name, 10, true, *migrations))
+        val migrated = helper.runMigrationsAndValidate(name, 10, true, *migrations.drop(from - 1).toTypedArray())
+        migrated.query("SELECT COUNT(*) FROM accounts WHERE scope='qa-scope-$from'").use {
+            assertTrue(it.moveToFirst()); assertEquals(1, it.getInt(0))
+        }
+        assertActivityTables(migrated)
     }
 
     @Test fun migration9To10IsAdditiveAndPreservesExistingData() {
@@ -61,5 +82,12 @@ class CompanionActivityMigrationTest {
         database.query("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('activity_imports','activities','activity_laps','activity_series_metadata','activity_routes','activity_duplicate_candidates','plan_activity_links','plan_actual_comparisons','activity_operations')")
             .use { assertEquals(9, it.count) }
         database.close()
+    }
+
+    private fun assertPreservedAccountAndActivityTables(database: androidx.sqlite.db.SupportSQLiteDatabase) {
+        database.query("SELECT COUNT(*) FROM accounts WHERE scope='qa-scope-1'").use {
+            assertTrue(it.moveToFirst()); assertEquals(1, it.getInt(0))
+        }
+        assertActivityTables(database)
     }
 }

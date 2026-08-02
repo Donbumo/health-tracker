@@ -52,7 +52,8 @@ class SyncWorker(context: Context, parameters: WorkerParameters) : CoroutineWork
                 return Result.failure()
             }
             if (failure.retryable) Result.retry() else Result.failure()
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            error.rethrowIfCancellation()
             Result.retry()
         }
     }

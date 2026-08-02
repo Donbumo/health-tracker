@@ -23,6 +23,7 @@ import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ChangesTokenRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import io.healthtracker.companion.core.sync.rethrowIfCancellation
 import java.io.IOException
 import java.time.Instant
 import java.time.LocalDate
@@ -140,6 +141,7 @@ class AndroidHealthConnectGateway(private val context: Context) : HealthConnectG
     } catch (failure: IOException) {
         throw HealthConnectGatewayException("provider_io", retryable = true, failure)
     } catch (failure: Exception) {
+        failure.rethrowIfCancellation()
         throw HealthConnectGatewayException("provider_error", retryable = true, failure)
     }
 

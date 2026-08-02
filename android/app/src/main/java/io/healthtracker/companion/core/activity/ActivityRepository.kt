@@ -10,6 +10,7 @@ import io.healthtracker.companion.core.database.*
 import io.healthtracker.companion.core.model.AppErrorCode
 import io.healthtracker.companion.core.model.AppFailure
 import io.healthtracker.companion.core.network.ApiClient
+import io.healthtracker.companion.core.security.PrivateFileNames
 import java.io.File
 import java.security.MessageDigest
 import java.time.Instant
@@ -177,14 +178,14 @@ class ActivityRepository(
                 row.numberString("distanceMeters"), row["metrics"]?.toString() ?: "{}")
         }
         val series = api.activitySeries(publicId, 240); val seriesItems = series["items"]?.jsonArray.orEmpty()
-        val seriesName = if (seriesItems.isNotEmpty()) writeCache(scope, "series-$publicId.json", seriesItems.toString()) else null
+        val seriesName = if (seriesItems.isNotEmpty()) writeCache(scope, cacheName("activity-series", publicId), seriesItems.toString()) else null
         val fields = seriesItems.flatMap { it.jsonObject.keys }.filterNot { it in setOf("timestamp", "offsetSeconds") }.distinct()
         val now = Instant.now().toString()
         val metadata = ActivitySeriesMetadataEntity(scope, identity, publicId, series.long("sample_count") ?: seriesItems.size.toLong(),
             JsonArray(fields.map(::JsonPrimitive)).toString(), seriesItems.firstOrNull()?.jsonObject?.string("timestamp"),
             seriesItems.lastOrNull()?.jsonObject?.string("timestamp"), seriesName, now)
         val route = runCatching { api.activityRoute(publicId) }.getOrNull()
-        val routeName = if (route?.bool("present") == true) writeCache(scope, "route-$publicId.json", route["points"]?.toString() ?: "[]") else null
+        val routeName = if (route?.bool("present") == true) writeCache(scope, cacheName("activity-route", publicId), route["points"]?.toString() ?: "[]") else null
         val routeEntity = ActivityRouteEntity(scope, identity, publicId, route?.string("state") ?: "unavailable",
             detail["route"]?.jsonObject?.string("policy") ?: "keep", route?.get("points")?.jsonArray?.size?.toLong() ?: 0,
             route?.get("points")?.jsonArray.orEmpty().any { it.jsonObject.containsKey("elevation") }, routeName,
@@ -205,7 +206,7 @@ class ActivityRepository(
         storeActivity(scope, identity, api.deleteActivityRoute(activity.publicId, activity.revision, UUID.randomUUID().toString()))
         dao.upsertActivityRoute(ActivityRouteEntity(scope, identity, activity.publicId, "removed", "drop", 0, false, null,
             Instant.now().toString(), Instant.now().toString()))
-        File(cacheDirectory(scope), "route-${activity.publicId}.json").delete()
+        File(cacheDirectory(scope), cacheName("activity-route", activity.publicId)).delete()
     }
 
     suspend fun planCandidates(activityId: String): List<JsonObject> =
@@ -223,15 +224,20 @@ class ActivityRepository(
         require(format in setOf("json", "summary_csv", "laps_csv", "samples_csv", "gpx"))
         val extension = if (format == "gpx") "gpx" else if (format == "json") "json" else "csv"
         val directory = File(context.cacheDir, "activity_exports").apply { mkdirs() }
-        val target = File(directory, "activity-${activityId.take(8)}.$extension")
-        api.downloadActivityExport(activityId, format, includeRoute, target)
+        val target = File(directory, PrivateFileNames.opaque("activity-export", activityId, extension))
+        try {
+            api.downloadActivityExport(activityId, format, includeRoute, target)
+        } catch (failure: Throwable) {
+            target.delete()
+            throw failure
+        }
         val uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.activity-exports", target)
         return Intent(Intent.ACTION_SEND).setType(if (extension == "gpx") "application/gpx+xml" else if (extension == "json") "application/json" else "text/csv")
             .putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
 
     fun routePoints(scope: String, activityId: String, maximum: Int = 240): List<Pair<Double, Double>> {
-        val file = File(cacheDirectory(scope), "route-$activityId.json")
+        val file = File(cacheDirectory(scope), cacheName("activity-route", activityId))
         val values = runCatching { api.json.parseToJsonElement(file.readText()).jsonArray }.getOrNull().orEmpty()
         val stride = (values.size / maximum.coerceAtLeast(1)).coerceAtLeast(1)
         return values.filterIndexed { index, _ -> index % stride == 0 }.take(maximum).mapNotNull { raw ->
@@ -243,7 +249,7 @@ class ActivityRepository(
     fun metricSeries(scope: String, activityId: String, metric: String): List<Double> {
         val allowed = setOf("speed", "pace", "heartRate", "cadence", "power", "elevation", "distance")
         if (metric !in allowed) return emptyList()
-        val file = File(cacheDirectory(scope), "series-$activityId.json")
+        val file = File(cacheDirectory(scope), cacheName("activity-series", activityId))
         return runCatching { api.json.parseToJsonElement(file.readText()).jsonArray }.getOrNull().orEmpty()
             .mapNotNull { it.jsonObject[metric]?.jsonPrimitive?.doubleOrNull?.takeIf(Double::isFinite) }
     }
@@ -305,8 +311,13 @@ class ActivityRepository(
     private fun importDirectory(scope: String) = File(context.noBackupFilesDir, "activity_imports/${scopeHash(scope)}").apply { mkdirs() }
     private fun cacheDirectory(scope: String) = File(context.noBackupFilesDir, "activity_cache/${scopeHash(scope)}").apply { mkdirs() }
     private fun writeCache(scope: String, name: String, content: String): String {
-        val target = File(cacheDirectory(scope), name); target.writeText(content); return name
+        val directory = cacheDirectory(scope).canonicalFile
+        val target = File(directory, name).canonicalFile
+        require(target.parentFile == directory) { "activity_cache_path_invalid" }
+        target.writeText(content)
+        return name
     }
+    private fun cacheName(label: String, activityId: String) = PrivateFileNames.opaque(label, activityId, "json")
     private fun mimeFor(row: ActivityImportEntity) = row.mimeType ?: when (row.detectedFormat ?: ActivityFileRules.formatFor(row.displayName)) {
         "gpx" -> "application/gpx+xml"; "tcx" -> "application/vnd.garmin.tcx+xml"; else -> "application/octet-stream"
     }

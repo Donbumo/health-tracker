@@ -1,5 +1,7 @@
 # Mobile Sync Foundation
 
+Beta 1 no cambia Mobile Sync, cursor, schemas ni endpoints. La estabilización es cliente-side: cancelación estructurada en workers/colas y archivos opacos para respuestas remotas. Idempotency keys, revisiones, UUID y ownership conservan los contratos Alpha 2.0.
+
 Alpha 2.0 no añade actividades al cursor/push genérico. Usa endpoints agregados Bearer bajo `/api/v1/mobile/activities`, UUID público, idempotencia y revisión optimista. Android mantiene `activity_operations` y WorkManager separado porque el upload multipart y la barrera inspect→apply no son una mutación JSON de Mobile Sync. La caché sigue aislada por cuenta+servidor; un recurso ajeno responde 404.
 
 Mobile Sync 1.0 extiende Bearer API v1 con planned workouts, completed upload, bootstrap/pull/push/status, revisiones, tombstones, cursor por dispositivo e idempotencia.

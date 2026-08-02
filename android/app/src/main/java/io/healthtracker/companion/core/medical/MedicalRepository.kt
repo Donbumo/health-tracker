@@ -8,6 +8,7 @@ import androidx.room.withTransaction
 import io.healthtracker.companion.core.database.*
 import io.healthtracker.companion.core.model.AppFailure
 import io.healthtracker.companion.core.network.ApiClient
+import io.healthtracker.companion.core.security.PrivateFileNames
 import java.io.File
 import java.security.MessageDigest
 import java.time.Instant
@@ -246,17 +247,17 @@ class MedicalRepository(
         }
         current.uploadTempFileName?.let { File(context.noBackupFilesDir,
             "medical_uploads/${scopeHash(scope)}/$it").delete() }
-        File(sharedDocumentDirectory(scope), "${current.publicId}${extensionFor(current.mimeType)}").delete()
+        File(sharedDocumentDirectory(scope), sharedDocumentName(current.publicId, current.mimeType)).delete()
     }
 
     suspend fun explicitShareIntent(scope: String, serverIdentity: String, publicId: String): Intent {
         val document = dao.medicalDocument(scope, serverIdentity, publicId) ?: error("document_not_found")
         val directory = sharedDocumentDirectory(scope).apply { mkdirs() }
-        val target = File(directory, "${document.publicId}${extensionFor(document.mimeType)}")
+        val target = File(directory, sharedDocumentName(document.publicId, document.mimeType))
         val existing = if (target.isFile()) fileDigest(target) else null
         if (existing == null || existing.first != document.sha256 || existing.second != document.sizeBytes) {
             target.delete()
-            val partial = File(directory, "${document.publicId}.partial").also { it.delete() }
+            val partial = File(directory, PrivateFileNames.opaque("medical-partial", document.publicId, "part")).also { it.delete() }
             try {
                 val localName = document.uploadTempFileName
                 if (localName != null) {
@@ -472,6 +473,8 @@ class MedicalRepository(
         .joinToString("") { "%02x".format(it) }
     private fun scopeHash(scope: String) = sha256(scope).take(24)
     private fun sharedDocumentDirectory(scope: String) = File(context.cacheDir, "medical_documents/${scopeHash(scope)}")
+    private fun sharedDocumentName(publicId: String, mimeType: String) =
+        PrivateFileNames.opaque("medical-document", publicId, extensionFor(mimeType).removePrefix("."))
     private fun extensionFor(mimeType: String) = when (mimeType) {
         "application/pdf" -> ".pdf"
         "image/jpeg" -> ".jpg"

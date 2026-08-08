@@ -1,5 +1,79 @@
 # Checklist de release alpha privada
 
+> El desarrollo funcional Alpha terminó en 2.0. Los puntos operativos no cerrados pasan al checklist/runbook Beta 1; este archivo queda como registro Alpha y no autoriza marcar QA físico no ejecutado.
+
+## Alpha 2.0 — intercambio de actividades
+
+- [x] FIT/GPX/TCX → `health-tracker-activity-v1` con detección real, límites, XML endurecido, procedencia y sin valores inventados.
+- [x] API Bearer owner-only con UUID, inspect/apply, idempotencia, revisión, paginación, filtros, laps, series, ruta, exports, links y comparación.
+- [x] Alembic 0036 aditiva/reversible; series/rutas fuera de DB y archivos originales privados con nombres aleatorios.
+- [x] Dedupe exacto automático y probable/posible conservador; strong link verificable y weak link bajo confirmación.
+- [x] Ruta keep/drop/redact/delete, trazado local y opt-ins independientes de coordenadas/series en portable.
+- [x] Android code 20/name `2.0.0-alpha01`, Room 10, SAF, FileProvider, WorkManager único y cinco pestañas.
+- [x] Cuatro CLI de actividad, cuatro documentos canónicos y schemas activity/portable locales.
+- [x] Gate final: backend local 716/9; MariaDB 92/92 con migración, concurrencia y E2E; Android lint, 166 JVM dos veces, APK y androidTest compilable, sin ejecutar `connectedDebugAndroidTest`.
+- [x] APK code 20/name `2.0.0-alpha01-debug`, 18.197.013 bytes, firma v2, SHA-256 `C32AC0352FDE62EC9144BABEB4A38667E0C9E2E818289E451CC2839AADED21D7` y escaneo sensible limpio.
+- [ ] QA físico/manual en AVD/dispositivo separado; no se considera realizado por compilación automatizada.
+
+## Alpha 1.9 — estudios médicos, laboratorio y documentos
+
+- [x] API Bearer owner-only con UUID, idempotencia, revisiones, 404 cruzado, paginación/filtros y descargas `no-store`.
+- [x] Alembic 0035 aditiva/reversible con estudios, fuentes, paneles, resultados/revisiones, documentos, duplicados y auditoría sanitizada.
+- [x] Valor/unidad/rango del informe preservados; numeric/text/qualitative, sin NaN/Infinity ni rangos universales.
+- [x] Historial 30/90/180/365/todo y allowlist exacta/versionada; incompatibilidad de unidad/método se explica sin interpretación clínica.
+- [x] PDF/JPEG/PNG/JSON interno/CSV controlado, SHA-256, límites, MIME real, owner-only y eliminación separada.
+- [x] JSON/CSV con schemas, preview read-only, fórmula rechazada, confirmación, transacción y UUID mapping.
+- [x] Room 9, migración 8→9/cadena explícita, nueve entidades cuenta+servidor, cola offline y temporales fuera de SQLite.
+- [x] Salud mantiene cinco pestañas e incorpora estudios, detalle, resultados, correcciones, documentos e historial accesible.
+- [x] Portable v1 añade cuatro secciones; binarios médicos requieren opt-in separado y round-trip owner-scoped.
+- [x] Gate completo: backend local 687/7, Docker/MariaDB 693/1, Alembic cero/0034/check/downgrade/re-upgrade, E2E médico, lint, 157 JVM dos veces, APK y androidTest compilable.
+- [x] APK code 19/name `1.9.0-alpha01-debug`, 20.513.670 bytes, firma v2, SHA-256 `05E624AAE2137F063BD4B3866665DB03FF36DA6FFB109C54AF865F63F770E6F7` y sin fixtures médicas empaquetadas.
+- [ ] QA físico/manual e instrumentación en AVD separado; no forman parte del gate automatizado de esta rama.
+
+## Alpha 1.8 — objetivos, recordatorios y adherencia
+
+- [x] CRUD Bearer owner-only, UUID, idempotencia, revisión optimista y errores estructurados.
+- [x] Alembic 0034 y Room 8 son aditivos, reversibles/explícitos y sin migración destructiva.
+- [x] Scheduler local sin push ni exact alarms; quiet hours, snooze, dedupe y antispam.
+- [x] Permiso contextual, cuatro canales estables y lockscreen privado con contenido genérico.
+- [x] Offline create/update/delete, coalescing, aislamiento cuenta/servidor y centro local.
+- [x] Adherencia descriptiva 7/30/90 y resumen semanal condicionado a objetivos/datos.
+- [x] Portable v1 incluye sólo configuración de goals/reminder rules y exige confirmación de destino.
+- [ ] QA físico posterior: reboot, proceso, permiso, DST, OEM/batería y lockscreen real.
+
+## Alpha 1.7 — portabilidad selectiva
+
+- [x] Branch/HEAD y staging verificados; sin commit/push/merge/tag.
+- [x] Schemas portable v1 válidos y referencias locales resueltas.
+- [x] Export owner-only, opt-in de perfil/attachments, expiración y descarga no-cache.
+- [x] ZIP safety, checksums, schemas embebidos, límites y autenticidad no demostrada verificados.
+- [x] Inspect/dry-run/conflictos/remapeo/confirmación/rollback/repetición sin duplicados verificados.
+- [x] Alembic cero→0033, 0032→0033, check, downgrade y re-upgrade en MariaDB efímera.
+- [x] Room 1/2/3/4/5/6→7 compila sin fallback destructivo.
+- [x] SAF/FileProvider, offline, process death, parciales, hash y cleanup revisados en código/pruebas compilables.
+- [x] `lintDebug`, JVM dos veces, `assembleDebug` y `compileDebugAndroidTestKotlin` pasan; no se ejecutaron connected tests.
+- [x] CLI inspect/verify/list/sanitize y compileall pasan.
+- [x] APK escaneado; ningún paquete, attachment, dump, DB, secreto o dato real está versionado.
+- [ ] QA manual y riesgos pendientes se registran sin declarar evidencia no obtenida.
+
+## Alpha 1.6 — fuentes externas y Xiaomi S400 experimental
+
+- [x] Registro externo desacoplado y owner-scoped con cinco fuentes iniciales.
+- [x] Diagnóstico Weight/BodyFat sanitizado y confirmación local revocable sin reclasificación automática Xiaomi.
+- [x] Permisos BLE por API, hardware opcional, solicitud contextual y estados sin BLE/apagado/denegado.
+- [x] Scan limitado/cancelable/single-flight con selección explícita, sin MAC principal ni loop.
+- [x] GATT con timeouts/límites/cierre; snapshot sin valores y cero escrituras de características desconocidas.
+- [x] Captura debug consentida, limitada, cifrada/privada, metadata Room, delete, export FileProvider explícito y replay determinista.
+- [x] Adaptador S400 sin offsets/fórmulas/métricas; ground truth separado y gate documentado para peso.
+- [x] Dedupe multifuentе conserva probable/posible/override y solo automatiza identidad fuerte exacta.
+- [x] Room 6 y migraciones explícitas 1/2/3/4/5→6; capturas fuera de SQLite.
+- [x] Fixtures ficticias y herramientas sanitizar/inspeccionar/comparar sin semántica.
+- [x] Gate final en orden: lint; 146/146 JVM; APK; androidTest compilable; segunda JVM 146/146. APK 18.719.697 bytes, SHA-256 `45f6dc75925612c6f84927270009a752b061679f383500c0f13c990235df5ac4`.
+- [ ] QA físico en S400/teléfono separado, incluida asociación, GATT/CCCD, captura/export y permisos reales.
+- [ ] Ejecutar instrumentación solo en AVD/dispositivo separado; no forma parte del gate automático de esta rama.
+- [ ] Peso BLE habilitado: **NO**. Composición BLE habilitada: **NO**.
+- [ ] Alpha 1.6 lista para release: **NO**, hasta evidencia física, QA manual, instrumentación y revisión formal.
+
 ## Alpha 1.5 — Health Connect de solo lectura
 
 - [x] RC1 permite NAS con HTTPS, puerto y base path; HTTP LAN exige debug+confirmación y las credenciales/fragmentos se rechazan.

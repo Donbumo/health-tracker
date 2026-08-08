@@ -1,5 +1,9 @@
 # Mobile Sync Foundation
 
+Beta 1 no cambia Mobile Sync, cursor, schemas ni endpoints. La estabilización es cliente-side: cancelación estructurada en workers/colas y archivos opacos para respuestas remotas. Idempotency keys, revisiones, UUID y ownership conservan los contratos Alpha 2.0.
+
+Alpha 2.0 no añade actividades al cursor/push genérico. Usa endpoints agregados Bearer bajo `/api/v1/mobile/activities`, UUID público, idempotencia y revisión optimista. Android mantiene `activity_operations` y WorkManager separado porque el upload multipart y la barrera inspect→apply no son una mutación JSON de Mobile Sync. La caché sigue aislada por cuenta+servidor; un recurso ajeno responde 404.
+
 Mobile Sync 1.0 extiende Bearer API v1 con planned workouts, completed upload, bootstrap/pull/push/status, revisiones, tombstones, cursor por dispositivo e idempotencia.
 
 `client_submission_id` pertenece al flujo web; no sustituye ni colisiona con `client_event_id` móvil. Las preferencias web y el Import Hub tampoco amplían las entidades sincronizables.
@@ -30,8 +34,16 @@ Alpha 1.4 mantiene el cursor compartido intacto y usa endpoints agregados Bearer
 
 Alpha 1.5 tampoco añade entidades al push genérico ni otro cursor Mobile Sync. Health Connect escribe primero en Room y reutiliza esos endpoints agregados con `source=health_connect` para cuerpo/nutrición y `source=health_connect_aggregate` para pasos. El contrato `mobile_health.schema.json` añade de forma opcional `client_event_id` y procedencia; el servidor deriva siempre el owner del Bearer token.
 
+Alpha 1.6 mantiene Mobile Sync y backend intactos. Registro de fuentes, confirmaciones Health Connect, asociaciones/association IDs, MAC, GATT, manufacturer fingerprints, capturas, frames, evidencia de protocolo y posibles duplicados experimentales permanecen locales. Una futura fuente `xiaomi_s400_ble` no se enviará hasta que exista protocolo verificado y un cambio contractual aditivo, owner-only e idempotente; la infraestructura actual no publica valores BLE.
+
 Peso manual y Health Connect pueden coexistir incluso en el mismo timestamp porque la clave natural incorpora la fuente. Cuerpo, nutrición y pasos aceptan un `client_event_id` UUID estable por usuario y devuelven el recurso existente en replays; el UUID público y la revisión siguen gobernando PATCH/DELETE. Editar un import de cuerpo o nutrición solo permite la transición `health_connect → user_override`. La migración `20260726_0032` es aditiva salvo el ajuste controlado de la restricción de peso, y añade procedencia nutricional e identidades cliente sin exponer origins o tokens Health Connect.
 
 Los pasos se identifican por usuario, fecha y fuente. `manual` puede coexistir con imports existentes; la presentación elige manual cuando existe, sin sumar fuentes potencialmente solapadas ni sobrescribir silenciosamente el import. Los conflictos de salud no avanzan el cursor ni pierden la copia local: quedan visibles hasta una resolución explícita.
 
 La agenda reutiliza `GET /api/v1/planned-workouts?from=<date>&to=<date>` con rango validado y acotado, `GET /api/v1/planned-workouts/<uuid>` para consultar estado/revisión, `PATCH` sobre el mismo recurso para moverlo conservando su UUID y `POST .../cancel` para cancelarlo. Todas las rutas derivan el owner del Bearer token y un recurso ajeno responde 404. Preparar de nuevo una delivery con la misma programación, dispositivo, perfil y revisión devuelve la existente; una revisión posterior publica un snapshot nuevo sin mutar packages ni drafts anteriores.
+
+Alpha 1.7 tampoco amplía el cursor o push genérico. Portabilidad usa endpoints agregados Bearer independientes, jobs owner-only, `Idempotency-Key`, expiración y schemas propios. Room mantiene su cola durable sin convertir `.htpack`, planes de importación o artefactos en entidades de Mobile Sync.
+
+Alpha 1.8 mantiene el cursor genérico sin cambios. Objetivos, reglas, eventos técnicos y adherencia usan endpoints móviles agregados owner-only. Android sincroniza configuración mediante la cola durable `engagement_*`; el servidor nunca dispara push y el teléfono conserva autoridad sobre schedule, permiso, entrega y dedupe local. Events pueden replicar acknowledgement/snooze técnico, pero no transportan texto de notificación.
+
+Alpha 1.9 tampoco añade entidades al push genérico ni crea otro cursor. Estudios, resultados y documentos usan endpoints agregados Bearer con UUID, idempotencia y revisión; Android persiste `medical_operations` por cuenta+servidor y refresca el cache autoritativo al procesarlas. Los binarios se cargan multipart desde temporales privados y nunca viajan en JSON, Room o notificaciones.

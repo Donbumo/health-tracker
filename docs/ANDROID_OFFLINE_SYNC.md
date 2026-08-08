@@ -1,5 +1,25 @@
 # Android offline y sincronización
 
+## Estabilización Beta 1
+
+`CancellationException` vuelve a propagarse desde SyncWorker, ActivityImportWorker, HealthConnectWorker, PortabilityWorker y las colas/adaptadores intermedios. Cancelar WorkManager por logout o cambio de servidor ya no se clasifica como retry/failure común. Los IDs remotos tampoco forman nombres de archivos: caché y shares usan nombres SHA-256 opacos, manteniendo partición por scope.
+
+Las carreras reales logout/worker, cambio de servidor/worker, process death y reconnect siguen pendientes de ejecución en AVD permitido; la cobertura compilable no equivale a ese gate.
+
+## Cola de actividades Alpha 2.0
+
+Seleccionar FIT/GPX/TCX funciona offline: SAF entrega una URI, se valida extensión y límite de 10 MB, se calcula SHA-256 en streaming y se guarda un parcial privado consentido junto con `ActivityImportEntity` y `ActivityOperationEntity`. Un WorkManager único por cuenta+servidor+job espera `CONNECTED`, usa backoff exponencial y verifica hash antes/después de multipart. Si cambia cuenta o servidor el worker falla sin reutilizar datos; URI/archivo perdido queda visible como `source_lost`.
+
+Upload e inspect pueden reanudarse idempotentemente, pero apply siempre requiere confirmación explícita. Cancelar elimina el parcial y libera el permiso persistible cuando existe. Tras apply también se limpia el parcial; cache de actividad/laps/metadatos permanece disponible. Series reducidas y ruta visible se guardan fuera de Room en el scope privado, no se solicitan por recomposición.
+
+Room 10 usa migración 9→10 y la cadena completa 1→10. Logout ejecuta cleanup de filas/archivos del `accountScope`; cambiar servidor conserva particiones históricas aisladas y nunca procesa un job con otra identidad.
+
+## Cola de engagement Alpha 1.8
+
+Objetivos, reglas y eventos técnicos usan tipos `engagement_*` en `pending_actions`. Create→update reemplaza el payload del create, create→delete elimina ambos y múltiples updates conservan el estado final. `SyncWorker` drena esta familia antes del FIFO histórico y luego refresca objetivos, reglas y adherencia. Room emite sin HTTP desde recomposición; el trabajo de red conserva constraints y backoff existentes.
+
+Las seis tablas nuevas incluyen `accountScope` e identidad SHA-256 del servidor. Logout cancela los works del scope antes de limpiar sus filas; el cambio de servidor no reutiliza identidad ni agenda reglas del servidor anterior.
+
 Room es la fuente durante el entrenamiento. Un package descargado se verifica excluyendo `package_hash`, ordenando claves recursivamente y calculando SHA-256 sobre JSON canónico; solo entonces se normaliza en tablas de package/ejercicio/set.
 
 ## Flujo durable
@@ -53,6 +73,12 @@ El resumen y Progreso se recalculan en la misma transacción que cada escritura 
 
 Un fallo temporal conserva la cola. Los rechazos permanentes crean un conflicto sanitizado sin payload. Desde Salud del día se puede descartar la copia local y refrescar servidor, reintentar con una nueva idempotency key, duplicar cuerpo/nutrición cuando procede o cancelar. Ninguna resolución hace merge genérico de notas.
 
+## Portabilidad en Alpha 1.7
+
+Una solicitud de export equivalente se coalesce en Room y queda `pending` hasta recuperar red. WorkManager procesa exports e imports pendientes con retry para fallos transitorios; no marca el paquete como listo sin respuesta autoritativa.
+
+La inspección estructural de un URI SAF funciona offline y persiste hash, formato, secciones, conteos y warnings. Upload/apply requieren red. El permiso URI persistible y el plan Room permiten reanudar tras process death; si el permiso se pierde, se debe elegir el archivo otra vez. Parciales fallidos se borran y el hash final gobierna la promoción. Logout limpia filas y archivos sólo del `accountScope` efectivo.
+
 ## Health Connect en Alpha 1.5
 
 La lectura Health Connect tiene su propio trabajo único, mutex y backoff; no comparte la restricción de red de la cola servidor. Conexión, permiso concedido, foreground, selección, acción manual y periodicidad de seis horas se coalescen. Sin permiso de background el trabajo periódico termina sin leer y los triggers foreground continúan disponibles. Pausar o desconectar no revoca permisos ni borra filas importadas.
@@ -62,3 +88,7 @@ Room 5 persiste ajustes, permisos observados, token por tipo/generación y ledge
 Cada importación válida actualiza el recurso local y Hoy/Progreso antes de encolar `health_body_*`, `health_nutrition_*` o `health_steps_*`. Un alta nunca intentada absorbe cambios posteriores. Si el alta ya pudo alcanzar el servidor, se conserva y se añade un update durable; al confirmarse el alta se actualiza su `base_revision` antes de procesar la siguiente acción. La cola se vuelve a consultar en cada paso FIFO para que esa revisión no quede obsoleta.
 
 Un borrado del origen elimina solo el recurso todavía importado y encola el DELETE idempotente. Borrar grasa limpia ese campo sin borrar el peso asociado. Una copia `detached/user_override` permanece y pierde la asociación activa. El borrado selectivo de Ajustes recorre únicamente ledgers importados activos en una transacción; no toca registros manuales, sesiones, planes ni copias editadas.
+
+## Cola médica Alpha 1.9
+
+Room 9 persiste estudios, documentos metadata, paneles, resultados/revisiones, catálogo, operaciones, historial y duplicados por `accountScope + serverIdentity`. Create→update de estudio y updates repetidos consolidan el payload final; create de resultado→delete descarta la operación. PATCH/DELETE conservan revisión base e idempotency key. WorkManager reintenta con backoff y refresca caché después de vaciar la cola. URI/temporales permanecen fuera de Room; permiso perdido exige reselección, y logout borra filas y temporales solo de la cuenta efectiva.

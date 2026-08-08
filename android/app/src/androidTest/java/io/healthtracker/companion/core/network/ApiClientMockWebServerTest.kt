@@ -8,8 +8,11 @@ import io.healthtracker.companion.core.model.LoginRequest
 import io.healthtracker.companion.core.model.AppErrorCode
 import io.healthtracker.companion.core.model.AppFailure
 import io.healthtracker.companion.core.security.SecureTokenStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.async
+import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.put
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -94,9 +97,11 @@ class ApiClientMockWebServerTest {
     @Test fun temporaryRefreshFailureKeepsEncryptedSessionForOfflineUse() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val preferences = PreferenceStore(context)
-        preferences.configureServer(server.url("/").toString().trimEnd('/'), true)
-        SecureTokenStore(context).also { it.clear(); it.setTokens("qa-expired", "qa-refresh-retained") }
+        val base = server.url("/").toString().trimEnd('/')
+        preferences.configureServer(base, true)
+        SecureTokenStore(context).also { it.clear(); it.setTokens("qa-expired", "qa-refresh-retained", base) }
         val afterProcessDeath = SecureTokenStore(context)
+        assertEquals("qa-refresh-retained", afterProcessDeath.refreshToken(base))
         val client = ApiClient(preferences, afterProcessDeath)
         server.enqueue(
             MockResponse().setResponseCode(503).setHeader("Content-Type", "application/json")
@@ -113,9 +118,11 @@ class ApiClientMockWebServerTest {
     @Test fun invalidRefreshTokenIsDefinitiveAndClearsEncryptedSession() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val preferences = PreferenceStore(context)
-        preferences.configureServer(server.url("/").toString().trimEnd('/'), true)
-        SecureTokenStore(context).also { it.clear(); it.setTokens("qa-expired", "qa-invalid-refresh") }
+        val base = server.url("/").toString().trimEnd('/')
+        preferences.configureServer(base, true)
+        SecureTokenStore(context).also { it.clear(); it.setTokens("qa-expired", "qa-invalid-refresh", base) }
         val afterProcessDeath = SecureTokenStore(context)
+        assertEquals("qa-invalid-refresh", afterProcessDeath.refreshToken(base))
         val client = ApiClient(preferences, afterProcessDeath)
         server.enqueue(
             MockResponse().setResponseCode(401).setHeader("Content-Type", "application/json")
@@ -186,12 +193,12 @@ class ApiClientMockWebServerTest {
                 .setBody(tokenEnvelope("stale-access", "stale-refresh")),
         )
 
-        val pending = async { runCatching { client.me() }.exceptionOrNull() }
-        server.takeRequest()
-        server.takeRequest()
+        val pending = async(Dispatchers.IO) { runCatching { client.me() }.exceptionOrNull() }
+        assertTrue(server.takeRequest(5, TimeUnit.SECONDS) != null)
+        assertTrue(server.takeRequest(5, TimeUnit.SECONDS) != null)
         tokenStore.clear()
         tokenStore.setTokens("new-access", "new-refresh", newBase)
-        assertTrue(pending.await() is AppFailure)
+        assertTrue(withTimeout(5_000) { pending.await() } is AppFailure)
         assertEquals("new-access", tokenStore.accessToken(newBase))
         assertEquals("new-refresh", tokenStore.refreshToken(newBase))
         tokenStore.clear()
@@ -212,11 +219,11 @@ class ApiClientMockWebServerTest {
             MockResponse().setResponseCode(401).setBodyDelay(300, TimeUnit.MILLISECONDS)
                 .setBody(errorEnvelope("session_revoked")),
         )
-        val pending = async { runCatching { client.me() }.exceptionOrNull() }
-        server.takeRequest()
+        val pending = async(Dispatchers.IO) { runCatching { client.me() }.exceptionOrNull() }
+        assertTrue(server.takeRequest(5, TimeUnit.SECONDS) != null)
         tokenStore.clear()
         tokenStore.setTokens("new-access", "new-refresh", newBase)
-        assertTrue(pending.await() is AppFailure)
+        assertTrue(withTimeout(5_000) { pending.await() } is AppFailure)
         assertEquals("new-access", tokenStore.accessToken(newBase))
         assertEquals("new-refresh", tokenStore.refreshToken(newBase))
         tokenStore.clear()
@@ -232,6 +239,31 @@ class ApiClientMockWebServerTest {
         server.enqueue(MockResponse().setResponseCode(429).setHeader("Retry-After", "999999").setBody(errorEnvelope("rate_limited")))
         val limited = runCatching { client.health(base) }.exceptionOrNull() as AppFailure
         assertEquals(21600L, limited.retryAfterSeconds)
+    }
+
+    @Test fun medicalMutationUsesBearerJsonAndDurableIdempotencyKey() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val base = server.url("/").toString().trimEnd('/')
+        val preferences = PreferenceStore(context).also { it.configureServer(base, true) }
+        val tokenStore = SecureTokenStore(context).also { it.clear(); it.setTokens("medical-access", "medical-refresh", base) }
+        val client = ApiClient(preferences, tokenStore)
+        server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody(
+            """{"data":{"public_id":"11111111-1111-4111-8111-111111111111","title":"Estudio QA"},"meta":{"api_version":"1","request_id":"qa"}}""",
+        ))
+        val payload = kotlinx.serialization.json.buildJsonObject {
+            put("public_id", "11111111-1111-4111-8111-111111111111")
+            put("study_type", "laboratory"); put("title", "Estudio QA")
+            put("study_date", "2026-07-31"); put("state", "complete"); put("source", "mobile")
+        }
+
+        client.createMedicalStudy(payload, "medical-idempotency-qa")
+
+        val request = server.takeRequest()
+        assertEquals("/api/v1/mobile/medical-studies", request.path)
+        assertEquals("Bearer medical-access", request.getHeader("Authorization"))
+        assertEquals("medical-idempotency-qa", request.getHeader("Idempotency-Key"))
+        assertTrue(request.body.readUtf8().contains("Estudio QA"))
+        tokenStore.clear()
     }
 
     private fun tokenEnvelope(access: String, refresh: String) =

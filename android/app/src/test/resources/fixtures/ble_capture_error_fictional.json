@@ -1,0 +1,10 @@
+{
+  "formatVersion":"ble-capture-v1",
+  "sourceType":"xiaomi_s400_ble_experimental",
+  "captureId":"fixture_error_0001",
+  "deviceFingerprint":"f1c710a1f1c710a1f1c710a1",
+  "sessionStart":0,
+  "fixtureFictional":true,
+  "events":[{"eventType":"error","relativeTimestampMs":0,"error":"fixture_error"}],
+  "expectedResult":{"protocolState":"invalid_frame","fixtureFictional":true}
+}

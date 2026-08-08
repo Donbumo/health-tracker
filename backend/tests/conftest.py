@@ -25,6 +25,7 @@ def app(tmp_path):
             "DATA_ROOT": tmp_path,
             "UPLOAD_ROOT": tmp_path / "uploads" / "raw",
             "GENERATED_UPLOAD_ROOT": tmp_path / "uploads" / "generated",
+            "PORTABILITY_ROOT": tmp_path / "portability",
             "SCHEMA_ROOT": _schema_root(),
             "APP_TIMEZONE": "UTC",
             "WTF_CSRF_ENABLED": False,

@@ -81,7 +81,7 @@ def fit_file(records: list[bytes], *, profile_version: int = 2121) -> bytes:
     return body + struct.pack("<H", compute_crc(body))
 
 
-def valid_activity(*, gps: bool = True, unknown: bool = False, invalid_coordinates: bool = False) -> bytes:
+def valid_activity(*, gps: bool = True, unknown: bool = False, invalid_coordinates: bool = False, out_of_order: bool = False) -> bytes:
     started = fit_timestamp("2026-07-12T08:00:00+00:00")
     mid = fit_timestamp("2026-07-12T08:15:00+00:00")
     ended = fit_timestamp("2026-07-12T08:30:00+00:00")
@@ -121,7 +121,10 @@ def valid_activity(*, gps: bool = True, unknown: bool = False, invalid_coordinat
         record_mid.append(("B", 8))
         record_end.append(("B", 9))
     records.append(definition(3, 20, record_fields))
-    records += [data(3, record_format), data(3, record_mid), data(3, record_end)]
+    ordered_records = [record_format, record_mid, record_end]
+    if out_of_order:
+        ordered_records = [record_format, record_end, record_mid]
+    records += [data(3, values) for values in ordered_records]
 
     lap_fields = [
         (253, 4, UINT32), (2, 4, UINT32), (7, 4, UINT32), (8, 4, UINT32),

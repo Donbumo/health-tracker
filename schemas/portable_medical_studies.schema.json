@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/portable_medical_studies.schema.json",
+  "title": "Portable medical studies record v1",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "record_type", "public_id", "revision", "data"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "record_type": {"const": "medical_studies"},
+    "public_id": {"type": "string", "format": "uuid"},
+    "revision": {"type": "integer", "minimum": 1},
+    "data": {
+      "type": "object", "additionalProperties": false,
+      "required": ["study_type", "title", "laboratory_name", "professional_name", "study_date", "issued_date", "timezone", "notes", "state", "source"],
+      "properties": {
+        "study_type": {"enum": ["laboratory", "imaging", "clinical_document", "prescription_document", "vaccination_document", "other"]},
+        "title": {"type": "string", "minLength": 1, "maxLength": 240},
+        "laboratory_name": {"type": ["string", "null"], "maxLength": 200},
+        "professional_name": {"type": ["string", "null"], "maxLength": 200},
+        "study_date": {"type": "string", "format": "date"},
+        "issued_date": {"type": ["string", "null"], "format": "date"},
+        "timezone": {"type": ["string", "null"], "maxLength": 64},
+        "notes": {"type": ["string", "null"], "maxLength": 5000},
+        "state": {"enum": ["draft", "complete", "archived"]},
+        "source": {"enum": ["manual", "imported", "portable_import"]}
+      }
+    }
+  }
+}

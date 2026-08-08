@@ -14,6 +14,7 @@ Base integrada actual: tag `alpha-1.0.1-runtime-security` (`1938a48`). La cronol
 - API v1 con Bearer/dispositivos, Mobile Sync y backend Companion.
 - Cliente Android nativo en Kotlin/Compose con ejecución desde teléfono, cache Room, cola offline y sincronización en segundo plano.
 - Interfaz Flask/Jinja responsive, Import Hub y PWA limitada a assets estáticos.
+- Web separada en **Resumen** longitudinal (`/dashboard`) y **Hoy** operativo (`/today`), con rangos, comparación, cobertura y gráficos locales accesibles sin cambiar la API móvil.
 
 El código Android existe, pero este checkout no incluye un APK publicado ni firma de producción. Tampoco incluye app de reloj, Bluetooth, telemetría continua, FIT de salida ni integraciones privadas de fabricantes. Consulta [docs/ROADMAP.md](docs/ROADMAP.md).
 

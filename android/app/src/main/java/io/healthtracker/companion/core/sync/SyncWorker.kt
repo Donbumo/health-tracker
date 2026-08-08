@@ -15,6 +15,7 @@ import androidx.work.WorkerParameters
 import io.healthtracker.companion.HealthTrackerApplication
 import io.healthtracker.companion.core.healthconnect.HealthConnectScheduler
 import io.healthtracker.companion.core.model.AppFailure
+import io.healthtracker.companion.core.network.CanonicalJson
 import java.lang.ref.WeakReference
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.TimeUnit
@@ -33,6 +34,10 @@ class SyncWorker(context: Context, parameters: WorkerParameters) : CoroutineWork
                 if (app.container.tokens.accessToken(local.serverUrl) == null) {
                     app.container.repository.restoreOnlineSession(scope)
                 }
+                app.container.engagementRepository.synchronize(scope)
+                local.serverUrl?.let { server ->
+                    app.container.medicalRepository.synchronize(scope, CanonicalJson.serverIdentity(server))
+                }
                 app.container.repository.synchronize(scope)
                 val nextGeneration = SyncScheduler.generation()
                 if (nextGeneration == observedGeneration && !app.container.repository.hasReadyPending(scope)) {
@@ -47,7 +52,8 @@ class SyncWorker(context: Context, parameters: WorkerParameters) : CoroutineWork
                 return Result.failure()
             }
             if (failure.retryable) Result.retry() else Result.failure()
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            error.rethrowIfCancellation()
             Result.retry()
         }
     }

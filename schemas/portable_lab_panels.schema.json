@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/portable_lab_panels.schema.json",
+  "title": "Portable lab panels record v1",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "record_type", "public_id", "revision", "data"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "record_type": {"const": "lab_panels"},
+    "public_id": {"type": "string", "format": "uuid"},
+    "revision": {"type": "integer", "minimum": 1},
+    "data": {
+      "type": "object", "additionalProperties": false,
+      "required": ["study_public_id", "name", "display_order", "source"],
+      "properties": {
+        "study_public_id": {"type": "string", "format": "uuid"},
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "display_order": {"type": "integer", "minimum": 0},
+        "source": {"enum": ["manual", "imported", "portable_import"]}
+      }
+    }
+  }
+}

@@ -9,6 +9,7 @@ import io
 import json
 import math
 from pathlib import Path
+import re
 import xml.etree.ElementTree as ET
 from typing import Any
 
@@ -29,6 +30,9 @@ from app.services.validation import validate_json_document
 
 MAX_REAL_FILE_BYTES = 10 * 1024 * 1024
 MAX_XML_NODES = 20000
+MAX_XML_DEPTH = 64
+MAX_XML_TEXT_BYTES = 2 * 1024 * 1024
+MAX_XML_NAMESPACES = 16
 MAX_POINTS = 10000
 MAX_FIT_RECORDS = 10000
 REAL_FILE_TOKEN_SALT = "real-file-import-confirmation-v1"
@@ -274,10 +278,13 @@ def parse_gpx(content: bytes, *, user_id: int) -> ParsedRealFile:
     points = []
     has_track = False
     has_route = False
+    segment_count = 0
     for element in root.iter():
         local_name = _local_name(element.tag)
         if local_name == "trk":
             has_track = True
+        elif local_name == "trkseg":
+            segment_count += 1
         elif local_name == "rte":
             has_route = True
         if local_name in {"trkpt", "rtept"}:
@@ -290,6 +297,8 @@ def parse_gpx(content: bytes, *, user_id: int) -> ParsedRealFile:
     route_doc = _route_document(user_id, route_name, "gpx", points, "gpx")
     timestamps = [point.get("timestamp") for point in points if point.get("timestamp")]
     warnings = []
+    if segment_count > 1:
+        warnings.append(f"GPX contains {segment_count} separate track segments; discontinuities were preserved in inspection metadata.")
     if has_route and not has_track:
         documents = [route_doc]
         target = "route"
@@ -315,7 +324,7 @@ def parse_gpx(content: bytes, *, user_id: int) -> ParsedRealFile:
         documents = [route_doc]
         target = "route"
         warnings.append("GPX has no timestamps; activity summary was not generated.")
-    return ParsedRealFile("gpx", target, documents, warnings, {"points": len(points)})
+    return ParsedRealFile("gpx", target, documents, warnings, {"points": len(points), "segments": segment_count or 1})
 
 
 def parse_tcx(content: bytes, *, user_id: int) -> ParsedRealFile:
@@ -323,6 +332,10 @@ def parse_tcx(content: bytes, *, user_id: int) -> ParsedRealFile:
     points = []
     laps = []
     has_activity = any(_local_name(element.tag) == "Activity" for element in root.iter())
+    activity_sport = next(
+        (element.attrib.get("Sport") for element in root.iter() if _local_name(element.tag) == "Activity"),
+        None,
+    )
     course_name = _first_text(root, "Name") if not has_activity else None
     for element in root.iter():
         name = _local_name(element.tag)
@@ -345,7 +358,7 @@ def parse_tcx(content: bytes, *, user_id: int) -> ParsedRealFile:
             "tcx",
         )
         return ParsedRealFile("tcx", "route", [route], [], {"points": len(points), "course": True})
-    activity = _activity_document(user_id, "activity", points, "tcx", source_app="tcx")
+    activity = _activity_document(user_id, activity_sport or "activity", points, "tcx", source_app="tcx")
     activity["data"]["laps"] = laps[:1000]
     return ParsedRealFile("tcx", "activity", [activity], [], {"points": len(points), "laps": len(laps)})
 
@@ -779,11 +792,46 @@ def _route_points(points: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _safe_xml_root(content: bytes) -> ET.Element:
-    if b"<!DOCTYPE" in content[:1024].upper() or b"<!ENTITY" in content[:2048].upper():
-        raise RealFileImportError("XML DTD/entities are not allowed")
-    root = ET.fromstring(content)
-    if sum(1 for _ in root.iter()) > MAX_XML_NODES:
-        raise RealFileImportError("XML contains too many nodes")
+    if not content:
+        raise RealFileImportError("XML file is empty")
+    if len(content) > MAX_REAL_FILE_BYTES:
+        raise RealFileImportError("XML file exceeds the size limit")
+    upper = content.upper()
+    forbidden = (b"<!DOCTYPE", b"<!ENTITY", b"<![CDATA[", b"XINCLUDE", b"SYSTEM", b"PUBLIC")
+    if any(marker in upper for marker in forbidden):
+        raise RealFileImportError("XML DTD, entities, CDATA and XInclude are not allowed")
+    if re.search(br"(?:HREF|SRC)\s*=\s*['\"]\s*(?:HTTPS?|FILE|FTP):", content, re.IGNORECASE):
+        raise RealFileImportError("XML network and file references are not allowed")
+    try:
+        root = ET.fromstring(content)
+    except (ET.ParseError, ValueError) as error:
+        raise RealFileImportError("Invalid XML document") from error
+    nodes = 0
+    text_bytes = 0
+    namespaces: set[str] = set()
+    stack = [(root, 1)]
+    while stack:
+        element, depth = stack.pop()
+        nodes += 1
+        if nodes > MAX_XML_NODES:
+            raise RealFileImportError("XML contains too many nodes")
+        if depth > MAX_XML_DEPTH:
+            raise RealFileImportError("XML nesting is too deep")
+        text_bytes += len((element.text or "").encode("utf-8")) + len((element.tail or "").encode("utf-8"))
+        if text_bytes > MAX_XML_TEXT_BYTES:
+            raise RealFileImportError("XML text exceeds the limit")
+        if isinstance(element.tag, str) and element.tag.startswith("{"):
+            namespace = element.tag[1:].split("}", 1)[0]
+            if len(namespace) > 256:
+                raise RealFileImportError("XML namespace is too long")
+            namespaces.add(namespace)
+            if len(namespaces) > MAX_XML_NAMESPACES:
+                raise RealFileImportError("XML contains too many namespaces")
+        for key, value in element.attrib.items():
+            text_bytes += len(str(key).encode("utf-8")) + len(str(value).encode("utf-8"))
+            if text_bytes > MAX_XML_TEXT_BYTES:
+                raise RealFileImportError("XML text exceeds the limit")
+        stack.extend((child, depth + 1) for child in list(element))
     return root
 
 
@@ -797,26 +845,30 @@ def _first_text(root: ET.Element, local_name: str) -> str | None:
 
 
 def _xml_point(element: ET.Element) -> dict[str, Any]:
-    point = {"lat": float(element.attrib["lat"]), "lon": float(element.attrib["lon"])}
+    try:
+        point = {"lat": float(element.attrib["lat"]), "lon": float(element.attrib["lon"])}
+    except (KeyError, TypeError, ValueError) as error:
+        raise RealFileImportError("GPX contains an invalid coordinate") from error
     for child in element.iter():
         if child is element:
             continue
         name = _local_name(child.tag)
         text = (child.text or "").strip()
         if name == "ele" and text:
-            point["elevation_meters"] = float(text)
+            point["elevation_meters"] = _strict_finite_float(text, "elevation")
         if name == "time" and text:
             point["timestamp"] = text.replace("Z", "+00:00")
         if name in {"hr", "heartrate"} and text:
-            point["heart_rate_bpm"] = int(float(text))
+            point["heart_rate_bpm"] = int(_strict_finite_float(text, "heart rate"))
         if name in {"cad", "cadence"} and text:
-            point["cadence_rpm"] = float(text)
+            point["cadence_rpm"] = _strict_finite_float(text, "cadence")
         if name in {"power", "watts"} and text:
-            point["power_watts"] = int(float(text))
+            point["power_watts"] = int(_strict_finite_float(text, "power"))
         if name == "speed" and text:
-            point["speed_mps"] = float(text)
+            point["speed_mps"] = _strict_finite_float(text, "speed")
         if name == "distance" and text:
-            point["distance_meters"] = float(text)
+            point["distance_meters"] = _strict_finite_float(text, "distance")
+    _validate_point(point)
     return point
 
 
@@ -843,7 +895,36 @@ def _tcx_point(element: ET.Element) -> dict[str, Any] | None:
             point["power_watts"] = int(float(text))
         elif name == "Speed" and text:
             point["speed_mps"] = float(text)
-    return point if {"lat", "lon"} <= point.keys() else None
+    if point:
+        _validate_point(point)
+    return point or None
+
+
+def _strict_finite_float(value: Any, label: str) -> float:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as error:
+        raise RealFileImportError(f"Invalid {label} value") from error
+    if not math.isfinite(parsed):
+        raise RealFileImportError(f"Invalid {label} value")
+    return parsed
+
+
+def _validate_point(point: dict[str, Any]) -> None:
+    for key, value in point.items():
+        if isinstance(value, (int, float)) and not isinstance(value, bool) and not math.isfinite(float(value)):
+            raise RealFileImportError("Trackpoint contains NaN or Infinity")
+    if point.get("lat") is not None and not -90 <= point["lat"] <= 90:
+        raise RealFileImportError("Trackpoint latitude is outside the valid range")
+    if point.get("lon") is not None and not -180 <= point["lon"] <= 180:
+        raise RealFileImportError("Trackpoint longitude is outside the valid range")
+    for key in ("distance_meters", "heart_rate_bpm", "power_watts", "speed_mps", "cadence_rpm"):
+        if point.get(key) is not None and point[key] < 0:
+            raise RealFileImportError(f"Trackpoint contains invalid {key}")
+    if point.get("heart_rate_bpm") is not None and point["heart_rate_bpm"] > 255:
+        raise RealFileImportError("Trackpoint heart rate exceeds the technical limit")
+    if point.get("cadence_rpm") is not None and point["cadence_rpm"] > 300:
+        raise RealFileImportError("Trackpoint cadence exceeds the technical limit")
 
 
 def _read_uploaded_content(source_file: UploadedFile, user_id: int) -> bytes:

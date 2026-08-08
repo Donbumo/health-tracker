@@ -29,7 +29,7 @@ class SecureTokenStore(context: Context) {
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, secretKey())
         val encrypted = cipher.doFinal(refresh.toByteArray(Charsets.UTF_8))
-        preferences.edit {
+        preferences.edit(commit = true) {
             putString(KEY_REFRESH_CIPHER, Base64.encodeToString(encrypted, Base64.NO_WRAP))
             putString(KEY_REFRESH_IV, Base64.encodeToString(cipher.iv, Base64.NO_WRAP))
             if (serverIdentity == null) remove(KEY_SERVER_IDENTITY)
@@ -70,7 +70,7 @@ class SecureTokenStore(context: Context) {
     @Synchronized
     fun clear() {
         accessToken = null
-        preferences.edit { clear() }
+        preferences.edit(commit = true) { clear() }
         mutationVersion++
     }
 
@@ -85,7 +85,7 @@ class SecureTokenStore(context: Context) {
     fun bindLegacyServerIfMissing(serverIdentity: String?) {
         if (serverIdentity == null || preferences.getString(KEY_SERVER_IDENTITY, null) != null) return
         if (preferences.contains(KEY_REFRESH_CIPHER)) {
-            preferences.edit { putString(KEY_SERVER_IDENTITY, serverIdentity) }
+            preferences.edit(commit = true) { putString(KEY_SERVER_IDENTITY, serverIdentity) }
             mutationVersion++
         }
     }

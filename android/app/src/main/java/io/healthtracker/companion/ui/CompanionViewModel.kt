@@ -2,6 +2,8 @@ package io.healthtracker.companion.ui
 
 import android.os.Build
 import android.content.Intent
+import android.content.Context
+import android.net.Uri
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -29,12 +31,22 @@ import io.healthtracker.companion.core.database.MobilePlanWorkoutEntity
 import io.healthtracker.companion.core.database.PlanningConflictEntity
 import io.healthtracker.companion.core.database.BodyStatEntity
 import io.healthtracker.companion.core.database.NutritionEntryEntity
+import io.healthtracker.companion.core.database.GoalEntity
+import io.healthtracker.companion.core.database.ReminderRuleEntity
+import io.healthtracker.companion.core.database.ReminderEventEntity
+import io.healthtracker.companion.core.database.ActivityEntity
+import io.healthtracker.companion.core.network.CanonicalJson
+import io.healthtracker.companion.core.notifications.NotificationPublisher
 import io.healthtracker.companion.core.health.canonicalWeightKg
 import io.healthtracker.companion.core.healthconnect.HealthConnectManager
 import io.healthtracker.companion.core.healthconnect.HealthConnectRecordType
 import io.healthtracker.companion.core.healthconnect.HealthConnectScheduler
 import io.healthtracker.companion.core.healthconnect.HealthConnectTrigger
 import io.healthtracker.companion.core.healthconnect.HealthConnectUiState
+import io.healthtracker.companion.core.healthconnect.ScaleDiagnosticResult
+import io.healthtracker.companion.core.external.ConfirmedScaleKind
+import io.healthtracker.companion.core.external.ExternalDeviceUiState
+import io.healthtracker.companion.core.external.shortFingerprint
 import io.healthtracker.companion.core.load.LoadPreview
 import io.healthtracker.companion.core.planning.reorderedIds
 import io.healthtracker.companion.core.planning.PlanningEditorState
@@ -43,6 +55,7 @@ import io.healthtracker.companion.core.model.AuthState
 import io.healthtracker.companion.core.model.LoadDetailsDto
 import io.healthtracker.companion.core.model.SyncStatus
 import io.healthtracker.companion.core.model.UserProfile
+import io.healthtracker.companion.core.portability.PortableExportRequest
 import io.healthtracker.companion.core.sync.SyncScheduler
 import io.healthtracker.companion.core.sync.SyncTrigger
 import io.healthtracker.companion.core.sync.HistoryFilters
@@ -69,6 +82,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 enum class AutosaveUiState { SAVING, SAVED, SAVED_LOCAL, ERROR }
 
@@ -90,6 +108,11 @@ class CompanionViewModel(
 ) : ViewModel() {
     private val repository = container.repository
     private val healthConnectManager: HealthConnectManager = container.healthConnectManager
+    private val externalSourceStore = container.externalSourceStore
+    private val portabilityRepository = container.portabilityRepository
+    private val engagementRepository = container.engagementRepository
+    private val medicalRepository = container.medicalRepository
+    private val activityRepository = container.activityRepository
     private val planningEditorState = PlanningEditorState(savedStateHandle)
     private val mutableAuth = MutableStateFlow(AuthState.SIGNED_OUT)
     private val mutableProfile = MutableStateFlow<UserProfile?>(null)
@@ -120,6 +143,15 @@ class CompanionViewModel(
     private val mutableFoodHasMore = MutableStateFlow(false)
     private val mutableFoodLoading = MutableStateFlow(false)
     private val mutableProgressSection = MutableStateFlow("training")
+    private val mutableScaleDiagnostic = MutableStateFlow(ScaleDiagnosticResult())
+    private val mutableAdherenceDays = MutableStateFlow(7)
+    private val mutableSelectedMedicalStudyId = MutableStateFlow<String?>(null)
+    private val mutableMedicalHistoryKey = MutableStateFlow<String?>(null)
+    private val mutableMedicalHistoryPeriod = MutableStateFlow("all")
+    private val mutableSelectedActivityId = MutableStateFlow<String?>(null)
+    private val mutableActivityRoutePoints = MutableStateFlow<List<Pair<Double, Double>>>(emptyList())
+    private val mutableActivityMetricSeries = MutableStateFlow<List<Double>>(emptyList())
+    private val mutableActivityPlanCandidates = MutableStateFlow<List<JsonObject>>(emptyList())
     private var catalogSearchJob: Job? = null
     private val serializer = Json { explicitNulls = false; encodeDefaults = true }
     private val autosaveController: DebouncedAutosave<AutosaveCommand>
@@ -155,6 +187,16 @@ class CompanionViewModel(
     val foodHasMore: StateFlow<Boolean> = mutableFoodHasMore
     val foodLoading: StateFlow<Boolean> = mutableFoodLoading
     val progressSection: StateFlow<String> = mutableProgressSection
+    val scaleDiagnostic: StateFlow<ScaleDiagnosticResult> = mutableScaleDiagnostic
+    val adherenceDays: StateFlow<Int> = mutableAdherenceDays
+    val selectedMedicalStudyId: StateFlow<String?> = mutableSelectedMedicalStudyId
+    val medicalHistoryKey: StateFlow<String?> = mutableMedicalHistoryKey
+    val medicalHistoryPeriod: StateFlow<String> = mutableMedicalHistoryPeriod
+    val selectedActivityId: StateFlow<String?> = mutableSelectedActivityId
+    val activityRoutePoints: StateFlow<List<Pair<Double, Double>>> = mutableActivityRoutePoints
+    val activityMetricSeries: StateFlow<List<Double>> = mutableActivityMetricSeries
+    val activityPlanCandidates: StateFlow<List<JsonObject>> = mutableActivityPlanCandidates
+    val externalDevice: StateFlow<ExternalDeviceUiState> = container.externalDeviceManager.state
     val preferences = container.preferences.values.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000),
         io.healthtracker.companion.core.config.AppPreferences(deviceId = ""),
@@ -163,10 +205,149 @@ class CompanionViewModel(
         viewModelScope, SharingStarted.WhileSubscribed(5_000), false,
     )
     private val scope = preferences.mapLatest { it.accountScope }
+    private val engagementScope = preferences.mapLatest { local ->
+        val account = local.accountScope
+        val server = local.serverUrl
+        if (account == null || server == null) null else account to CanonicalJson.serverIdentity(server)
+    }
+
+    val goals = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(emptyList()) else engagementRepository.observeGoals(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val reminderRules = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(emptyList()) else engagementRepository.observeRules(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val reminderEvents = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(emptyList()) else engagementRepository.observeEvents(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val reminderPermission = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(null) else engagementRepository.observePermission(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val adherence = combine(engagementScope, mutableAdherenceDays) { value, days -> value to days }.flatMapLatest { (value, days) ->
+        if (value == null) flowOf(null) else engagementRepository.observeAdherence(value.first, value.second, days)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val medicalStudies = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(emptyList()) else medicalRepository.observeStudies(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val selectedMedicalStudy = combine(engagementScope, mutableSelectedMedicalStudyId) { value, id -> value to id }
+        .flatMapLatest { (value, id) ->
+            if (value == null || id == null) flowOf(null) else medicalRepository.observeStudy(value.first, value.second, id)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val medicalPanels = combine(engagementScope, mutableSelectedMedicalStudyId) { value, id -> value to id }
+        .flatMapLatest { (value, id) ->
+            if (value == null || id == null) flowOf(emptyList()) else medicalRepository.observePanels(value.first, value.second, id)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val medicalResults = combine(engagementScope, medicalPanels) { value, panels -> value to panels.map { it.publicId } }
+        .flatMapLatest { (value, ids) ->
+            if (value == null || ids.isEmpty()) flowOf(emptyList()) else medicalRepository.observeResults(value.first, value.second, ids)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val medicalDocuments = combine(engagementScope, mutableSelectedMedicalStudyId) { value, id -> value to id }
+        .flatMapLatest { (value, id) ->
+            if (value == null || id == null) flowOf(emptyList()) else medicalRepository.observeDocuments(value.first, value.second, id)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val labMarkers = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(emptyList()) else medicalRepository.observeMarkers(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val medicalHistory = combine(engagementScope, mutableMedicalHistoryKey, mutableMedicalHistoryPeriod) { value, key, period -> Triple(value, key, period) }
+        .flatMapLatest { (value, key, period) ->
+            if (value == null || key == null) flowOf(null) else medicalRepository.observeHistory(value.first, value.second, key, period)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val medicalDuplicates = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(emptyList()) else medicalRepository.observeDuplicates(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val activityImports = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(emptyList()) else activityRepository.observeImports(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val activities = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(emptyList()) else activityRepository.observeActivities(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val selectedActivity = combine(engagementScope, mutableSelectedActivityId) { value, id -> value to id }.flatMapLatest { (value, id) ->
+        if (value == null || id == null) flowOf(null) else activityRepository.observeActivity(value.first, value.second, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val activityLaps = combine(engagementScope, mutableSelectedActivityId) { value, id -> value to id }.flatMapLatest { (value, id) ->
+        if (value == null || id == null) flowOf(emptyList()) else activityRepository.observeLaps(value.first, value.second, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val activitySeriesMetadata = combine(engagementScope, mutableSelectedActivityId) { value, id -> value to id }.flatMapLatest { (value, id) ->
+        if (value == null || id == null) flowOf(null) else activityRepository.observeSeriesMetadata(value.first, value.second, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val activityRoute = combine(engagementScope, mutableSelectedActivityId) { value, id -> value to id }.flatMapLatest { (value, id) ->
+        if (value == null || id == null) flowOf(null) else activityRepository.observeRoute(value.first, value.second, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val activityDuplicates = engagementScope.flatMapLatest { value ->
+        if (value == null) flowOf(emptyList()) else activityRepository.observeDuplicates(value.first, value.second)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val activityPlanLink = combine(engagementScope, mutableSelectedActivityId) { value, id -> value to id }.flatMapLatest { (value, id) ->
+        if (value == null || id == null) flowOf(null) else activityRepository.observePlanLink(value.first, value.second, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val activityComparison = combine(engagementScope, mutableSelectedActivityId) { value, id -> value to id }.flatMapLatest { (value, id) ->
+        if (value == null || id == null) flowOf(null) else activityRepository.observeComparison(value.first, value.second, id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val portableExports = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else portabilityRepository.observeExports(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val portableImports = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else portabilityRepository.observeImports(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val portableInspections = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else portabilityRepository.observeInspections(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val portablePlans = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else portabilityRepository.observePlans(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val portableDownloads = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else portabilityRepository.observeDownloads(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val healthConnect = scope.flatMapLatest { account ->
         if (account == null) flowOf(HealthConnectUiState()) else healthConnectManager.observe(account)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HealthConnectUiState())
+
+    val externalSources = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else externalSourceStore.observeSources(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val healthConnectSourceAssociations = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else externalSourceStore.observeHealthConnectAssociations(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val bleDeviceAssociations = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else externalSourceStore.observeBleDeviceAssociations(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val bleCaptureMetadata = combine(scope, bleDeviceAssociations) { account, associations -> account to associations.firstOrNull() }
+        .flatMapLatest { (account, association) ->
+            if (account == null || association == null) flowOf(emptyList()) else externalSourceStore.observeBleCaptures(account, association.associationKey)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val possibleExternalDuplicates = scope.flatMapLatest { account ->
+        if (account == null) flowOf(emptyList()) else externalSourceStore.observePossibleDuplicates(account)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val planned = scope.flatMapLatest { value ->
         if (value == null) flowOf(emptyList()) else repository.observePlanned(value)
@@ -185,6 +366,25 @@ class CompanionViewModel(
     val bodyStats = scope.flatMapLatest { account ->
         if (account == null) flowOf(emptyList()) else repository.observeBodyStats(account)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val confirmedScaleBodyStatIds = combine(scope, bodyStats, healthConnectSourceAssociations) { account, stats, associations ->
+        Triple(account, stats, associations)
+    }.mapLatest { (account, stats, associations) ->
+        if (account == null) return@mapLatest emptySet()
+        val confirmed = associations.filter { it.state == "user_confirmed" }.mapTo(mutableSetOf()) { it.sourceFingerprint }
+        stats.filterTo(mutableSetOf()) { stat ->
+            stat.source == "health_connect" && container.database.companionDao()
+                .healthConnectLedgersForResource(account, stat.publicId)
+                .any { ledger -> shortFingerprint("health-connect-origin:${ledger.dataOrigin}") in confirmed }
+        }.mapTo(mutableSetOf()) { it.publicId }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+
+    val confirmedScaleDates = combine(confirmedScaleBodyStatIds, bodyStats, mutableProfile) { ids, stats, currentProfile ->
+        val zone = runCatching { currentProfile?.timezone?.let(ZoneId::of) ?: ZoneId.systemDefault() }.getOrDefault(ZoneId.systemDefault())
+        stats.filter { it.publicId in ids }.mapNotNullTo(mutableSetOf()) { stat ->
+            runCatching { Instant.parse(stat.recordedAt).atZone(zone).toLocalDate().toString() }.getOrNull()
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
     val nutritionDay = combine(scope, mutableHealthDate) { account, date -> account to date }.flatMapLatest { (account, date) ->
         if (account == null) flowOf(null) else repository.observeNutritionDay(account, date)
@@ -402,7 +602,10 @@ class CompanionViewModel(
             container.preferences.values.mapLatest { it.accountScope }
                 .distinctUntilChanged()
                 .collectLatest { account ->
-                    if (account != null) runCatching { healthConnectManager.ensure(account) }
+                    if (account != null) runCatching {
+                        healthConnectManager.ensure(account)
+                        externalSourceStore.ensureDefaults(account)
+                    }
                 }
         }
         viewModelScope.launch {
@@ -1080,6 +1283,308 @@ class CompanionViewModel(
     fun healthConnectManageAccessIntent(): Intent = healthConnectManager.manageAccessIntent()
     fun healthConnectProviderIntent(): Intent = healthConnectManager.providerIntent()
 
+    fun inspectHealthConnectScaleSources() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        mutableScaleDiagnostic.value = container.healthConnectScaleDiagnostic.inspect(account)
+    }
+
+    fun confirmHealthConnectScale(fingerprint: String, kind: ConfirmedScaleKind) = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        externalSourceStore.confirmHealthConnectOrigin(account, fingerprint, kind)
+        mutableMessage.value = if (kind == ConfirmedScaleKind.NOT_SURE) "El origen quedó marcado como ambiguo." else "Confirmación local actualizada."
+    }
+
+    fun revokeHealthConnectScale(fingerprint: String) = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        externalSourceStore.revokeHealthConnectOrigin(account, fingerprint)
+        mutableMessage.value = "La confirmación local se revocó sin cambiar mediciones históricas."
+    }
+
+    fun requiredBlePermissions(): Set<String> = container.externalDeviceManager.requiredPermissions()
+    fun onBlePermissionResult() = container.externalDeviceManager.refresh()
+    fun startBleScan() = container.externalDeviceManager.startScan()
+    fun cancelBleScan() = container.externalDeviceManager.cancelScan()
+    fun cancelExperimentalCapture() = container.externalDeviceManager.cancelCapture()
+
+    fun associateBleCandidate(sessionDeviceId: String) = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        if (container.externalDeviceManager.selectAndAssociate(account, sessionDeviceId)) {
+            mutableMessage.value = "Dispositivo asociado localmente. El protocolo S400 sigue sin validar."
+        }
+    }
+
+    fun inspectAssociatedBleDevice() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val result = container.externalDeviceManager.inspect(account)
+        mutableMessage.value = if (result.state == io.healthtracker.companion.core.bluetooth.BleGattState.DISCOVERED) {
+            "Inspección GATT completada sin escribir características."
+        } else {
+            "La inspección terminó con estado ${result.resultCode}."
+        }
+    }
+
+    fun forgetAssociatedBleDevice() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val persisted = bleDeviceAssociations.value.firstOrNull()
+        if (persisted != null) externalSourceStore.forgetBleAssociation(account, persisted.deviceFingerprint)
+        container.externalDeviceManager.forget(account)
+        mutableMessage.value = "Se olvidó la asociación local; las mediciones y capturas se conservan por separado."
+    }
+
+    fun explainExperimentalCapture() {
+        val account = preferences.value.accountScope ?: return
+        container.externalDeviceManager.startCapture(account)
+        mutableMessage.value = "Captura privada iniciada. Se detendrá por cancelación, desconexión, límite o timeout; no se interpretará peso."
+    }
+
+    fun selectBleCaptureCharacteristic(serviceUuid: String, characteristicUuid: String) {
+        if (container.externalDeviceManager.selectCaptureCharacteristic(serviceUuid, characteristicUuid)) {
+            mutableMessage.value = "Característica seleccionada para la captura experimental."
+        }
+    }
+
+    fun deleteLatestBleCapture() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        mutableMessage.value = if (container.externalDeviceManager.deleteLatestCapture(account)) "Captura privada eliminada." else "No se encontró una captura para borrar."
+    }
+
+    fun prepareLatestBleCaptureExport(onReady: (Uri) -> Unit) = action(showBusy = false) {
+        val captureId = container.externalDeviceManager.latestCaptureId() ?: return@action
+        onReady(container.bleCaptureExporter.prepareExplicitExport(captureId))
+    }
+
+    fun revokeBleCaptureExport(uri: Uri) = container.bleCaptureExporter.revokeAndDelete(uri)
+
+    fun resolveExternalDuplicate(duplicateId: String, sameMeasurement: Boolean) = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        externalSourceStore.resolvePossibleDuplicate(account, duplicateId, sameMeasurement)
+        mutableMessage.value = if (sameMeasurement) "Las mediciones quedaron enlazadas sin borrado silencioso." else "Se conservarán ambas mediciones."
+    }
+
+    fun requestPortableExport(request: PortableExportRequest) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.queueExport(account, request)
+        mutableMessage.value = if (connected.value) {
+            "Solicitud de exportación guardada; se enviará ahora."
+        } else {
+            "Solicitud guardada offline; se enviará al recuperar la red."
+        }
+    }
+
+    fun refreshPortability() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        if (!connected.value) {
+            mutableMessage.value = "Sin conexión: se muestran los estados guardados."
+            return@action
+        }
+        portabilityRepository.processPending(account)
+        portabilityRepository.refreshExports(account)
+        portabilityRepository.refreshImports(account)
+    }
+
+    fun inspectPortablePackage(uri: Uri, permissionPersisted: Boolean) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.inspectLocal(account, uri, permissionPersisted)
+        mutableMessage.value = if (connected.value) {
+            "Inspección local correcta; el paquete se enviará para simulación."
+        } else {
+            "Inspección local correcta; upload y simulación quedan pendientes."
+        }
+    }
+
+    fun uploadPortableImport(localId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        if (!connected.value) {
+            mutableMessage.value = "El upload queda pendiente hasta recuperar la red."
+            return@action
+        }
+        portabilityRepository.uploadImport(account, localId)
+        mutableMessage.value = "Simulación de importación lista."
+    }
+
+    fun resolvePortableConflictsSafely(importId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.resolveConflictsSafely(account, importId)
+        mutableMessage.value = "Los conflictos se conservarán en el destino."
+    }
+
+    fun applyPortableImport(importId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        if (!connected.value) {
+            portabilityRepository.queueApply(account, importId)
+            mutableMessage.value = "La confirmación queda pendiente y se aplicará al recuperar la red."
+            return@action
+        }
+        portabilityRepository.applyImport(account, importId)
+        mutableMessage.value = "Importación completada sin escritura parcial."
+    }
+
+    fun downloadPortableExport(exportId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.download(account, exportId)
+        mutableMessage.value = "Paquete descargado y SHA-256 verificado."
+    }
+
+    fun sharePortableIntent(exportId: String): Intent {
+        val account = preferences.value.accountScope ?: error("account_scope_required")
+        return portabilityRepository.shareIntent(account, exportId)
+    }
+
+    fun savePortableExport(exportId: String, destination: Uri) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.fileStore.copyTo(account, exportId, destination)
+        mutableMessage.value = "Paquete guardado en el destino elegido."
+    }
+
+    fun deleteLocalPortableExport(exportId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.deleteLocalExport(account, exportId)
+        mutableMessage.value = "Copia local eliminada."
+    }
+
+    fun deleteServerPortableExport(exportId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.deleteServerExport(account, exportId)
+        mutableMessage.value = "Artefacto del servidor eliminado."
+    }
+
+    fun cancelPortableExport(exportId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.cancelExport(account, exportId)
+        mutableMessage.value = "Solicitud de exportacion cancelada."
+    }
+
+    fun deleteServerPortableImport(importId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.deleteServerImport(account, importId)
+        mutableMessage.value = "Paquete temporal de importación eliminado."
+    }
+
+    fun deleteLocalPortableImport(importId: String) = action {
+        val account = preferences.value.accountScope ?: return@action
+        portabilityRepository.deleteLocalImport(account, importId)
+        mutableMessage.value = "Inspeccion local eliminada."
+    }
+
+    fun createWeeklySessionsGoal() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val timezone = profile.value?.timezone ?: "UTC"
+        engagementRepository.createGoal(account, buildJsonObject {
+            put("public_id", UUID.randomUUID().toString()); put("goal_type", "training_sessions_per_week")
+            put("target_value", "3"); put("unit", "session"); put("period", "weekly")
+            put("applicable_days", JsonArray((1..7).map(::JsonPrimitive))); put("timezone", timezone)
+            put("start_date", LocalDate.now(ZoneId.of(timezone)).toString())
+        })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Objetivo guardado en este dispositivo."
+    }
+
+    fun createDailyStepsGoal() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val timezone = profile.value?.timezone ?: "UTC"
+        engagementRepository.createGoal(account, buildJsonObject {
+            put("public_id", UUID.randomUUID().toString()); put("goal_type", "daily_steps")
+            put("target_value", "5000"); put("unit", "step"); put("period", "daily")
+            put("applicable_days", JsonArray((1..7).map(::JsonPrimitive))); put("timezone", timezone)
+            put("start_date", LocalDate.now(ZoneId.of(timezone)).toString())
+        })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Objetivo diario guardado en este dispositivo."
+    }
+
+    fun setGoalPaused(goal: GoalEntity, paused: Boolean) = action(showBusy = false) {
+        engagementRepository.updateGoal(goal.accountScope, goal.publicId, buildJsonObject { put("state", if (paused) "paused" else "active") })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun updateGoalTarget(goal: GoalEntity, target: String) = action(showBusy = false) {
+        engagementRepository.updateGoal(goal.accountScope, goal.publicId, buildJsonObject { put("target_value", target) })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun archiveGoal(goal: GoalEntity) = action(showBusy = false) {
+        engagementRepository.archiveGoal(goal.accountScope, goal.publicId)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Objetivo archivado."
+    }
+
+    fun createTrainingReminder() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val timezone = profile.value?.timezone ?: "UTC"
+        engagementRepository.createRule(account, buildJsonObject {
+            put("public_id", UUID.randomUUID().toString()); put("reminder_type", "scheduled_workout_pending")
+            put("local_time", "18:00"); put("applicable_days", JsonArray((1..7).map(::JsonPrimitive)))
+            put("lead_minutes", 0); put("quiet_start", "22:00"); put("quiet_end", "07:00"); put("quiet_timezone", timezone)
+            put("snooze_options", JsonArray(listOf(JsonPrimitive(15), JsonPrimitive(30), JsonPrimitive(60), JsonPrimitive("tomorrow"))))
+            put("max_per_day", 1); put("cooldown_minutes", 120); put("enabled", false); put("timezone", timezone)
+        })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Recordatorio creado desactivado; revisa horario y permiso antes de activarlo."
+    }
+
+    fun createWeightReminder() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val timezone = profile.value?.timezone ?: "UTC"
+        engagementRepository.createRule(account, buildJsonObject {
+            put("public_id", UUID.randomUUID().toString()); put("reminder_type", "log_weight")
+            put("local_time", "08:00"); put("applicable_days", JsonArray(listOf(JsonPrimitive(1))))
+            put("lead_minutes", 0); put("quiet_start", "22:00"); put("quiet_end", "07:00"); put("quiet_timezone", timezone)
+            put("snooze_options", JsonArray(listOf(JsonPrimitive(15), JsonPrimitive(30), JsonPrimitive(60), JsonPrimitive("tomorrow"))))
+            put("max_per_day", 1); put("cooldown_minutes", 180); put("enabled", false); put("timezone", timezone)
+        })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun setReminderEnabled(rule: ReminderRuleEntity, enabled: Boolean) = action(showBusy = false) {
+        engagementRepository.updateRule(rule.accountScope, rule.publicId, buildJsonObject { put("enabled", enabled) })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun updateReminderSchedule(rule: ReminderRuleEntity, time: String, quietStart: String, quietEnd: String) = action(showBusy = false) {
+        engagementRepository.updateRule(rule.accountScope, rule.publicId, buildJsonObject {
+            put("local_time", time); put("quiet_start", quietStart); put("quiet_end", quietEnd)
+            put("quiet_timezone", rule.timezone)
+        })
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun deleteReminder(rule: ReminderRuleEntity) = action(showBusy = false) {
+        engagementRepository.deleteRule(rule.accountScope, rule.publicId)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun acknowledgeReminder(event: ReminderEventEntity) = action(showBusy = false) {
+        engagementRepository.acknowledge(event.accountScope, event.serverIdentity, event.publicId)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun snoozeReminder(event: ReminderEventEntity, minutes: Int?) = action(showBusy = false) {
+        engagementRepository.snooze(event.accountScope, event.serverIdentity, event.publicId, minutes)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+    }
+
+    fun cleanOldReminderEvents() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        val count = engagementRepository.cleanOldEvents(account)
+        mutableMessage.value = "$count eventos locales antiguos eliminados."
+    }
+
+    fun recordNotificationPermission(requested: Boolean, rationaleShown: Boolean, granted: Boolean) = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        engagementRepository.recordPermission(account, requested, rationaleShown, granted)
+    }
+
+    fun sendTestNotification(context: Context) {
+        mutableMessage.value = if (NotificationPublisher.showTest(context)) "Notificación de prueba enviada localmente." else "Concede el permiso de notificaciones para realizar la prueba."
+    }
+
+    fun setAdherenceDays(days: Int) { if (days in setOf(7, 30, 90)) mutableAdherenceDays.value = days }
+
+    fun refreshEngagement() = action(showBusy = false) {
+        val account = preferences.value.accountScope ?: return@action
+        if (connected.value) engagementRepository.refresh(account)
+    }
+
     fun logout(revoke: Boolean = false, localOnly: Boolean = false) = action {
         val account = preferences.value.accountScope ?: return@action
         if (localOnly) repository.clearLocal(account) else repository.logout(account, revoke)
@@ -1106,6 +1611,206 @@ class CompanionViewModel(
         mutableProfile.value = null
         mutableAuth.value = AuthState.SIGNED_OUT
         mutableMessage.value = "Sesión separada. Confirma la nueva URL e inicia sesión; los datos anteriores siguen aislados."
+    }
+
+    fun openMedicalStudy(publicId: String?) { mutableSelectedMedicalStudyId.value = publicId }
+
+    fun refreshMedicalRecords() = action(showBusy = false) {
+        val (account, identity) = medicalIdentity() ?: return@action
+        medicalRepository.refresh(account, identity)
+    }
+
+    fun createMedicalStudy(title: String, studyType: String, studyDate: String, laboratory: String?, notes: String?, onCreated: (String) -> Unit = {}) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        val id = medicalRepository.createStudy(account, identity, title, studyType, studyDate, laboratory,
+            profile.value?.timezone ?: ZoneId.systemDefault().id, notes)
+        mutableSelectedMedicalStudyId.value = id
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Estudio guardado en el dispositivo."
+        onCreated(id)
+    }
+
+    fun editSelectedMedicalStudy(title: String, notes: String?) = action(showBusy = false) {
+        val (account, identity) = medicalIdentity() ?: return@action
+        val id = mutableSelectedMedicalStudyId.value ?: return@action
+        medicalRepository.editStudy(account, identity, id, title, notes)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Cambios médicos guardados localmente."
+    }
+
+    fun archiveSelectedMedicalStudy(onArchived: () -> Unit = {}) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        val id = mutableSelectedMedicalStudyId.value ?: return@action
+        medicalRepository.archiveStudy(account, identity, id)
+        mutableSelectedMedicalStudyId.value = null
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Estudio archivado."
+        onArchived()
+    }
+
+    fun completeSelectedMedicalStudy() = action(showBusy = false) {
+        val (account, identity) = medicalIdentity() ?: return@action
+        val id = mutableSelectedMedicalStudyId.value ?: return@action
+        medicalRepository.completeStudy(account, identity, id)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Captura marcada como completa."
+    }
+
+    fun addMedicalResult(panelName: String, displayName: String, valueType: String, originalValue: String,
+                         numericValue: String?, unit: String?, lower: String?, upper: String?, sourceStatus: String) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        val studyId = mutableSelectedMedicalStudyId.value ?: return@action
+        medicalRepository.addResult(account, identity, studyId, panelName, displayName, valueType,
+            originalValue, numericValue, unit, lower, upper, sourceStatus)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Resultado guardado localmente."
+    }
+
+    fun editMedicalResult(publicId: String, originalValue: String, numericValue: String?, unit: String?,
+                          lower: String?, upper: String?, sourceStatus: String, reason: String?) = action(showBusy = false) {
+        val (account, identity) = medicalIdentity() ?: return@action
+        medicalRepository.editResult(account, identity, publicId, originalValue, numericValue, unit, lower, upper, sourceStatus, reason)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Corrección guardada localmente."
+    }
+
+    fun deleteMedicalResult(publicId: String) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        medicalRepository.deleteResult(account, identity, publicId)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Resultado eliminado."
+    }
+
+    fun attachMedicalDocument(uri: Uri, filename: String, mimeType: String) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        val studyId = mutableSelectedMedicalStudyId.value ?: return@action
+        medicalRepository.attachDocument(account, identity, studyId, uri, filename, mimeType)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Documento guardado para carga segura."
+    }
+
+    fun deleteMedicalDocument(publicId: String) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        medicalRepository.deleteDocument(account, identity, publicId)
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Documento eliminado; el estudio estructurado se conserva."
+    }
+
+    fun shareMedicalDocument(publicId: String, onReady: (Intent) -> Unit) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        onReady(medicalRepository.explicitShareIntent(account, identity, publicId))
+        mutableMessage.value = "Selecciona explícitamente dónde compartir el documento."
+    }
+
+    fun permanentlyDeleteSelectedMedicalStudy(onDeleted: () -> Unit = {}) = action {
+        val (account, identity) = medicalIdentity() ?: return@action
+        val id = mutableSelectedMedicalStudyId.value ?: return@action
+        medicalRepository.permanentlyDeleteStudy(account, identity, id)
+        mutableSelectedMedicalStudyId.value = null
+        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        mutableMessage.value = "Eliminación definitiva guardada."
+        onDeleted()
+    }
+
+    fun selectMedicalHistory(key: String, period: String = "all") = action(showBusy = false) {
+        mutableMedicalHistoryKey.value = key
+        mutableMedicalHistoryPeriod.value = period
+        val (account, identity) = medicalIdentity() ?: return@action
+        if (connected.value) medicalRepository.refreshHistory(account, identity, key, period)
+    }
+
+    fun setMedicalHistoryPeriod(period: String) {
+        val key = mutableMedicalHistoryKey.value ?: return
+        selectMedicalHistory(key, period)
+    }
+
+    private fun medicalIdentity(): Pair<String, String>? {
+        val local = preferences.value
+        val account = local.accountScope ?: return null
+        val server = local.serverUrl ?: return null
+        return account to CanonicalJson.serverIdentity(server)
+    }
+
+    fun refreshActivities() = action(showBusy = false) {
+        val (account, identity) = activityIdentity() ?: return@action
+        if (connected.value) activityRepository.refresh(account, identity)
+    }
+
+    fun importActivity(uri: Uri, filename: String, routePolicy: String, redactStartMeters: Int, redactEndMeters: Int) = action {
+        val (account, identity) = activityIdentity() ?: return@action
+        val selected = activityRepository.selectFile(account, identity, uri, filename, routePolicy, redactStartMeters, redactEndMeters)
+        mutableMessage.value = "${selected.format.uppercase()} guardado offline · ${selected.sizeBytes} bytes · ${selected.sha256.take(12)}."
+    }
+
+    fun confirmActivityImport(importId: String) = action {
+        val (account, identity) = activityIdentity() ?: return@action
+        activityRepository.confirm(account, identity, importId)
+        mutableMessage.value = "Actividad importada sin duplicar el archivo."
+    }
+
+    fun retryActivityImport(importId: String) = action(showBusy = false) {
+        val (account, identity) = activityIdentity() ?: return@action
+        activityRepository.retry(account, identity, importId)
+        mutableMessage.value = "Reintento encolado."
+    }
+
+    fun cancelActivityImport(importId: String) = action(showBusy = false) {
+        val (account, identity) = activityIdentity() ?: return@action
+        activityRepository.cancel(account, identity, importId)
+        mutableMessage.value = "Importación cancelada y archivo parcial eliminado."
+    }
+
+    fun openActivity(publicId: String?) {
+        mutableSelectedActivityId.value = publicId
+        mutableActivityRoutePoints.value = emptyList(); mutableActivityMetricSeries.value = emptyList()
+        mutableActivityPlanCandidates.value = emptyList()
+        if (publicId != null && connected.value) action(showBusy = false) {
+            val (account, identity) = activityIdentity() ?: return@action
+            activityRepository.refreshDetail(account, identity, publicId)
+            mutableActivityRoutePoints.value = activityRepository.routePoints(account, publicId)
+            mutableActivityMetricSeries.value = activityRepository.metricSeries(account, publicId, "heartRate")
+            mutableActivityPlanCandidates.value = activityRepository.planCandidates(publicId)
+        }
+    }
+
+    fun selectActivityMetric(metric: String) {
+        val id = mutableSelectedActivityId.value ?: return
+        val account = preferences.value.accountScope ?: return
+        mutableActivityMetricSeries.value = activityRepository.metricSeries(account, id, metric)
+    }
+
+    fun archiveSelectedActivity(onArchived: () -> Unit = {}) = action {
+        val (account, identity) = activityIdentity() ?: return@action
+        val row: ActivityEntity = selectedActivity.value ?: return@action
+        activityRepository.archive(account, identity, row); mutableSelectedActivityId.value = null
+        mutableMessage.value = "Actividad archivada."; onArchived()
+    }
+
+    fun removeSelectedActivityRoute() = action {
+        val (account, identity) = activityIdentity() ?: return@action
+        val row: ActivityEntity = selectedActivity.value ?: return@action
+        activityRepository.removeRoute(account, identity, row); mutableActivityRoutePoints.value = emptyList()
+        mutableMessage.value = "Ruta eliminada; el resumen y las vueltas se conservan."
+    }
+
+    fun decideActivityPlan(plannedId: String, actionName: String) = action {
+        val (account, identity) = activityIdentity() ?: return@action
+        val row = selectedActivity.value ?: return@action
+        activityRepository.setPlanDecision(account, identity, row.publicId, plannedId, row.revision, actionName)
+        activityRepository.refreshDetail(account, identity, row.publicId)
+        mutableMessage.value = if (actionName == "confirm") "Entrenamiento vinculado." else "Sugerencia rechazada."
+    }
+
+    fun exportSelectedActivity(format: String, includeRoute: Boolean, onReady: (Intent) -> Unit) = action {
+        val account = preferences.value.accountScope ?: return@action
+        val id = mutableSelectedActivityId.value ?: return@action
+        onReady(activityRepository.export(account, id, format, includeRoute))
+        mutableMessage.value = "Selecciona explícitamente dónde compartir la exportación."
+    }
+
+    private fun activityIdentity(): Pair<String, String>? {
+        val local = preferences.value; val account = local.accountScope ?: return null; val server = local.serverUrl ?: return null
+        return account to CanonicalJson.serverIdentity(server)
     }
 
     fun clearMessage() { mutableMessage.value = null }

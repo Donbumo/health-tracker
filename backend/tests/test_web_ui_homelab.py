@@ -34,10 +34,10 @@ def test_app_shell_has_skip_link_grouped_navigation_breadcrumbs_and_post_logout(
     assert 'class="sidebar"' in html
     assert 'class="topbar"' in html
     assert 'class="breadcrumbs" aria-label="Migas de pan"' in html
-    assert 'aria-current="page">Resumen diario</a>' in html
+    assert 'aria-current="page">Resumen</a>' in html
     assert '<details class="mobile-menu">' in html
     assert '<details class="mobile-menu" open' not in html
-    for group in ("Hoy", "Entrenar", "Rutinas", "Historial", "Salud y actividad", "Datos", "Cuenta", "Ayuda"):
+    for group in ("Principal", "Entrenamientos", "Rutinas", "Historial", "Salud y actividad", "Datos", "Cuenta", "Ayuda"):
         assert group in html
     assert html.count('action="/logout" method="post"') == 2
     assert html.count('name="csrf_token"') >= 2
@@ -134,7 +134,7 @@ def test_dashboard_operations_do_not_show_another_users_import(app, client, user
         db.session.commit()
 
     login(client)
-    html = client.get("/dashboard").get_data(as_text=True)
+    html = client.get("/today").get_data(as_text=True)
     assert "Operación reciente" in html
     assert "daily_energy" in html
     assert "medical_lab" not in html

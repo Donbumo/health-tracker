@@ -30,7 +30,31 @@ def _audit(event: str, user_id: int | None = None, session_id: str | None = None
 @api_v1_bp.before_request
 def prepare_request():
     g.request_id = str(uuid.uuid4())
-    if request.content_length and request.content_length > current_app.config["API_JSON_MAX_BYTES"]:
+    is_portability_upload = (
+        request.path.startswith("/api/v1/mobile/portability/imports")
+        and "multipart/form-data" in (request.content_type or "")
+    )
+    is_medical_upload = (
+        request.path.startswith("/api/v1/mobile/medical-")
+        and "multipart/form-data" in (request.content_type or "")
+    )
+    is_medical_confirm = request.path == "/api/v1/mobile/medical-imports/confirm"
+    is_activity_upload = (
+        request.path == "/api/v1/mobile/activities/imports"
+        and "multipart/form-data" in (request.content_type or "")
+    )
+    maximum = (
+        current_app.config["PORTABILITY_MAX_COMPRESSED_BYTES"] + 1024 * 1024
+        if is_portability_upload
+        else current_app.config.get("ACTIVITY_FILE_MAX_BYTES", 10 * 1024 * 1024) + 1024 * 1024
+        if is_activity_upload
+        else current_app.config["MEDICAL_DOCUMENT_MAX_BYTES"] + 1024 * 1024
+        if is_medical_upload
+        else min(current_app.config["MEDICAL_DOCUMENT_MAX_BYTES"], 8 * 1024 * 1024)
+        if is_medical_confirm
+        else current_app.config["API_JSON_MAX_BYTES"]
+    )
+    if request.content_length and request.content_length > maximum:
         raise ApiError("payload_too_large", "El cuerpo supera el límite permitido.", 413)
 
 
@@ -42,7 +66,7 @@ def secure_response(response):
     allowed = current_app.config.get("API_CORS_ORIGINS", ())
     if origin and origin in allowed:
         response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Idempotency-Key"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PATCH, DELETE, OPTIONS"
         response.headers["Vary"] = "Origin"
     if response.status_code == 429 and response.is_json:

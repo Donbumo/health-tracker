@@ -26,7 +26,7 @@ def _safe_next_url(target: str | None) -> bool:
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for("main.index"))
+        return redirect(url_for("main.dashboard"))
 
     form = LoginForm()
     if form.validate_on_submit():
@@ -44,7 +44,7 @@ def login():
             login_user(user, remember=form.remember.data)
             session.permanent = True
             next_url = request.args.get("next")
-            destination = next_url if _safe_next_url(next_url) else url_for("main.index")
+            destination = next_url if _safe_next_url(next_url) else url_for("main.dashboard")
             return redirect(destination)
 
         flash("Usuario o contraseña incorrectos.", "danger")

@@ -16,8 +16,8 @@ android {
         applicationId = "io.healthtracker.companion"
         minSdk = 26
         targetSdk = 36
-        versionCode = 15
-        versionName = "1.5.0-alpha01"
+        versionCode = 21
+        versionName = "2.0.0-beta01"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
@@ -27,11 +27,13 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             buildConfigField("boolean", "ALLOW_LOCAL_HTTP", "true")
+            buildConfigField("boolean", "EXPERIMENTAL_BLE_CAPTURE", "true")
         }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             buildConfigField("boolean", "ALLOW_LOCAL_HTTP", "false")
+            buildConfigField("boolean", "EXPERIMENTAL_BLE_CAPTURE", "false")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -45,6 +47,7 @@ android {
         compose = true
         buildConfig = true
     }
+    sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
     packaging.resources.excludes += setOf("/META-INF/{AL2.0,LGPL2.1}")
     testOptions.unitTests.isIncludeAndroidResources = true
 }

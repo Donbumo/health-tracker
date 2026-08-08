@@ -7,6 +7,8 @@ import io.healthtracker.companion.core.model.*
 import io.healthtracker.companion.core.security.Redaction
 import io.healthtracker.companion.core.security.SecureTokenStore
 import java.io.IOException
+import java.io.File
+import java.security.MessageDigest
 import java.time.Duration
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -20,13 +22,17 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.Response
 import java.util.concurrent.TimeUnit
 
 data class VerifiedPackage(val value: WorkoutPackageDto, val calculatedHash: String)
+data class PortableDownloadResult(val sha256: String, val sizeBytes: Long)
+internal const val ACTIVITY_EXPORT_TOO_LARGE_MESSAGE = "La exportación supera el límite local."
 
 class ApiClient(
     private val preferences: PreferenceStore,
@@ -53,6 +59,226 @@ class ApiClient(
 
     suspend fun health(baseUrl: String? = null): HealthResponse =
         call("/api/v1/health", "GET", baseOverride = baseUrl, requiresAuth = false)
+
+    suspend fun medicalStudies(includeArchived: Boolean = false): JsonObject =
+        call("/api/v1/mobile/medical-studies?include_archived=$includeArchived", "GET")
+    suspend fun medicalStudy(publicId: String): JsonObject =
+        call("/api/v1/mobile/medical-studies/${encodeQuery(publicId)}", "GET")
+    suspend fun createMedicalStudy(payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/medical-studies", "POST", payload.toString(), idempotencyKey = key)
+    suspend fun patchMedicalStudy(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/medical-studies/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+    suspend fun archiveMedicalStudy(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/medical-studies/${encodeQuery(publicId)}/archive", "POST", payload.toString(), idempotencyKey = key)
+    suspend fun deleteMedicalStudy(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/medical-studies/${encodeQuery(publicId)}", "DELETE", payload.toString(), idempotencyKey = key)
+    suspend fun medicalResults(studyId: String): JsonObject =
+        call("/api/v1/mobile/medical-studies/${encodeQuery(studyId)}/results", "GET")
+    suspend fun createMedicalResult(studyId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/medical-studies/${encodeQuery(studyId)}/results", "POST", payload.toString(), idempotencyKey = key)
+    suspend fun patchMedicalResult(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/lab-results/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+    suspend fun deleteMedicalResult(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/lab-results/${encodeQuery(publicId)}", "DELETE", payload.toString(), idempotencyKey = key)
+    suspend fun labMarkers(): JsonObject = call("/api/v1/mobile/lab-markers", "GET")
+    suspend fun labHistory(canonicalKey: String, period: String): JsonObject =
+        call("/api/v1/mobile/lab-history/${encodeQuery(canonicalKey)}?period=${encodeQuery(period)}", "GET")
+
+    suspend fun uploadMedicalDocument(studyId: String, file: File, filename: String, mimeType: String, key: String): JsonObject = withContext(Dispatchers.IO) {
+        val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", filename, file.asRequestBody(mimeType.toMediaType()))
+            .build()
+        val raw = executeCustom(
+            "/api/v1/mobile/medical-studies/${encodeQuery(studyId)}/documents", "POST", body,
+            idempotencyKey = key,
+        ).use { checkedResponse(it) }
+        try {
+            json.decodeFromString<ApiEnvelope<JsonObject>>(raw).data
+        } catch (error: Exception) {
+            logContractDecodeFailure("/api/v1/mobile/medical-studies/document", error)
+            throw AppFailure(AppErrorCode.SCHEMA_INCOMPATIBLE, "El servidor respondió con un contrato incompatible.", false)
+        }
+    }
+
+    suspend fun previewMedicalImport(file: File, filename: String, mimeType: String): JsonObject = withContext(Dispatchers.IO) {
+        val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", filename, file.asRequestBody(mimeType.toMediaType()))
+            .build()
+        val raw = executeCustom("/api/v1/mobile/medical-imports/preview", "POST", body).use { checkedResponse(it) }
+        json.decodeFromString<ApiEnvelope<JsonObject>>(raw).data
+    }
+
+    suspend fun confirmMedicalImport(payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/medical-imports/confirm", "POST", payload.toString(), idempotencyKey = key)
+
+    suspend fun downloadMedicalDocument(publicId: String, destination: File): PortableDownloadResult = withContext(Dispatchers.IO) {
+        executeCustom("/api/v1/mobile/medical-documents/${encodeQuery(publicId)}/download", "GET", null).use { response ->
+            if (!response.isSuccessful) checkedResponse(response)
+            val digest = MessageDigest.getInstance("SHA-256")
+            var size = 0L
+            destination.parentFile?.mkdirs()
+            destination.outputStream().use { output ->
+                val input = response.body.byteStream(); val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while (true) {
+                    val read = input.read(buffer); if (read < 0) break
+                    size += read
+                    if (size > MAX_MEDICAL_DOCUMENT_BYTES) throw AppFailure(AppErrorCode.PACKAGE_HASH_MISMATCH, "El documento supera el límite local.", false)
+                    digest.update(buffer, 0, read); output.write(buffer, 0, read)
+                }
+            }
+            PortableDownloadResult(digest.digest().joinToString("") { byte -> "%02x".format(byte) }, size)
+        }
+    }
+    suspend fun deleteMedicalDocument(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/medical-documents/${encodeQuery(publicId)}", "DELETE", payload.toString(), idempotencyKey = key)
+
+    suspend fun uploadActivity(
+        file: File,
+        filename: String,
+        mimeType: String,
+        routePolicy: String,
+        redactStartMeters: Int,
+        redactEndMeters: Int,
+        key: String,
+    ): JsonObject = withContext(Dispatchers.IO) {
+        val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", filename, file.asRequestBody(mimeType.toMediaType()))
+            .addFormDataPart("route_policy", routePolicy)
+            .addFormDataPart("redact_start_meters", redactStartMeters.toString())
+            .addFormDataPart("redact_end_meters", redactEndMeters.toString())
+            .build()
+        val raw = executeCustom("/api/v1/mobile/activities/imports", "POST", body, idempotencyKey = key)
+            .use { checkedResponse(it) }
+        json.decodeFromString<ApiEnvelope<JsonObject>>(raw).data
+    }
+
+    suspend fun inspectActivityImport(publicId: String): JsonObject =
+        call("/api/v1/mobile/activities/imports/${encodeQuery(publicId)}/inspect", "POST", "{}")
+
+    suspend fun applyActivityImport(publicId: String, key: String): JsonObject =
+        call("/api/v1/mobile/activities/imports/${encodeQuery(publicId)}/apply", "POST", "{\"confirm\":true}", idempotencyKey = key)
+
+    suspend fun activityImports(): JsonObject = call("/api/v1/mobile/activities/imports", "GET")
+    suspend fun activities(): JsonObject = call("/api/v1/mobile/activities", "GET")
+    suspend fun activity(publicId: String): JsonObject =
+        call("/api/v1/mobile/activities/${encodeQuery(publicId)}", "GET")
+    suspend fun activityLaps(publicId: String): JsonObject =
+        call("/api/v1/mobile/activities/${encodeQuery(publicId)}/laps", "GET")
+    suspend fun activitySeries(publicId: String, downsample: Int = 240): JsonObject =
+        call("/api/v1/mobile/activities/${encodeQuery(publicId)}/series?downsample=$downsample", "GET")
+    suspend fun activityRoute(publicId: String): JsonObject =
+        call("/api/v1/mobile/activities/${encodeQuery(publicId)}/route", "GET")
+    suspend fun activityPlanCandidates(publicId: String): JsonObject =
+        call("/api/v1/mobile/activities/${encodeQuery(publicId)}/plan-candidates", "GET")
+    suspend fun activityComparison(publicId: String): JsonObject =
+        call("/api/v1/mobile/activities/${encodeQuery(publicId)}/comparison", "GET")
+    suspend fun archiveActivity(publicId: String, revision: Int, key: String): JsonObject =
+        call("/api/v1/mobile/activities/${encodeQuery(publicId)}/archive", "POST", "{\"base_revision\":$revision}", idempotencyKey = key)
+    suspend fun deleteActivityRoute(publicId: String, revision: Int, key: String): JsonObject =
+        call("/api/v1/mobile/activities/${encodeQuery(publicId)}/route", "DELETE", "{\"base_revision\":$revision}", idempotencyKey = key)
+    suspend fun linkActivity(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/activities/${encodeQuery(publicId)}/plan-link", "POST", payload.toString(), idempotencyKey = key)
+
+    suspend fun downloadActivityExport(publicId: String, format: String, includeRoute: Boolean, destination: File): PortableDownloadResult = withContext(Dispatchers.IO) {
+        val path = "/api/v1/mobile/activities/${encodeQuery(publicId)}/export?format=${encodeQuery(format)}&include_route=$includeRoute"
+        executeCustom(path, "GET", null).use { response ->
+            if (!response.isSuccessful) checkedResponse(response)
+            val digest = MessageDigest.getInstance("SHA-256"); var size = 0L
+            destination.parentFile?.mkdirs()
+            destination.outputStream().use { output ->
+                val input = response.body.byteStream(); val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while (true) {
+                    val read = input.read(buffer); if (read < 0) break
+                    size += read; if (size > MAX_ACTIVITY_EXPORT_BYTES) throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, ACTIVITY_EXPORT_TOO_LARGE_MESSAGE, false)
+                    digest.update(buffer, 0, read); output.write(buffer, 0, read)
+                }
+            }
+            PortableDownloadResult(digest.digest().joinToString("") { byte -> "%02x".format(byte) }, size)
+        }
+    }
+
+    suspend fun goals(): JsonObject = call("/api/v1/mobile/goals", "GET")
+    suspend fun createGoal(payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/goals", "POST", payload.toString(), idempotencyKey = key)
+    suspend fun patchGoal(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/goals/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+    suspend fun deleteGoal(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/goals/${encodeQuery(publicId)}", "DELETE", payload.toString(), idempotencyKey = key)
+
+    suspend fun reminderRules(): JsonObject = call("/api/v1/mobile/reminder-rules", "GET")
+    suspend fun createReminderRule(payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/reminder-rules", "POST", payload.toString(), idempotencyKey = key)
+    suspend fun patchReminderRule(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/reminder-rules/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+    suspend fun deleteReminderRule(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/reminder-rules/${encodeQuery(publicId)}", "DELETE", payload.toString(), idempotencyKey = key)
+
+    suspend fun reminderEvents(limit: Int = 50): JsonObject =
+        call("/api/v1/mobile/reminder-events?limit=$limit", "GET")
+    suspend fun createReminderEvent(payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/reminder-events", "POST", payload.toString(), idempotencyKey = key)
+    suspend fun patchReminderEvent(publicId: String, payload: JsonObject, key: String): JsonObject =
+        call("/api/v1/mobile/reminder-events/${encodeQuery(publicId)}", "PATCH", payload.toString(), idempotencyKey = key)
+
+    suspend fun adherenceSummary(days: Int, timezone: String): JsonObject =
+        call("/api/v1/mobile/adherence/summary?days=$days&timezone=${encodeQuery(timezone)}", "GET")
+
+    suspend fun createPortableExport(payload: JsonObject, key: String): JsonObject = call(
+        "/api/v1/mobile/portability/exports", "POST", payload.toString(), idempotencyKey = key,
+    )
+
+    suspend fun portableExports(): JsonObject = call("/api/v1/mobile/portability/exports", "GET")
+
+    suspend fun deletePortableExport(publicId: String): JsonObject = call(
+        "/api/v1/mobile/portability/exports/$publicId", "DELETE",
+    )
+
+    suspend fun portableImports(): JsonObject = call("/api/v1/mobile/portability/imports", "GET")
+
+    suspend fun inspectPortablePackage(file: File, sections: List<String>): JsonObject = withContext(Dispatchers.IO) {
+        val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", "selected.htpack", file.asRequestBody(PORTABLE_MEDIA))
+            .addFormDataPart("sections", json.encodeToString(sections))
+            .build()
+        val raw = executeCustom("/api/v1/mobile/portability/imports/inspect", "POST", body).use { checkedResponse(it) }
+        try {
+            json.decodeFromString<ApiEnvelope<JsonObject>>(raw).data
+        } catch (error: Exception) {
+            logContractDecodeFailure("/api/v1/mobile/portability/imports/inspect", error)
+            throw AppFailure(AppErrorCode.SCHEMA_INCOMPATIBLE, "El servidor respondió con un contrato incompatible.", false)
+        }
+    }
+
+    suspend fun applyPortableImport(publicId: String, payload: JsonObject, key: String): JsonObject = call(
+        "/api/v1/mobile/portability/imports/$publicId/apply", "POST", payload.toString(), idempotencyKey = key,
+    )
+
+    suspend fun deletePortableImport(publicId: String): JsonObject = call(
+        "/api/v1/mobile/portability/imports/$publicId", "DELETE",
+    )
+
+    suspend fun downloadPortableExport(publicId: String, destination: File): PortableDownloadResult = withContext(Dispatchers.IO) {
+        executeCustom("/api/v1/mobile/portability/exports/$publicId/download", "GET", null).use { response ->
+            if (!response.isSuccessful) checkedResponse(response)
+            val length = response.body.contentLength()
+            if (length > MAX_PORTABLE_BYTES) throw AppFailure(AppErrorCode.PACKAGE_HASH_MISMATCH, "La descarga supera el límite local.", false)
+            val digest = MessageDigest.getInstance("SHA-256")
+            var size = 0L
+            destination.parentFile?.mkdirs()
+            destination.outputStream().use { output ->
+                val input = response.body.byteStream()
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    size += read
+                    if (size > MAX_PORTABLE_BYTES) throw AppFailure(AppErrorCode.PACKAGE_HASH_MISMATCH, "La descarga supera el límite local.", false)
+                    digest.update(buffer, 0, read); output.write(buffer, 0, read)
+                }
+            }
+            PortableDownloadResult(digest.digest().joinToString("") { byte -> "%02x".format(byte) }, size)
+        }
+    }
 
     suspend fun login(baseUrl: String, request: LoginRequest): TokenResponse {
         val expectedVersion = tokens.mutationVersion()
@@ -374,6 +600,46 @@ class ApiClient(
         }
     }
 
+    private suspend fun executeCustom(
+        path: String,
+        method: String,
+        body: okhttp3.RequestBody?,
+        allowRefresh: Boolean = true,
+        idempotencyKey: String? = null,
+    ): Response {
+        val base = preferences.values.first().serverUrl
+            ?: throw AppFailure(AppErrorCode.SERVER_INCOMPATIBLE, "Configura un servidor antes de continuar.", false)
+        tokens.bindLegacyServerIfMissing(base)
+        val failedAccess = tokens.accessToken(base)
+            ?: throw AppFailure(AppErrorCode.UNAUTHORIZED, "Inicia sesión para continuar.", false)
+        val requestVersion = tokens.mutationVersion()
+        val requestBuilder = Request.Builder()
+            .url(base.trimEnd('/') + path)
+            .header("Accept", "application/json, application/vnd.health-tracker.portable+zip")
+            .header("Authorization", "Bearer $failedAccess")
+            .method(method, body)
+        idempotencyKey?.let { requestBuilder.header("Idempotency-Key", it) }
+        val request = requestBuilder.build()
+        val response = try {
+            http.newCall(request).execute()
+        } catch (error: IOException) {
+            throw ErrorMapper.network(error)
+        }
+        if (response.code == 401 && allowRefresh) {
+            val rawError = response.use { readResponseBody(it) }
+            val parsed = runCatching { json.decodeFromString<ErrorEnvelope>(rawError).error }.getOrNull()
+            if (parsed?.code == "session_revoked") {
+                if (!tokens.clearIfVersion(requestVersion)) {
+                    throw AppFailure(AppErrorCode.UNAUTHORIZED, "La sesion cambio durante la solicitud.", false)
+                }
+                throw ErrorMapper.http(401, parsed, null)
+            }
+            refreshSingleFlight(base, failedAccess)
+            return executeCustom(path, method, body, false, idempotencyKey)
+        }
+        return response
+    }
+
     private fun checkedResponse(response: Response): String {
         val raw = readResponseBody(response)
         if (response.isSuccessful) return raw
@@ -439,9 +705,13 @@ class ApiClient(
 
     private companion object {
         val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()
+        val PORTABLE_MEDIA = "application/vnd.health-tracker.portable+zip".toMediaType()
         val UUID_PATH_COMPONENT = Regex("/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}")
         val SERIALIZATION_PATH = Regex("(?:at path:?\\s*)(\\$[A-Za-z0-9_.$\\[\\]-]+)")
         const val MAX_RESPONSE_BYTES = 4L * 1024L * 1024L
+        const val MAX_PORTABLE_BYTES = 50L * 1024L * 1024L
+        const val MAX_MEDICAL_DOCUMENT_BYTES = 25L * 1024L * 1024L
+        const val MAX_ACTIVITY_EXPORT_BYTES = 25L * 1024L * 1024L
         const val MAX_RETRY_AFTER_SECONDS = 6L * 60L * 60L
     }
 }

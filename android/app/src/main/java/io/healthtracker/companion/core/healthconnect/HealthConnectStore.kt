@@ -71,6 +71,9 @@ class HealthConnectStore(private val database: CompanionDatabase) : HealthConnec
 
     suspend fun settings(scope: String): HealthConnectSettingsEntity? = dao.healthConnectSettings(scope)
 
+    suspend fun isRecordImported(scope: String, type: HealthConnectRecordType, recordId: String): Boolean =
+        dao.healthConnectLedger(scope, type.storageValue, recordId)?.state == "active"
+
     suspend fun setEnabled(scope: String, enabled: Boolean, paused: Boolean = false) {
         val now = Instant.now().toString()
         val current = ensureSettings(scope, HealthConnectAvailability.UNAVAILABLE_PROVIDER)

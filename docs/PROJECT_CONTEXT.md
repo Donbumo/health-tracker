@@ -8,6 +8,8 @@ Para trabajo en curso consulta `ACTIVE_HANDOFF.md`. Para localizar contratos y g
 
 Health Tracker es una plataforma privada, self-hosted y multiusuario para normalizar, conservar, analizar e intercambiar datos personales de salud y entrenamiento.
 
+Las actividades de dispositivo siguen el mismo principio: FIT/GPX/TCX se normalizan a un contrato propio auditable, el original permanece privado, las rutas tienen consentimiento separado y la comparación con planes es descriptiva. La plataforma no depende de nubes, mapas externos, APIs privadas ni scraping para este flujo.
+
 Centraliza, según el soporte real del código:
 
 - nutrición y gasto energético;
@@ -70,6 +72,10 @@ Las reglas ejecutables de estos principios viven en `../AGENTS.md`, `schemas/AGE
 
 El cliente móvil cubre planificación, ejecución, historial, progreso, registro diario de salud e importación Health Connect de solo lectura sin duplicar dominio: las rutinas editables publican versiones inmutables, la agenda usa planned workouts, la ejecución usa Companion Delivery/Mobile Sync y salud reutiliza peso, nutrición, catálogo y energía canónicos mediante endpoints owner-only.
 
+La web separa el análisis longitudinal en **Resumen** (`/dashboard`) de la operación cotidiana en **Hoy** (`/today`). Ambos consumen servicios owner-only existentes o read models internos; esta separación no crea un contrato móvil ni obliga a Android a consumir tendencias web.
+
+Alpha 1.6 añade una base local experimental para fuentes externas y BLE: registro/deduplicación, diagnóstico Health Connect de báscula, asociación, descubrimiento GATT, captura privada/replay y evidencia de protocolo. No amplía el dominio servidor ni afirma soporte S400: ningún valor BLE llega al dominio de salud mientras el mapper permanezca deshabilitado.
+
 La estructura real del código manda sobre diagramas o rutas narrativas antiguas. Consulta `architecture/OVERVIEW.md` y el árbol del repositorio en vez de copiar una estructura sugerida a nuevas tareas.
 
 ## Capacidades de producto
@@ -118,7 +124,7 @@ Desde Alpha 1.2 el cliente también consulta historial paginado y progreso descr
 Salvo evidencia nueva en código y pruebas, no considerar implementados:
 
 - APK firmado/publicado, distribución Play Store o app de reloj;
-- Bluetooth o bridge con reloj;
+- bridge con reloj o Bluetooth de entrenamiento; la única base BLE actual es investigación local S400 sin métricas habilitadas;
 - telemetría continua;
 - FIT binario de salida;
 - APIs privadas o scraping de fabricantes;
@@ -126,6 +132,12 @@ Salvo evidencia nueva en código y pruebas, no considerar implementados:
 - operación como SaaS público.
 
 El trabajo futuro vive en `ROADMAP.md`, no en instrucciones operativas.
+
+## Portabilidad selectiva
+
+Alpha 1.7 define `health-tracker-portable-v1` como contrato de migración de usuario entre instalaciones. Es distinto de exportadores de conveniencia, backup/restore administrativo y Mobile Sync. Conserva UUID públicos sólo cuando es seguro, remapea colisiones, deriva el owner del destino y excluye cachés/estado técnico recalculable. Los contratos públicos viven en `schemas/portable_*.schema.json`; el diseño se documenta en [ALPHA_1_7_DATA_PORTABILITY.md](ALPHA_1_7_DATA_PORTABILITY.md).
+
+Alpha 1.8 incorpora engagement no clínico. El servidor persiste objetivos y reglas; Android agenda avisos locales sin push y conserva schedule/permiso/dedupe como estado técnico no portable. Adherencia describe cumplimiento contra un objetivo explícito, nunca sustituye métricas canónicas, diagnóstico o recomendación. Véase [ALPHA_1_8_GOALS_REMINDERS.md](ALPHA_1_8_GOALS_REMINDERS.md).
 
 ## Fuentes de verdad
 
@@ -137,3 +149,9 @@ El trabajo futuro vive en `ROADMAP.md`, no en instrucciones operativas.
 6. `history/` para trazabilidad, nunca para redefinir el presente.
 
 Consulta `DOCUMENTATION_INDEX.md` para el mapa completo por dominio.
+
+## Freeze Android Beta 1
+
+Android `2.0.0-beta01` es una estabilización de Alpha 2.0, no una nueva fase funcional. Room 10, Alembic 0036, contratos, cinco pestañas y límites de producto permanecen congelados. Los gates conectados y QA físico se documentan como pendientes cuando no se han ejecutado; consulta [BETA_1_ANDROID_STABILIZATION.md](BETA_1_ANDROID_STABILIZATION.md).
+
+Alpha 1.9 incorpora documentación médica privada sin convertir Health Tracker en herramienta clínica: conserva estudios, resultados y originales, compara únicamente unidades/métodos técnicamente compatibles y mantiene rangos/estados como procedencia del informe. OCR, IA, diagnóstico, recomendaciones, FHIR obligatorio y rangos universales siguen fuera de los límites del producto. Véase [ALPHA_1_9_MEDICAL_RECORDS.md](ALPHA_1_9_MEDICAL_RECORDS.md).

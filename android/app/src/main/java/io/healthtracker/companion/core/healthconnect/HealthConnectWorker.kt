@@ -11,6 +11,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import io.healthtracker.companion.HealthTrackerApplication
+import io.healthtracker.companion.core.sync.rethrowIfCancellation
 import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.first
@@ -23,7 +24,8 @@ class HealthConnectWorker(context: Context, parameters: WorkerParameters) : Coro
         return try {
             app.container.healthConnectCoordinator.sync(scope, inputData.getBoolean(KEY_FOREGROUND, false))
             Result.success()
-        } catch (_: Exception) {
+        } catch (error: Exception) {
+            error.rethrowIfCancellation()
             Result.retry()
         }
     }

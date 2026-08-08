@@ -1,4 +1,24 @@
-# Android Companion Alpha 1.5
+# Android Companion
+
+## Beta 1
+
+Beta 1 congela las capacidades Alpha 2.0 y cambia únicamente versionCode/name a 21/`2.0.0-beta01`. Endurece cancelación de workers y nombres privados derivados de IDs remotos, amplía la matriz de migración 1–10 y añade harness/QA reproducible. No cambia navegación, contratos, Room, Alembic, applicationId, SDKs ni soporte de producto. Véase [estabilización Beta 1](BETA_1_ANDROID_STABILIZATION.md).
+
+## Actividades Alpha 2.0
+
+Se mantienen cinco pestañas. **Historial → Actividades** muestra cache Room de actividades/imports, filtros, duplicados y estado offline. El detalle presenta resumen, laps, metadatos de series, gráfica reducida, ruta local sin mapas externos, fuente sanitizada, vínculo/comparación y exportación explícita. La interpretación FIT/GPX/TCX autoritativa sigue en backend.
+
+Room 10 añade `ActivityImportEntity`, `ActivityEntity`, `ActivityLapEntity`, `ActivitySeriesMetadataEntity`, `ActivityRouteEntity`, `ActivityDuplicateCandidateEntity`, `PlanActivityLinkEntity`, `PlanActualComparisonEntity` y `ActivityOperationEntity`, todas con `accountScope` e identidad del servidor. La migración explícita 9→10 completa la cadena 1→10 sin fallback destructivo. Las series densas y puntos de ruta viven en archivos privados; Room conserva metadatos y nombres opacos.
+
+SAF valida extensión/tamaño, calcula SHA-256 en streaming, intenta conservar permiso URI y crea un job offline. WorkManager usa un trabajo único por import con red y backoff, verifica cuenta/servidor/hash antes y después, y no confirma la escritura: el usuario revisa warnings y pulsa confirmar. Cancelar elimina operación y parcial; logout limpia solo el scope efectivo.
+
+## Infraestructura de fuentes externas Alpha 1.6
+
+Alpha 1.6 mantiene las cinco pestañas y añade **Ajustes → Fuentes externas**. Un registro desacoplado declara manual, Health Connect genérico/confirmado y Xiaomi S400 BLE experimental por `accountScope`. El diagnóstico de báscula lee solo peso/grasa con permiso y muestra tipos, conteos, fechas truncadas, estado del ledger y fingerprints; nunca valores, IDs o packages completos. Confirmar un origen como báscula/S400 es una preferencia local revocable y no reclasifica destructivamente imports anteriores.
+
+BLE es opcional. API 31+ solicita scan/connect de forma contextual; API 26–30 limita ubicación al scan requerido por plataforma. Scan dura 15–30 s, necesita selección explícita y se cierra al seleccionar/salir/background. GATT solo descubre estructura, salvo la escritura del CCCD estándar después de que el usuario seleccione un notify/indicate para una captura debug consentida. Capturas `ble-capture-v1` se cifran con Keystore en almacenamiento sin backup, no entran en Room salvo metadata y solo se exportan mediante FileProvider/confirmación.
+
+Room 6 conserva la cadena explícita 1/2/3/4/5→6. `ExternalMeasurementReconciler` solo auto-reconcilia identidad fuerte exacta; probabilidades conservan ambos registros. El adaptador S400 no interpreta peso, unidad, impedancia o composición y el mapper de dominio siempre devuelve ausencia. Detalle y QA pendiente: [ALPHA_1_6_EXTERNAL_SOURCES.md](ALPHA_1_6_EXTERNAL_SOURCES.md).
 
 Cliente Android nativo y offline-first para planificar, ejecutar, registrar salud diaria, importar Health Connect en modo de solo lectura y sincronizar. El backend sigue siendo autoritativo; la app reutiliza los dominios canónicos de peso, nutrición, alimentos, energía y entrenamiento, sin duplicar `TrainingSession`, cursor, importador ni protocolo.
 
@@ -107,8 +127,22 @@ Sync manual, WorkManager y triggers automáticos comparten single-flight por rep
 
 Tras process death sin red, una cuenta con refresh cifrado, scope, dispositivo y registro Room coherentes abre su cache antes de intentar red y puede reanudar un draft verificado. Los campos válidos se autosalvan a los 400 ms y se fuerzan al perder foco, navegar o ir a background. Al volver la conexión se restaura primero el access token, se revalida bootstrap/negociación cuando corresponde y después se sincroniza. Solo revocación o refresh definitivamente inválido limpian la sesión; fallos temporales nunca borran credenciales ni corrompen drafts.
 
+## Datos y privacidad Alpha 1.7
+
+`Ajustes → Datos y privacidad` añade portabilidad sin otra pestaña. Room 7 conserva export jobs, import jobs, inspecciones, planes, decisiones, metadata de descarga y temporales con `accountScope`. Los `.htpack` no se guardan en Room: viven en almacenamiento privado particionado por identidad de cuenta/servidor.
+
+Export permite secciones y rango; perfil identificable y attachments parten apagados. Import usa SAF, inspección local, upload, dry-run, resumen de conflictos y confirmación. Descargar escribe `.partial`, verifica tamaño/SHA-256 y sólo después habilita guardar o compartir. FileProvider concede URI temporal y no expone el árbol BLE. Consulta [Alpha 1.7](ALPHA_1_7_DATA_PORTABILITY.md).
+
+## Objetivos y recordatorios Alpha 1.8
+
+`Ajustes → Objetivos y recordatorios` conserva las cinco pestañas y usa Room primero. La pantalla crea/edita/pausa/archiva objetivos, configura reglas, explica el permiso Android, envía una prueba explícita y muestra el centro local. Hoy muestra hasta tres objetivos; Progreso consume la caché 7/30/90. WorkManager y el ledger sobreviven process death; reboot sólo solicita reprogramación futura. Consulta [Alpha 1.8](ALPHA_1_8_GOALS_REMINDERS.md).
+
 ## Alcance no soportado
 
 Alpha 1.5 integra únicamente lectura de Health Connect para los tipos documentados. Google Fit, Huawei Health, Xiaomi Home/S400, BLE, Wear OS, fotografía, OCR, IA, códigos de barras, recomendaciones y diagnósticos siguen fuera de alcance. Los objetivos de nutrición o pasos permanecen ausentes cuando el backend no tiene un contrato existente; no se fabrican valores.
 
-Reloj, Bluetooth, escritura hacia Health Connect, sesiones/rutas de ejercicio, sueño, signos vitales, datos médicos, telemetría continua, FIT output, deep links, WebView, analytics, publicidad y vendors Garmin/Huawei/Magene siguen fuera de alcance. Los packages planeados conservan de forma aditiva carga, `load_details`, RIR, RPE y notas cuando están prescritos; clientes anteriores pueden ignorarlos.
+Reloj, escritura hacia Health Connect, sesiones/rutas de ejercicio, sueño, signos vitales, OCR/IA médica, telemetría continua, FIT output, deep links, WebView, analytics, publicidad y vendors Garmin/Huawei/Magene siguen fuera de alcance. Los packages planeados conservan de forma aditiva carga, `load_details`, RIR, RPE y notas cuando están prescritos; clientes anteriores pueden ignorarlos.
+
+## Estudios médicos Alpha 1.9
+
+**Salud → Estudios médicos** mantiene las cinco pestañas y añade lista, draft, detalle, paneles, resultados/revisiones, documentos e historial. Room 9 emite inmediatamente y `MedicalRepository` procesa una cola owner+server scoped mediante endpoints agregados; no hay fetch por recomposición ni nuevo cursor. SAF selecciona PDF/JPEG/PNG/JSON/CSV y el FileProvider `.medical-documents` es privado. VersionCode 19/name `1.9.0-alpha01`; alcance y límites en [ALPHA_1_9_MEDICAL_RECORDS.md](ALPHA_1_9_MEDICAL_RECORDS.md).

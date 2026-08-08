@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/portable_goals.schema.json",
+  "title": "Portable goals record v1",
+  "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "record_type", "public_id", "revision", "data"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "record_type": {"const": "goals"},
+    "public_id": {"type": "string", "format": "uuid"},
+    "revision": {"type": "integer", "minimum": 1},
+    "data": {
+      "type": "object", "additionalProperties": false,
+      "required": ["goal_type", "target_value", "unit", "period", "applicable_days", "timezone", "start_date", "end_date", "state", "source", "related_public_id"],
+      "properties": {
+        "goal_type": {"enum": ["training_sessions_per_week", "active_days_per_week", "daily_steps", "nutrition_calories", "nutrition_protein", "nutrition_carbohydrates", "nutrition_fat", "weight_logging_frequency", "active_plan_tracking", "scheduled_workouts_completion"]},
+        "target_value": {"type": "string", "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,3})?$"},
+        "unit": {"enum": ["session", "day", "step", "kcal", "g", "log", "workout"]},
+        "period": {"enum": ["daily", "weekly", "selected_days", "active_plan", "scheduled_workouts"]},
+        "applicable_days": {"type": "array", "uniqueItems": true, "maxItems": 7, "items": {"type": "integer", "minimum": 1, "maximum": 7}},
+        "timezone": {"type": "string", "minLength": 1, "maxLength": 64},
+        "start_date": {"type": "string", "format": "date"},
+        "end_date": {"type": ["string", "null"], "format": "date"},
+        "state": {"enum": ["active", "paused", "completed", "archived"]},
+        "source": {"enum": ["manual", "portable_import"]},
+        "related_public_id": {"type": ["string", "null"], "format": "uuid"}
+      }
+    }
+  }
+}

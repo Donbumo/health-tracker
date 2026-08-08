@@ -71,6 +71,9 @@ class CompanionRepository(
     private val preferences: PreferenceStore,
     private val tokens: SecureTokenStore,
     private val api: ApiClient,
+    private val onBeforeClearAccount: suspend (String) -> Unit = {},
+    private val enqueueSync: (SyncTrigger) -> Unit = SyncScheduler::enqueueNow,
+    private val refreshSupplementalOnSync: Boolean = true,
 ) {
     private val dao = database.companionDao()
     private val syncMutex = Mutex()
@@ -140,7 +143,7 @@ class CompanionRepository(
                 preferences.setOfflineSessionEligible(true)
                 SyncScheduler.schedulePeriodic()
                 io.healthtracker.companion.core.healthconnect.HealthConnectScheduler.schedulePeriodic()
-                SyncScheduler.enqueueNow(SyncTrigger.LOGIN_BOOTSTRAP)
+                enqueueSync(SyncTrigger.LOGIN_BOOTSTRAP)
                 LoginOutcome(scope, profile)
             },
             remoteLogout = { api.logout() },
@@ -156,7 +159,7 @@ class CompanionRepository(
                 preferences.setOfflineSessionEligible(false)
                 preferences.setAccountScope(null)
             } finally {
-                scope?.let { database.withTransaction { dao.clearAccount(it) } }
+                scope?.let { clearAccountData(it) }
             }
         }
     }
@@ -225,7 +228,7 @@ class CompanionRepository(
             dao.deleteHealthConflict(scope, entityId)
             markHealthSyncStatus(scope, pending, "pending")
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
     }
 
     suspend fun duplicateHealthConflict(scope: String, entityId: String): String {
@@ -351,7 +354,7 @@ class CompanionRepository(
             enqueue(scope, "health_body_create", id, UUID.randomUUID().toString(), payload.toString())
             recalculateLocalDayForInstantLocked(scope, recordedAt)
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
         return id
     }
 
@@ -370,7 +373,7 @@ class CompanionRepository(
             coalesceHealthWrite(scope = value.accountScope, createType = "health_body_create", updateType = "health_body_update", entityId = value.publicId, payload = bodyPayload(updated, creating = value.revision == 0))
             recalculateLocalDayForInstantLocked(value.accountScope, value.recordedAt)
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
     }
 
     suspend fun deleteBodyStatOffline(scope: String, publicId: String) {
@@ -383,7 +386,7 @@ class CompanionRepository(
             dao.deleteHealthConflict(scope, publicId)
             recalculateLocalDayForInstantLocked(scope, value.recordedAt)
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
     }
 
     suspend fun createNutritionEntryOffline(
@@ -419,7 +422,7 @@ class CompanionRepository(
             recalculateNutritionDayLocked(scope, date)
             recalculateLocalDayLocked(scope, date, dao.account(scope)?.timezone ?: "UTC")
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
         return id
     }
 
@@ -438,7 +441,7 @@ class CompanionRepository(
             recalculateNutritionDayLocked(value.accountScope, LocalDate.parse(value.date))
             recalculateLocalDayLocked(value.accountScope, LocalDate.parse(value.date), dao.account(value.accountScope)?.timezone ?: "UTC")
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
     }
 
     suspend fun duplicateNutritionEntryOffline(scope: String, publicId: String): String {
@@ -463,7 +466,7 @@ class CompanionRepository(
             recalculateNutritionDayLocked(scope, date)
             recalculateLocalDayLocked(scope, date, dao.account(scope)?.timezone ?: "UTC")
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
     }
 
     suspend fun createFoodOffline(scope: String, name: String, servingSizeG: String?, calories: String?, protein: String?, carbs: String?, fat: String?): String {
@@ -481,7 +484,7 @@ class CompanionRepository(
             dao.upsertFoodCatalog(listOf(entity))
             enqueue(scope, "health_food_create", id, UUID.randomUUID().toString(), payload.toString())
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
         return id
     }
 
@@ -500,7 +503,7 @@ class CompanionRepository(
             coalesceHealthWrite(scope, "health_steps_create", "health_steps_update", entity.publicId, payload)
             recalculateLocalDayLocked(scope, date, dao.account(scope)?.timezone ?: "UTC")
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
         return entity.publicId
     }
 
@@ -514,7 +517,7 @@ class CompanionRepository(
             dao.deleteHealthConflict(scope, publicId)
             recalculateLocalDayLocked(scope, LocalDate.parse(value.date), dao.account(scope)?.timezone ?: "UTC")
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
     }
 
     fun observePackages(scope: String): Flow<List<WorkoutPackageEntity>> = dao.observePackages(scope)
@@ -659,7 +662,7 @@ class CompanionRepository(
             )
             enqueue(scope, "planning_plan_create", id, key, api.json.encodeToString(request))
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
         return id
     }
 
@@ -715,7 +718,7 @@ class CompanionRepository(
                 else -> enqueue(scope, "planning_plan_patch", publicId, UUID.randomUUID().toString(), payload.toString())
             }
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
     }
 
     suspend fun createWorkoutOffline(scope: String, planId: String, name: String): String {
@@ -737,7 +740,7 @@ class CompanionRepository(
             dao.upsertPlans(listOf(plan.copy(revision = plan.revision + 1, syncStatus = "pending", updatedAt = now)))
             enqueue(scope, "planning_workout_create", planId, UUID.randomUUID().toString(), payload.toString())
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
         return id
     }
 
@@ -794,7 +797,7 @@ class CompanionRepository(
             dao.upsertPlans(listOf(plan.copy(revision = plan.revision + 1, syncStatus = "pending", updatedAt = now)))
             enqueue(scope, "planning_plan_patch", planId, UUID.randomUUID().toString(), payload.toString())
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
     }
 
     suspend fun scheduleWorkoutOffline(scope: String, workoutId: String, date: LocalDate, timezone: String): String =
@@ -818,7 +821,7 @@ class CompanionRepository(
                 dao.upsertPlanned(listOf(PlannedWorkoutEntity(scope, id, workout.planPublicId, "pending", date.toString(), timezone, "locally_pending", workout.name, 1, now, false, workoutId)))
                 enqueue(scope, "planning_schedule", id, UUID.randomUUID().toString(), scheduleQueuePayload(workoutId, request).toString())
             }
-            SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+            enqueueSync(SyncTrigger.PENDING_OPERATION)
             id
         }
 
@@ -849,7 +852,7 @@ class CompanionRepository(
             dao.upsertPlanned(listOf(planned.copy(status = "cancelled", updatedAt = Instant.now().toString(), deleted = false)))
             enqueue(scope, "planning_cancel_schedule", scheduledId, UUID.randomUUID().toString(), payload.toString())
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
     }
 
     suspend fun rescheduleWorkoutOffline(scope: String, scheduledId: String, date: LocalDate, timezone: String): String =
@@ -897,7 +900,7 @@ class CompanionRepository(
                     dao.updatePendingEntity(existingPatch.withUpdatedPayload(payload))
                 }
             }
-            SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+            enqueueSync(SyncTrigger.PENDING_OPERATION)
             scheduledId
         }
 
@@ -998,7 +1001,7 @@ class CompanionRepository(
                 else -> enqueue(scope, "planning_workout_patch", workoutId, UUID.randomUUID().toString(), payload.toString())
             }
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
     }
 
     suspend fun resolvePlanningConflictKeepRemote(scope: String, entityId: String) {
@@ -1065,7 +1068,7 @@ class CompanionRepository(
             dao.plan(scope, planId)?.let { dao.upsertPlans(listOf(it.copy(syncStatus = "pending"))) }
             dao.planned(scope, entityId)?.let { dao.upsertPlanned(listOf(it.copy(status = "locally_pending"))) }
         }
-        SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        enqueueSync(SyncTrigger.PENDING_OPERATION)
     }
 
     suspend fun duplicatePlanningConflict(scope: String, entityId: String): String {
@@ -1361,7 +1364,7 @@ class CompanionRepository(
                 enqueue(scope, "companion_ack", delivery.id, ackKey, api.json.encodeToString(ack))
             }
         }
-        SyncScheduler.enqueueNow(SyncTrigger.DOWNLOAD_ACK)
+        enqueueSync(SyncTrigger.DOWNLOAD_ACK)
         return delivery.id
     }
 
@@ -1418,7 +1421,7 @@ class CompanionRepository(
         if (committedDraft.status == "corrupt") {
             throw AppFailure(AppErrorCode.DRAFT_CORRUPT, "El borrador local no superó la validación de integridad.", false)
         }
-        if (created) SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        if (created) enqueueSync(SyncTrigger.PENDING_OPERATION)
         return committedDraft
     }
 
@@ -1509,7 +1512,7 @@ class CompanionRepository(
             )
             true
         }
-        if (queued) SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        if (queued) enqueueSync(SyncTrigger.PENDING_OPERATION)
     }
 
     suspend fun abortWorkout(scope: String, deliveryId: String) {
@@ -1528,7 +1531,7 @@ class CompanionRepository(
             }
             true
         }
-        if (queued) SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        if (queued) enqueueSync(SyncTrigger.PENDING_OPERATION)
     }
 
     suspend fun checkpointSet(scope: String, deliveryId: String, set: DraftSetEntity) {
@@ -1565,7 +1568,7 @@ class CompanionRepository(
             dao.upsertDraft(updatedDraft.copy(payloadHash = draftPayloadHash(updatedDraft, dao.draftSets(scope, deliveryId))))
             true
         }
-        if (queued) SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        if (queued) enqueueSync(SyncTrigger.PENDING_OPERATION)
     }
 
     suspend fun completeWorkout(scope: String, deliveryId: String) {
@@ -1642,7 +1645,7 @@ class CompanionRepository(
             refreshLocalProgressSummaries(scope, completedAt)
             true
         }
-        if (queued) SyncScheduler.enqueueNow(SyncTrigger.PENDING_OPERATION)
+        if (queued) enqueueSync(SyncTrigger.PENDING_OPERATION)
     }
 
     suspend fun synchronize(scope: String) {
@@ -1713,18 +1716,20 @@ class CompanionRepository(
         if (remoteStatus.schemaVersion != CONTRACT_VERSION || remoteStatus.deviceId != account.deviceId) {
             throw AppFailure(AppErrorCode.SCHEMA_INCOMPATIBLE, "El estado de sync no corresponde a este dispositivo.", false)
         }
-        if (dao.historyQueryState(scope, HistoryFilters().cacheKey) != null) runCatching {
-            refreshHistory(scope)
-            refreshProgress(scope, "7")
-            refreshProgress(scope, "30")
-        }
-        runCatching { refreshPlans(scope) }
-        runCatching { refreshSchedule(scope) }
-        dao.account(scope)?.let { account ->
-            val zone = runCatching { ZoneId.of(account.timezone) }.getOrDefault(ZoneOffset.UTC)
-            val today = LocalDate.now(zone)
-            runCatching { refreshHealth(scope, today, zone.id) }
-            runCatching { refreshHealthProgress(scope, today.minusDays(29), today, zone.id) }
+        if (refreshSupplementalOnSync) {
+            if (dao.historyQueryState(scope, HistoryFilters().cacheKey) != null) runCatching {
+                refreshHistory(scope)
+                refreshProgress(scope, "7")
+                refreshProgress(scope, "30")
+            }
+            runCatching { refreshPlans(scope) }
+            runCatching { refreshSchedule(scope) }
+            dao.account(scope)?.let { account ->
+                val zone = runCatching { ZoneId.of(account.timezone) }.getOrDefault(ZoneOffset.UTC)
+                val today = LocalDate.now(zone)
+                runCatching { refreshHealth(scope, today, zone.id) }
+                runCatching { refreshHealthProgress(scope, today.minusDays(29), today, zone.id) }
+            }
         }
         preferences.setLastSyncAt(Instant.now().toString())
     }
@@ -1735,7 +1740,7 @@ class CompanionRepository(
             api.revokeDevice(deviceId)
         } else runCatching { api.logout() }
         SyncScheduler.cancelAll()
-        database.withTransaction { dao.clearAccount(scope) }
+        clearAccountData(scope)
         tokens.clear()
         preferences.setOfflineSessionEligible(false)
         preferences.setAccountScope(null)
@@ -1744,7 +1749,7 @@ class CompanionRepository(
     suspend fun logoutAll(scope: String) {
         api.logoutAll()
         SyncScheduler.cancelAll()
-        database.withTransaction { dao.clearAccount(scope) }
+        clearAccountData(scope)
         tokens.clear()
         preferences.setOfflineSessionEligible(false)
         preferences.setAccountScope(null)
@@ -1752,7 +1757,7 @@ class CompanionRepository(
 
     suspend fun clearLocal(scope: String) {
         SyncScheduler.cancelAll()
-        database.withTransaction { dao.clearAccount(scope) }
+        clearAccountData(scope)
         tokens.clear()
         preferences.setOfflineSessionEligible(false)
         preferences.setAccountScope(null)
@@ -1760,6 +1765,11 @@ class CompanionRepository(
 
     suspend fun clearConfirmedInvalidSession(scope: String) {
         if (preferences.values.first().accountScope == scope) clearLocal(scope)
+    }
+
+    private suspend fun clearAccountData(scope: String) {
+        onBeforeClearAccount(scope)
+        database.withTransaction { dao.clearAccount(scope) }
     }
 
     suspend fun detachForServerSwitch(scope: String) {
@@ -1789,6 +1799,9 @@ class CompanionRepository(
             // blocks later START/PROGRESS/COMPLETE operations instead of letting the
             // SQL readiness filter skip over a required transition.
             if (pending.status == "conflict" || pending.notBeforeEpochMs > System.currentTimeMillis()) return
+            // Alpha 1.8 engagement operations are drained by EngagementRepository
+            // before this strict FIFO processor runs.
+            if (pending.actionType.startsWith("engagement_")) return
             if (pending.actionType.startsWith("planning_")) {
                 markPlanningSyncStatus(scope, pending, "syncing")
             }
@@ -2215,6 +2228,7 @@ class CompanionRepository(
                 ),
             )
         } catch (error: Exception) {
+            error.rethrowIfCancellation()
             val concurrent = dao.pendingByKey(scope, key)
             if (concurrent != null && concurrent.payloadHash == hash && concurrent.actionType == type && concurrent.entityId == entityId) return
             throw AppFailure(AppErrorCode.LOCAL_STORAGE_ERROR, "No fue posible conservar la operación pendiente.", true)

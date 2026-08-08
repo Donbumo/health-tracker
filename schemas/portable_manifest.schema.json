@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/portable_manifest.schema.json",
+  "title": "Health Tracker portable package manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "format_version",
+    "export_id",
+    "created_at",
+    "source_application",
+    "source_application_version",
+    "schema_versions",
+    "timezone",
+    "included_sections",
+    "omitted_sections",
+    "counts",
+    "files",
+    "attachment_policy",
+    "redaction_policy",
+    "warnings",
+    "minimum_reader_version"
+  ],
+  "properties": {
+    "format": {
+      "const": "health-tracker-portable-v1"
+    },
+    "format_version": {
+      "const": "1.0"
+    },
+    "export_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_application": {
+      "const": "Health Tracker"
+    },
+    "source_application_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "schema_versions": {
+      "type": "object",
+      "additionalProperties": {
+        "const": "1.0"
+      },
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]{0,63}$"
+      }
+    },
+    "timezone": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 64
+    },
+    "included_sections": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{0,63}$"
+      }
+    },
+    "omitted_sections": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9_]{0,63}$"
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]{0,63}$"
+      }
+    },
+    "files": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "size_bytes",
+          "sha256"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._/-]+$",
+            "maxLength": 255
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "attachment_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "included",
+        "opt_in",
+        "total_bytes"
+      ],
+      "properties": {
+        "included": {
+          "type": "boolean"
+        },
+        "opt_in": {
+          "const": true
+        },
+        "total_bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "redaction_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identifiable_profile",
+        "notes",
+        "technical_identifiers",
+        "external_provenance"
+      ],
+      "properties": {
+        "identifiable_profile": {
+          "type": "boolean"
+        },
+        "notes": {
+          "const": "included_in_selected_domains"
+        },
+        "technical_identifiers": {
+          "const": "excluded"
+        },
+        "external_provenance": {
+          "const": "sanitized"
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 500
+      }
+    },
+    "minimum_reader_version": {
+      "const": "1.0"
+    }
+  }
+}

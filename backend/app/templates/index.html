@@ -1,9 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Dashboard diario · Health Tracker{% endblock %}
+{% block title %}Hoy · Health Tracker{% endblock %}
+{% block breadcrumb %}Hoy{% endblock %}
 {% block content %}
   <section class="page-heading">
-    <div><p class="eyebrow">Hoy</p><h1>Dashboard diario</h1><p>Tu siguiente paso y el resumen de {{ summary.date.isoformat() }}.</p></div>
-    <form method="get" action="{{ url_for('main.dashboard') }}" class="page-actions">
+    <div><p class="eyebrow">Acción diaria</p><h1>Hoy</h1><p>Tu siguiente paso y el estado operativo de {{ summary.date.isoformat() }}.</p></div>
+    <form method="get" action="{{ url_for('main.today') }}" class="page-actions">
       <label for="dashboard-date">Fecha</label>
       <input id="dashboard-date" type="date" name="date" value="{{ summary.date.isoformat() }}">
       <button class="button button-secondary" type="submit">Ver fecha</button>

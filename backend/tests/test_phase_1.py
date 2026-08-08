@@ -23,7 +23,7 @@ def test_login_logout_and_external_next_is_rejected(client, user):
         data={"username": "test-user", "password": "test-password"},
     )
     assert response.status_code == 302
-    assert response.headers["Location"] == "/"
+    assert response.headers["Location"] == "/dashboard"
 
     response = client.post("/logout")
     assert response.status_code == 302
@@ -72,8 +72,10 @@ def test_upload_is_hashed_stored_and_deduplicated(app, client, user):
         assert record.original_filename == "report.txt"
         assert record.source_type == "uploaded"
         assert record.sha256 == expected_hash
-        assert record.stored_filename == expected_hash
-        stored_path = app.config["UPLOAD_ROOT"] / f"user_{user}" / expected_hash
+        assert record.stored_filename != expected_hash
+        assert len(record.stored_filename) == 32
+        assert all(character in "0123456789abcdef" for character in record.stored_filename)
+        stored_path = app.config["UPLOAD_ROOT"] / f"user_{user}" / record.stored_filename
         assert stored_path.read_bytes() == payload
 
     response = client.post(

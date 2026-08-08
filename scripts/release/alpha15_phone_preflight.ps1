@@ -32,13 +32,15 @@ function Find-Tool([string]$Name, [string]$Area) {
     $roots = @($env:ANDROID_SDK_ROOT, $env:ANDROID_HOME, (Join-Path $env:LOCALAPPDATA 'Android\Sdk')) |
         Where-Object { $_ -and (Test-Path -LiteralPath $_ -PathType Container) } | Select-Object -Unique
     foreach ($root in $roots) {
-        $base = if ($Area -eq 'platform-tools') { Join-Path $root $Area } else {
-            Get-ChildItem -LiteralPath (Join-Path $root $Area) -Directory -ErrorAction SilentlyContinue |
-                Sort-Object Name -Descending | Select-Object -First 1 -ExpandProperty FullName
+        $bases = if ($Area -eq 'platform-tools') { @(Join-Path $root $Area) } else {
+            @(Get-ChildItem -LiteralPath (Join-Path $root $Area) -Directory -ErrorAction SilentlyContinue |
+                Sort-Object Name -Descending | Select-Object -ExpandProperty FullName)
         }
-        if ($base) {
-            $candidate = Join-Path $base "$Name.exe"
-            if (Test-Path -LiteralPath $candidate -PathType Leaf) { return $candidate }
+        foreach ($base in $bases) {
+            foreach ($extension in @('.exe', '.bat', '.cmd')) {
+                $candidate = Join-Path $base "$Name$extension"
+                if (Test-Path -LiteralPath $candidate -PathType Leaf) { return $candidate }
+            }
         }
     }
     return $null

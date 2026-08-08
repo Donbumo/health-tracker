@@ -22,8 +22,9 @@ Health Tracker Alpha 1.0 es una aplicación privada y self-hosted para registrar
 
 ## Navegación cotidiana
 
-- **Hoy** resume el entrenamiento planeado, borradores, actividad reciente y datos del día.
-- **Entrenar** abre agenda, captura y progreso.
+- **Resumen** abre el análisis longitudinal de energía, proteína, peso y entrenamiento. Elige Hoy, 7/30/90 días, este/último mes, este año o un máximo de 366 días personalizado; opcionalmente compara con el periodo anterior equivalente. La cobertura indica qué datos faltan y las tablas bajo cada gráfico son la alternativa accesible.
+- **Hoy** concentra el entrenamiento planeado, el siguiente paso, borradores, captura rápida, actividad reciente y datos operativos del día.
+- **Entrenamientos** abre agenda, captura y progreso.
 - **Rutinas** permite crear una rutina guiada, importar, duplicar y consultar versiones.
 - **Historial** contiene sesiones e importaciones.
 - **Salud y actividad** agrupa peso, nutrición, energía, actividades, rutas y laboratorios.
@@ -31,6 +32,8 @@ Health Tracker Alpha 1.0 es una aplicación privada y self-hosted para registrar
 - **Cuenta** contiene preferencias, dispositivos y estado homelab.
 
 En móvil, abre **Menú** desde la barra superior. El menú está cerrado al cargar para dejar visible el contenido diario.
+
+Resumen usa la zona horaria y unidad de **Cuenta → Preferencias**. Las fechas son locales e inclusivas. Un día ausente no vale cero; sin objetivo de proteína no se muestra cumplimiento, con un solo pesaje no se calcula cambio y las cargas incompatibles dejan el volumen como no disponible. Las tendencias son descriptivas, no diagnóstico ni recomendación. Consulta [definiciones del Resumen](DASHBOARD_TRENDS.md).
 
 ## Android Companion
 

@@ -30,7 +30,7 @@ def _add_report(user_id: int, report_date: date, marker_count: int = 2):
 
 def test_dashboard_shows_empty_and_latest_medical_report(app, client, user):
     login(client)
-    empty = client.get("/dashboard", query_string={"date": "2026-07-03"})
+    empty = client.get("/today", query_string={"date": "2026-07-03"})
     assert empty.status_code == 200
     assert b"Sin estudios registrados" in empty.data
     assert b'href="/medical/labs/manual"' in empty.data
@@ -40,7 +40,7 @@ def test_dashboard_shows_empty_and_latest_medical_report(app, client, user):
         latest_id = _add_report(user, date(2026, 7, 3), 2)
         _add_report(user, date(2026, 7, 4), 3)
 
-    dashboard = client.get("/dashboard", query_string={"date": "2026-07-03"})
+    dashboard = client.get("/today", query_string={"date": "2026-07-03"})
     assert dashboard.status_code == 200
     assert b"Laboratorio dashboard ficticio" in dashboard.data
     assert b"2 marcadores registrados" in dashboard.data
@@ -57,7 +57,7 @@ def test_dashboard_medical_summary_is_isolated_by_user(app, client, user):
         db.session.commit()
 
     login(client, "medical-dashboard-second", "second-password")
-    dashboard = client.get("/dashboard", query_string={"date": "2026-07-03"})
+    dashboard = client.get("/today", query_string={"date": "2026-07-03"})
     assert dashboard.status_code == 200
     assert b"Laboratorio dashboard ficticio" not in dashboard.data
     assert b"Sin estudios registrados" in dashboard.data

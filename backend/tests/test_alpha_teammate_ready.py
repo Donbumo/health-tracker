@@ -161,12 +161,12 @@ def test_alpha_teammate_full_web_flow_and_isolation(app, client):
     )
     assert session_response.status_code == 200
 
-    dashboard = client.get("/dashboard", query_string={"date": "2026-07-10"})
-    assert dashboard.status_code == 200
-    assert b"82.400" in dashboard.data
-    assert b"2400" in dashboard.data
-    assert b"450" in dashboard.data
-    assert "Press ficticio".encode() in dashboard.data
+    today_page = client.get("/today", query_string={"date": "2026-07-10"})
+    assert today_page.status_code == 200
+    assert b"82.400" in today_page.data
+    assert b"2400" in today_page.data
+    assert b"450" in today_page.data
+    assert "Press ficticio".encode() in today_page.data
 
     export = client.get("/account/export.json")
     assert export.status_code == 200
@@ -202,9 +202,11 @@ def test_alpha_smoke_routes(app, client, user):
     assert client.get("/privacy").status_code == 200
 
     login(client)
+    root = client.get("/")
+    assert root.status_code == 200
     for path in (
-        "/",
         "/dashboard",
+        "/today",
         "/account/export.json",
         "/imports/standard",
         "/imports/history",

@@ -72,6 +72,8 @@ Las reglas ejecutables de estos principios viven en `../AGENTS.md`, `schemas/AGE
 
 El cliente móvil cubre planificación, ejecución, historial, progreso, registro diario de salud e importación Health Connect de solo lectura sin duplicar dominio: las rutinas editables publican versiones inmutables, la agenda usa planned workouts, la ejecución usa Companion Delivery/Mobile Sync y salud reutiliza peso, nutrición, catálogo y energía canónicos mediante endpoints owner-only.
 
+La web separa el análisis longitudinal en **Resumen** (`/dashboard`) de la operación cotidiana en **Hoy** (`/today`). Ambos consumen servicios owner-only existentes o read models internos; esta separación no crea un contrato móvil ni obliga a Android a consumir tendencias web.
+
 Alpha 1.6 añade una base local experimental para fuentes externas y BLE: registro/deduplicación, diagnóstico Health Connect de báscula, asociación, descubrimiento GATT, captura privada/replay y evidencia de protocolo. No amplía el dominio servidor ni afirma soporte S400: ningún valor BLE llega al dominio de salud mientras el mapper permanezca deshabilitado.
 
 La estructura real del código manda sobre diagramas o rutas narrativas antiguas. Consulta `architecture/OVERVIEW.md` y el árbol del repositorio en vez de copiar una estructura sugerida a nuevas tareas.

@@ -7,7 +7,7 @@ Aplica a cambios de Jinja, navegación, CSS y flujos web.
 3. Mantener autenticación, autorización, ownership y CSRF en todas las acciones.
 4. No mostrar secretos, tokens, paths internos, payloads sensibles ni datos de otros usuarios.
 5. La navegación debe ser agrupada, consistente y condicionada por permisos.
-6. El dashboard prioriza estado y acciones del día; onboarding no debe desplazar datos existentes.
+6. `/dashboard` prioriza análisis longitudinal y cobertura; `/today` prioriza estado y acciones del día. El onboarding no debe desplazar datos existentes.
 7. Las acciones destructivas usan POST, CSRF, texto explícito y confirmación.
 8. Todo control interactivo debe ser usable por teclado, tener foco visible y objetivo táctil aproximado de 44 px.
 9. Inputs usan al menos 16 px en móvil. Las tablas anchas desplazan dentro de un wrapper propio.

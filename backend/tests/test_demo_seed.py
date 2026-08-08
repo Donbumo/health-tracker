@@ -68,11 +68,11 @@ def test_demo_seed_is_fictional_complete_and_idempotent(app, client):
     response = login(client, DEMO_EMAIL, DEMO_PASSWORD)
     assert response.status_code == 302
     today = datetime.now(ZoneInfo(app.config["APP_TIMEZONE"])).date()
-    dashboard = client.get("/dashboard", query_string={"date": today.isoformat()})
-    assert dashboard.status_code == 200
-    assert "Día completo para el balance energético".encode() in dashboard.data
-    assert b"Sentadilla ficticia QA" in dashboard.data
-    assert "Laboratorio ficticio QA".encode() in dashboard.data
+    today_page = client.get("/today", query_string={"date": today.isoformat()})
+    assert today_page.status_code == 200
+    assert "Día completo para el balance energético".encode() in today_page.data
+    assert b"Sentadilla ficticia QA" in today_page.data
+    assert "Laboratorio ficticio QA".encode() in today_page.data
     plans = client.get("/training-plans")
     assert plans.status_code == 200
     assert "Rutina ficticia QA".encode() in plans.data

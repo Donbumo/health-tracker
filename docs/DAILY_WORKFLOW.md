@@ -1,6 +1,6 @@
 # Flujo diario
 
-1. Abre `/dashboard` y revisa **Entrenamiento de hoy**.
+1. Abre `/today` y revisa **Entrenamiento de hoy**. Usa `/dashboard` cuando quieras analizar tendencias, no para iniciar la captura cotidiana.
 2. Si existe un borrador, continúa desde el aviso; no crees una segunda captura.
 3. Inicia el entrenamiento planeado o elige un día de la rutina activa.
 4. Registra solo series realizadas. Cada ejercicio es plegable y la barra de accesos permite saltar entre ejercicios.

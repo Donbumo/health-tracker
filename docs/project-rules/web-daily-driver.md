@@ -7,7 +7,7 @@ Aplica a Jinja, rutas web, formularios, dashboard, navegación y PWA.
 - El usuario efectivo siempre proviene de la sesión; no se acepta `user_id` seleccionable.
 - Las vistas owner-only responden 404 ante recursos ajenos.
 - Una función cotidiana tiene una sola ruta visible; rutas anteriores pueden conservarse por compatibilidad.
-- El dashboard prioriza hoy, borrador, siguiente acción y datos recientes.
+- `/today` prioriza hoy, borrador, siguiente acción y datos recientes; `/dashboard` conserva el Resumen longitudinal owner-only.
 - No se muestran IDs DB, payloads crudos, tokens, paths internos ni secretos.
 - Toda mutación web usa POST y CSRF. JavaScript mejora la experiencia, pero no sustituye la validación servidor.
 - Formularios y estados deben seguir siendo utilizables a 360 px, con foco visible y objetivos táctiles cercanos a 44 px.

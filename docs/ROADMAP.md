@@ -44,3 +44,4 @@ Este documento reúne trabajo futuro o no comprobado. No describe funcionalidade
 
 - Mapping asistido reutilizable y persistente.
 - Nuevos dominios de salud únicamente con schema, aislamiento, trazabilidad, import/export y pruebas completos.
+- Persistir preset, comparación, tarjetas o media móvil del Resumen únicamente si el uso demuestra una necesidad; no crear preferencias, rollups o cachés por anticipado.

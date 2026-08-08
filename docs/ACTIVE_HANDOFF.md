@@ -1,34 +1,33 @@
 # Handoff activo
 
-## Beta 1 Android en esta rama
-
-- Rama `beta/android-1.0-stabilization`; HEAD inicial/final `1093d4d14c7aa52f180ed7d1ba17cea5437dc896`; freeze de Alpha 2.0 sin funciones nuevas.
-- Android conserva code 21/name `2.0.0-beta01`, Room 10, Alembic 0036, applicationId, firma, SDKs y toolchain.
-- La imagen autorizada API 36 `google_apis` x86_64 se instaló con `sdkmanager.bat` después de que el nuevo Android CLI fallara nativamente. La imagen no-Play se conserva.
-- Se usó únicamente el AVD desechable `health-tracker-beta1-qa-qa-a5cd1219035b`; fingerprint sanitizado `04ab3fc3`. No se usaron teléfono físico ni `Pixel_7`.
-- Gates finales: lint; JVM 172/172 dos veces; APK; androidTest compile; harness 60/60; instrumentación 123/123 en 22 clases, cero skips/fallos.
-- Room ejecutó 1/2/3/4/5/6/7/8/9→10 y reapertura v10, sin fallback destructivo.
-- Upgrade real: APK reproducible code 19/Room 9 del commit `350cf2ced53bc2ba6a7c18421780ce8045b8c07f` a code 21/Room 10 con `adb install -r`, misma firma y sin uninstall/clear. Se preservaron Room, DataStore, Keystore, draft, pendiente y archivo marcador ficticios, sin duplicados.
-- Se corrigió la ventana de pérdida del refresh token tras force-stop usando persistencia síncrona para las mutaciones críticas. También se corrigieron packaging de schemas Room, deadlocks/fixtures de instrumentación, clasificación de ZIP inseguro y aislamiento de scheduling en tests.
-- Se ejecutaron modo avión y reapertura, reboot, estados denegado/concedido de notificaciones, canales y WorkManager real. La suite automatizada cubre sync/cola/dedupe; el recorrido UI completo contra backend fake hasta pendientes cero sigue pendiente.
-- Rendimiento medido con 38.500 filas Room sintéticas: consultas observadas 0–20 ms, PSS 130.702→135.766 KiB y DB 9.637.888 bytes. Series densas, paquetes al límite y pantallas completas siguen sin medir.
-- Layouts: diez configuraciones 320/360/411/600 dp, portrait/landscape, fuentes 1,0/1,3/2,0 y temas claro/oscuro/sistema; cero overflow/targets pequeños en la pantalla alcanzable. No equivale a la matriz completa ni a TalkBack.
-- APK final: 18.886.619 bytes, SHA-256 `40eafddc91bc6f83ab53aed17b87df6d3dc2bf176ef5b05ffa563f6b18751d58`, firma v2, 173 entradas, 19 permisos y cero hallazgos sensibles bloqueantes.
-- Backend/MariaDB/schemas no cambiaron; se conserva evidencia del checkpoint: 716/9, 724/1 y 77 schemas válidos.
-
 ## Estado actual
 
-Los gates Android conectados automatizables están cerrados. El AVD, worktree, APKs y fixtures temporales propios se eliminan en el cierre y los reportes finales quedan fuera del repositorio. Compose diario, volúmenes, `.env`, `/data`, NAS y `qa-temp-alpha15*` permanecen intactos.
+- Trabajo realizado exclusivamente en `feature/web-dashboard-trends`, desde `a7dfb20baca52ff17d5422137823ee5ecc138adb`.
+- `/dashboard` es el resumen analítico por periodos y `/today` conserva el flujo operativo diario.
+- El resumen incluye energía, proteína, peso y entrenamiento, con intervalos por zona horaria, comparación opcional, cobertura y gráficos SVG locales.
+- No hay migraciones, cambios de schema público ni dependencias frontend nuevas. El head Alembic continúa en `20260731_0036`.
+- La guía funcional y las fórmulas están en `DASHBOARD_TRENDS.md`; el índice de entrada sigue siendo `DOCUMENTATION_INDEX.md`.
 
-## Trabajo pendiente
+## Trabajo en curso
 
-- QA físico autorizado y restricciones OEM/batería.
-- TalkBack manual y matriz visual de todas las pantallas críticas.
-- Health Connect real.
-- SAF/chooser, grants, URI perdida y variantes de archivos recorridos manualmente.
-- Recorrido UI completo modo avión→process death→reconexión→autosync contra backend fake hasta pendientes cero.
-- Snooze/dismiss/acknowledge de notificaciones de extremo a extremo.
+- La implementación y la QA funcional/visual del dashboard están cerradas y listas para revisión del diff.
+- La validación usa únicamente datos ficticios: tema oscuro real y tema claro mediante un override QA aislado ya retirado.
+- El gate MariaDB usa una base efímera desde cero, valida Alembic, aislamiento por propietario, agregados e índice con `EXPLAIN`, y elimina después sus recursos exclusivos.
+- No quedan servidores, bases, logs, capturas, overrides, contenedores, redes ni volúmenes efímeros del dashboard.
+
+## Bloqueadores y riesgos
+
+- El checkout base no contiene las fixtures generadas FIT/GPX/TCX bajo `examples/qa/real-file-imports`; las pruebas que dependen de esos archivos fallan antes de entrar en el código del dashboard.
+- El volumen de entrenamiento se oculta si el periodo mezcla modalidades que no admiten una comparación honesta; esta es una limitación deliberada, no imputación de datos.
+- Los días sin registros permanecen como huecos y reducen la cobertura; no se rellenan con cero.
 
 ## Siguiente paso
 
-Revisar el working-tree diff sin añadirlo al staging y ejecutar `BETA_1_PHYSICAL_QA_RUNBOOK.md` en un recurso físico explícitamente autorizado. Beta 1 está lista para ese QA controlado; no es una release final.
+Revisar el diff y, solo con autorización explícita posterior, decidir el commit. No hay commit, push, merge ni tag en este handoff.
+
+## Pruebas relevantes
+
+- Suite focal del dashboard: rangos, DST, serialización, aislamiento por propietario, unidades, valores faltantes, comparación y número constante de consultas.
+- Regresiones de autenticación, navegación, `/`, `/dashboard` y `/today`.
+- Suite backend completa y pasada adicional sin los dos módulos que requieren fixtures ausentes.
+- `compileall`, `docker compose config --quiet`, Alembic `upgrade`, `heads`, `current`, `check`, `git diff --check` y QA visual real.

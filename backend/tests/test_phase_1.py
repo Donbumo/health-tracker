@@ -23,7 +23,7 @@ def test_login_logout_and_external_next_is_rejected(client, user):
         data={"username": "test-user", "password": "test-password"},
     )
     assert response.status_code == 302
-    assert response.headers["Location"] == "/"
+    assert response.headers["Location"] == "/dashboard"
 
     response = client.post("/logout")
     assert response.status_code == 302

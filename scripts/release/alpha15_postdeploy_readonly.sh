@@ -30,7 +30,7 @@ case "$BASE_URL" in https://*) ;; *) echo 'an explicit HTTPS base URL is require
 
 compose() { docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"; }
 compose ps --status running
-compose exec -T web alembic current
+compose exec -T web flask db current
 curl --fail --silent --show-error --max-time 10 "$BASE_URL/healthz" >/dev/null
 curl --fail --silent --show-error --max-time 10 "$BASE_URL/api/v1/health" >/dev/null
 compose logs --no-color --tail 80 web | grep -E 'ERROR|CRITICAL|Traceback|healthz|alembic' || true

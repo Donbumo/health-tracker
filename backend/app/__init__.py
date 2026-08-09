@@ -137,7 +137,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     @app.context_processor
     def inject_release_context():
         return {
-            "alpha_release_label": "Alpha 1.0",
+            "release_label": app.config["RELEASE_LABEL"],
         }
 
     @app.errorhandler(403)

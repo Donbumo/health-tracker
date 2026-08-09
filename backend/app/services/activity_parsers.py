@@ -77,7 +77,7 @@ class _LegacyAdapter(ActivityFileParser):
                 raise ActivityParseError("missing_timestamps", "El GPX contiene una ruta, pero no timestamps para crear una actividad.")
             raise ActivityParseError("no_activity", "El archivo no contiene una actividad importable.")
         if len(activities) > 1:
-            warnings = [*parsed.warnings, "El archivo contiene varias sesiones; Alpha 2.0 importa la primera sesión."]
+            warnings = [*parsed.warnings, "El archivo contiene varias sesiones; la importación procesa la primera sesión."]
         else:
             warnings = list(parsed.warnings)
         legacy = activities[0]

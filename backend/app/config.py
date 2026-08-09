@@ -16,6 +16,7 @@ def _as_bool(value: str | None, default: bool = False) -> bool:
 
 class Config:
     APP_VERSION = os.getenv("APP_VERSION") or os.getenv("GIT_COMMIT", "unknown")
+    RELEASE_LABEL = "Health Tracker Beta 1"
     SECRET_KEY = os.getenv("SECRET_KEY")
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL") or URL.create(
         drivername="mysql+pymysql",

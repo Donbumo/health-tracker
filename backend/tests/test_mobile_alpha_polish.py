@@ -43,7 +43,7 @@ def test_base_template_has_mobile_viewport_and_collapsed_mobile_navigation(clien
         "Importaciones",
         "Cerrar sesi",
         "Privacidad",
-        "Alpha 1.0",
+        "Health Tracker Beta 1",
     ):
         assert label in html
 

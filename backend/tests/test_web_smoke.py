@@ -56,8 +56,8 @@ def test_demo_smoke_exports_content_types_and_user_isolation(app, client, user):
     login(client, DEMO_EMAIL, DEMO_PASSWORD)
 
     today = datetime.now(ZoneInfo(app.config["APP_TIMEZONE"])).date()
-    dashboard = client.get("/dashboard", query_string={"date": today.isoformat()})
-    assert dashboard.status_code == 200
+    today_page = client.get("/today", query_string={"date": today.isoformat()})
+    assert today_page.status_code == 200
 
     with app.app_context():
         energy_id = db.session.execute(

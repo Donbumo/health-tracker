@@ -63,6 +63,7 @@ def store_uploaded_file(file: FileStorage, user_id: int) -> tuple[UploadedFile, 
     user_directory.mkdir(parents=True, exist_ok=True)
 
     temporary_path = user_directory / f".{uuid.uuid4().hex}.uploading"
+    final_path = None
     digest = hashlib.sha256()
     size_bytes = 0
 
@@ -85,7 +86,9 @@ def store_uploaded_file(file: FileStorage, user_id: int) -> tuple[UploadedFile, 
             mark_import_status(existing, user_id, status="duplicate")
             return existing, True
 
-        stored_filename = sha256
+        # The digest remains metadata; storage names must not disclose content
+        # equality or user-supplied names through the filesystem layout.
+        stored_filename = uuid.uuid4().hex
         final_path = user_directory / stored_filename
         os.replace(temporary_path, final_path)
 
@@ -110,6 +113,8 @@ def store_uploaded_file(file: FileStorage, user_id: int) -> tuple[UploadedFile, 
     except IntegrityError:
         db.session.rollback()
         temporary_path.unlink(missing_ok=True)
+        if final_path is not None:
+            final_path.unlink(missing_ok=True)
         existing = db.session.execute(
             db.select(UploadedFile).where(
                 UploadedFile.user_id == user_id,
@@ -123,4 +128,6 @@ def store_uploaded_file(file: FileStorage, user_id: int) -> tuple[UploadedFile, 
     except Exception:
         db.session.rollback()
         temporary_path.unlink(missing_ok=True)
+        if final_path is not None:
+            final_path.unlink(missing_ok=True)
         raise

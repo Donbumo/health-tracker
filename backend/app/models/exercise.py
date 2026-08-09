@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import uuid
 
 from app.extensions import db
 
@@ -12,9 +13,13 @@ class Exercise(db.Model):
             name="uq_exercises_user_normalized_name",
         ),
         db.Index("ix_exercises_user_name", "user_id", "normalized_name"),
+        db.UniqueConstraint("public_id", name="uq_exercises_public_id"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(
+        db.String(36), nullable=False, default=lambda: str(uuid.uuid4())
+    )
     user_id = db.Column(
         db.Integer,
         db.ForeignKey("users.id", ondelete="CASCADE"),

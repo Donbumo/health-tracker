@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://health-tracker.local/schemas/portable_activity_laps.schema.json",
+  "title": "Portable activity laps record v1", "type": "object", "additionalProperties": false,
+  "required": ["schema_version", "record_type", "public_id", "data"],
+  "properties": {
+    "schema_version": {"const": "1.0"}, "record_type": {"const": "activity_laps"}, "public_id": {"type": "string", "format": "uuid"},
+    "data": {"type": "object", "additionalProperties": false, "required": ["activity_public_id", "lap_index", "metrics", "provenance"], "properties": {
+      "activity_public_id": {"type": "string", "format": "uuid"}, "lap_index": {"type": "integer", "minimum": 1},
+      "started_at": {"type": ["string", "null"], "format": "date-time"}, "ended_at": {"type": ["string", "null"], "format": "date-time"},
+      "duration_seconds": {"type": ["integer", "null"], "minimum": 0}, "distance_meters": {"type": ["number", "string", "null"]},
+      "metrics": {"type": "object"}, "provenance": {"type": "object"}
+    }}
+  }
+}

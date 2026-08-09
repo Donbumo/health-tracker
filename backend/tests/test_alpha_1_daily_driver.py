@@ -1,7 +1,7 @@
 import io
 import json
 import re
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from html import unescape
 
 from app.extensions import db
@@ -105,8 +105,9 @@ def test_existing_user_data_does_not_displace_daily_dashboard(app, client, user)
         )
         db.session.commit()
     login(client)
-    html = client.get("/dashboard").get_data(as_text=True)
-    assert "Dashboard diario" in html
+    html = client.get("/today").get_data(as_text=True)
+    assert "Acción diaria" in html
+    assert "<h1>Hoy</h1>" in html
     assert "Entrenamiento de hoy" in html
     assert "Continuar primeros pasos" not in html
 
@@ -132,7 +133,7 @@ def test_dashboard_shows_owned_planned_workout_as_primary_action(app, client, us
                 user_id=user,
                 training_plan_id=plan.id,
                 training_plan_version_id=version.id,
-                scheduled_for_date=date.today(),
+                scheduled_for_date=datetime.now(timezone.utc).date(),
                 timezone="UTC",
                 title_snapshot="Día ficticio de hoy",
                 payload_snapshot_json={"name": "Día ficticio de hoy", "exercises": []},
@@ -141,7 +142,7 @@ def test_dashboard_shows_owned_planned_workout_as_primary_action(app, client, us
         )
         db.session.commit()
     login(client)
-    html = client.get("/dashboard").get_data(as_text=True)
+    html = client.get("/today").get_data(as_text=True)
     assert "Día ficticio de hoy" in html
     assert "Empezar" in html
     assert "Rutina QA de hoy" in html

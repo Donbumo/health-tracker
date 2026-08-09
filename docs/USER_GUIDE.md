@@ -1,11 +1,30 @@
 # Guía de usuario
 
+## Android Beta 1
+
+Beta 1 conserva exactamente los flujos Alpha 2.0 y cambia la versión a `2.0.0-beta01-debug` para QA controlado. No es una release final. Una actualización debe usar `adb install -r` sobre un recurso QA autorizado y nunca uninstall/`pm clear`; sigue el [runbook físico Beta 1](BETA_1_PHYSICAL_QA_RUNBOOK.md) con cuenta y archivos ficticios.
+
+## Actividades FIT/GPX/TCX Alpha 2.0
+
+En Android abre **Historial → Actividades**. Elige primero si conservar, recortar extremos o descartar la ruta; después pulsa **Importar FIT/GPX/TCX**. Puedes seleccionar el archivo sin red: la app valida extensión/tamaño, calcula un hash corto visible y deja el upload en cola. Al reconectar espera a que el estado sea “Inspeccionada” y revisa warnings antes de **Confirmar**. Cancelar elimina la copia parcial local.
+
+El detalle muestra resumen, laps, gráfica reducida, ruta local y vínculo con un entrenamiento planeado. Una sugerencia de plan no es automática: confírmala o recházala. **Eliminar ruta** conserva actividad/laps pero elimina ubicación extraída; **Archivar** solo oculta de recientes. JSON se comparte sin ruta por defecto; GPX visible requiere una acción explícita. Las comparaciones son descriptivas, no recomendaciones.
+
+En web, **Salud y actividad → Actividades** permite consultar las mismas importaciones normalizadas, laps, gráfica y trazado local. Los scripts de `scripts/activities/` sirven para QA/escritorio; nunca agregues sus salidas con datos personales al repositorio.
+
+## Objetivos y recordatorios Alpha 1.8
+
+En Android abre **Ajustes → Objetivos y recordatorios**. Puedes crear objetivos personales, pausarlos o archivarlos y guardar reglas aun sin red. Una regla nueva parte desactivada para que revises hora, días y quiet hours. Al activarla por primera vez Android explica y, sólo entonces, puede solicitar permiso; si lo deniegas la regla permanece guardada y puedes abrir los ajustes después.
+
+**Enviar prueba** sólo genera un aviso local genérico. El centro permite revisar o posponer eventos y limpiar historial local antiguo. Hoy muestra hasta tres objetivos y Progreso ofrece adherencia 7/30/90 sin calificación global. Android puede diferir la entrega porque no se usan alarmas exactas.
+
 Health Tracker Alpha 1.0 es una aplicación privada y self-hosted para registrar salud y entrenamiento desde navegador. No sustituye evaluación médica.
 
 ## Navegación cotidiana
 
-- **Hoy** resume el entrenamiento planeado, borradores, actividad reciente y datos del día.
-- **Entrenar** abre agenda, captura y progreso.
+- **Resumen** abre el análisis longitudinal de energía, proteína, peso y entrenamiento. Elige Hoy, 7/30/90 días, este/último mes, este año o un máximo de 366 días personalizado; opcionalmente compara con el periodo anterior equivalente. La cobertura indica qué datos faltan y las tablas bajo cada gráfico son la alternativa accesible.
+- **Hoy** concentra el entrenamiento planeado, el siguiente paso, borradores, captura rápida, actividad reciente y datos operativos del día.
+- **Entrenamientos** abre agenda, captura y progreso.
 - **Rutinas** permite crear una rutina guiada, importar, duplicar y consultar versiones.
 - **Historial** contiene sesiones e importaciones.
 - **Salud y actividad** agrupa peso, nutrición, energía, actividades, rutas y laboratorios.
@@ -14,8 +33,60 @@ Health Tracker Alpha 1.0 es una aplicación privada y self-hosted para registrar
 
 En móvil, abre **Menú** desde la barra superior. El menú está cerrado al cargar para dejar visible el contenido diario.
 
+Resumen usa la zona horaria y unidad de **Cuenta → Preferencias**. Las fechas son locales e inclusivas. Un día ausente no vale cero; sin objetivo de proteína no se muestra cumplimiento, con un solo pesaje no se calcula cambio y las cargas incompatibles dejan el volumen como no disponible. Las tendencias son descriptivas, no diagnóstico ni recomendación. Consulta [definiciones del Resumen](DASHBOARD_TRENDS.md).
+
+## Android Companion
+
+El cliente Android permite iniciar sesión contra una instancia privada, descargar el entrenamiento de hoy, ejecutarlo desde el teléfono y sincronizar el resultado. Los borradores y operaciones pendientes permanecen en el dispositivo si se pierde la red. Antes de usar HTTP local en debug debe habilitarse de forma explícita; para uso normal configura HTTPS.
+
+En Alpha 1.3, abre **Plan** para administrar rutinas y agenda. Puedes crear o duplicar una rutina, editar nombre/descripción con guardado automático, añadir y ordenar entrenamientos, buscar ejercicios, definir series (reps, carga, modo, RIR/RPE, descanso, tiempo, distancia y notas) y programarlas para una fecha. Semana muestra siete días; Mes usa una cuadrícula sencilla con indicadores y la lista del día seleccionado. Puedes mover o cancelar una programación y regresar a Hoy. Archivar o quitar contenido pide confirmación; un plan con programaciones activas debe resolverlas antes de archivarse, y los archivados se pueden mostrar y restaurar desde el filtro.
+
+En Alpha 1.4, **Hoy** muestra peso, nutrición, pasos y entrenamiento sin llenar la pantalla de formularios. Abre **Salud del día** o usa **Registrar peso**, **Añadir comida** y **Registrar pasos**. Puedes cambiar la fecha, editar o eliminar una medición, organizar comidas como desayuno/comida/cena/snack, buscar o crear alimentos privados, duplicar/mover entradas y corregir pasos. Los campos incompletos se indican y no se inventan macros.
+
+En Alpha 1.5, abre **Ajustes → Health Connect** para una importación opcional y de solo lectura. Elige primero peso, grasa corporal, pasos y, si lo deseas, nutrición; después pulsa **Conectar** y concede solo esos accesos. Masa magra y agua corporal permanecen deshabilitadas mientras Health Tracker no tenga campos con la misma semántica. Si falta Health Connect, la tarjeta indica si el dispositivo no es compatible o si debes instalar/actualizar el proveedor.
+
+En Alpha 1.6, abre **Ajustes → Fuentes externas**. **Comprobar datos de báscula** muestra únicamente tipos, conteos, fechas truncadas y orígenes genéricos; no muestra tus valores. Puedes confirmar localmente un origen como báscula genérica, Xiaomi S400, otro dispositivo o marcar que no estás seguro, y cambiar/eliminar esa confirmación después.
+
+La sección Xiaomi S400 es experimental. **Buscar** solicita Bluetooth solo en ese momento, dura como máximo 20 segundos y exige elegir un dispositivo. **Inspeccionar dispositivo** enumera servicios sin escribir características. En debug puedes seleccionar un notify/indicate y consentir una captura privada cifrada; borrarla no olvida el dispositivo y exportarla requiere una segunda advertencia/elección. No existe **Guardar medición**: peso y composición BLE siguen deshabilitados hasta validar el protocolo con varias capturas físicas.
+
+**Sincronizar ahora** lee cambios; **Pausar** conserva datos y permisos; **Desconectar sin borrar datos** detiene la integración sin modificar Health Connect. **Administrar acceso** abre los controles del sistema. El permiso de segundo plano es separado y opcional: sin él, la app sigue importando al abrirse o al pedir una sincronización. Revocar un tipo no cierra sesión ni borra lo ya importado.
+
+Hoy y Progreso muestran la etiqueta Health Connect junto a peso o pasos. El total de pasos se calcula por día y zona sin sumar aplicaciones ni combinarlo con el total manual; si existe una corrección manual, se presenta esa y se conserva el agregado importado para auditoría. Nutrición solo se importa cuando la comida tiene fecha, tipo, nombre y nutrientes representables. Si editas un peso o una comida importados, se convierten en copia del usuario y Health Connect deja de sobrescribirlos.
+
+**Borrar datos importados** requiere una confirmación independiente y elimina solo recursos todavía vinculados a Health Connect, también encolando la eliminación del servidor. No borra registros manuales, copias editadas, sesiones, rutinas ni datos que viven en Health Connect. La primera importación revisa hasta 30 días; después usa cambios incrementales y dedupe. Los datos aparecen desde Room aunque el servidor esté offline y se envían cuando vuelve la red.
+
+Todo se guarda primero en este dispositivo. Puedes cerrar la app, abrirla sin red y continuar; al recuperar conectividad, WorkManager sincroniza automáticamente. Los estados muestran guardado local, pendiente, sincronizando, sincronizado o atención. Si hay conflicto, Salud del día permite usar servidor, reintentar, duplicar una medición/comida o cancelar el cambio. **Progreso → Salud** ofrece peso, pasos, calorías y macros con resumen textual; son tendencias descriptivas, no diagnóstico ni causalidad.
+
+Todo funciona primero sobre la copia local. **Guardado local, pendiente** significa que no se perdió el cambio; al recuperar red se envía en orden. Programar dos veces por una doble pulsación conserva una sola identidad; mover varias veces antes de sincronizar conserva la última fecha segura, y crear y cancelar antes del primer envío no deja una programación remota. Si otra edición cambió la misma revisión, Plan muestra el recurso, las revisiones y un resumen sanitizado, con acciones **Usar servidor**, **Reintentar copia local**, **Duplicar** cuando corresponde o **Cancelar cambio local** en vez de sobrescribir silenciosamente.
+
+Al programar para la fecha operativa de la cuenta, la tarjeta aparece inmediatamente en Hoy desde Room, aunque todavía no haya red. Al terminar la descarga y el ACK, Hoy muestra **Descargado · disponible sin conexión** y habilita **Empezar** sin pedir una sincronización manual. Si la rutina cambia antes de iniciar, la app puede reemplazar el package por la revisión vigente; nunca modifica ni sustituye un draft activo y muestra el conflicto para que decidas. Un entrenamiento descargado puede iniciarse, editarse y completarse offline, incluso después de cerrar la app o reiniciar el proceso. Peso, unidad, reps, RIR, RPE, notas, descanso, duración y distancia se guardan automáticamente; **Completar serie** y **Finalizar entrenamiento** siguen siendo acciones explícitas.
+
+Hoy separa **Sin conexión**, **Guardado en este dispositivo**, **Sincronización pendiente**, **Sincronizando**, **Sincronizado** y **Requiere atención**. Al volver la red, la app renueva la sesión y procesa START, progreso y completion en orden. El botón **Sincronizar ahora** es solo un respaldo: login, descarga, cambios relevantes, foreground, reconexión y WorkManager ya disparan sync automática. No descartes un borrador corrupto hasta revisar su motivo; un fallo de red por sí solo nunca lo vuelve corrupto.
+
+En Ajustes, **Cambiar servidor** exige confirmación, invalida los tokens activos y conserva la copia Room anterior aislada; después confirma la nueva URL e inicia sesión. **Cerrar sesión en este teléfono** elimina esa cuenta local, **Cerrar todas las sesiones API** revoca todas las sesiones, **Revocar este dispositivo** bloquea sus sesiones y **Borrar solo datos locales** no cambia el servidor. Las acciones de mayor alcance exigen confirmación adicional. **Compartir diagnóstico sanitizado** entrega solo metadatos y conteos de Health Connect, nunca mediciones ni tokens.
+
+Consulta [Instalación Android](ANDROID_INSTALLATION.md) y [Android Companion](ANDROID_COMPANION.md). No hay conexión con reloj o Bluetooth, ni escritura hacia Health Connect.
+
+### Historial y Progreso en Android
+
+**Historial** muestra primero las sesiones guardadas, incluso sin red. Permite filtrar por fechas o ejercicio, cargar páginas anteriores y abrir un detalle read-only con ejercicios, series, carga, reps, RIR/RPE, descanso y notas propias. Una sesión terminada offline aparece como pendiente y se reconcilia sin duplicarse.
+
+**Progreso** permite elegir 7, 30, 90, 180 o 365 días, o todo el historial. Resume sesiones, días, series, volumen comparable y duración. Cada ejercicio muestra carga, volumen, tendencia y mejores marcas; las gráficas incluyen un resumen textual. “Datos insuficientes” o “no comparable” significa que la app evitó mezclar modos incompatibles, no que haya perdido la sesión.
+
 ## Datos y privacidad
 
 Cada dato pertenece al usuario autenticado. Los previews de importación no escriben en la base. Un export JSON sirve para portabilidad; un backup ZIP incluye también archivos verificables. Ninguno incluye contraseñas ni tokens.
 
+En Android Alpha 1.7 abre **Ajustes → Datos y privacidad**. Para exportar, elige secciones y un rango opcional; perfil identificable y attachments están apagados hasta que los actives. Sin red, **Guardar solicitud offline** la conserva, pero no afirma que el paquete esté listo. Cuando el servidor termine, usa **Descargar y verificar** y después **Guardar** o **Compartir**. Borra por separado la copia local y el artefacto temporal del servidor.
+
+Para importar, **Seleccionar paquete** sólo hace una inspección local. Revisa formato, hash, tamaño, secciones y advertencias; luego **Subir y simular**. La simulación no escribe. Resuelve conflictos —la opción segura conserva el destino— y sólo entonces pulsa **Confirmar importación**. Repetir el mismo paquete no duplica records. Si pierdes acceso al URI o vence el plan, selecciona/inspecciona de nuevo.
+
+Un `.htpack` puede contener información corporal, alimentaria y de entrenamiento. SHA-256 detecta cambios, pero no demuestra quién lo creó. Consulta [Privacidad de exportación](DATA_EXPORT_PRIVACY.md).
+
 Consulta [Primeros pasos](GETTING_STARTED.md), [Flujo diario](DAILY_WORKFLOW.md), [Import Hub](IMPORT_HUB.md) y [Solución de problemas](TROUBLESHOOTING_USER.md).
+
+## Estudios médicos y laboratorio
+
+En Android abre **Salud del día → Estudios médicos**. Crea un draft con tipo, título, fecha, institución y notas; añade resultados conservando exactamente valor, unidad, rango y estado del informe, y pulsa **Finalizar captura** cuando esté completo. Puedes adjuntar PDF/JPEG/PNG/JSON/CSV mediante el selector del sistema, corregir un resultado conservando revisión, borrar solo un documento o archivar el estudio.
+
+El historial de un marcador conocido permite 30/90/180 días, un año o todo. Si unidad o método no son comparables, la app separa la serie y lo explica. Los estados son descriptivos del informe: la app no diagnostica ni recomienda tratamiento. Para eliminar definitivamente un estudio usa la acción separada y revisa el impacto. Consulta [Alpha 1.9](ALPHA_1_9_MEDICAL_RECORDS.md) y [Privacidad médica](MEDICAL_DATA_PRIVACY.md).

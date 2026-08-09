@@ -1,49 +1,33 @@
 # Handoff activo
 
-Actualizado: 2026-07-17.
-
 ## Estado actual
 
-- Base integrada comprobada: commit `1938a48`, tag `alpha-1.0.1-runtime-security`.
-- La aplicación web Alpha 1.0, captura avanzada de cargas, recuperación de sesiones, API v1, Mobile Sync y Companion backend están integrados en la base actual.
-- APK Android, app de reloj, Bluetooth, telemetría continua e integraciones privadas de fabricantes no están implementados.
+- Trabajo realizado exclusivamente en `feature/web-dashboard-trends`, desde `a7dfb20baca52ff17d5422137823ee5ecc138adb`.
+- `/dashboard` es el resumen analítico por periodos y `/today` conserva el flujo operativo diario.
+- El resumen incluye energía, proteína, peso y entrenamiento, con intervalos por zona horaria, comparación opcional, cobertura y gráficos SVG locales.
+- No hay migraciones, cambios de schema público ni dependencias frontend nuevas. El head Alembic continúa en `20260731_0036`.
+- La guía funcional y las fórmulas están en `DASHBOARD_TRENDS.md`; el índice de entrada sigue siendo `DOCUMENTATION_INDEX.md`.
 
 ## Trabajo en curso
 
-- Rama: `chore/optimize-agent-context`.
-- Objetivo: separar contexto caliente, tibio y frío sin cambiar comportamiento de la aplicación.
-- Alcance: instrucciones de agentes, índice, arquitectura documental, historia, roadmap y pruebas documentales.
-- Código funcional, modelos, migraciones y schemas públicos: sin cambios previstos.
-
-## Decisiones activas
-
-- `AGENTS.md` es un router breve; no ordena leer `docs/PROJECT_CONTEXT.md` para toda tarea.
-- Este archivo contiene solo estado temporal. Los hitos cerrados viven en `history/IMPLEMENTATION_HANDOFF_ARCHIVE.md` y `history/IMPLEMENTATION_HISTORY.md`.
-- Las reglas permanentes viven en `project-rules/`; los contratos públicos, en `../schemas/`.
-- El índice por dominio es `DOCUMENTATION_INDEX.md`.
-
-## Archivos relevantes
-
-- `../AGENTS.md`
-- `DOCUMENTATION_INDEX.md`
-- `CONTEXT_AUDIT.md`
-- `PROJECT_CONTEXT.md`
-- `decisions/0001-context-loading.md`
+- La implementación y la QA funcional/visual del dashboard están cerradas y listas para revisión del diff.
+- La validación usa únicamente datos ficticios: tema oscuro real y tema claro mediante un override QA aislado ya retirado.
+- El gate MariaDB usa una base efímera desde cero, valida Alembic, aislamiento por propietario, agregados e índice con `EXPLAIN`, y elimina después sus recursos exclusivos.
+- No quedan servidores, bases, logs, capturas, overrides, contenedores, redes ni volúmenes efímeros del dashboard.
 
 ## Bloqueadores y riesgos
 
-- No hay bloqueador conocido para esta reorganización.
-- El sign-off visual real de tema claro de Alpha 1.0 y la rotación de la credencial señalada durante QA siguen siendo pendientes operativos históricos; no deben marcarse como resueltos sin evidencia nueva.
+- El checkout base no contiene las fixtures generadas FIT/GPX/TCX bajo `examples/qa/real-file-imports`; las pruebas que dependen de esos archivos fallan antes de entrar en el código del dashboard.
+- El volumen de entrenamiento se oculta si el periodo mezcla modalidades que no admiten una comparación honesta; esta es una limitación deliberada, no imputación de datos.
+- Los días sin registros permanecen como huecos y reducen la cobertura; no se rellenan con cero.
 
 ## Siguiente paso
 
-Revisar el diff documental y decidir si se integra la reorganización. No hay commit, push, merge ni tag realizados por esta tarea.
+Revisar el diff y, solo con autorización explícita posterior, decidir el commit. No hay commit, push, merge ni tag en este handoff.
 
 ## Pruebas relevantes
 
-- `backend/tests/test_active_handoff.py`: `1 passed`.
-- Comprobación de enlaces Markdown locales: sin referencias rotas.
-- Comprobación de rutas estructurales requeridas: todas existen.
-- `git diff --check`: limpio; solo avisos informativos de normalización LF/CRLF en Windows.
-- No se ejecutó la suite funcional completa porque no cambió código de aplicación, modelos, migraciones ni schemas.
-- La última validación funcional histórica de Alpha 1.0 está preservada en `history/IMPLEMENTATION_HANDOFF_ARCHIVE.md`; no se vuelve a declarar como resultado de esta tarea documental.
+- Suite focal del dashboard: rangos, DST, serialización, aislamiento por propietario, unidades, valores faltantes, comparación y número constante de consultas.
+- Regresiones de autenticación, navegación, `/`, `/dashboard` y `/today`.
+- Suite backend completa y pasada adicional sin los dos módulos que requieren fixtures ausentes.
+- `compileall`, `docker compose config --quiet`, Alembic `upgrade`, `heads`, `current`, `check`, `git diff --check` y QA visual real.

@@ -1,5 +1,165 @@
 # Checklist de release alpha privada
 
+> El desarrollo funcional Alpha terminó en 2.0. Los puntos operativos no cerrados pasan al checklist/runbook Beta 1; este archivo queda como registro Alpha y no autoriza marcar QA físico no ejecutado.
+
+## Alpha 2.0 — intercambio de actividades
+
+- [x] FIT/GPX/TCX → `health-tracker-activity-v1` con detección real, límites, XML endurecido, procedencia y sin valores inventados.
+- [x] API Bearer owner-only con UUID, inspect/apply, idempotencia, revisión, paginación, filtros, laps, series, ruta, exports, links y comparación.
+- [x] Alembic 0036 aditiva/reversible; series/rutas fuera de DB y archivos originales privados con nombres aleatorios.
+- [x] Dedupe exacto automático y probable/posible conservador; strong link verificable y weak link bajo confirmación.
+- [x] Ruta keep/drop/redact/delete, trazado local y opt-ins independientes de coordenadas/series en portable.
+- [x] Android code 20/name `2.0.0-alpha01`, Room 10, SAF, FileProvider, WorkManager único y cinco pestañas.
+- [x] Cuatro CLI de actividad, cuatro documentos canónicos y schemas activity/portable locales.
+- [x] Gate final: backend local 716/9; MariaDB 92/92 con migración, concurrencia y E2E; Android lint, 166 JVM dos veces, APK y androidTest compilable, sin ejecutar `connectedDebugAndroidTest`.
+- [x] APK code 20/name `2.0.0-alpha01-debug`, 18.197.013 bytes, firma v2, SHA-256 `C32AC0352FDE62EC9144BABEB4A38667E0C9E2E818289E451CC2839AADED21D7` y escaneo sensible limpio.
+- [ ] QA físico/manual en AVD/dispositivo separado; no se considera realizado por compilación automatizada.
+
+## Alpha 1.9 — estudios médicos, laboratorio y documentos
+
+- [x] API Bearer owner-only con UUID, idempotencia, revisiones, 404 cruzado, paginación/filtros y descargas `no-store`.
+- [x] Alembic 0035 aditiva/reversible con estudios, fuentes, paneles, resultados/revisiones, documentos, duplicados y auditoría sanitizada.
+- [x] Valor/unidad/rango del informe preservados; numeric/text/qualitative, sin NaN/Infinity ni rangos universales.
+- [x] Historial 30/90/180/365/todo y allowlist exacta/versionada; incompatibilidad de unidad/método se explica sin interpretación clínica.
+- [x] PDF/JPEG/PNG/JSON interno/CSV controlado, SHA-256, límites, MIME real, owner-only y eliminación separada.
+- [x] JSON/CSV con schemas, preview read-only, fórmula rechazada, confirmación, transacción y UUID mapping.
+- [x] Room 9, migración 8→9/cadena explícita, nueve entidades cuenta+servidor, cola offline y temporales fuera de SQLite.
+- [x] Salud mantiene cinco pestañas e incorpora estudios, detalle, resultados, correcciones, documentos e historial accesible.
+- [x] Portable v1 añade cuatro secciones; binarios médicos requieren opt-in separado y round-trip owner-scoped.
+- [x] Gate completo: backend local 687/7, Docker/MariaDB 693/1, Alembic cero/0034/check/downgrade/re-upgrade, E2E médico, lint, 157 JVM dos veces, APK y androidTest compilable.
+- [x] APK code 19/name `1.9.0-alpha01-debug`, 20.513.670 bytes, firma v2, SHA-256 `05E624AAE2137F063BD4B3866665DB03FF36DA6FFB109C54AF865F63F770E6F7` y sin fixtures médicas empaquetadas.
+- [ ] QA físico/manual e instrumentación en AVD separado; no forman parte del gate automatizado de esta rama.
+
+## Alpha 1.8 — objetivos, recordatorios y adherencia
+
+- [x] CRUD Bearer owner-only, UUID, idempotencia, revisión optimista y errores estructurados.
+- [x] Alembic 0034 y Room 8 son aditivos, reversibles/explícitos y sin migración destructiva.
+- [x] Scheduler local sin push ni exact alarms; quiet hours, snooze, dedupe y antispam.
+- [x] Permiso contextual, cuatro canales estables y lockscreen privado con contenido genérico.
+- [x] Offline create/update/delete, coalescing, aislamiento cuenta/servidor y centro local.
+- [x] Adherencia descriptiva 7/30/90 y resumen semanal condicionado a objetivos/datos.
+- [x] Portable v1 incluye sólo configuración de goals/reminder rules y exige confirmación de destino.
+- [ ] QA físico posterior: reboot, proceso, permiso, DST, OEM/batería y lockscreen real.
+
+## Alpha 1.7 — portabilidad selectiva
+
+- [x] Branch/HEAD y staging verificados; sin commit/push/merge/tag.
+- [x] Schemas portable v1 válidos y referencias locales resueltas.
+- [x] Export owner-only, opt-in de perfil/attachments, expiración y descarga no-cache.
+- [x] ZIP safety, checksums, schemas embebidos, límites y autenticidad no demostrada verificados.
+- [x] Inspect/dry-run/conflictos/remapeo/confirmación/rollback/repetición sin duplicados verificados.
+- [x] Alembic cero→0033, 0032→0033, check, downgrade y re-upgrade en MariaDB efímera.
+- [x] Room 1/2/3/4/5/6→7 compila sin fallback destructivo.
+- [x] SAF/FileProvider, offline, process death, parciales, hash y cleanup revisados en código/pruebas compilables.
+- [x] `lintDebug`, JVM dos veces, `assembleDebug` y `compileDebugAndroidTestKotlin` pasan; no se ejecutaron connected tests.
+- [x] CLI inspect/verify/list/sanitize y compileall pasan.
+- [x] APK escaneado; ningún paquete, attachment, dump, DB, secreto o dato real está versionado.
+- [ ] QA manual y riesgos pendientes se registran sin declarar evidencia no obtenida.
+
+## Alpha 1.6 — fuentes externas y Xiaomi S400 experimental
+
+- [x] Registro externo desacoplado y owner-scoped con cinco fuentes iniciales.
+- [x] Diagnóstico Weight/BodyFat sanitizado y confirmación local revocable sin reclasificación automática Xiaomi.
+- [x] Permisos BLE por API, hardware opcional, solicitud contextual y estados sin BLE/apagado/denegado.
+- [x] Scan limitado/cancelable/single-flight con selección explícita, sin MAC principal ni loop.
+- [x] GATT con timeouts/límites/cierre; snapshot sin valores y cero escrituras de características desconocidas.
+- [x] Captura debug consentida, limitada, cifrada/privada, metadata Room, delete, export FileProvider explícito y replay determinista.
+- [x] Adaptador S400 sin offsets/fórmulas/métricas; ground truth separado y gate documentado para peso.
+- [x] Dedupe multifuentе conserva probable/posible/override y solo automatiza identidad fuerte exacta.
+- [x] Room 6 y migraciones explícitas 1/2/3/4/5→6; capturas fuera de SQLite.
+- [x] Fixtures ficticias y herramientas sanitizar/inspeccionar/comparar sin semántica.
+- [x] Gate final en orden: lint; 146/146 JVM; APK; androidTest compilable; segunda JVM 146/146. APK 18.719.697 bytes, SHA-256 `45f6dc75925612c6f84927270009a752b061679f383500c0f13c990235df5ac4`.
+- [ ] QA físico en S400/teléfono separado, incluida asociación, GATT/CCCD, captura/export y permisos reales.
+- [ ] Ejecutar instrumentación solo en AVD/dispositivo separado; no forma parte del gate automático de esta rama.
+- [ ] Peso BLE habilitado: **NO**. Composición BLE habilitada: **NO**.
+- [ ] Alpha 1.6 lista para release: **NO**, hasta evidencia física, QA manual, instrumentación y revisión formal.
+
+## Alpha 1.5 — Health Connect de solo lectura
+
+- [x] RC1 permite NAS con HTTPS, puerto y base path; HTTP LAN exige debug+confirmación y las credenciales/fragmentos se rechazan.
+- [x] Cambio de servidor confirmado invalida tokens/scope activos y conserva Room anterior aislada; refresh queda ligado a la URL normalizada.
+- [x] ProxyFix está desactivado por defecto y limita `X-Forwarded-For/Proto` a 0–2 saltos configurados; operación local no cambia.
+- [x] Existen preflight NAS no destructivo, smoke read-only default/write confirmado con limpieza y runbook de backup/deploy/rollback.
+- [x] Versión candidata: applicationId `io.healthtracker.companion`, debug suffix `.debug`, versionCode 15, versionName `1.5.0-alpha01`, min 26 y target/compile 36.
+- [ ] Ejecutar en el NAS real preflight, backup verificado, migración 0032 y smoke con una cuenta QA.
+- [ ] Instalar con `adb install -r` y completar los 30 pasos del runbook en teléfono real; no se considera aprobado por compilación o fakes.
+
+- [x] Integración opt-in con disponibilidad segura en API 26–36 y proveedor instalable/actualizable donde corresponde.
+- [x] Permisos de lectura por tipo, permisos parciales/revocados, rationale, administración de acceso y background separado por feature.
+- [x] Gateway inyectable, manager/coordinator, paginación, aggregate diario, Changes tokens, recuperación de token expirado, single-flight y WorkManager coalescido.
+- [x] Room 5 owner-scoped con settings, permisos, estado incremental y ledger; migraciones explícitas 1/2/3/4→5 sin fallback destructivo.
+- [x] Peso, grasa compatible, pasos agregados y nutrición representable; masa magra/agua se rechazan honestamente por semántica actual.
+- [x] Dedupe/UUID/client event estables, updates y deletes, precedencia manual y preservación `detached/user_override`.
+- [x] Room primero y cola servidor durable separada; backend aditivo con fuentes, `client_event_id`, coexistencia e idempotencia owner-only.
+- [x] Ajustes, procedencia en Hoy/Progreso, pausa, desconexión y borrado selectivo confirmado.
+- [x] 31 escenarios unitarios Health Connect y androidTest de migraciones compilables.
+- [x] Matriz RC1: Android lint/91 JVM dos veces/APK/androidTest compile; backend local final 618/3 y Docker/MariaDB 619/1; migración+carreras, smoke HTTP, 36 JSON, manifest, Compose config y `git diff --check` verdes.
+- [ ] QA manual con Health Connect real, servidor offline, process death, permisos/revocación, zona, background, accesibilidad y tamaños en dispositivo/AVD separado.
+- [ ] Ejecutar `connectedDebugAndroidTest` únicamente en AVD de pruebas separado; no forma parte del gate automático de esta rama.
+- [ ] Revisión de integración, firma y decisión formal de release.
+- [ ] Alpha 1.5 lista para release: **NO**, hasta cerrar QA manual, instrumentación y firma aprobada.
+
+## Alpha 1.4 — Registro Diario de Salud Android
+
+- [x] Resumen diario local-first con fecha/zona, peso, nutrición, pasos y entrenamiento.
+- [x] CRUD owner-only de cuerpo, nutrición, alimentos personalizados y pasos con UUID, idempotencia y revisión.
+- [x] Room 4 aislada por `accountScope`, migraciones explícitas 1/2/3→4 y sin fallback destructivo.
+- [x] Operaciones offline durables, coalescing seguro, autosync WorkManager y process-death recuperable por persistencia Room.
+- [x] Conflictos sanitizados visibles con usar servidor, reintentar, duplicar cuando aplica y cancelar.
+- [x] Progreso Salud con peso, pasos, calorías/macros y alternativa textual accesible.
+- [x] Backend completo: 612 pasan y 1 omitida en contenedores efímeros; schema/compileall/single head/db check/ciclo 0031 verdes.
+- [x] Android: lint, dos pasadas JVM, APK y compilación de androidTest verdes.
+- [ ] Ejecutar `connectedDebugAndroidTest` únicamente en AVD de pruebas separado.
+- [ ] Completar QA manual offline/process death/reconexión, web↔Android, accesibilidad, rotación, temas y tamaños.
+- [ ] Revisión de integración, firma y decisión formal de release.
+- [ ] Alpha 1.4 lista para release: **NO**, hasta cerrar QA manual, instrumentación y firma aprobada.
+
+## Alpha 1.3 — Planificación, Rutinas y Calendario Android
+
+- [x] Catálogo owner-only paginado por nombre/alias y ausencia honesta de filtros no disponibles.
+- [x] Rutinas/entrenamientos versionados con revisión optimista, idempotencia, rollback y proyección de imports/restores.
+- [x] Programación por fecha/timezone reutiliza `PlannedWorkout`, Companion Delivery y el cursor existente.
+- [x] Agenda semanal/mensual local-first; mover conserva UUID y crear/mover/cancelar consolida operaciones seguras sin romper FIFO.
+- [x] Room 3 preservador y aislado; planificación offline-first, FIFO y conflictos sin last-write-wins.
+- [x] Navegación Hoy/Plan/Historial/Progreso/Ajustes, editores con autosave y agenda semanal/mensual.
+- [x] Prescripciones aditivas: doce modos, carga, RIR/RPE, descanso, tiempo, distancia y notas.
+- [x] Hoy refleja Room inmediatamente; completion offline aparece una vez en Historial y actualiza Progreso local antes de reconciliarse.
+- [x] Delivery/package es determinista por revisión; una descarga obsoleta puede reemplazarse sin mutar un draft activo.
+- [x] Conflictos de revisión, archivo, ausencia, fecha y package muestran resolución explícita; archivo bloqueado con programaciones activas y restauración soportada.
+- [x] Matriz final: lint sin errores, dos pasadas forzadas de 49 JVM, APK y androidTest compile; backend local 600/3 y Docker/MariaDB 602/1, compileall, 30 schemas, ciclo MariaDB 0030 y Compose config.
+- [ ] QA manual visual, offline/process death/reconexión, package revision, rotación, tamaños, fuente grande, TalkBack, claro/oscuro y HTTPS en AVD/dispositivo separado.
+- [ ] Alpha 1.3 lista para release: **NO**, hasta cerrar QA manual, instrumentación y firma aprobada.
+
+## Alpha 1.2 — Historial y Progreso Android
+
+- [x] API móvil owner-only con historial por cursor, filtros y detalle sin N+1.
+- [x] Resumen 7/30/90/180/365/todo, ejercicios, puntos y comparación sin porcentaje engañoso con base cero.
+- [x] Volumen y mejores marcas deterministas solo para modos de carga comparables; ausencia explícita para modos mixtos.
+- [x] Room 2 por cuenta, migración preservadora, páginas/detalle/progreso estructurados y reconciliación por evento.
+- [x] Navegación Hoy/Historial/Progreso/Ajustes, filtros, paginación, detalles y gráficas Canvas con fallback textual.
+- [x] Integración con completion, pull, foreground, conectividad, WorkManager y single-flight existentes.
+- [x] Ejecutar y registrar `lintDebug`, dos pasadas JVM (39 tests), `assembleDebug` y `compileDebugAndroidTestKotlin` finales.
+- [x] Ejecutar y registrar compileall, suite backend completa (593 pasan, 3 omitidos) y `docker compose config --quiet` finales.
+- [ ] QA manual visual, offline, accesibilidad y matriz de tamaños; no aprobado en esta rama.
+
+## Alpha 1.1 — Android Companion
+
+- [x] Proyecto Android Kotlin/Compose, wrapper fijado, variantes debug/release y CI sin publicación de artefactos.
+- [x] Login/refresh/logout/revocación, Keystore, redacción y política HTTPS con excepción local solo debug.
+- [x] Negociación 1.0, bootstrap, package SHA256, ACK/start/progress/complete/abort/fail.
+- [x] Room aislado por cuenta, drafts, cola FIFO, cursor transaccional, backoff y WorkManager.
+- [x] Package+ACK habilitan start local inmediato; start offline y cola `START → PROGRESS → COMPLETE` no requieren pull manual.
+- [x] Sesión local elegible abre cache offline; refresh temporal conserva Keystore/scope y revocación confirmada limpia la sesión.
+- [x] Autosave de campos con debounce/flush y autosync por eventos, foreground, conectividad y trabajo único coalescido.
+- [x] Ejecución desde teléfono, historial, ajustes, tema y doce modos de carga con `BigDecimal`.
+- [x] Pruebas unitarias/instrumentadas y workflow Android definidos en código.
+- [x] Compilar `lintDebug testDebugUnitTest assembleDebug` con JDK 17 y Android SDK 36; pruebas JVM repetidas sin dependencia de orden/estado.
+- [x] Compilar `compileDebugAndroidTestKotlin` con las pruebas Room/MockWebServer/Compose actuales.
+- [ ] Ejecutar pruebas instrumentadas y validar migración Room en emulador/dispositivo.
+- [ ] QA real offline/reinicio/rotación/accesibilidad/tema claro-oscuro y servidor HTTPS.
+- [ ] Revisar firma, minificación, secretos y producir APK de release mediante proceso aprobado.
+- [ ] Alpha 1.1 lista para release: **NO**, hasta cerrar los cuatro gates anteriores.
+
 ## Alpha 1.0 — Web Daily Driver
 
 - [x] Onboarding derivado, preferencias owner-only y dashboard centrado en hoy.

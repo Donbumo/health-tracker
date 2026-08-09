@@ -640,12 +640,15 @@ class AccountRestoreService:
                 )
             ).scalar_one_or_none()
         if section == "daily_energy":
-            return db.session.execute(
-                db.select(DailyEnergy).where(
-                    DailyEnergy.user_id == user_id,
-                    DailyEnergy.date == date.fromisoformat(item["data"]["date"]),
+            statement = db.select(DailyEnergy).where(
+                DailyEnergy.user_id == user_id,
+                DailyEnergy.date == date.fromisoformat(item["data"]["date"]),
+            )
+            if item["data"].get("source"):
+                statement = statement.where(
+                    DailyEnergy.source == item["data"]["source"].strip()
                 )
-            ).scalar_one_or_none()
+            return db.session.execute(statement).scalar_one_or_none()
         if section == "daily_nutrition":
             return db.session.execute(
                 db.select(DailyNutrition).where(
@@ -1078,6 +1081,7 @@ class AccountRestoreService:
             db.session.add(plan)
             db.session.flush()
         version_map: dict[int, int] = {}
+        active_document = None
         existing_hashes = {version.sha256: version for version in plan.versions}
         next_version_number = max(
             (version.version_number for version in plan.versions),
@@ -1107,10 +1111,15 @@ class AccountRestoreService:
             if version_data.get("id") is not None:
                 version_map[int(version_data["id"])] = existing_version.id
             if version_data.get("active"):
+                active_document = document
                 plan.active_version_number = existing_version.version_number
                 plan.name = document["data"]["name"].strip()
                 if "description" in document["data"]:
                     plan.description = _optional_text(document["data"].get("description"))
+        if active_document is not None:
+            from app.services.training_plans import replace_mobile_workouts_from_document
+
+            replace_mobile_workouts_from_document(plan, active_document, user_id)
         return plan, version_map
 
     def _extend_existing_training_maps(

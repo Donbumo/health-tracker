@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/activity_route_v1.schema.json",
+  "title": "Health Tracker Activity Route v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["present"],
+  "properties": {
+    "present": {"type": "boolean"},
+    "state": {"enum": ["available", "removed", "unavailable"]},
+    "policy": {"enum": ["keep", "drop", "redact"]},
+    "pointCount": {"type": "integer", "minimum": 0},
+    "distanceMeters": {"type": "number", "minimum": 0},
+    "redactStartMeters": {"type": "integer", "minimum": 0},
+    "redactEndMeters": {"type": "integer", "minimum": 0},
+    "points": {"type": "array", "maxItems": 100000, "items": {"$ref": "#/$defs/point"}}
+  },
+  "$defs": {
+    "point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lat", "lon"],
+      "properties": {
+        "t": {"type": "number", "minimum": -1, "maximum": 1209600},
+        "lat": {"type": "number", "minimum": -90, "maximum": 90},
+        "lon": {"type": "number", "minimum": -180, "maximum": 180},
+        "distance": {"type": "number", "minimum": 0},
+        "elevation": {"type": "number"}
+      }
+    }
+  }
+}

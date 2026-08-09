@@ -1,0 +1,16 @@
+{
+  "formatVersion": "ble-capture-v1",
+  "sourceType": "xiaomi_s400_ble_experimental",
+  "captureId": "fixture_stable_0001",
+  "deviceFingerprint": "f1c710a1f1c710a1f1c710a1",
+  "sessionStart": 0,
+  "fixtureFictional": true,
+  "events": [
+    {"eventType":"connection","relativeTimestampMs":0,"connectionState":"connected"},
+    {"serviceUuid":"00000000-0000-4000-8000-000000000101","characteristicUuid":"00000000-0000-4000-8000-000000000102","eventType":"notification","relativeTimestampMs":100,"payload":"ESIzRFU="},
+    {"serviceUuid":"00000000-0000-4000-8000-000000000101","characteristicUuid":"00000000-0000-4000-8000-000000000102","eventType":"notification","relativeTimestampMs":200,"payload":"ESIzRFU="},
+    {"serviceUuid":"00000000-0000-4000-8000-000000000101","characteristicUuid":"00000000-0000-4000-8000-000000000102","eventType":"notification","relativeTimestampMs":300,"payload":"ESIzRFU="},
+    {"eventType":"connection","relativeTimestampMs":400,"connectionState":"disconnected"}
+  ],
+  "expectedResult":{"protocolState":"stable_measurement_unverified","fixtureFictional":true}
+}

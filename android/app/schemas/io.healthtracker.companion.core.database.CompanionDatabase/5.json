@@ -1,0 +1,3820 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 5,
+    "identityHash": "24a91c6334d0f8c61320e01dcdb5dfea",
+    "entities": [
+      {
+        "tableName": "accounts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`scope` TEXT NOT NULL, `serverUrl` TEXT NOT NULL, `userPublicId` TEXT NOT NULL, `displayEmail` TEXT NOT NULL, `deviceId` TEXT NOT NULL, `timezone` TEXT NOT NULL, `createdAt` TEXT NOT NULL, PRIMARY KEY(`scope`))",
+        "fields": [
+          {
+            "fieldPath": "scope",
+            "columnName": "scope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serverUrl",
+            "columnName": "serverUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userPublicId",
+            "columnName": "userPublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayEmail",
+            "columnName": "displayEmail",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "deviceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timezone",
+            "columnName": "timezone",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "scope"
+          ]
+        }
+      },
+      {
+        "tableName": "local_profiles",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `profileId` TEXT, `protocolVersion` TEXT, `workoutSchemaVersion` TEXT, `resultSchemaVersion` TEXT, `revision` INTEGER, `negotiatedAt` TEXT, PRIMARY KEY(`accountScope`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileId",
+            "columnName": "profileId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "protocolVersion",
+            "columnName": "protocolVersion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "workoutSchemaVersion",
+            "columnName": "workoutSchemaVersion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "resultSchemaVersion",
+            "columnName": "resultSchemaVersion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "negotiatedAt",
+            "columnName": "negotiatedAt",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope"
+          ]
+        }
+      },
+      {
+        "tableName": "planned_workouts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `id` TEXT NOT NULL, `planId` TEXT NOT NULL, `planVersionId` TEXT NOT NULL, `scheduledForDate` TEXT NOT NULL, `timezone` TEXT NOT NULL, `status` TEXT NOT NULL, `title` TEXT NOT NULL, `revision` INTEGER NOT NULL, `updatedAt` TEXT NOT NULL, `deleted` INTEGER NOT NULL, `sourceWorkoutId` TEXT, PRIMARY KEY(`accountScope`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "planId",
+            "columnName": "planId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "planVersionId",
+            "columnName": "planVersionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduledForDate",
+            "columnName": "scheduledForDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timezone",
+            "columnName": "timezone",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deleted",
+            "columnName": "deleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceWorkoutId",
+            "columnName": "sourceWorkoutId",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_planned_workouts_accountScope_scheduledForDate",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "scheduledForDate"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_planned_workouts_accountScope_scheduledForDate` ON `${TABLE_NAME}` (`accountScope`, `scheduledForDate`)"
+          },
+          {
+            "name": "index_planned_workouts_accountScope_status",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_planned_workouts_accountScope_status` ON `${TABLE_NAME}` (`accountScope`, `status`)"
+          }
+        ]
+      },
+      {
+        "tableName": "workout_packages",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `packageId` TEXT NOT NULL, `deliveryId` TEXT NOT NULL, `plannedWorkoutId` TEXT NOT NULL, `planId` TEXT NOT NULL, `planVersionId` TEXT NOT NULL, `title` TEXT NOT NULL, `scheduledForDate` TEXT NOT NULL, `timezone` TEXT NOT NULL, `revision` INTEGER NOT NULL, `generatedAt` TEXT NOT NULL, `expiresAt` TEXT, `packageHash` TEXT NOT NULL, `verifiedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `packageId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageId",
+            "columnName": "packageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deliveryId",
+            "columnName": "deliveryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "plannedWorkoutId",
+            "columnName": "plannedWorkoutId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "planId",
+            "columnName": "planId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "planVersionId",
+            "columnName": "planVersionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scheduledForDate",
+            "columnName": "scheduledForDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timezone",
+            "columnName": "timezone",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "generatedAt",
+            "columnName": "generatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expiresAt",
+            "columnName": "expiresAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "packageHash",
+            "columnName": "packageHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verifiedAt",
+            "columnName": "verifiedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "packageId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_workout_packages_accountScope_plannedWorkoutId",
+            "unique": true,
+            "columnNames": [
+              "accountScope",
+              "plannedWorkoutId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_workout_packages_accountScope_plannedWorkoutId` ON `${TABLE_NAME}` (`accountScope`, `plannedWorkoutId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "package_exercises",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `packageId` TEXT NOT NULL, `exerciseOrder` INTEGER NOT NULL, `name` TEXT NOT NULL, `notes` TEXT, PRIMARY KEY(`accountScope`, `packageId`, `exerciseOrder`), FOREIGN KEY(`accountScope`, `packageId`) REFERENCES `workout_packages`(`accountScope`, `packageId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageId",
+            "columnName": "packageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exerciseOrder",
+            "columnName": "exerciseOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "packageId",
+            "exerciseOrder"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_package_exercises_accountScope_packageId",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "packageId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_package_exercises_accountScope_packageId` ON `${TABLE_NAME}` (`accountScope`, `packageId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "workout_packages",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountScope",
+              "packageId"
+            ],
+            "referencedColumns": [
+              "accountScope",
+              "packageId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "package_sets",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `packageId` TEXT NOT NULL, `exerciseOrder` INTEGER NOT NULL, `setNumber` INTEGER NOT NULL, `reps` INTEGER, `repsMin` INTEGER, `repsMax` INTEGER, `durationSeconds` INTEGER, `distanceMeters` TEXT, `restSeconds` INTEGER, `target` TEXT, `prescribedWeightKg` TEXT, `prescribedLoadValue` TEXT, `prescribedLoadUnit` TEXT, `prescribedLoadMode` TEXT, `prescribedRir` TEXT, `prescribedRpe` TEXT, `prescribedNotes` TEXT, `prescribedLoadDetailsJson` TEXT, PRIMARY KEY(`accountScope`, `packageId`, `exerciseOrder`, `setNumber`), FOREIGN KEY(`accountScope`, `packageId`, `exerciseOrder`) REFERENCES `package_exercises`(`accountScope`, `packageId`, `exerciseOrder`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageId",
+            "columnName": "packageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exerciseOrder",
+            "columnName": "exerciseOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "setNumber",
+            "columnName": "setNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reps",
+            "columnName": "reps",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "repsMin",
+            "columnName": "repsMin",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "repsMax",
+            "columnName": "repsMax",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "distanceMeters",
+            "columnName": "distanceMeters",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "restSeconds",
+            "columnName": "restSeconds",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "target",
+            "columnName": "target",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "prescribedWeightKg",
+            "columnName": "prescribedWeightKg",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "prescribedLoadValue",
+            "columnName": "prescribedLoadValue",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "prescribedLoadUnit",
+            "columnName": "prescribedLoadUnit",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "prescribedLoadMode",
+            "columnName": "prescribedLoadMode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "prescribedRir",
+            "columnName": "prescribedRir",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "prescribedRpe",
+            "columnName": "prescribedRpe",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "prescribedNotes",
+            "columnName": "prescribedNotes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "prescribedLoadDetailsJson",
+            "columnName": "prescribedLoadDetailsJson",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "packageId",
+            "exerciseOrder",
+            "setNumber"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_package_sets_accountScope_packageId_exerciseOrder",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "packageId",
+              "exerciseOrder"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_package_sets_accountScope_packageId_exerciseOrder` ON `${TABLE_NAME}` (`accountScope`, `packageId`, `exerciseOrder`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "package_exercises",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountScope",
+              "packageId",
+              "exerciseOrder"
+            ],
+            "referencedColumns": [
+              "accountScope",
+              "packageId",
+              "exerciseOrder"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "deliveries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `id` TEXT NOT NULL, `plannedWorkoutId` TEXT NOT NULL, `profileId` TEXT NOT NULL, `packageHash` TEXT NOT NULL, `status` TEXT NOT NULL, `revision` INTEGER NOT NULL, `lastClientSequence` INTEGER NOT NULL, `expiresAt` TEXT, `trainingSessionId` TEXT, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "plannedWorkoutId",
+            "columnName": "plannedWorkoutId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profileId",
+            "columnName": "profileId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageHash",
+            "columnName": "packageHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastClientSequence",
+            "columnName": "lastClientSequence",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expiresAt",
+            "columnName": "expiresAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "trainingSessionId",
+            "columnName": "trainingSessionId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_deliveries_accountScope_plannedWorkoutId",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "plannedWorkoutId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_deliveries_accountScope_plannedWorkoutId` ON `${TABLE_NAME}` (`accountScope`, `plannedWorkoutId`)"
+          },
+          {
+            "name": "index_deliveries_accountScope_status",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_deliveries_accountScope_status` ON `${TABLE_NAME}` (`accountScope`, `status`)"
+          }
+        ]
+      },
+      {
+        "tableName": "workout_drafts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `deliveryId` TEXT NOT NULL, `packageId` TEXT NOT NULL, `clientSubmissionId` TEXT NOT NULL, `clientEventId` TEXT NOT NULL, `schemaVersion` TEXT NOT NULL, `packageHash` TEXT NOT NULL, `status` TEXT NOT NULL, `startedAt` TEXT NOT NULL, `pausedAt` TEXT, `elapsedSeconds` INTEGER NOT NULL, `averageHeartRateBpm` INTEGER, `caloriesBurned` TEXT, `notes` TEXT, `checkpointSequence` INTEGER NOT NULL, `payloadHash` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, `expiresAt` TEXT NOT NULL, `corruptReasonCode` TEXT, PRIMARY KEY(`accountScope`, `deliveryId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deliveryId",
+            "columnName": "deliveryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageId",
+            "columnName": "packageId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clientSubmissionId",
+            "columnName": "clientSubmissionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clientEventId",
+            "columnName": "clientEventId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "schemaVersion",
+            "columnName": "schemaVersion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packageHash",
+            "columnName": "packageHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAt",
+            "columnName": "startedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pausedAt",
+            "columnName": "pausedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "elapsedSeconds",
+            "columnName": "elapsedSeconds",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageHeartRateBpm",
+            "columnName": "averageHeartRateBpm",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "caloriesBurned",
+            "columnName": "caloriesBurned",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "checkpointSequence",
+            "columnName": "checkpointSequence",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadHash",
+            "columnName": "payloadHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expiresAt",
+            "columnName": "expiresAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "corruptReasonCode",
+            "columnName": "corruptReasonCode",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "deliveryId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_workout_drafts_accountScope_status",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_workout_drafts_accountScope_status` ON `${TABLE_NAME}` (`accountScope`, `status`)"
+          }
+        ]
+      },
+      {
+        "tableName": "draft_sets",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `deliveryId` TEXT NOT NULL, `exerciseOrder` INTEGER NOT NULL, `setNumber` INTEGER NOT NULL, `plannedSetNumber` INTEGER NOT NULL, `reps` INTEGER NOT NULL, `rir` TEXT, `rpe` TEXT, `weightKg` TEXT NOT NULL, `loadDetailsJson` TEXT, `durationSeconds` INTEGER, `distanceMeters` TEXT, `restSeconds` INTEGER, `notes` TEXT, `checkpointSequence` INTEGER, `completed` INTEGER NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `deliveryId`, `exerciseOrder`, `setNumber`), FOREIGN KEY(`accountScope`, `deliveryId`) REFERENCES `workout_drafts`(`accountScope`, `deliveryId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deliveryId",
+            "columnName": "deliveryId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exerciseOrder",
+            "columnName": "exerciseOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "setNumber",
+            "columnName": "setNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "plannedSetNumber",
+            "columnName": "plannedSetNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reps",
+            "columnName": "reps",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rir",
+            "columnName": "rir",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "rpe",
+            "columnName": "rpe",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "weightKg",
+            "columnName": "weightKg",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "loadDetailsJson",
+            "columnName": "loadDetailsJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "distanceMeters",
+            "columnName": "distanceMeters",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "restSeconds",
+            "columnName": "restSeconds",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "checkpointSequence",
+            "columnName": "checkpointSequence",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "completed",
+            "columnName": "completed",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "deliveryId",
+            "exerciseOrder",
+            "setNumber"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_draft_sets_accountScope_deliveryId",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "deliveryId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_draft_sets_accountScope_deliveryId` ON `${TABLE_NAME}` (`accountScope`, `deliveryId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "workout_drafts",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountScope",
+              "deliveryId"
+            ],
+            "referencedColumns": [
+              "accountScope",
+              "deliveryId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "pending_actions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`localId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `accountScope` TEXT NOT NULL, `actionType` TEXT NOT NULL, `entityId` TEXT NOT NULL, `idempotencyKey` TEXT NOT NULL, `payloadJson` TEXT NOT NULL, `payloadHash` TEXT NOT NULL, `status` TEXT NOT NULL, `attemptCount` INTEGER NOT NULL, `notBeforeEpochMs` INTEGER NOT NULL, `createdAt` TEXT NOT NULL, `lastErrorCode` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "localId",
+            "columnName": "localId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actionType",
+            "columnName": "actionType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityId",
+            "columnName": "entityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idempotencyKey",
+            "columnName": "idempotencyKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadHash",
+            "columnName": "payloadHash",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "attemptCount",
+            "columnName": "attemptCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notBeforeEpochMs",
+            "columnName": "notBeforeEpochMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastErrorCode",
+            "columnName": "lastErrorCode",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "localId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pending_actions_accountScope_status_notBeforeEpochMs",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "status",
+              "notBeforeEpochMs"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pending_actions_accountScope_status_notBeforeEpochMs` ON `${TABLE_NAME}` (`accountScope`, `status`, `notBeforeEpochMs`)"
+          },
+          {
+            "name": "index_pending_actions_accountScope_idempotencyKey",
+            "unique": true,
+            "columnNames": [
+              "accountScope",
+              "idempotencyKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_pending_actions_accountScope_idempotencyKey` ON `${TABLE_NAME}` (`accountScope`, `idempotencyKey`)"
+          }
+        ]
+      },
+      {
+        "tableName": "recent_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `id` TEXT NOT NULL, `clientEventId` TEXT NOT NULL, `plannedWorkoutId` TEXT, `title` TEXT NOT NULL, `completedAt` TEXT NOT NULL, `durationSeconds` INTEGER, `exerciseCount` INTEGER NOT NULL, `setCount` INTEGER NOT NULL, `totalLoadKg` TEXT NOT NULL, `origin` TEXT NOT NULL, `syncStatus` TEXT NOT NULL, `summary` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clientEventId",
+            "columnName": "clientEventId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "plannedWorkoutId",
+            "columnName": "plannedWorkoutId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completedAt",
+            "columnName": "completedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "exerciseCount",
+            "columnName": "exerciseCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "setCount",
+            "columnName": "setCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalLoadKg",
+            "columnName": "totalLoadKg",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "origin",
+            "columnName": "origin",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "summary",
+            "columnName": "summary",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_recent_sessions_accountScope_completedAt",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "completedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_recent_sessions_accountScope_completedAt` ON `${TABLE_NAME}` (`accountScope`, `completedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "history_sessions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `clientEventId` TEXT NOT NULL, `plannedWorkoutId` TEXT, `trainingPlanId` TEXT, `trainingPlanVersionId` TEXT, `name` TEXT NOT NULL, `performedAt` TEXT NOT NULL, `startedAt` TEXT, `completedAt` TEXT NOT NULL, `timezone` TEXT NOT NULL, `durationSeconds` INTEGER, `exerciseCount` INTEGER NOT NULL, `setCount` INTEGER NOT NULL, `volumeKg` TEXT, `volumePartial` INTEGER NOT NULL, `source` TEXT NOT NULL, `syncStatus` TEXT NOT NULL, `notes` TEXT, `detailCached` INTEGER NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `publicId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clientEventId",
+            "columnName": "clientEventId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "plannedWorkoutId",
+            "columnName": "plannedWorkoutId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "trainingPlanId",
+            "columnName": "trainingPlanId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "trainingPlanVersionId",
+            "columnName": "trainingPlanVersionId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "performedAt",
+            "columnName": "performedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAt",
+            "columnName": "startedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "completedAt",
+            "columnName": "completedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timezone",
+            "columnName": "timezone",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "exerciseCount",
+            "columnName": "exerciseCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "setCount",
+            "columnName": "setCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "volumeKg",
+            "columnName": "volumeKg",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "volumePartial",
+            "columnName": "volumePartial",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "detailCached",
+            "columnName": "detailCached",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_history_sessions_accountScope_completedAt",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "completedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_history_sessions_accountScope_completedAt` ON `${TABLE_NAME}` (`accountScope`, `completedAt`)"
+          },
+          {
+            "name": "index_history_sessions_accountScope_clientEventId",
+            "unique": true,
+            "columnNames": [
+              "accountScope",
+              "clientEventId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_history_sessions_accountScope_clientEventId` ON `${TABLE_NAME}` (`accountScope`, `clientEventId`)"
+          }
+        ]
+      },
+      {
+        "tableName": "history_exercises",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `sessionPublicId` TEXT NOT NULL, `exerciseOrder` INTEGER NOT NULL, `exercisePublicId` TEXT, `name` TEXT NOT NULL, `notes` TEXT, PRIMARY KEY(`accountScope`, `sessionPublicId`, `exerciseOrder`), FOREIGN KEY(`accountScope`, `sessionPublicId`) REFERENCES `history_sessions`(`accountScope`, `publicId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionPublicId",
+            "columnName": "sessionPublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exerciseOrder",
+            "columnName": "exerciseOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exercisePublicId",
+            "columnName": "exercisePublicId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "sessionPublicId",
+            "exerciseOrder"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_history_exercises_accountScope_sessionPublicId",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "sessionPublicId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_history_exercises_accountScope_sessionPublicId` ON `${TABLE_NAME}` (`accountScope`, `sessionPublicId`)"
+          },
+          {
+            "name": "index_history_exercises_accountScope_exercisePublicId",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "exercisePublicId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_history_exercises_accountScope_exercisePublicId` ON `${TABLE_NAME}` (`accountScope`, `exercisePublicId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "history_sessions",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountScope",
+              "sessionPublicId"
+            ],
+            "referencedColumns": [
+              "accountScope",
+              "publicId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "history_sets",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `sessionPublicId` TEXT NOT NULL, `exerciseOrder` INTEGER NOT NULL, `setNumber` INTEGER NOT NULL, `weightKg` TEXT, `displayValue` TEXT, `displayUnit` TEXT, `loadMode` TEXT NOT NULL, `reps` INTEGER NOT NULL, `rir` TEXT, `rpe` TEXT, `restSeconds` INTEGER, `durationSeconds` TEXT, `distanceMeters` TEXT, `notes` TEXT, PRIMARY KEY(`accountScope`, `sessionPublicId`, `exerciseOrder`, `setNumber`), FOREIGN KEY(`accountScope`, `sessionPublicId`, `exerciseOrder`) REFERENCES `history_exercises`(`accountScope`, `sessionPublicId`, `exerciseOrder`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionPublicId",
+            "columnName": "sessionPublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exerciseOrder",
+            "columnName": "exerciseOrder",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "setNumber",
+            "columnName": "setNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weightKg",
+            "columnName": "weightKg",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "displayValue",
+            "columnName": "displayValue",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "displayUnit",
+            "columnName": "displayUnit",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "loadMode",
+            "columnName": "loadMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reps",
+            "columnName": "reps",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rir",
+            "columnName": "rir",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "rpe",
+            "columnName": "rpe",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "restSeconds",
+            "columnName": "restSeconds",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "distanceMeters",
+            "columnName": "distanceMeters",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "sessionPublicId",
+            "exerciseOrder",
+            "setNumber"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_history_sets_accountScope_sessionPublicId_exerciseOrder",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "sessionPublicId",
+              "exerciseOrder"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_history_sets_accountScope_sessionPublicId_exerciseOrder` ON `${TABLE_NAME}` (`accountScope`, `sessionPublicId`, `exerciseOrder`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "history_exercises",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountScope",
+              "sessionPublicId",
+              "exerciseOrder"
+            ],
+            "referencedColumns": [
+              "accountScope",
+              "sessionPublicId",
+              "exerciseOrder"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "history_pages",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `cacheKey` TEXT NOT NULL, `sessionPublicId` TEXT NOT NULL, `position` INTEGER NOT NULL, PRIMARY KEY(`accountScope`, `cacheKey`, `sessionPublicId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cacheKey",
+            "columnName": "cacheKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionPublicId",
+            "columnName": "sessionPublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "cacheKey",
+            "sessionPublicId"
+          ]
+        }
+      },
+      {
+        "tableName": "history_query_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `cacheKey` TEXT NOT NULL, `nextCursor` TEXT, `hasMore` INTEGER NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `cacheKey`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cacheKey",
+            "columnName": "cacheKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nextCursor",
+            "columnName": "nextCursor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "hasMore",
+            "columnName": "hasMore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "cacheKey"
+          ]
+        }
+      },
+      {
+        "tableName": "progress_summaries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `range` TEXT NOT NULL, `sessions` INTEGER NOT NULL, `trainingDays` INTEGER NOT NULL, `distinctExercises` INTEGER NOT NULL, `completedSets` INTEGER NOT NULL, `totalReps` INTEGER NOT NULL, `volumeKg` TEXT, `volumePartial` INTEGER NOT NULL, `durationSeconds` INTEGER NOT NULL, `comparisonJson` TEXT, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `range`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "range",
+            "columnName": "range",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessions",
+            "columnName": "sessions",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trainingDays",
+            "columnName": "trainingDays",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "distinctExercises",
+            "columnName": "distinctExercises",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completedSets",
+            "columnName": "completedSets",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalReps",
+            "columnName": "totalReps",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "volumeKg",
+            "columnName": "volumeKg",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "volumePartial",
+            "columnName": "volumePartial",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "comparisonJson",
+            "columnName": "comparisonJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "range"
+          ]
+        }
+      },
+      {
+        "tableName": "progress_exercises",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `range` TEXT NOT NULL, `publicId` TEXT NOT NULL, `name` TEXT NOT NULL, `lastPerformedAt` TEXT, `sessionCount` INTEGER NOT NULL, `setCount` INTEGER NOT NULL, `bestLoadKg` TEXT, `bestReps` INTEGER, `bestRepsWeightKg` TEXT, `volumeKg` TEXT, `volumePartial` INTEGER NOT NULL, `loadComparable` INTEGER NOT NULL, `loadModes` TEXT NOT NULL, `trend` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `range`, `publicId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "range",
+            "columnName": "range",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastPerformedAt",
+            "columnName": "lastPerformedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sessionCount",
+            "columnName": "sessionCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "setCount",
+            "columnName": "setCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bestLoadKg",
+            "columnName": "bestLoadKg",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "bestReps",
+            "columnName": "bestReps",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "bestRepsWeightKg",
+            "columnName": "bestRepsWeightKg",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "volumeKg",
+            "columnName": "volumeKg",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "volumePartial",
+            "columnName": "volumePartial",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "loadComparable",
+            "columnName": "loadComparable",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "loadModes",
+            "columnName": "loadModes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trend",
+            "columnName": "trend",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "range",
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_progress_exercises_accountScope_range_lastPerformedAt",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "range",
+              "lastPerformedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_progress_exercises_accountScope_range_lastPerformedAt` ON `${TABLE_NAME}` (`accountScope`, `range`, `lastPerformedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "progress_points",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `range` TEXT NOT NULL, `exercisePublicId` TEXT NOT NULL, `sessionPublicId` TEXT NOT NULL, `date` TEXT NOT NULL, `performedAt` TEXT NOT NULL, `bestLoadKg` TEXT, `bestReps` INTEGER, `volumeKg` TEXT, `setCount` INTEGER NOT NULL, `averageRir` TEXT, `averageRpe` TEXT, `loadComparable` INTEGER NOT NULL, PRIMARY KEY(`accountScope`, `range`, `exercisePublicId`, `sessionPublicId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "range",
+            "columnName": "range",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exercisePublicId",
+            "columnName": "exercisePublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionPublicId",
+            "columnName": "sessionPublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "performedAt",
+            "columnName": "performedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bestLoadKg",
+            "columnName": "bestLoadKg",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "bestReps",
+            "columnName": "bestReps",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "volumeKg",
+            "columnName": "volumeKg",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "setCount",
+            "columnName": "setCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageRir",
+            "columnName": "averageRir",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "averageRpe",
+            "columnName": "averageRpe",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "loadComparable",
+            "columnName": "loadComparable",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "range",
+            "exercisePublicId",
+            "sessionPublicId"
+          ]
+        }
+      },
+      {
+        "tableName": "personal_records",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `range` TEXT NOT NULL, `exercisePublicId` TEXT NOT NULL, `type` TEXT NOT NULL, `value` TEXT NOT NULL, `unit` TEXT NOT NULL, `date` TEXT NOT NULL, `sessionPublicId` TEXT NOT NULL, `setIndex` INTEGER, PRIMARY KEY(`accountScope`, `range`, `exercisePublicId`, `type`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "range",
+            "columnName": "range",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exercisePublicId",
+            "columnName": "exercisePublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sessionPublicId",
+            "columnName": "sessionPublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "setIndex",
+            "columnName": "setIndex",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "range",
+            "exercisePublicId",
+            "type"
+          ]
+        }
+      },
+      {
+        "tableName": "exercise_catalog",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `name` TEXT NOT NULL, `normalizedName` TEXT NOT NULL, `aliases` TEXT NOT NULL, `selectable` INTEGER NOT NULL, `archived` INTEGER NOT NULL, `preferredLoadMode` TEXT, `preferredUnit` TEXT, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `publicId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "normalizedName",
+            "columnName": "normalizedName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aliases",
+            "columnName": "aliases",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "selectable",
+            "columnName": "selectable",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "archived",
+            "columnName": "archived",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preferredLoadMode",
+            "columnName": "preferredLoadMode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "preferredUnit",
+            "columnName": "preferredUnit",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_exercise_catalog_accountScope_normalizedName",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "normalizedName"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_exercise_catalog_accountScope_normalizedName` ON `${TABLE_NAME}` (`accountScope`, `normalizedName`)"
+          }
+        ]
+      },
+      {
+        "tableName": "planning_catalog_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `query` TEXT NOT NULL, `nextCursor` TEXT, `hasMore` INTEGER NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `query`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "query",
+            "columnName": "query",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nextCursor",
+            "columnName": "nextCursor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "hasMore",
+            "columnName": "hasMore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "query"
+          ]
+        }
+      },
+      {
+        "tableName": "mobile_plans",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `status` TEXT NOT NULL, `revision` INTEGER NOT NULL, `activeVersionId` TEXT, `activeVersion` INTEGER, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, `archivedAt` TEXT, PRIMARY KEY(`accountScope`, `publicId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "description",
+            "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activeVersionId",
+            "columnName": "activeVersionId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "activeVersion",
+            "columnName": "activeVersion",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "archivedAt",
+            "columnName": "archivedAt",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_mobile_plans_accountScope_status_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "status",
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_mobile_plans_accountScope_status_updatedAt` ON `${TABLE_NAME}` (`accountScope`, `status`, `updatedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "mobile_plan_workouts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `planPublicId` TEXT NOT NULL, `name` TEXT NOT NULL, `notes` TEXT, `position` INTEGER NOT NULL, `estimatedDurationSeconds` INTEGER, `revision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `publicId`), FOREIGN KEY(`accountScope`, `planPublicId`) REFERENCES `mobile_plans`(`accountScope`, `publicId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "planPublicId",
+            "columnName": "planPublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estimatedDurationSeconds",
+            "columnName": "estimatedDurationSeconds",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_mobile_plan_workouts_accountScope_planPublicId_position",
+            "unique": true,
+            "columnNames": [
+              "accountScope",
+              "planPublicId",
+              "position"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_mobile_plan_workouts_accountScope_planPublicId_position` ON `${TABLE_NAME}` (`accountScope`, `planPublicId`, `position`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "mobile_plans",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountScope",
+              "planPublicId"
+            ],
+            "referencedColumns": [
+              "accountScope",
+              "publicId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "mobile_plan_exercises",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `workoutPublicId` TEXT NOT NULL, `publicId` TEXT NOT NULL, `catalogExerciseId` TEXT, `name` TEXT NOT NULL, `notes` TEXT, `position` INTEGER NOT NULL, PRIMARY KEY(`accountScope`, `workoutPublicId`, `publicId`), FOREIGN KEY(`accountScope`, `workoutPublicId`) REFERENCES `mobile_plan_workouts`(`accountScope`, `publicId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workoutPublicId",
+            "columnName": "workoutPublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "catalogExerciseId",
+            "columnName": "catalogExerciseId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "workoutPublicId",
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_mobile_plan_exercises_accountScope_workoutPublicId_position",
+            "unique": true,
+            "columnNames": [
+              "accountScope",
+              "workoutPublicId",
+              "position"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_mobile_plan_exercises_accountScope_workoutPublicId_position` ON `${TABLE_NAME}` (`accountScope`, `workoutPublicId`, `position`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "mobile_plan_workouts",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountScope",
+              "workoutPublicId"
+            ],
+            "referencedColumns": [
+              "accountScope",
+              "publicId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "mobile_plan_sets",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `workoutPublicId` TEXT NOT NULL, `exercisePublicId` TEXT NOT NULL, `publicId` TEXT NOT NULL, `setNumber` INTEGER NOT NULL, `reps` INTEGER, `repsMin` INTEGER, `repsMax` INTEGER, `weightKg` TEXT, `loadValue` TEXT, `loadUnit` TEXT NOT NULL, `loadMode` TEXT NOT NULL, `loadDetailsJson` TEXT, `rir` TEXT, `rpe` TEXT, `restSeconds` INTEGER, `durationSeconds` INTEGER, `distanceMeters` TEXT, `notes` TEXT, PRIMARY KEY(`accountScope`, `workoutPublicId`, `exercisePublicId`, `publicId`), FOREIGN KEY(`accountScope`, `workoutPublicId`, `exercisePublicId`) REFERENCES `mobile_plan_exercises`(`accountScope`, `workoutPublicId`, `publicId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "workoutPublicId",
+            "columnName": "workoutPublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "exercisePublicId",
+            "columnName": "exercisePublicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "setNumber",
+            "columnName": "setNumber",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reps",
+            "columnName": "reps",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "repsMin",
+            "columnName": "repsMin",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "repsMax",
+            "columnName": "repsMax",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "weightKg",
+            "columnName": "weightKg",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "loadValue",
+            "columnName": "loadValue",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "loadUnit",
+            "columnName": "loadUnit",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "loadMode",
+            "columnName": "loadMode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "loadDetailsJson",
+            "columnName": "loadDetailsJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "rir",
+            "columnName": "rir",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "rpe",
+            "columnName": "rpe",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "restSeconds",
+            "columnName": "restSeconds",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "durationSeconds",
+            "columnName": "durationSeconds",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "distanceMeters",
+            "columnName": "distanceMeters",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "workoutPublicId",
+            "exercisePublicId",
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_mobile_plan_sets_accountScope_workoutPublicId_exercisePublicId_setNumber",
+            "unique": true,
+            "columnNames": [
+              "accountScope",
+              "workoutPublicId",
+              "exercisePublicId",
+              "setNumber"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_mobile_plan_sets_accountScope_workoutPublicId_exercisePublicId_setNumber` ON `${TABLE_NAME}` (`accountScope`, `workoutPublicId`, `exercisePublicId`, `setNumber`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "mobile_plan_exercises",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "accountScope",
+              "workoutPublicId",
+              "exercisePublicId"
+            ],
+            "referencedColumns": [
+              "accountScope",
+              "workoutPublicId",
+              "publicId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "planning_conflicts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `entityId` TEXT NOT NULL, `entityType` TEXT NOT NULL, `localRevision` INTEGER NOT NULL, `serverRevision` INTEGER, `changedFields` TEXT NOT NULL, `localName` TEXT, `remoteName` TEXT, `createdAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `entityId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityId",
+            "columnName": "entityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityType",
+            "columnName": "entityType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localRevision",
+            "columnName": "localRevision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serverRevision",
+            "columnName": "serverRevision",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "changedFields",
+            "columnName": "changedFields",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localName",
+            "columnName": "localName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "remoteName",
+            "columnName": "remoteName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "entityId"
+          ]
+        }
+      },
+      {
+        "tableName": "daily_health_summaries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `date` TEXT NOT NULL, `timezone` TEXT NOT NULL, `weightId` TEXT, `weightKg` TEXT, `weightIsExactDate` INTEGER NOT NULL, `caloriesKcal` TEXT, `proteinG` TEXT, `carbohydrateG` TEXT, `fatG` TEXT, `fiberG` TEXT, `nutritionTargetKcal` TEXT, `stepsEntryId` TEXT, `steps` INTEGER, `stepsGoal` INTEGER, `scheduledWorkouts` INTEGER NOT NULL, `completedWorkouts` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `updatedAt` TEXT, `weightSource` TEXT, `stepsSource` TEXT, PRIMARY KEY(`accountScope`, `date`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timezone",
+            "columnName": "timezone",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weightId",
+            "columnName": "weightId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "weightKg",
+            "columnName": "weightKg",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "weightIsExactDate",
+            "columnName": "weightIsExactDate",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "caloriesKcal",
+            "columnName": "caloriesKcal",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "proteinG",
+            "columnName": "proteinG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "carbohydrateG",
+            "columnName": "carbohydrateG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fatG",
+            "columnName": "fatG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fiberG",
+            "columnName": "fiberG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nutritionTargetKcal",
+            "columnName": "nutritionTargetKcal",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "stepsEntryId",
+            "columnName": "stepsEntryId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "steps",
+            "columnName": "steps",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "stepsGoal",
+            "columnName": "stepsGoal",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "scheduledWorkouts",
+            "columnName": "scheduledWorkouts",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "completedWorkouts",
+            "columnName": "completedWorkouts",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "weightSource",
+            "columnName": "weightSource",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "stepsSource",
+            "columnName": "stepsSource",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "date"
+          ]
+        }
+      },
+      {
+        "tableName": "body_stats",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `recordedAt` TEXT NOT NULL, `weightKg` TEXT NOT NULL, `bodyFatPercent` TEXT, `muscleMassKg` TEXT, `waterPercent` TEXT, `visceralFat` TEXT, `bmrKcal` TEXT, `bmi` TEXT, `notes` TEXT, `source` TEXT NOT NULL, `revision` INTEGER NOT NULL, `localRevision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, `sourceZoneOffset` TEXT, PRIMARY KEY(`accountScope`, `publicId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recordedAt",
+            "columnName": "recordedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weightKg",
+            "columnName": "weightKg",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bodyFatPercent",
+            "columnName": "bodyFatPercent",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "muscleMassKg",
+            "columnName": "muscleMassKg",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "waterPercent",
+            "columnName": "waterPercent",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "visceralFat",
+            "columnName": "visceralFat",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "bmrKcal",
+            "columnName": "bmrKcal",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "bmi",
+            "columnName": "bmi",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localRevision",
+            "columnName": "localRevision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceZoneOffset",
+            "columnName": "sourceZoneOffset",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_body_stats_accountScope_recordedAt",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "recordedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_body_stats_accountScope_recordedAt` ON `${TABLE_NAME}` (`accountScope`, `recordedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "nutrition_days",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `date` TEXT NOT NULL, `caloriesKcal` TEXT, `proteinG` TEXT, `fatG` TEXT, `netCarbsG` TEXT, `totalCarbsG` TEXT, `fiberG` TEXT, `sugarG` TEXT, `sodiumMg` TEXT, `targetCaloriesKcal` TEXT, `updatedAt` TEXT, PRIMARY KEY(`accountScope`, `date`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "caloriesKcal",
+            "columnName": "caloriesKcal",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "proteinG",
+            "columnName": "proteinG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fatG",
+            "columnName": "fatG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "netCarbsG",
+            "columnName": "netCarbsG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "totalCarbsG",
+            "columnName": "totalCarbsG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fiberG",
+            "columnName": "fiberG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sugarG",
+            "columnName": "sugarG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sodiumMg",
+            "columnName": "sodiumMg",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "targetCaloriesKcal",
+            "columnName": "targetCaloriesKcal",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "date"
+          ]
+        }
+      },
+      {
+        "tableName": "nutrition_entries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `date` TEXT NOT NULL, `mealType` TEXT NOT NULL, `mealName` TEXT, `name` TEXT NOT NULL, `quantity` TEXT, `unit` TEXT, `foodId` TEXT, `caloriesKcal` TEXT, `proteinG` TEXT, `fatG` TEXT, `netCarbsG` TEXT, `totalCarbsG` TEXT, `fiberG` TEXT, `sugarG` TEXT, `sodiumMg` TEXT, `notes` TEXT, `dataComplete` INTEGER NOT NULL, `revision` INTEGER NOT NULL, `localRevision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, `source` TEXT NOT NULL DEFAULT 'manual', PRIMARY KEY(`accountScope`, `publicId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mealType",
+            "columnName": "mealType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mealName",
+            "columnName": "mealName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "unit",
+            "columnName": "unit",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "foodId",
+            "columnName": "foodId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "caloriesKcal",
+            "columnName": "caloriesKcal",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "proteinG",
+            "columnName": "proteinG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fatG",
+            "columnName": "fatG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "netCarbsG",
+            "columnName": "netCarbsG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "totalCarbsG",
+            "columnName": "totalCarbsG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fiberG",
+            "columnName": "fiberG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sugarG",
+            "columnName": "sugarG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sodiumMg",
+            "columnName": "sodiumMg",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "dataComplete",
+            "columnName": "dataComplete",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localRevision",
+            "columnName": "localRevision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true,
+            "defaultValue": "'manual'"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_nutrition_entries_accountScope_date_mealType_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "date",
+              "mealType",
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_nutrition_entries_accountScope_date_mealType_updatedAt` ON `${TABLE_NAME}` (`accountScope`, `date`, `mealType`, `updatedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "food_catalog",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `name` TEXT NOT NULL, `normalizedName` TEXT NOT NULL, `brand` TEXT, `servingSizeG` TEXT, `servingLabel` TEXT, `caloriesPer100g` TEXT, `proteinGPer100g` TEXT, `fatGPer100g` TEXT, `carbsGPer100g` TEXT, `netCarbsGPer100g` TEXT, `fiberGPer100g` TEXT, `sodiumMgPer100g` TEXT, `notes` TEXT, `custom` INTEGER NOT NULL, `archived` INTEGER NOT NULL, `dataComplete` INTEGER NOT NULL, `revision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `publicId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "normalizedName",
+            "columnName": "normalizedName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "brand",
+            "columnName": "brand",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "servingSizeG",
+            "columnName": "servingSizeG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "servingLabel",
+            "columnName": "servingLabel",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "caloriesPer100g",
+            "columnName": "caloriesPer100g",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "proteinGPer100g",
+            "columnName": "proteinGPer100g",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fatGPer100g",
+            "columnName": "fatGPer100g",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "carbsGPer100g",
+            "columnName": "carbsGPer100g",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "netCarbsGPer100g",
+            "columnName": "netCarbsGPer100g",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fiberGPer100g",
+            "columnName": "fiberGPer100g",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sodiumMgPer100g",
+            "columnName": "sodiumMgPer100g",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "custom",
+            "columnName": "custom",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "archived",
+            "columnName": "archived",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dataComplete",
+            "columnName": "dataComplete",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_food_catalog_accountScope_normalizedName",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "normalizedName"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_food_catalog_accountScope_normalizedName` ON `${TABLE_NAME}` (`accountScope`, `normalizedName`)"
+          }
+        ]
+      },
+      {
+        "tableName": "food_catalog_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `query` TEXT NOT NULL, `nextCursor` TEXT, `hasMore` INTEGER NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `query`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "query",
+            "columnName": "query",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nextCursor",
+            "columnName": "nextCursor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "hasMore",
+            "columnName": "hasMore",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "query"
+          ]
+        }
+      },
+      {
+        "tableName": "daily_steps",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `publicId` TEXT NOT NULL, `date` TEXT NOT NULL, `steps` INTEGER NOT NULL, `source` TEXT NOT NULL, `goal` INTEGER, `revision` INTEGER NOT NULL, `localRevision` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `publicId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "publicId",
+            "columnName": "publicId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "steps",
+            "columnName": "steps",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "source",
+            "columnName": "source",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "goal",
+            "columnName": "goal",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "revision",
+            "columnName": "revision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localRevision",
+            "columnName": "localRevision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "publicId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_daily_steps_accountScope_date_source",
+            "unique": true,
+            "columnNames": [
+              "accountScope",
+              "date",
+              "source"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_daily_steps_accountScope_date_source` ON `${TABLE_NAME}` (`accountScope`, `date`, `source`)"
+          }
+        ]
+      },
+      {
+        "tableName": "health_conflicts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `entityId` TEXT NOT NULL, `entityType` TEXT NOT NULL, `conflictType` TEXT NOT NULL, `localRevision` INTEGER NOT NULL, `serverRevision` INTEGER, `createdAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`, `entityId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityId",
+            "columnName": "entityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityType",
+            "columnName": "entityType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "conflictType",
+            "columnName": "conflictType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localRevision",
+            "columnName": "localRevision",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serverRevision",
+            "columnName": "serverRevision",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "entityId"
+          ]
+        }
+      },
+      {
+        "tableName": "health_progress_points",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `date` TEXT NOT NULL, `weightKg` TEXT, `steps` INTEGER, `caloriesKcal` TEXT, `proteinG` TEXT, `carbohydrateG` TEXT, `fatG` TEXT, `updatedAt` TEXT NOT NULL, `weightSource` TEXT, `stepsSource` TEXT, PRIMARY KEY(`accountScope`, `date`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weightKg",
+            "columnName": "weightKg",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "steps",
+            "columnName": "steps",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "caloriesKcal",
+            "columnName": "caloriesKcal",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "proteinG",
+            "columnName": "proteinG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "carbohydrateG",
+            "columnName": "carbohydrateG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fatG",
+            "columnName": "fatG",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weightSource",
+            "columnName": "weightSource",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "stepsSource",
+            "columnName": "stepsSource",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "date"
+          ]
+        }
+      },
+      {
+        "tableName": "health_connect_settings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `enabled` INTEGER NOT NULL, `paused` INTEGER NOT NULL, `selectedTypes` TEXT NOT NULL, `initialLookbackDays` INTEGER NOT NULL, `permissionGeneration` INTEGER NOT NULL, `lastAvailability` TEXT NOT NULL, `updatedAt` TEXT NOT NULL, PRIMARY KEY(`accountScope`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "enabled",
+            "columnName": "enabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paused",
+            "columnName": "paused",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "selectedTypes",
+            "columnName": "selectedTypes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "initialLookbackDays",
+            "columnName": "initialLookbackDays",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "permissionGeneration",
+            "columnName": "permissionGeneration",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastAvailability",
+            "columnName": "lastAvailability",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope"
+          ]
+        }
+      },
+      {
+        "tableName": "health_connect_permission_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `recordType` TEXT NOT NULL, `selected` INTEGER NOT NULL, `granted` INTEGER NOT NULL, `backgroundGranted` INTEGER NOT NULL, `checkedAt` TEXT NOT NULL, `reasonCode` TEXT, PRIMARY KEY(`accountScope`, `recordType`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recordType",
+            "columnName": "recordType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "selected",
+            "columnName": "selected",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "granted",
+            "columnName": "granted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "backgroundGranted",
+            "columnName": "backgroundGranted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "checkedAt",
+            "columnName": "checkedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reasonCode",
+            "columnName": "reasonCode",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "recordType"
+          ]
+        }
+      },
+      {
+        "tableName": "health_connect_sync_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `recordType` TEXT NOT NULL, `token` TEXT, `tokenCreatedAt` TEXT, `lastSuccessfulReadAt` TEXT, `lastFullReconciliationAt` TEXT, `coveredTypes` TEXT NOT NULL, `permissionGeneration` INTEGER NOT NULL, `state` TEXT NOT NULL, `lastAttemptAt` TEXT, `lastImportedAt` TEXT, `importedCount` INTEGER NOT NULL, `deletedCount` INTEGER NOT NULL, `lastErrorCode` TEXT, PRIMARY KEY(`accountScope`, `recordType`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recordType",
+            "columnName": "recordType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "token",
+            "columnName": "token",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tokenCreatedAt",
+            "columnName": "tokenCreatedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastSuccessfulReadAt",
+            "columnName": "lastSuccessfulReadAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastFullReconciliationAt",
+            "columnName": "lastFullReconciliationAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "coveredTypes",
+            "columnName": "coveredTypes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "permissionGeneration",
+            "columnName": "permissionGeneration",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastAttemptAt",
+            "columnName": "lastAttemptAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastImportedAt",
+            "columnName": "lastImportedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "importedCount",
+            "columnName": "importedCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedCount",
+            "columnName": "deletedCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastErrorCode",
+            "columnName": "lastErrorCode",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "recordType"
+          ]
+        }
+      },
+      {
+        "tableName": "health_connect_record_ledger",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `recordType` TEXT NOT NULL, `healthConnectRecordId` TEXT NOT NULL, `clientRecordId` TEXT, `dataOrigin` TEXT NOT NULL, `localResourceUuid` TEXT, `serverResourceUuid` TEXT, `lastModifiedTime` TEXT NOT NULL, `clientRecordVersion` INTEGER, `contentFingerprint` TEXT NOT NULL, `importedAt` TEXT NOT NULL, `lastSeenAt` TEXT NOT NULL, `state` TEXT NOT NULL, `detachedByUser` INTEGER NOT NULL, `deletedAt` TEXT, `sourceStartTime` TEXT NOT NULL, `sourceEndTime` TEXT, PRIMARY KEY(`accountScope`, `recordType`, `healthConnectRecordId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "recordType",
+            "columnName": "recordType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "healthConnectRecordId",
+            "columnName": "healthConnectRecordId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clientRecordId",
+            "columnName": "clientRecordId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "dataOrigin",
+            "columnName": "dataOrigin",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localResourceUuid",
+            "columnName": "localResourceUuid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "serverResourceUuid",
+            "columnName": "serverResourceUuid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastModifiedTime",
+            "columnName": "lastModifiedTime",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clientRecordVersion",
+            "columnName": "clientRecordVersion",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "contentFingerprint",
+            "columnName": "contentFingerprint",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "importedAt",
+            "columnName": "importedAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSeenAt",
+            "columnName": "lastSeenAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "detachedByUser",
+            "columnName": "detachedByUser",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deletedAt",
+            "columnName": "deletedAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sourceStartTime",
+            "columnName": "sourceStartTime",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceEndTime",
+            "columnName": "sourceEndTime",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "recordType",
+            "healthConnectRecordId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_health_connect_record_ledger_accountScope_localResourceUuid",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "localResourceUuid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_health_connect_record_ledger_accountScope_localResourceUuid` ON `${TABLE_NAME}` (`accountScope`, `localResourceUuid`)"
+          },
+          {
+            "name": "index_health_connect_record_ledger_accountScope_recordType_sourceStartTime",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "recordType",
+              "sourceStartTime"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_health_connect_record_ledger_accountScope_recordType_sourceStartTime` ON `${TABLE_NAME}` (`accountScope`, `recordType`, `sourceStartTime`)"
+          },
+          {
+            "name": "index_health_connect_record_ledger_accountScope_state",
+            "unique": false,
+            "columnNames": [
+              "accountScope",
+              "state"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_health_connect_record_ledger_accountScope_state` ON `${TABLE_NAME}` (`accountScope`, `state`)"
+          }
+        ]
+      },
+      {
+        "tableName": "sync_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`accountScope` TEXT NOT NULL, `deviceId` TEXT NOT NULL, `cursor` TEXT NOT NULL, `lastSyncAt` TEXT, `lastServerTime` TEXT, `lastErrorCode` TEXT, PRIMARY KEY(`accountScope`, `deviceId`))",
+        "fields": [
+          {
+            "fieldPath": "accountScope",
+            "columnName": "accountScope",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceId",
+            "columnName": "deviceId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cursor",
+            "columnName": "cursor",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSyncAt",
+            "columnName": "lastSyncAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastServerTime",
+            "columnName": "lastServerTime",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lastErrorCode",
+            "columnName": "lastErrorCode",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "accountScope",
+            "deviceId"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '24a91c6334d0f8c61320e01dcdb5dfea')"
+    ]
+  }
+}

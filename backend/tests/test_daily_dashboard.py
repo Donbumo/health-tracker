@@ -19,7 +19,7 @@ TARGET_DATE = "2026-07-09"
 
 def test_empty_dashboard_exposes_daily_driver_quick_actions(client, user):
     login(client)
-    response = client.get("/dashboard", query_string={"date": TARGET_DATE})
+    response = client.get("/today", query_string={"date": TARGET_DATE})
     assert response.status_code == 200
     for label, path in (
         ("Nutrición", "/manual/nutrition"),
@@ -196,7 +196,7 @@ def test_daily_dashboard_combines_wellness_weight_and_training(
             "training_state": "recorded",
         }
 
-    response = client.get("/dashboard", query_string={"date": TARGET_DATE})
+    response = client.get("/today", query_string={"date": TARGET_DATE})
     assert response.status_code == 200
     assert b"650.000" in response.data
     assert b"2300.00" in response.data
@@ -219,7 +219,7 @@ def test_daily_dashboard_handles_missing_data_and_uses_previous_weight(
         "/manual/weigh-in",
         data={"recorded_at": "2026-07-08T07:00", "weight_kg": "71.9"},
     )
-    response = client.get("/dashboard", query_string={"date": TARGET_DATE})
+    response = client.get("/today", query_string={"date": TARGET_DATE})
     assert response.status_code == 200
     assert b"Nutrici" in response.data and b"pendiente" in response.data
     assert b"Energ" in response.data and b"pendiente" in response.data
@@ -263,7 +263,7 @@ def test_daily_dashboard_distinguishes_partial_records_from_missing_data(
         assert summary["completion"]["energy_state"] == "partial"
         assert summary["completion"]["training_state"] == "none"
 
-    response = client.get("/dashboard", query_string={"date": TARGET_DATE})
+    response = client.get("/today", query_string={"date": TARGET_DATE})
     assert response.status_code == 200
     assert b"0/2 datos esenciales completos" in response.data
     assert b"parcial, falta el total de calor" in response.data
@@ -293,7 +293,7 @@ def test_daily_dashboard_is_isolated_by_user(app, client, user):
 
     client.post("/logout")
     login(client, "dashboard-second", "second-password")
-    response = client.get("/dashboard", query_string={"date": TARGET_DATE})
+    response = client.get("/today", query_string={"date": TARGET_DATE})
     assert response.status_code == 200
     assert b"Fictional dashboard item" not in response.data
     assert b"Fictional dashboard lift" not in response.data

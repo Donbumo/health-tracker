@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/mobile_goals.schema.json",
+  "title": "Mobile goal v1",
+  "$defs": {
+    "goal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["public_id", "goal_type", "target_value", "unit", "period", "applicable_days", "timezone", "start_date", "end_date", "state", "revision", "source", "related_public_id", "created_at", "updated_at"],
+      "properties": {
+        "public_id": {"type": "string", "format": "uuid"},
+        "goal_type": {"enum": ["training_sessions_per_week", "active_days_per_week", "daily_steps", "nutrition_calories", "nutrition_protein", "nutrition_carbohydrates", "nutrition_fat", "weight_logging_frequency", "active_plan_tracking", "scheduled_workouts_completion"]},
+        "target_value": {"type": "string", "pattern": "^(0|[1-9][0-9]*)(\\.[0-9]{1,3})?$"},
+        "unit": {"enum": ["session", "day", "step", "kcal", "g", "log", "workout"]},
+        "period": {"enum": ["daily", "weekly", "selected_days", "active_plan", "scheduled_workouts"]},
+        "applicable_days": {"type": "array", "uniqueItems": true, "maxItems": 7, "items": {"type": "integer", "minimum": 1, "maximum": 7}},
+        "timezone": {"type": "string", "minLength": 1, "maxLength": 64},
+        "start_date": {"type": "string", "format": "date"},
+        "end_date": {"type": ["string", "null"], "format": "date"},
+        "state": {"enum": ["active", "paused", "completed", "archived"]},
+        "revision": {"type": "integer", "minimum": 1},
+        "source": {"enum": ["manual", "portable_import"]},
+        "related_public_id": {"type": ["string", "null"], "format": "uuid"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "updated_at": {"type": "string", "format": "date-time"}
+      }
+    }
+  },
+  "$ref": "#/$defs/goal"
+}

@@ -17,7 +17,8 @@ def test_primary_navigation_exposes_health_modules(app, client, user):
     response = client.get("/dashboard")
     assert response.status_code == 200
     for label, path in (
-        ("Resumen diario", "/dashboard"),
+        ("Resumen", "/dashboard"),
+        ("Hoy", "/today"),
         ("Balance diario", "/daily-balance"),
         ("Peso", "/weigh-ins"),
         ("Nutrici", "/daily-nutrition"),
@@ -27,7 +28,7 @@ def test_primary_navigation_exposes_health_modules(app, client, user):
         ("Sesiones realizadas", "/training-sessions"),
         ("Progreso", "/progress"),
         ("Laboratorios", "/medical/labs"),
-        ("Importar datos", "/imports"),
+        ("Importaciones", "/imports"),
         ("Centro de ayuda", "/help"),
     ):
         assert label.encode() in response.data

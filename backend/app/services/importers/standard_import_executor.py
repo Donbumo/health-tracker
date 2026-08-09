@@ -570,12 +570,22 @@ class StandardImportExecutor:
 
         if target_type == "daily_energy":
             record_date = date.fromisoformat(document["data"]["date"])
-            return db.session.execute(
-                db.select(DailyEnergy).where(
-                    DailyEnergy.user_id == user_id,
-                    DailyEnergy.date == record_date,
-                )
-            ).scalar_one_or_none()
+            base = db.select(DailyEnergy).where(
+                DailyEnergy.user_id == user_id,
+                DailyEnergy.date == record_date,
+            )
+            source = document["data"].get("source")
+            if source:
+                source = source.strip()
+                exact = db.session.execute(
+                    base.where(DailyEnergy.source == source)
+                ).scalar_one_or_none()
+                if exact is not None or source == "manual":
+                    return exact
+            imported = db.session.execute(
+                base.where(DailyEnergy.source != "manual").order_by(DailyEnergy.id)
+            ).scalars().all()
+            return imported[0] if len(imported) == 1 else None
 
         if target_type == "daily_nutrition":
             record_date = date.fromisoformat(document["data"]["date"])
@@ -955,6 +965,9 @@ class StandardImportExecutor:
             content=document,
         )
         db.session.add(version)
+        from app.services.training_plans import replace_mobile_workouts_from_document
+
+        replace_mobile_workouts_from_document(plan, document, user_id)
         return plan
 
     def _apply_completed_workout(self, document: dict[str, Any], user_id: int) -> TrainingSession:

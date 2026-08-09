@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import uuid
 
 from app.extensions import db
 
@@ -26,19 +27,28 @@ class DailyEnergy(db.Model):
             "distance_meters IS NULL OR distance_meters >= 0",
             name="ck_daily_energy_distance",
         ),
+        db.CheckConstraint("revision >= 1", name="ck_daily_energy_revision"),
         db.UniqueConstraint(
             "user_id",
             "date",
-            name="uq_daily_energy_user_date",
+            "source",
+            name="uq_daily_energy_user_date_source",
         ),
         db.UniqueConstraint(
             "source_file_id",
             name="uq_daily_energy_source_file",
         ),
+        db.UniqueConstraint("public_id", name="uq_daily_energy_public_id"),
+        db.UniqueConstraint(
+            "user_id", "client_event_id", name="uq_daily_energy_user_client_event"
+        ),
         db.Index("ix_daily_energy_user_date", "user_id", "date"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(
+        db.String(36), nullable=False, default=lambda: str(uuid.uuid4())
+    )
     user_id = db.Column(
         db.Integer,
         db.ForeignKey("users.id", ondelete="CASCADE"),
@@ -51,6 +61,7 @@ class DailyEnergy(db.Model):
     steps = db.Column(db.BigInteger, nullable=True)
     distance_meters = db.Column(db.Numeric(12, 2), nullable=True)
     source = db.Column(db.String(32), nullable=False)
+    client_event_id = db.Column(db.String(36), nullable=True)
     source_file_id = db.Column(
         db.Integer,
         db.ForeignKey("uploaded_files.id", ondelete="SET NULL"),
@@ -58,6 +69,7 @@ class DailyEnergy(db.Model):
     )
     notes = db.Column(db.Text, nullable=True)
     raw_payload_json = db.Column(db.JSON, nullable=True)
+    revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

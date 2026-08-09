@@ -19,10 +19,11 @@ def _depth(value, level=0):
             _depth(item, level + 1)
 
 
-def json_body() -> dict:
+def json_body(max_bytes: int | None = None) -> dict:
     if not request.is_json:
         raise ApiError("unsupported_media_type", "Se requiere Content-Type application/json.", 415)
-    if request.content_length and request.content_length > current_app.config["API_JSON_MAX_BYTES"]:
+    maximum = max_bytes if max_bytes is not None else current_app.config["API_JSON_MAX_BYTES"]
+    if request.content_length and request.content_length > maximum:
         raise ApiError("payload_too_large", "El cuerpo JSON supera el límite permitido.", 413)
     payload = request.get_json(silent=True)
     if not isinstance(payload, dict):

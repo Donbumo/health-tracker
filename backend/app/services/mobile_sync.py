@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from flask import current_app
 from itsdangerous import BadData, URLSafeSerializer
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.models import (
@@ -300,6 +301,10 @@ class PlannedWorkoutService:
     def list_range(user_id: int, start: date, end: date) -> list[PlannedWorkout]:
         return db.session.execute(
             db.select(PlannedWorkout)
+            .options(
+                selectinload(PlannedWorkout.training_plan),
+                selectinload(PlannedWorkout.training_plan_version),
+            )
             .where(
                 PlannedWorkout.user_id == user_id,
                 PlannedWorkout.deleted_at.is_(None),

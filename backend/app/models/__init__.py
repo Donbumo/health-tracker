@@ -1,5 +1,15 @@
 from app.models.daily_energy import DailyEnergy
-from app.models.activity import Activity, Route
+from app.models.activity import (
+    Activity,
+    ActivityDuplicateCandidate,
+    ActivityImportJob,
+    ActivityLap,
+    ActivityRouteMetadata,
+    ActivitySeriesArtifact,
+    PlanActivityLink,
+    PlanActualComparisonSnapshot,
+    Route,
+)
 from app.models.exercise import Exercise, ExerciseAlias
 from app.models.exercise_load_profile import ExerciseLoadProfile
 from app.models.export_record import ExportRecord
@@ -7,7 +17,11 @@ from app.models.import_run import ImportRun
 from app.models.medical_lab import MedicalLabReport, MedicalLabResult
 from app.models.nutrition import DailyNutrition, FoodProduct, NutritionItem, NutritionMeal
 from app.models.recipe import Recipe, RecipeIngredient
-from app.models.training_plan import TrainingPlan, TrainingPlanVersion
+from app.models.training_plan import (
+    TrainingPlan,
+    TrainingPlanVersion,
+    TrainingPlanWorkout,
+)
 from app.models.training_session import (
     TrainingSession,
     TrainingSessionExercise,
@@ -29,11 +43,41 @@ from app.models.companion import (
     CompanionProgressEvent,
     CompanionWorkoutDelivery,
 )
+from app.models.portability import (
+    PortableArtifact,
+    PortableExportJob,
+    PortableImportDecision,
+    PortableImportJob,
+    PortableImportMapping,
+)
+from app.models.engagement import (
+    AdherenceSnapshot,
+    ReminderEvent,
+    ReminderRule,
+    UserGoal,
+)
+from app.models.medical_records import (
+    LabPanel,
+    LabResult,
+    LabResultRevision,
+    MedicalAuditEvent,
+    MedicalDocument,
+    MedicalDuplicateCandidate,
+    MedicalStudy,
+    MedicalStudySource,
+)
 
 
 __all__ = [
     "DailyEnergy",
     "Activity",
+    "ActivityDuplicateCandidate",
+    "ActivityImportJob",
+    "ActivityLap",
+    "ActivityRouteMetadata",
+    "ActivitySeriesArtifact",
+    "PlanActivityLink",
+    "PlanActualComparisonSnapshot",
     "Route",
     "Exercise",
     "ExerciseAlias",
@@ -50,6 +94,7 @@ __all__ = [
     "RecipeIngredient",
     "TrainingPlan",
     "TrainingPlanVersion",
+    "TrainingPlanWorkout",
     "TrainingSession",
     "TrainingSessionExercise",
     "TrainingSet",
@@ -67,4 +112,21 @@ __all__ = [
     "CompanionDeviceProfile",
     "CompanionProgressEvent",
     "CompanionWorkoutDelivery",
+    "PortableArtifact",
+    "PortableExportJob",
+    "PortableImportDecision",
+    "PortableImportJob",
+    "PortableImportMapping",
+    "UserGoal",
+    "ReminderRule",
+    "ReminderEvent",
+    "AdherenceSnapshot",
+    "MedicalStudy",
+    "MedicalStudySource",
+    "MedicalDocument",
+    "LabPanel",
+    "LabResult",
+    "LabResultRevision",
+    "MedicalDuplicateCandidate",
+    "MedicalAuditEvent",
 ]

@@ -29,3 +29,12 @@ backend/instance/
 Thumbs.db
 .vscode/
 .idea/
+
+# Android local/build artifacts and signing material
+android/.gradle/
+android/.kotlin/
+android/**/build/
+android/local.properties
+android/*.jks
+android/*.keystore
+android/signing.properties

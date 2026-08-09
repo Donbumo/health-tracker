@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
@@ -27,8 +27,16 @@ from app.services.overload import session_metrics
 
 def _local_date(value: datetime, app_timezone: ZoneInfo) -> date:
     if value.tzinfo is None or value.utcoffset() is None:
-        return value.date()
+        value = value.replace(tzinfo=timezone.utc)
     return value.astimezone(app_timezone).date()
+
+
+def _utc_date_bounds(target_date: date, app_timezone: ZoneInfo):
+    start = datetime.combine(target_date, time.min, tzinfo=app_timezone)
+    end = datetime.combine(
+        target_date + timedelta(days=1), time.min, tzinfo=app_timezone
+    )
+    return start.astimezone(timezone.utc), end.astimezone(timezone.utc)
 
 
 def _latest_weigh_in(
@@ -36,17 +44,17 @@ def _latest_weigh_in(
     target_date: date,
     app_timezone: ZoneInfo,
 ) -> dict:
+    _start_at, end_at = _utc_date_bounds(target_date, app_timezone)
     records = db.session.execute(
         db.select(WeighIn)
-        .where(WeighIn.user_id == user_id)
-        .order_by(WeighIn.recorded_at.asc(), WeighIn.id.asc())
-    ).scalars()
-    eligible = [
-        record
-        for record in records
-        if _local_date(record.recorded_at, app_timezone) <= target_date
-    ]
-    if not eligible:
+        .where(
+            WeighIn.user_id == user_id,
+            WeighIn.recorded_at < end_at,
+        )
+        .order_by(WeighIn.recorded_at.desc(), WeighIn.id.desc())
+        .limit(2)
+    ).scalars().all()
+    if not records:
         return {
             "record": None,
             "is_exact_date": False,
@@ -54,8 +62,8 @@ def _latest_weigh_in(
             "change_from_previous": None,
             "state": "missing",
         }
-    latest = eligible[-1]
-    previous = eligible[-2] if len(eligible) > 1 else None
+    latest = records[0]
+    previous = records[1] if len(records) > 1 else None
     is_exact_date = _local_date(latest.recorded_at, app_timezone) == target_date
     return {
         "record": latest,
@@ -73,9 +81,15 @@ def _session_summaries(
     target_date: date,
     app_timezone: ZoneInfo,
 ) -> list[dict]:
+    start_at, end_at = _utc_date_bounds(target_date, app_timezone)
     sessions = db.session.execute(
         db.select(TrainingSession)
-        .where(TrainingSession.user_id == user_id)
+        .where(
+            TrainingSession.user_id == user_id,
+            TrainingSession.deleted_at.is_(None),
+            TrainingSession.performed_at >= start_at,
+            TrainingSession.performed_at < end_at,
+        )
         .options(
             selectinload(TrainingSession.exercises).selectinload(
                 TrainingSessionExercise.sets
@@ -85,8 +99,6 @@ def _session_summaries(
     ).scalars()
     summaries = []
     for training_session in sessions:
-        if _local_date(training_session.performed_at, app_timezone) != target_date:
-            continue
         metrics = session_metrics(training_session)
         summaries.append(
             {
@@ -153,19 +165,27 @@ def _latest_medical_report(user_id: int, target_date: date):
 
 
 def _activity_summary(user_id: int, target_date: date, app_timezone: ZoneInfo) -> dict:
-    records = db.session.execute(
+    _target_start, target_end = _utc_date_bounds(target_date, app_timezone)
+    week_start, _week_end = _utc_date_bounds(
+        target_date - timedelta(days=6), app_timezone
+    )
+    latest = db.session.execute(
         db.select(Activity)
-        .where(Activity.user_id == user_id)
+        .where(
+            Activity.user_id == user_id,
+            Activity.started_at < target_end,
+        )
         .order_by(Activity.started_at.desc(), Activity.id.desc())
+    ).scalars().first()
+    weekly = db.session.execute(
+        db.select(Activity)
+        .where(
+            Activity.user_id == user_id,
+            Activity.started_at >= week_start,
+            Activity.started_at < target_end,
+        )
+        .order_by(Activity.started_at, Activity.id)
     ).scalars().all()
-    latest = None
-    weekly = []
-    for activity in records:
-        activity_date = _local_date(activity.started_at, app_timezone)
-        if activity_date <= target_date and latest is None:
-            latest = activity
-        if 0 <= (target_date - activity_date).days <= 6:
-            weekly.append(activity)
     return {
         "latest": latest,
         "weekly_count": len(weekly),

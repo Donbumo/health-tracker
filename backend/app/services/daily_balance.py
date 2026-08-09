@@ -4,6 +4,20 @@ from app.extensions import db
 from app.models import DailyEnergy, DailyNutrition
 
 
+def effective_energy_record(user_id: int, target_date: date) -> DailyEnergy | None:
+    """Choose one daily source without merging potentially overlapping devices.
+
+    A manual correction has explicit precedence. Otherwise the most recently
+    updated source wins deterministically while every source remains preserved.
+    """
+    records = db.session.execute(
+        db.select(DailyEnergy)
+        .where(DailyEnergy.user_id == user_id, DailyEnergy.date == target_date)
+        .order_by(DailyEnergy.updated_at.desc(), DailyEnergy.id.desc())
+    ).scalars().all()
+    return next((item for item in records if item.source == "manual"), records[0] if records else None)
+
+
 def daily_balance(user_id: int, target_date: date) -> dict:
     nutrition = db.session.execute(
         db.select(DailyNutrition).where(
@@ -11,12 +25,7 @@ def daily_balance(user_id: int, target_date: date) -> dict:
             DailyNutrition.date == target_date,
         )
     ).scalar_one_or_none()
-    energy = db.session.execute(
-        db.select(DailyEnergy).where(
-            DailyEnergy.user_id == user_id,
-            DailyEnergy.date == target_date,
-        )
-    ).scalar_one_or_none()
+    energy = effective_energy_record(user_id, target_date)
 
     calories_consumed = nutrition.calories if nutrition is not None else None
     calories_expended = energy.total_calories if energy is not None else None

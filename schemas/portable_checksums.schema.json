@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/portable_checksums.schema.json",
+  "title": "Health Tracker portable checksums v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "algorithm",
+    "files"
+  ],
+  "properties": {
+    "format_version": {
+      "const": "1.0"
+    },
+    "algorithm": {
+      "const": "sha256"
+    },
+    "files": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$"
+      },
+      "propertyNames": {
+        "pattern": "^[A-Za-z0-9._/-]+$"
+      }
+    }
+  }
+}

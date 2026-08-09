@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/portable_import_plan.schema.json",
+  "title": "Portable import plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "plan_id",
+    "revision",
+    "package_sha256",
+    "selected_sections",
+    "summary",
+    "records",
+    "warnings",
+    "expires_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "plan_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "package_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "selected_sections": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "section",
+          "source_public_id",
+          "classification",
+          "default_strategy"
+        ],
+        "properties": {
+          "section": {
+            "type": "string"
+          },
+          "source_public_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "classification": {
+            "enum": [
+              "new",
+              "same_record",
+              "compatible_update",
+              "conflict",
+              "foreign_collision",
+              "duplicate_candidate",
+              "broken_reference"
+            ]
+          },
+          "default_strategy": {
+            "enum": [
+              "skip_existing",
+              "import_as_new",
+              "use_destination",
+              "update_when_identical_lineage",
+              "require_manual_resolution"
+            ]
+          },
+          "destination_public_id": {
+            "oneOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 300
+            }
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 500
+      }
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

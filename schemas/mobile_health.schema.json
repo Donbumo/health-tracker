@@ -1,0 +1,293 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/mobile_health.schema.json",
+  "title": "Mobile health logging read models",
+  "oneOf": [
+    {"$ref": "#/$defs/today"},
+    {"$ref": "#/$defs/bodyStat"},
+    {"$ref": "#/$defs/bodyPage"},
+    {"$ref": "#/$defs/nutritionDay"},
+    {"$ref": "#/$defs/nutritionEntry"},
+    {"$ref": "#/$defs/food"},
+    {"$ref": "#/$defs/foodPage"},
+    {"$ref": "#/$defs/step"},
+    {"$ref": "#/$defs/stepsPage"},
+    {"$ref": "#/$defs/deleted"},
+    {"$ref": "#/$defs/progress"}
+  ],
+  "$defs": {
+    "uuid": {"type": "string", "format": "uuid"},
+    "decimal": {"type": ["string", "null"], "pattern": "^[0-9]+(?:\\.[0-9]+)?$"},
+    "timestamp": {"type": ["string", "null"], "format": "date-time"},
+    "bodyStat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "recorded_at", "weight_kg", "body_fat_percent", "muscle_mass_kg", "water_percent", "visceral_fat", "bmr_kcal", "bmi", "notes", "source", "revision", "created_at", "updated_at"],
+      "properties": {
+        "id": {"$ref": "#/$defs/uuid"},
+        "recorded_at": {"type": "string", "format": "date-time"},
+        "weight_kg": {"$ref": "#/$defs/decimal"},
+        "body_fat_percent": {"$ref": "#/$defs/decimal"},
+        "muscle_mass_kg": {"$ref": "#/$defs/decimal"},
+        "water_percent": {"$ref": "#/$defs/decimal"},
+        "visceral_fat": {"$ref": "#/$defs/decimal"},
+        "bmr_kcal": {"$ref": "#/$defs/decimal"},
+        "bmi": {"$ref": "#/$defs/decimal"},
+        "notes": {"type": ["string", "null"], "maxLength": 2000},
+        "source": {"type": "string", "maxLength": 32},
+        "client_event_id": {"type": ["string", "null"], "format": "uuid"},
+        "revision": {"type": "integer", "minimum": 1},
+        "created_at": {"type": "string", "format": "date-time"},
+        "updated_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "bodyPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["items", "next_cursor", "has_more"],
+      "properties": {
+        "items": {"type": "array", "maxItems": 100, "items": {"$ref": "#/$defs/bodyStat"}},
+        "next_cursor": {"type": ["string", "null"]},
+        "has_more": {"type": "boolean"}
+      }
+    },
+    "nutritionEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "date", "meal_type", "meal_name", "name", "quantity", "unit", "food_id", "calories_kcal", "protein_g", "fat_g", "net_carbs_g", "total_carbs_g", "fiber_g", "sugar_g", "sodium_mg", "notes", "data_complete", "revision", "created_at", "updated_at"],
+      "properties": {
+        "id": {"$ref": "#/$defs/uuid"},
+        "date": {"type": "string", "format": "date"},
+        "meal_type": {"enum": ["breakfast", "lunch", "dinner", "snack", "extra", "other"]},
+        "meal_name": {"type": ["string", "null"], "maxLength": 200},
+        "name": {"type": "string", "minLength": 1, "maxLength": 200},
+        "quantity": {"$ref": "#/$defs/decimal"},
+        "unit": {"type": ["string", "null"], "maxLength": 32},
+        "food_id": {"anyOf": [{"$ref": "#/$defs/uuid"}, {"type": "null"}]},
+        "calories_kcal": {"$ref": "#/$defs/decimal"},
+        "protein_g": {"$ref": "#/$defs/decimal"},
+        "fat_g": {"$ref": "#/$defs/decimal"},
+        "net_carbs_g": {"$ref": "#/$defs/decimal"},
+        "total_carbs_g": {"$ref": "#/$defs/decimal"},
+        "fiber_g": {"$ref": "#/$defs/decimal"},
+        "sugar_g": {"$ref": "#/$defs/decimal"},
+        "sodium_mg": {"$ref": "#/$defs/decimal"},
+        "notes": {"type": ["string", "null"], "maxLength": 2000},
+        "data_complete": {"type": "boolean"},
+        "source": {"type": "string", "maxLength": 32},
+        "client_event_id": {"type": ["string", "null"], "format": "uuid"},
+        "revision": {"type": "integer", "minimum": 1},
+        "created_at": {"type": "string", "format": "date-time"},
+        "updated_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "nutritionTotals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["calories_kcal", "protein_g", "fat_g", "net_carbs_g", "total_carbs_g", "fiber_g", "sugar_g", "sodium_mg"],
+      "properties": {
+        "calories_kcal": {"$ref": "#/$defs/decimal"},
+        "protein_g": {"$ref": "#/$defs/decimal"},
+        "fat_g": {"$ref": "#/$defs/decimal"},
+        "net_carbs_g": {"$ref": "#/$defs/decimal"},
+        "total_carbs_g": {"$ref": "#/$defs/decimal"},
+        "fiber_g": {"$ref": "#/$defs/decimal"},
+        "sugar_g": {"$ref": "#/$defs/decimal"},
+        "sodium_mg": {"$ref": "#/$defs/decimal"}
+      }
+    },
+    "nutritionDay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["date", "totals", "targets", "remaining", "meals", "updated_at"],
+      "properties": {
+        "date": {"type": "string", "format": "date"},
+        "totals": {"$ref": "#/$defs/nutritionTotals"},
+        "targets": {"type": ["object", "null"]},
+        "remaining": {"type": ["object", "null"]},
+        "meals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["meal_type", "name", "items"],
+            "properties": {
+              "meal_type": {"enum": ["breakfast", "lunch", "dinner", "snack", "extra", "other"]},
+              "name": {"type": ["string", "null"]},
+              "items": {"type": "array", "items": {"$ref": "#/$defs/nutritionEntry"}}
+            }
+          }
+        },
+        "updated_at": {"$ref": "#/$defs/timestamp"}
+      }
+    },
+    "food": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "brand", "serving_label", "serving_size_g", "calories_per_100g", "protein_g_per_100g", "fat_g_per_100g", "carbs_g_per_100g", "net_carbs_g_per_100g", "fiber_g_per_100g", "sodium_mg_per_100g", "notes", "custom", "archived", "data_complete", "revision", "updated_at"],
+      "properties": {
+        "id": {"$ref": "#/$defs/uuid"},
+        "name": {"type": "string", "minLength": 1},
+        "brand": {"type": ["string", "null"]},
+        "serving_label": {"type": ["string", "null"]},
+        "serving_size_g": {"$ref": "#/$defs/decimal"},
+        "calories_per_100g": {"$ref": "#/$defs/decimal"},
+        "protein_g_per_100g": {"$ref": "#/$defs/decimal"},
+        "fat_g_per_100g": {"$ref": "#/$defs/decimal"},
+        "carbs_g_per_100g": {"$ref": "#/$defs/decimal"},
+        "net_carbs_g_per_100g": {"$ref": "#/$defs/decimal"},
+        "fiber_g_per_100g": {"$ref": "#/$defs/decimal"},
+        "sodium_mg_per_100g": {"$ref": "#/$defs/decimal"},
+        "notes": {"type": ["string", "null"]},
+        "custom": {"type": "boolean"},
+        "archived": {"type": "boolean"},
+        "data_complete": {"type": "boolean"},
+        "revision": {"type": "integer", "minimum": 1},
+        "updated_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "foodPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["items", "next_cursor", "has_more"],
+      "properties": {
+        "items": {"type": "array", "maxItems": 100, "items": {"$ref": "#/$defs/food"}},
+        "next_cursor": {"type": ["string", "null"]},
+        "has_more": {"type": "boolean"}
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "date", "steps", "source", "goal", "revision", "created_at", "updated_at"],
+      "properties": {
+        "id": {"$ref": "#/$defs/uuid"},
+        "date": {"type": "string", "format": "date"},
+        "steps": {"type": "integer", "minimum": 0, "maximum": 10000000},
+        "source": {"type": "string"},
+        "client_event_id": {"type": ["string", "null"], "format": "uuid"},
+        "goal": {"type": ["integer", "null"], "minimum": 0},
+        "revision": {"type": "integer", "minimum": 1},
+        "created_at": {"type": "string", "format": "date-time"},
+        "updated_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "stepsPage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["items", "from", "to"],
+      "properties": {
+        "items": {"type": "array", "maxItems": 500, "items": {"$ref": "#/$defs/step"}},
+        "from": {"type": "string", "format": "date"},
+        "to": {"type": "string", "format": "date"}
+      }
+    },
+    "deleted": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "deleted", "revision"],
+      "properties": {
+        "id": {"$ref": "#/$defs/uuid"},
+        "deleted": {"const": true},
+        "revision": {"type": "integer", "minimum": 2}
+      }
+    },
+    "today": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["date", "timezone", "weight", "weight_is_exact_date", "nutrition", "steps", "training", "sync_status", "updated_at"],
+      "properties": {
+        "date": {"type": "string", "format": "date"},
+        "timezone": {"type": "string"},
+        "weight": {"anyOf": [{"$ref": "#/$defs/bodyStat"}, {"type": "null"}]},
+        "weight_is_exact_date": {"type": "boolean"},
+        "nutrition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["totals", "targets", "remaining"],
+          "properties": {
+            "totals": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["calories_kcal", "protein_g", "carbohydrate_g", "fat_g", "fiber_g"],
+              "properties": {
+                "calories_kcal": {"$ref": "#/$defs/decimal"},
+                "protein_g": {"$ref": "#/$defs/decimal"},
+                "carbohydrate_g": {"$ref": "#/$defs/decimal"},
+                "fat_g": {"$ref": "#/$defs/decimal"},
+                "fiber_g": {"$ref": "#/$defs/decimal"}
+              }
+            },
+            "targets": {"type": ["object", "null"]},
+            "remaining": {"type": ["object", "null"]}
+          }
+        },
+        "steps": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["value", "source", "goal", "entry_id"],
+          "properties": {
+            "value": {"type": ["integer", "null"], "minimum": 0},
+            "source": {"type": ["string", "null"]},
+            "goal": {"type": ["integer", "null"], "minimum": 0},
+            "entry_id": {"anyOf": [{"$ref": "#/$defs/uuid"}, {"type": "null"}]}
+          }
+        },
+        "training": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["scheduled", "completed", "items"],
+          "properties": {
+            "scheduled": {"type": "integer", "minimum": 0},
+            "completed": {"type": "integer", "minimum": 0},
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "title", "status"],
+                "properties": {
+                  "id": {"$ref": "#/$defs/uuid"},
+                  "title": {"type": "string"},
+                  "status": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "sync_status": {"enum": ["authoritative"]},
+        "updated_at": {"$ref": "#/$defs/timestamp"}
+      }
+    },
+    "progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to", "timezone", "points"],
+      "properties": {
+        "from": {"type": "string", "format": "date"},
+        "to": {"type": "string", "format": "date"},
+        "timezone": {"type": "string"},
+        "points": {
+          "type": "array",
+          "maxItems": 367,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["date", "weight_kg", "steps", "calories_kcal", "protein_g", "carbohydrate_g", "fat_g"],
+            "properties": {
+              "date": {"type": "string", "format": "date"},
+              "weight_kg": {"$ref": "#/$defs/decimal"},
+              "steps": {"type": ["integer", "null"], "minimum": 0},
+              "calories_kcal": {"$ref": "#/$defs/decimal"},
+              "protein_g": {"$ref": "#/$defs/decimal"},
+              "carbohydrate_g": {"$ref": "#/$defs/decimal"},
+              "fat_g": {"$ref": "#/$defs/decimal"},
+              "weight_source": {"type": ["string", "null"]},
+              "steps_source": {"type": ["string", "null"]}
+            }
+          }
+        }
+      }
+    }
+  }
+}

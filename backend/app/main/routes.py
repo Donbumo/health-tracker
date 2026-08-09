@@ -11,6 +11,7 @@ from flask import (
     current_app,
     flash,
     jsonify,
+    make_response,
     redirect,
     render_template,
     request,
@@ -52,6 +53,12 @@ from app.services.account_restore import (
     AccountRestoreTokenError,
     MAX_EXPORT_BYTES,
 )
+from app.services.api_device_deletion import (
+    ApiDeviceDeletionError,
+    ApiDeviceDeletionService,
+    ApiDeviceNotFoundError,
+    is_api_device_deletable,
+)
 from app.services.backups import (
     AccountBackupService,
     BackupError,
@@ -63,6 +70,11 @@ from app.services.backups import (
 from app.services.files import UploadError, store_uploaded_file
 from app.services.files import mark_import_status
 from app.services.daily_dashboard import daily_health_dashboard
+from app.services.dashboard import (
+    DashboardDateRange,
+    DashboardRangeError,
+    DashboardSummaryService,
+)
 from app.services.exporters.user_data import UserDataJsonExporter
 from app.services.import_audit import ImportAuditService
 from app.services.importers.weigh_in import WeighInImportError, import_weigh_in_file
@@ -127,7 +139,7 @@ def dismiss_getting_started():
     current_user.onboarding_dismissed_at = datetime.now(timezone.utc)
     db.session.commit()
     flash("La guía seguirá disponible desde Ayuda.", "success")
-    return redirect(url_for("main.dashboard"))
+    return redirect(url_for("main.today"))
 
 
 @main_bp.route("/account/preferences", methods=["GET", "POST"])
@@ -197,7 +209,16 @@ def account_devices():
         )
         .order_by(ApiDevice.last_seen_at.desc(), ApiDevice.created_at.desc())
     ).scalars().all()
-    return render_template("account/devices.html", devices=devices)
+    deletable_device_ids = {
+        device.public_device_id
+        for device in devices
+        if is_api_device_deletable(device)
+    }
+    return render_template(
+        "account/devices.html",
+        devices=devices,
+        deletable_device_ids=deletable_device_ids,
+    )
 
 
 @main_bp.post("/account/devices/<string:device_id>/revoke")
@@ -218,6 +239,54 @@ def revoke_account_device(device_id: str):
     db.session.commit()
     flash("Dispositivo revocado. Sus sesiones API ya no están activas.", "success")
     return redirect(url_for("main.account_devices"))
+
+
+@main_bp.post("/account/devices/<string:device_id>/delete")
+@login_required
+def delete_account_device(device_id: str):
+    confirmed = request.form.get("confirm_delete") == "yes"
+    service = ApiDeviceDeletionService()
+    try:
+        service.delete(
+            user_id=current_user.id,
+            public_device_id=device_id,
+            confirmed=confirmed,
+        )
+        db.session.commit()
+    except ApiDeviceNotFoundError:
+        db.session.rollback()
+        _audit_device_deletion(device_id, "not_found")
+        abort(404)
+    except ApiDeviceDeletionError as error:
+        db.session.rollback()
+        _audit_device_deletion(device_id, error.code)
+        flash(str(error), "warning")
+        return redirect(url_for("main.account_devices"))
+    except SQLAlchemyError:
+        db.session.rollback()
+        _audit_device_deletion(device_id, "database_error")
+        flash(
+            "No fue posible eliminar el dispositivo; no se aplicaron cambios parciales.",
+            "danger",
+        )
+        return redirect(url_for("main.account_devices"))
+
+    _audit_device_deletion(device_id, "deleted")
+    flash(
+        "Dispositivo eliminado permanentemente. Tus entrenamientos y datos de salud se conservaron.",
+        "success",
+    )
+    return redirect(url_for("main.account_devices"))
+
+
+def _audit_device_deletion(device_id: str, result: str) -> None:
+    current_app.logger.info(
+        "api_device_delete owner=%s device=%s result=%s at=%s",
+        current_user.public_id,
+        device_id,
+        result,
+        datetime.now(timezone.utc).isoformat(),
+    )
 
 
 @main_bp.get("/account/system")
@@ -1123,16 +1192,50 @@ def _current_user_files():
 @main_bp.get("/")
 @login_required
 def index():
-    return _render_dashboard()
+    return dashboard()
 
 
 @main_bp.get("/dashboard")
 @login_required
 def dashboard():
-    return _render_dashboard()
+    legacy_date = (request.args.get("date") or "").strip()
+    if legacy_date:
+        return redirect(url_for("main.today", date=legacy_date))
+
+    timezone_name = current_user.timezone or current_app.config["APP_TIMEZONE"]
+    range_error = None
+    status_code = 200
+    try:
+        date_range = DashboardDateRange.from_query(request.args, timezone_name)
+    except DashboardRangeError as error:
+        range_error = str(error)
+        status_code = 400
+        fallback_timezone = current_app.config["APP_TIMEZONE"]
+        date_range = DashboardDateRange.from_query({}, fallback_timezone)
+    dashboard_summary = DashboardSummaryService().build(
+        current_user.id,
+        date_range,
+        current_user.preferred_load_unit,
+    )
+    response = make_response(
+        render_template(
+            "dashboard.html",
+            dashboard=dashboard_summary,
+            range_error=range_error,
+        ),
+        status_code,
+    )
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
 
 
-def _render_dashboard():
+@main_bp.get("/today")
+@login_required
+def today():
+    return _render_today()
+
+
+def _render_today():
     timezone_name = current_user.timezone or current_app.config["APP_TIMEZONE"]
     app_timezone = ZoneInfo(timezone_name)
     target_date = datetime.now(app_timezone).date()
@@ -1141,15 +1244,19 @@ def _render_dashboard():
         try:
             target_date = datetime.strptime(requested_date, "%Y-%m-%d").date()
         except ValueError:
-            flash("La fecha del dashboard no es válida; se muestra hoy.", "warning")
-    return render_template(
-        "index.html",
-        summary=daily_health_dashboard(
-            current_user.id,
-            target_date,
-            timezone_name,
-        ),
+            flash("La fecha solicitada no es válida; se muestra hoy.", "warning")
+    response = make_response(
+        render_template(
+            "index.html",
+            summary=daily_health_dashboard(
+                current_user.id,
+                target_date,
+                timezone_name,
+            ),
+        )
     )
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
 
 
 @main_bp.route("/uploads", methods=["GET", "POST"])

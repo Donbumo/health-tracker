@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import uuid
 
 from app.extensions import db
 
@@ -7,6 +8,7 @@ class WeighIn(db.Model):
     __tablename__ = "weigh_ins"
     __table_args__ = (
         db.CheckConstraint("weight_kg > 0", name="ck_weigh_ins_weight"),
+        db.CheckConstraint("revision >= 1", name="ck_weigh_ins_revision"),
         db.CheckConstraint(
             "body_fat_percentage IS NULL OR "
             "(body_fat_percentage >= 0 AND body_fat_percentage <= 100)",
@@ -36,13 +38,21 @@ class WeighIn(db.Model):
         db.UniqueConstraint(
             "user_id",
             "recorded_at",
-            name="uq_weigh_ins_user_recorded_at",
+            "source",
+            name="uq_weigh_ins_user_recorded_source",
+        ),
+        db.UniqueConstraint(
+            "user_id", "client_event_id", name="uq_weigh_ins_user_client_event"
         ),
         db.UniqueConstraint("source_file_id", name="uq_weigh_ins_source_file"),
+        db.UniqueConstraint("public_id", name="uq_weigh_ins_public_id"),
         db.Index("ix_weigh_ins_user_recorded", "user_id", "recorded_at"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(
+        db.String(36), nullable=False, default=lambda: str(uuid.uuid4())
+    )
     user_id = db.Column(
         db.Integer,
         db.ForeignKey("users.id", ondelete="CASCADE"),
@@ -57,6 +67,7 @@ class WeighIn(db.Model):
     bmr_kcal = db.Column(db.Numeric(10, 2), nullable=True)
     bmi = db.Column(db.Numeric(6, 3), nullable=True)
     source = db.Column(db.String(32), nullable=False)
+    client_event_id = db.Column(db.String(36), nullable=True)
     source_file_id = db.Column(
         db.Integer,
         db.ForeignKey("uploaded_files.id", ondelete="SET NULL"),
@@ -64,6 +75,7 @@ class WeighIn(db.Model):
     )
     raw_payload_json = db.Column(db.JSON, nullable=True)
     notes = db.Column(db.Text, nullable=True)
+    revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

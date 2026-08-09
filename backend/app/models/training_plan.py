@@ -13,6 +13,11 @@ class TrainingPlan(db.Model):
         ),
         db.Index("ix_training_plans_user_created", "user_id", "created_at"),
         db.UniqueConstraint("public_id", name="uq_training_plans_public_id"),
+        db.CheckConstraint("revision >= 1", name="ck_training_plans_revision"),
+        db.CheckConstraint(
+            "status IN ('active', 'archived')",
+            name="ck_training_plans_status",
+        ),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -24,6 +29,11 @@ class TrainingPlan(db.Model):
     )
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
+    status = db.Column(
+        db.String(20), nullable=False, default="active", server_default="active"
+    )
+    revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    archived_at = db.Column(db.DateTime(timezone=True), nullable=True)
     active_version_number = db.Column(
         db.Integer,
         nullable=False,
@@ -51,6 +61,13 @@ class TrainingPlan(db.Model):
         cascade="all, delete-orphan",
         passive_deletes=True,
         order_by="TrainingPlanVersion.version_number",
+    )
+    workouts = db.relationship(
+        "TrainingPlanWorkout",
+        back_populates="training_plan",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        order_by="TrainingPlanWorkout.position",
     )
     sessions = db.relationship(
         "TrainingSession",
@@ -130,3 +147,51 @@ class TrainingPlanVersion(db.Model):
         back_populates="training_plan_version",
         passive_deletes=True,
     )
+
+
+class TrainingPlanWorkout(db.Model):
+    __tablename__ = "training_plan_workouts"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "training_plan_id", "position", name="uq_training_plan_workouts_position"
+        ),
+        db.UniqueConstraint("public_id", name="uq_training_plan_workouts_public_id"),
+        db.CheckConstraint("position >= 1", name="ck_training_plan_workouts_position"),
+        db.CheckConstraint("revision >= 1", name="ck_training_plan_workouts_revision"),
+        db.Index("ix_training_plan_workouts_user_plan", "user_id", "training_plan_id"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(
+        db.String(36), nullable=False, default=lambda: str(uuid.uuid4())
+    )
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    training_plan_id = db.Column(
+        db.Integer,
+        db.ForeignKey("training_plans.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name = db.Column(db.String(200), nullable=False)
+    notes = db.Column(db.Text, nullable=True)
+    position = db.Column(db.Integer, nullable=False)
+    exercises_json = db.Column(db.JSON, nullable=False, default=list)
+    revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        server_default=db.func.current_timestamp(),
+    )
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        server_default=db.func.current_timestamp(),
+    )
+
+    training_plan = db.relationship("TrainingPlan", back_populates="workouts")

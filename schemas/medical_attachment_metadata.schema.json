@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/medical_attachment_metadata.schema.json",
+  "title": "Health Tracker medical attachment metadata v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["public_id", "document_type", "filename", "mime_type", "size_bytes", "sha256", "availability", "source", "revision"],
+  "properties": {
+    "public_id": {"type": "string", "format": "uuid"},
+    "document_type": {"enum": ["original", "supporting", "medical_json", "controlled_csv"]},
+    "filename": {"type": "string", "minLength": 1, "maxLength": 255},
+    "mime_type": {"enum": ["application/pdf", "image/jpeg", "image/png", "application/json", "text/csv"]},
+    "size_bytes": {"type": "integer", "minimum": 0},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "availability": {"enum": ["available", "metadata_only", "missing"]},
+    "source": {"enum": ["manual", "mobile", "json_import", "csv_import", "portable_import"]},
+    "revision": {"type": "integer", "minimum": 1}
+  }
+}

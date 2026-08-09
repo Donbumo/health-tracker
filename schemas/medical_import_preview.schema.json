@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/medical_import_preview.schema.json",
+  "title": "Medical import preview v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "format", "valid", "read_only", "source_format", "row_count", "new_count", "duplicate_count", "errors", "warnings", "document", "confirmation_token", "privacy_warning"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "format": {"const": "health-tracker-medical-lab-v1"},
+    "valid": {"type": "boolean"},
+    "read_only": {"const": true},
+    "source_format": {"enum": ["json", "csv"]},
+    "row_count": {"type": "integer", "minimum": 0},
+    "new_count": {"type": "integer", "minimum": 0},
+    "duplicate_count": {"type": "integer", "minimum": 0},
+    "errors": {"type": "array", "maxItems": 1000, "items": {"type": "object"}},
+    "warnings": {"type": "array", "items": {"type": "string", "maxLength": 500}},
+    "document": {"type": ["object", "null"]},
+    "confirmation_token": {"type": ["string", "null"], "maxLength": 4096},
+    "privacy_warning": {"type": "string", "maxLength": 500}
+  }
+}

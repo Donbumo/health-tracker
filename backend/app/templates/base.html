@@ -17,12 +17,13 @@
   {%- endmacro %}
   {% macro navigation(section_class) -%}
     <div class="{{ section_class }}">
-      <section class="nav-section" aria-label="Hoy" aria-labelledby="nav-home-{{ section_class }}">
-        <h2 id="nav-home-{{ section_class }}">Hoy</h2>
-        {{ nav_link('main.dashboard', 'Resumen diario', 'main.dashboard') }}
+      <section class="nav-section" aria-label="Principal" aria-labelledby="nav-home-{{ section_class }}">
+        <h2 id="nav-home-{{ section_class }}">Principal</h2>
+        {{ nav_link('main.dashboard', 'Resumen', 'main.dashboard') }}
+        {{ nav_link('main.today', 'Hoy', 'main.today') }}
       </section>
       <section class="nav-section" aria-labelledby="nav-training-{{ section_class }}">
-        <h2 id="nav-training-{{ section_class }}">Entrenar</h2>
+        <h2 id="nav-training-{{ section_class }}">Entrenamientos</h2>
         {{ nav_link('planned.list_workouts', 'Agenda', 'planned.') }}
         {{ nav_link('sessions.new_session', 'Registrar sesión', 'sessions.new_session') }}
         {{ nav_link('progress.overview', 'Progreso', 'progress.') }}
@@ -34,13 +35,13 @@
       <section class="nav-section" aria-labelledby="nav-history-{{ section_class }}">
         <h2 id="nav-history-{{ section_class }}">Historial</h2>
         {{ nav_link('sessions.list_sessions', 'Sesiones realizadas', 'sessions.list_sessions') }}
-        {{ nav_link('main.import_history', 'Importaciones', 'main.import_history') }}
+        {{ nav_link('main.import_history', 'Historial de importaciones', 'main.import_history') }}
       </section>
       <section class="nav-section" aria-labelledby="nav-health-{{ section_class }}">
         <h2 id="nav-health-{{ section_class }}">Salud y actividad</h2>
         {{ nav_link('wellness.balance', 'Balance diario', 'wellness.balance') }}
-        {{ nav_link('body.list_weigh_ins', 'Peso', 'body.') }}
-        {{ nav_link('wellness.nutrition_list', 'Nutrición diaria', 'wellness.nutrition') }}
+        {{ nav_link('body.list_weigh_ins', 'Peso y composición', 'body.') }}
+        {{ nav_link('wellness.nutrition_list', 'Nutrición', 'wellness.nutrition') }}
         {{ nav_link('wellness.energy_list', 'Energía', 'wellness.energy') }}
         {{ nav_link('activities.list_activities', 'Actividades', 'activities.activity') }}
         {{ nav_link('activities.list_routes', 'Rutas', 'activities.route') }}
@@ -50,7 +51,7 @@
       </section>
       <section class="nav-section" aria-labelledby="nav-data-{{ section_class }}">
         <h2 id="nav-data-{{ section_class }}">Datos</h2>
-        {{ nav_link('main.import_hub', 'Importar datos', 'main.import_hub') }}
+        {{ nav_link('main.import_hub', 'Importaciones', 'main.import_hub') }}
         {{ nav_link('main.account_data', 'Exportar y respaldar', 'main.account_data') }}
       </section>
       <section class="nav-section" aria-labelledby="nav-account-{{ section_class }}">
@@ -136,7 +137,7 @@
   {% if current_user.is_authenticated %}
         <footer class="site-footer">
           <div class="footer-actions">
-            <span>{{ alpha_release_label }} · Self-hosted</span>
+            <span>{{ release_label }} · Self-hosted</span>
             <span>No sustituye atención médica.</span>
             <a href="{{ url_for('main.privacy') }}">Privacidad</a>
             <a href="{{ url_for('main.account_system') }}">Estado</a>
@@ -145,7 +146,7 @@
       </div>
     </div>
   {% else %}
-    <footer class="site-footer"><div class="container footer-actions"><span>{{ alpha_release_label }}</span><a href="{{ url_for('main.privacy') }}">Privacidad</a><a href="{{ url_for('main.healthcheck') }}">Estado</a></div></footer>
+    <footer class="site-footer"><div class="container footer-actions"><span>{{ release_label }}</span><a href="{{ url_for('main.privacy') }}">Privacidad</a><a href="{{ url_for('main.healthcheck') }}">Estado</a></div></footer>
   {% endif %}
   <script src="{{ url_for('static', filename='js/pwa_register.js') }}" defer></script>
 </body>

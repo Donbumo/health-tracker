@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import uuid
 
 from app.extensions import db
 
@@ -139,6 +140,7 @@ class NutritionItem(db.Model):
             name="ck_nutrition_items_quantity",
         ),
         db.CheckConstraint("sort_order >= 1", name="ck_nutrition_items_sort_order"),
+        db.CheckConstraint("revision >= 1", name="ck_nutrition_items_revision"),
         db.UniqueConstraint(
             "nutrition_meal_id",
             "sort_order",
@@ -149,9 +151,16 @@ class NutritionItem(db.Model):
             "user_id",
             "nutrition_meal_id",
         ),
+        db.UniqueConstraint("public_id", name="uq_nutrition_items_public_id"),
+        db.UniqueConstraint(
+            "user_id", "client_event_id", name="uq_nutrition_items_user_client_event"
+        ),
     )
 
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(
+        db.String(36), nullable=False, default=lambda: str(uuid.uuid4())
+    )
     user_id = db.Column(
         db.Integer,
         db.ForeignKey("users.id", ondelete="CASCADE"),
@@ -175,6 +184,22 @@ class NutritionItem(db.Model):
     sugar_g = db.Column(db.Numeric(12, 3), nullable=True)
     sodium_mg = db.Column(db.Numeric(12, 3), nullable=True)
     notes = db.Column(db.Text, nullable=True)
+    source = db.Column(db.String(32), nullable=False, default="manual", server_default="manual")
+    client_event_id = db.Column(db.String(36), nullable=True)
+    revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        server_default=db.func.current_timestamp(),
+    )
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        server_default=db.func.current_timestamp(),
+    )
 
     meal = db.relationship("NutritionMeal", back_populates="items")
     food_product_id = db.Column(
@@ -219,10 +244,15 @@ class FoodProduct(db.Model):
             "brand",
             name="uq_food_product_user_name_brand",
         ),
+        db.CheckConstraint("revision >= 1", name="ck_food_products_revision"),
+        db.UniqueConstraint("public_id", name="uq_food_products_public_id"),
         db.Index("ix_food_products_user_active", "user_id", "is_active"),
     )
 
     id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(
+        db.String(36), nullable=False, default=lambda: str(uuid.uuid4())
+    )
     user_id = db.Column(
         db.Integer,
         db.ForeignKey("users.id", ondelete="CASCADE"),
@@ -242,6 +272,7 @@ class FoodProduct(db.Model):
     source = db.Column(db.String(32), nullable=False)
     notes = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True, server_default="1")
+    revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")
     raw_payload_json = db.Column(db.JSON, nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),

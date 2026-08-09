@@ -1,12 +1,13 @@
 import hashlib
 import json
+import uuid
 from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
-from app.models import TrainingPlan, TrainingPlanVersion, UploadedFile
+from app.models import TrainingPlan, TrainingPlanVersion, TrainingPlanWorkout, UploadedFile
 
 
 class TrainingPlanImportError(ValueError):
@@ -76,6 +77,42 @@ def get_active_version(plan: TrainingPlan, user_id: int) -> TrainingPlanVersion:
     if version is None:
         raise RuntimeError("Training plan active version is missing")
     return version
+
+
+def replace_mobile_workouts_from_document(
+    plan: TrainingPlan,
+    document: dict[str, Any],
+    user_id: int,
+) -> None:
+    """Refresh the mutable mobile editor projection from an immutable plan version."""
+    if plan.user_id != user_id:
+        raise TrainingPlanImportError("Training plan does not belong to this user")
+    db.session.execute(
+        db.delete(TrainingPlanWorkout).where(
+            TrainingPlanWorkout.training_plan_id == plan.id,
+            TrainingPlanWorkout.user_id == user_id,
+        )
+    )
+    position = 0
+    for week in document["data"]["weeks"]:
+        for day in week["days"]:
+            position += 1
+            exercises = json.loads(json.dumps(day.get("exercises", [])))
+            for exercise in exercises:
+                exercise.setdefault("id", str(uuid.uuid4()))
+                for planned_set in exercise.get("sets", []):
+                    planned_set.setdefault("id", str(uuid.uuid4()))
+            db.session.add(
+                TrainingPlanWorkout(
+                    public_id=str(uuid.uuid4()),
+                    user_id=user_id,
+                    training_plan_id=plan.id,
+                    name=day["name"],
+                    notes=day.get("notes"),
+                    position=position,
+                    exercises_json=exercises,
+                )
+            )
 
 
 def list_training_plan_versions(
@@ -212,5 +249,6 @@ def activate_training_plan_version(
     description = version.content["data"].get("description")
     plan.description = description.strip() or None if description is not None else None
     plan.updated_at = datetime.now(timezone.utc)
+    replace_mobile_workouts_from_document(plan, version.content, user_id)
     db.session.commit()
     return version

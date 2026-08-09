@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/portable_sets.schema.json",
+  "title": "Health Tracker portable sets record v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "record_type",
+    "public_id",
+    "data"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "record_type": {
+      "const": "sets"
+    },
+    "public_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "data": {
+      "type": "object",
+      "maxProperties": 128,
+      "propertyNames": {
+        "not": {
+          "enum": [
+            "id",
+            "user_id",
+            "password",
+            "password_hash",
+            "token",
+            "access_token",
+            "refresh_token",
+            "session",
+            "csrf_token",
+            "secret",
+            "storage_path",
+            "relative_path",
+            "server_url",
+            "host",
+            "ip_address",
+            "mac_address",
+            "gatt",
+            "changes_token",
+            "manufacturer_data"
+          ]
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

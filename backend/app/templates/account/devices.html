@@ -55,6 +55,16 @@
                 <button class="button button-danger" type="submit">Revocar dispositivo</button>
               </form>
             </details>
+          {% elif device.public_device_id in deletable_device_ids %}
+            <details class="danger-zone">
+              <summary>Eliminar dispositivo permanentemente</summary>
+              <p class="help">Esta acción elimina únicamente el registro técnico del dispositivo. No borra entrenamientos ni datos de salud.</p>
+              <form action="{{ url_for('main.delete_account_device', device_id=device.public_device_id) }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label class="checkbox"><input type="checkbox" name="confirm_delete" value="yes" required> Confirmo que deseo eliminar permanentemente este dispositivo</label>
+                <button class="button button-danger" type="submit">Eliminar dispositivo permanentemente</button>
+              </form>
+            </details>
           {% endif %}
         </article>
       {% endfor %}

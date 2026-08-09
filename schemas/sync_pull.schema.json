@@ -10,7 +10,7 @@
       "type": "object", "additionalProperties": false,
       "required": ["entity_type", "entity_id", "operation", "revision", "changed_at", "payload_hash", "payload"],
       "properties": {
-        "entity_type": {"enum": ["planned_workout", "completed_workout"]},
+        "entity_type": {"enum": ["planned_workout", "completed_workout", "companion_profile", "companion_delivery", "training_plan"]},
         "entity_id": {"type": "string", "format": "uuid"},
         "operation": {"enum": ["upsert", "delete"]},
         "revision": {"type": "integer", "minimum": 1},

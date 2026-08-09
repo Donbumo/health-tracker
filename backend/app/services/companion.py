@@ -63,6 +63,7 @@ SERVER_CAPABILITIES = {
     "continuous_telemetry": False,
     "fit_output": False,
     "advanced_load_details_in_planned_package": False,
+    "planned_load_prescriptions": True,
     "vendor_huawei": False,
     "vendor_garmin": False,
     "vendor_magene": False,
@@ -242,7 +243,12 @@ def _package_exercises(planned, profile):
         for item in exercise["sets"]:
             allowed = {
                 key: item[key]
-                for key in ("set_number", "reps", "reps_min", "reps_max", "duration_seconds", "distance_m", "target")
+                for key in (
+                    "set_number", "reps", "reps_min", "reps_max",
+                    "duration_seconds", "distance_m", "target", "weight_kg",
+                    "load_value", "load_unit", "load_mode", "rir", "rpe", "notes",
+                    "load_details",
+                )
                 if key in item
             }
             if "rest_seconds" in item:
@@ -360,6 +366,7 @@ def prepare_delivery(*, user_id, device, planned_public_id, mark_delivered=True,
     except IntegrityError:
         existing = db.session.execute(
             db.select(CompanionWorkoutDelivery).where(
+                CompanionWorkoutDelivery.user_id == user_id,
                 CompanionWorkoutDelivery.api_device_id == device.id,
                 CompanionWorkoutDelivery.profile_id == profile.id,
                 CompanionWorkoutDelivery.planned_workout_id == planned.id,

@@ -122,6 +122,7 @@ def _seed_energy(user: User, days: tuple, created: dict[str, int]) -> None:
             db.select(DailyEnergy).where(
                 DailyEnergy.user_id == user.id,
                 DailyEnergy.date == record_date,
+                DailyEnergy.source == DEMO_SOURCE,
             )
         ).scalar_one_or_none()
         if existing is not None:
@@ -283,6 +284,9 @@ def _seed_plan(user: User, created: dict[str, int]) -> tuple[TrainingPlan, Train
         )
         db.session.add(version)
         db.session.flush()
+        from app.services.training_plans import replace_mobile_workouts_from_document
+
+        replace_mobile_workouts_from_document(plan, document, user.id)
         created["training_plan_versions"] += 1
     return plan, version
 

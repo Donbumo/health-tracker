@@ -9,6 +9,7 @@ from app.services.training_plans import (
     TrainingPlanImportError,
     _validate_plan_ordering,
     serialize_training_plan,
+    replace_mobile_workouts_from_document,
 )
 from app.services.validation import validate_json_document
 
@@ -88,6 +89,7 @@ def import_training_plan_file(
             content=document,
         )
         db.session.add(version)
+        replace_mobile_workouts_from_document(plan, document, user_id)
         db.session.commit()
         return plan, False
     except IntegrityError:

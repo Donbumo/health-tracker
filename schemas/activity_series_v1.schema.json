@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/activity_series_v1.schema.json",
+  "title": "Health Tracker Activity Series v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "samples"],
+  "properties": {
+    "format": {"const": "activity-series-v1"},
+    "samples": {"type": "array", "maxItems": 100000, "items": {"$ref": "#/$defs/sample"}},
+    "truncated": {"type": "boolean"},
+    "totalSampleCount": {"type": "integer", "minimum": 0}
+  },
+  "$defs": {
+    "sample": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "t": {"type": "number", "minimum": -1, "maximum": 1209600},
+        "distance": {"type": "number", "minimum": 0},
+        "elevation": {"type": "number"},
+        "speed": {"type": "number", "minimum": 0},
+        "heart_rate": {"type": "number", "minimum": 0, "maximum": 255},
+        "cadence": {"type": "number", "minimum": 0, "maximum": 300},
+        "power": {"type": "number", "minimum": 0},
+        "temperature": {"type": "number"}
+      },
+      "minProperties": 1
+    }
+  }
+}

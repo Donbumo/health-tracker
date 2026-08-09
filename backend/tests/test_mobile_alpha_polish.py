@@ -29,7 +29,7 @@ def test_base_template_has_mobile_viewport_and_collapsed_mobile_navigation(clien
     assert "Hoy" in html
     assert "Datos" in html
     for label in (
-        "Resumen diario",
+        "Resumen",
         "Balance diario",
         "Peso",
         "Nutrici",
@@ -40,11 +40,10 @@ def test_base_template_has_mobile_viewport_and_collapsed_mobile_navigation(clien
         "Alacena",
         "Recetas",
         "Laboratorios",
-        "Importar",
         "Importaciones",
         "Cerrar sesi",
         "Privacidad",
-        "Alpha 1.0",
+        "Health Tracker Beta 1",
     ):
         assert label in html
 
@@ -61,7 +60,7 @@ def test_mobile_css_contains_responsive_nav_forms_tables_and_focus_rules():
     assert ".mobile-menu-panel" in css
     assert "max-height: min(70vh, 32rem)" in css
     assert "overflow-y: auto" in css
-    assert "grid-template-columns: repeat(2, minmax(0, 1fr))" not in css
+    assert ".dashboard-filter-grid, .custom-range-fields, .training-chart-grid { grid-template-columns: 1fr; }" in css
     assert "min-height: 44px" in css
     assert "font-size: 16px" in css
     assert "-webkit-overflow-scrolling: touch" in css
@@ -105,6 +104,7 @@ def test_mobile_smoke_routes_keep_forms_actions_and_responsive_wrappers(client, 
     login(client)
     routes = (
         "/dashboard",
+        "/today",
         "/admin/users",
         "/privacy",
         "/weigh-ins",
@@ -122,10 +122,10 @@ def test_mobile_smoke_routes_keep_forms_actions_and_responsive_wrappers(client, 
             continue
         assert response.status_code == 200, path
 
-    dashboard = client.get("/dashboard").get_data(as_text=True)
-    assert "quick-actions" in dashboard
-    assert "Continuar primeros pasos" in dashboard
-    assert "Peso" in dashboard
+    today = client.get("/today").get_data(as_text=True)
+    assert "quick-actions" in today
+    assert "Continuar primeros pasos" in today
+    assert "Peso" in today
     assert client.get("/getting-started").status_code == 200
 
     standard_import = client.get("/imports/standard").get_data(as_text=True)

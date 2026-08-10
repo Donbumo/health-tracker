@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Asistente AI · Health Tracker{% endblock %}
+{% block breadcrumb %}Asistente AI{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <p class="eyebrow">Beta 1.1</p>
+    <h1>Asistente AI</h1>
+    <p class="lead">Consulta tus datos mediante herramientas owner-only de solo lectura.</p>
+  </div>
+  <form action="{{ url_for('ai.create_conversation') }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="button" type="submit"{% if ai_status.state != 'available' %} disabled{% endif %}>Nueva conversación</button>
+  </form>
+</div>
+
+<section class="card ai-status-card" aria-labelledby="ai-status-title">
+  <div>
+    <h2 id="ai-status-title">Estado</h2>
+    {% if ai_status.state == 'available' %}
+      <p><span class="status status-success">Disponible</span></p>
+      <p class="muted">Proveedor {{ ai_status.provider }} · modelo {{ ai_status.model }}. Las acciones de escritura y adjuntos siguen desactivados.</p>
+    {% else %}
+      <p><span class="status status-warning">{{ 'Desactivado' if ai_status.state == 'disabled' else 'Sin configurar' }}</span></p>
+      <p>{{ ai_status.reason }}</p>
+      <p class="muted">El resto de Health Tracker continúa funcionando normalmente.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section aria-labelledby="conversation-list-title">
+  <div class="section-heading">
+    <div><h2 id="conversation-list-title">Tus conversaciones</h2><p>Solo tú puedes abrirlas o eliminarlas.</p></div>
+  </div>
+  {% if conversations %}
+    <div class="ai-conversation-list">
+      {% for item in conversations %}
+        <a class="card ai-conversation-link" href="{{ url_for('ai.conversation', conversation_id=item.public_id) }}">
+          <span><strong>{{ item.title }}</strong><small>{{ item.messages|length }} mensajes</small></span>
+          <span aria-hidden="true">→</span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state"><h2>Aún no hay conversaciones</h2><p>Cuando AI esté disponible, inicia una para consultar tendencias, pasos, actividades u objetivos.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

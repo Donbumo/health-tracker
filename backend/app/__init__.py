@@ -107,6 +107,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     from app.api_v1 import api_v1_bp
     from app.planned import planned_bp
     from app.workout_drafts import workout_drafts_bp
+    from app.ai import ai_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(activities_bp)
@@ -123,6 +124,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(recipes_bp)
     app.register_blueprint(planned_bp)
     app.register_blueprint(workout_drafts_bp)
+    app.register_blueprint(ai_bp)
     csrf.exempt(api_v1_bp)
     app.register_blueprint(api_v1_bp)
     register_commands(app)

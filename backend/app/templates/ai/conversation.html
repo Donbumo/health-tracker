@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ conversation.title }} · AI · Health Tracker{% endblock %}
+{% block breadcrumb %}Asistente AI / {{ conversation.title }}{% endblock %}
+{% block content %}
+<div class="page-heading ai-page-heading">
+  <div>
+    <p class="eyebrow">Conversación privada</p>
+    <h1>{{ conversation.title }}</h1>
+    <p class="muted">Las respuestas distinguen datos, cálculos e interpretación AI. No sustituyen atención médica.</p>
+  </div>
+  <a class="button button-secondary" href="{{ url_for('ai.index') }}">Ver conversaciones</a>
+</div>
+
+{% if ai_status.state != 'available' %}
+  <div class="alert alert-warning" role="status">{{ ai_status.reason }} Puedes consultar o eliminar el historial existente.</div>
+{% endif %}
+
+<section class="ai-thread" aria-label="Mensajes de la conversación" aria-live="polite">
+  {% if conversation.messages %}
+    {% for message in conversation.messages %}
+      <article class="ai-message ai-message-{{ message.role }}">
+        <header><strong>{{ 'Tú' if message.role == 'user' else 'Health Tracker AI' }}</strong></header>
+        <div class="ai-message-content">{{ message.content }}</div>
+        {% if message.drafts %}
+          {% for draft in message.drafts %}
+            <section class="ai-draft" aria-label="Borrador pendiente">
+              <div><span class="status status-warning">Pendiente de confirmación</span><strong>{{ draft.draft_type|replace('_', ' ') }}</strong></div>
+              <dl class="metadata">
+                {% for key, value in draft.payload_json.items() %}<dt>{{ key }}</dt><dd>{{ value }}</dd>{% endfor %}
+              </dl>
+              <p class="muted">Vista previa solamente. Esta versión no puede confirmar ni escribir el borrador.</p>
+            </section>
+          {% endfor %}
+        {% endif %}
+        {% if message.evidence_json %}
+          <details class="ai-evidence">
+            <summary>Fuentes y evidencia</summary>
+            <ul>
+              {% for item in message.evidence_json %}
+                <li><strong>{{ item.metric|default('dato') }}</strong>: {{ item.source|default('no disponible') }} · {{ item.evidence_kind|default('registrado') }}</li>
+              {% endfor %}
+            </ul>
+          </details>
+        {% endif %}
+        <small class="muted">{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+      </article>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state ai-thread-empty"><h2>Inicia la conversación</h2><p>Prueba: “¿Cómo voy este mes?” o “¿De dónde vienen mis datos de pasos?”</p></div>
+  {% endif %}
+</section>
+
+{% if conversation.messages and conversation.messages[-1].role == 'user' %}
+  <form class="ai-retry-form" action="{{ url_for('ai.retry_message', conversation_id=conversation.public_id) }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <p class="muted">Este mensaje no tiene respuesta.</p>
+    <button class="button button-secondary" type="submit"{% if ai_status.state != 'available' %} disabled{% endif %}>Reintentar</button>
+  </form>
+{% endif %}
+
+<form class="card ai-composer ai-message-form" action="{{ url_for('ai.send_message', conversation_id=conversation.public_id) }}" method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label for="ai-content">Tu mensaje</label>
+  <textarea id="ai-content" name="content" maxlength="{{ config.AI_MAX_INPUT_CHARS }}" required placeholder="Pregunta por tus tendencias, actividad, pasos u objetivos..."{% if ai_status.state != 'available' %} disabled{% endif %}></textarea>
+  <div class="ai-composer-actions">
+    <p class="muted" data-ai-loading hidden>Consultando herramientas seguras…</p>
+    <button class="button" type="submit" data-ai-submit{% if ai_status.state != 'available' %} disabled{% endif %}>Enviar</button>
+  </div>
+</form>
+
+<details class="card danger-zone ai-delete-zone">
+  <summary>Eliminar conversación</summary>
+  <p>Se borrarán sus mensajes, evidencia, tool calls y drafts.</p>
+  <form action="{{ url_for('ai.delete_conversation', conversation_id=conversation.public_id) }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label class="checkbox"><input type="checkbox" name="confirm_delete" value="yes" required> Confirmo que quiero eliminarla.</label>
+    <button class="button button-danger" type="submit">Eliminar definitivamente</button>
+  </form>
+</details>
+<script src="{{ url_for('static', filename='js/ai_chat.js') }}" defer></script>
+{% endblock %}

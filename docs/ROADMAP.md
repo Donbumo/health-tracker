@@ -2,6 +2,15 @@
 
 Este documento reúne trabajo futuro o no comprobado. No describe funcionalidades implementadas; verifica siempre el código, los schemas y las pruebas antes de cambiar el estado de un punto.
 
+## Orden prioritario posterior a Beta 1.0.1
+
+1. **Beta 1.1 — AI Foundation:** estabilizar provider cloud real sobre la frontera ya creada, completar QA visual/MariaDB y revisar export/retención de conversaciones.
+2. **Beta 1.2 — External Integrations:** integrar proveedores oficiales conservando owner, consentimiento, dedupe y procedencia; no asumir que pasos equivale a Health Connect.
+3. **Beta 1.3 — AI Actions / Assisted Logging:** confirmar drafts de comida, peso, entrenamiento y pasos mediante servicios oficiales, nunca con escritura silenciosa.
+4. **Beta 1.4 — Device Bridge / BLE:** avanzar solo con evidencia de protocolo, privacidad, contrato y QA físico.
+
+Operación NAS, observabilidad y los cierres físicos restantes continúan como soporte. No son una base alternativa para features y no reabren ramas Alpha.
+
 ## Próximos cierres operativos
 
 - Completar los gates conectados de Beta 1 en una imagen ya instalada sin Play Store: instrumentación, Room 1–10, upgrade `adb install -r`, offline/process death, WorkManager, reboot, notificaciones, SAF/FileProvider, rendimiento, layouts y TalkBack. Seguir [BETA_1_PHYSICAL_QA_RUNBOOK.md](BETA_1_PHYSICAL_QA_RUNBOOK.md); no abrir Alpha 2.1 como sustituto de este cierre.

@@ -4,6 +4,12 @@ Este documento es contexto frío. Explica la visión y los límites duraderos de
 
 Para trabajo en curso consulta `ACTIVE_HANDOFF.md`. Para localizar contratos y guías usa `DOCUMENTATION_INDEX.md`. La arquitectura ejecutable resumida está en `architecture/OVERVIEW.md`.
 
+## Base y dirección actuales
+
+La base oficial es **Health Tracker Beta 1.0.1** en `master` (`64abf34b0c7082fc31c75b8a4bef62c5786e50d1`). Web, Android, API y MariaDB forman una sola base consolidada; Resumen longitudinal y Hoy están cerrados, Health Connect funciona en dispositivo físico y mobile sync/offline está operativo. Objetivos/recordatorios/adherencia, registros médicos, intercambio de actividades y portabilidad de datos también existen.
+
+La prioridad actual es **Beta 1.1 AI Foundation** y la segunda es **Beta 1.2 External Integrations**. Después siguen AI Actions/Assisted Logging y Device Bridge/BLE. IA e integraciones comparten el mismo modelo de procedencia. Ninguna feature nueva debe partir de ramas Alpha antiguas ni de `integration/alpha-1.5-dashboard`.
+
 ## Visión
 
 Health Tracker es una plataforma privada, self-hosted y multiusuario para normalizar, conservar, analizar e intercambiar datos personales de salud y entrenamiento.
@@ -77,6 +83,8 @@ La web separa el análisis longitudinal en **Resumen** (`/dashboard`) de la oper
 Alpha 1.6 añade una base local experimental para fuentes externas y BLE: registro/deduplicación, diagnóstico Health Connect de báscula, asociación, descubrimiento GATT, captura privada/replay y evidencia de protocolo. No amplía el dominio servidor ni afirma soporte S400: ningún valor BLE llega al dominio de salud mientras el mapper permanezca deshabilitado.
 
 La estructura real del código manda sobre diagramas o rutas narrativas antiguas. Consulta `architecture/OVERVIEW.md` y el árbol del repositorio en vez de copiar una estructura sugerida a nuevas tareas.
+
+Beta 1.1 incorpora una interfaz AI segura sobre servicios reales: conversaciones y follow-ups persistentes, provider desacoplado, tools read-only owner-only, evidencia estructurada y drafts sin confirmación/escritura. No es un chatbot aislado, no permite SQL generado por LLM y no convierte Health Tracker en un sistema de diagnóstico. La frontera detallada está en [AI_FOUNDATION.md](AI_FOUNDATION.md).
 
 ## Capacidades de producto
 
@@ -154,4 +162,4 @@ Consulta `DOCUMENTATION_INDEX.md` para el mapa completo por dominio.
 
 Android `2.0.0-beta01` es una estabilización de Alpha 2.0, no una nueva fase funcional. Room 10, Alembic 0036, contratos, cinco pestañas y límites de producto permanecen congelados. Los gates conectados y QA físico se documentan como pendientes cuando no se han ejecutado; consulta [BETA_1_ANDROID_STABILIZATION.md](BETA_1_ANDROID_STABILIZATION.md).
 
-Alpha 1.9 incorpora documentación médica privada sin convertir Health Tracker en herramienta clínica: conserva estudios, resultados y originales, compara únicamente unidades/métodos técnicamente compatibles y mantiene rangos/estados como procedencia del informe. OCR, IA, diagnóstico, recomendaciones, FHIR obligatorio y rangos universales siguen fuera de los límites del producto. Véase [ALPHA_1_9_MEDICAL_RECORDS.md](ALPHA_1_9_MEDICAL_RECORDS.md).
+Alpha 1.9 incorpora documentación médica privada sin convertir Health Tracker en herramienta clínica: conserva estudios, resultados y originales, compara únicamente unidades/métodos técnicamente compatibles y mantiene rangos/estados como procedencia del informe. OCR clínico, diagnóstico, recomendaciones, FHIR obligatorio y rangos universales siguen fuera de los límites del producto; la capa AI general no altera esa restricción. Véase [ALPHA_1_9_MEDICAL_RECORDS.md](ALPHA_1_9_MEDICAL_RECORDS.md).

@@ -31,6 +31,8 @@ Separaciones obligatorias:
 - `backend/app/services/importers/`: detección, generación estándar, preview y ejecución confirmada.
 - `backend/app/services/exporters/`: capability, render y formatos por dominio.
 - `backend/app/api_v1/`: Bearer, dispositivos, sync y protocolo companion.
+- `backend/app/services/ai/`: conversación provider-neutral, allowlist de tools owner-only, evidencia y drafts sin escritura.
+- `backend/app/ai/` y `backend/app/api_v1/ai_routes.py`: superficies web de sesión y API Bearer sobre el mismo servicio AI.
 - `backend/app/templates/` y `static/`: web diaria con mejora progresiva.
 - `android/app/`: cliente móvil, cache Room aislada por cuenta, cola offline y WorkManager.
 - `schemas/`: contratos JSON públicos versionados.
@@ -41,6 +43,18 @@ Separaciones obligatorias:
 Auth/usuarios, uploads, peso/composición, nutrición/energía, alimentos/recetas, laboratorios, rutinas/sesiones/progreso, actividades/rutas, importación estándar y de archivos reales, exports, portabilidad/backup, API v1, Mobile Sync, planned workouts, backend Companion y cliente Android Companion.
 
 Los detalles vigentes pertenecen al código y a las reglas enlazadas desde `../DOCUMENTATION_INDEX.md`; esta vista no duplica matrices de campos, rutas o capabilities.
+
+## Frontera AI
+
+```text
+provider AI
+  → tool name + argumentos validados
+  → AIToolRegistry (allowlist, owner efectivo del servidor)
+  → services/read models existentes
+  → modelos/MariaDB
+```
+
+El provider no recibe sesión, `user_id`, ORM, SQL, paths ni secretos. Los resultados se acotan, se marcan como datos no confiables y conservan evidencia antes de volver al provider. La escritura futura siempre pasará por draft, preview, confirmación explícita y el servicio oficial del dominio.
 
 ## Límites
 

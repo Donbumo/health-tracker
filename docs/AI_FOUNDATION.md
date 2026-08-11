@@ -14,6 +14,7 @@ AI_MAX_INPUT_CHARS=4000
 AI_MAX_HISTORY_MESSAGES=20
 AI_MAX_TOOL_CALLS=6
 AI_MAX_TOOL_ROUNDS=3
+AI_MAX_TOTAL_TOKENS=100000
 AI_PROVIDER_TIMEOUT_SECONDS=20
 ```
 
@@ -34,7 +35,7 @@ web session o API Bearer
 
 El historial persistido contiene mensajes, tool utilizado, argumentos validados/sanitizados, resultado resumido, evidencia, errores seguros y uso técnico disponible. No se persiste chain-of-thought.
 
-Los límites por turno cubren caracteres de entrada, mensajes de historial, rondas/cantidad de tools, longitud de respuesta y deadline entregado al adapter. Un adapter remoto debe respetar `timeout_seconds` en su propia llamada de red; el servicio rechaza además respuestas que excedan el tiempo configurado.
+Los límites por turno cubren caracteres de entrada, mensajes de historial, rondas/cantidad de tools, uso total reportado, longitud de respuesta y deadline entregado al adapter. Un adapter remoto debe respetar `timeout_seconds` en su propia llamada de red; el servicio rechaza además respuestas que excedan el tiempo configurado.
 
 ## Tools disponibles
 

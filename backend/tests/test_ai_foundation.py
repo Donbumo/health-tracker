@@ -23,9 +23,11 @@ from app.services.ai.conversations import AIConversationService
 from app.services.ai.providers import AIProvider
 from app.services.ai.tools import AIToolRegistry
 from app.services.ai.types import (
+    AIProviderDraft,
     AIProviderRequest,
     AIProviderResponse,
     AIProviderToolCall,
+    AIUsage,
 )
 from tests.conftest import login
 
@@ -134,6 +136,38 @@ class LoopProvider(AIProvider):
         )
 
 
+class InvalidResponseProvider(AIProvider):
+    name = "invalid-response-test"
+
+    def respond(self, request: AIProviderRequest):
+        return {"content": "not a provider-neutral response"}
+
+
+class ExcessiveUsageProvider(AIProvider):
+    name = "excessive-usage-test"
+
+    def respond(self, request: AIProviderRequest) -> AIProviderResponse:
+        return AIProviderResponse(
+            content="Respuesta que excede el límite QA.",
+            usage=AIUsage(input_tokens=4, output_tokens=3),
+        )
+
+
+class InvalidDraftProvider(AIProvider):
+    name = "invalid-draft-test"
+
+    def respond(self, request: AIProviderRequest) -> AIProviderResponse:
+        return AIProviderResponse(
+            content="Borrador inválido QA.",
+            drafts=(
+                AIProviderDraft(
+                    draft_type="steps_entry",
+                    payload={"date": "not-a-date", "steps": 1234},
+                ),
+            ),
+        )
+
+
 class BoundaryProvider(AIProvider):
     name = "boundary-test"
 
@@ -234,6 +268,7 @@ def test_follow_up_history_is_bounded_and_preserves_previous_topic(app, client, 
     ]
     assert calls[-1]["tool"] == "get_dashboard_summary"
     assert calls[-1]["arguments"]["compare_previous"] is True
+    assert calls[-1]["arguments"]["preset"] == "this-month"
 
 
 @pytest.mark.parametrize(
@@ -463,6 +498,25 @@ def test_provider_failure_is_safe_persistent_and_does_not_log_secret(app, client
         ]
 
 
+def test_invalid_provider_response_is_rejected_at_typed_boundary(app, client, user):
+    _enable_ai(app, InvalidResponseProvider())
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    response = _send(client, token, conversation_id, "Respuesta inválida QA")
+    assert response.status_code == 502
+    assert response.get_json()["error"]["code"] == "invalid_provider_response"
+
+
+def test_provider_reported_usage_is_bounded_per_turn(app, client, user):
+    _enable_ai(app, ExcessiveUsageProvider())
+    app.config["AI_MAX_TOTAL_TOKENS"] = 6
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    response = _send(client, token, conversation_id, "Uso excesivo QA")
+    assert response.status_code == 502
+    assert response.get_json()["error"]["code"] == "provider_usage_limit"
+
+
 def test_tool_failure_is_audited_and_returns_safe_provider_response(app, client, user, monkeypatch):
     provider = RequestedToolProvider("get_weight_trend", {"preset": "7d"})
     _enable_ai(app, provider)
@@ -532,6 +586,58 @@ def test_body_measurement_draft_serializes_without_domain_write(app, client, use
         assert db.session.execute(db.select(WeighIn)).scalars().all() == []
         draft = db.session.execute(db.select(AIActionDraft)).scalar_one()
         assert draft.status == "pending_confirmation"
+
+
+def test_draft_json_schema_enforces_date_format_without_domain_write(app, client, user):
+    _enable_ai(app, InvalidDraftProvider())
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    response = _send(client, token, conversation_id, "Pasos con fecha inválida QA")
+    assert response.status_code == 502
+    assert response.get_json()["error"]["code"] == "invalid_draft"
+    with app.app_context():
+        assert db.session.execute(db.select(AIActionDraft)).scalars().all() == []
+        assert db.session.execute(db.select(DailyEnergy)).scalars().all() == []
+
+
+def test_activity_tool_minimizes_provider_payload(app, client, user, monkeypatch):
+    provider = RequestedToolProvider("get_activity_summary", {"limit": 10})
+    _enable_ai(app, provider)
+    monkeypatch.setattr(
+        "app.services.activity_interchange.list_activities",
+        lambda *_args, **_kwargs: {
+            "items": [
+                {
+                    "publicId": str(uuid.uuid4()),
+                    "discipline": "running",
+                    "title": "Actividad QA ficticia",
+                    "startTime": "2026-08-09T12:00:00Z",
+                    "sourceFormat": "gpx",
+                    "sourceApplication": "qa-import",
+                    "summary": {"distance": {"value": "5000", "unit": "m"}},
+                    "route": {"present": True, "state": "available"},
+                    "originalFileId": str(uuid.uuid4()),
+                    "contentFingerprint": "f" * 64,
+                    "revision": 7,
+                }
+            ],
+            "next_cursor": None,
+        },
+    )
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    response = _send(client, token, conversation_id, "Actividad reciente QA")
+    assert response.status_code == 201
+    item = provider.requests[-1].tool_results[0].data["items"][0]
+    assert item["discipline"] == "running"
+    assert item["summary"]["distance"]["value"] == "5000"
+    assert not set(item) & {
+        "publicId",
+        "route",
+        "originalFileId",
+        "contentFingerprint",
+        "revision",
+    }
 
 
 def test_attachments_are_explicitly_rejected_without_partial_message(app, client, user):

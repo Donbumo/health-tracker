@@ -63,6 +63,33 @@ def _prior_topic(request: AIProviderRequest) -> str:
     return "dashboard"
 
 
+def _explicit_preset(text: str) -> str | None:
+    if "hoy" in text or "today" in text:
+        return "today"
+    if "90" in text:
+        return "90d"
+    if "semana" in text:
+        return "7d"
+    if "mes pasado" in text or "mes anterior" in text:
+        return "previous-month"
+    if "este mes" in text or "mes" in text:
+        return "this-month"
+    return None
+
+
+def _prior_preset(request: AIProviderRequest) -> str:
+    user_messages = [
+        _normalized(message.content)
+        for message in request.messages
+        if message.role == "user"
+    ]
+    for text in reversed(user_messages[:-1]):
+        preset = _explicit_preset(text)
+        if preset is not None:
+            return preset
+    return "30d"
+
+
 def _number(value) -> str:
     if value is None:
         return "sin datos"
@@ -117,8 +144,14 @@ class FakeAIProvider(AIProvider):
                 usage=self._usage(request, original),
             )
 
-        comparison = any(term in text for term in ("comparado", "anterior", "mas o menos"))
-        if comparison and len([m for m in request.messages if m.role == "user"]) > 1:
+        comparison = any(
+            term in text
+            for term in ("comparado", "compara", "anterior", "mas o menos")
+        )
+        has_prior_user_message = len(
+            [message for message in request.messages if message.role == "user"]
+        ) > 1
+        if comparison and has_prior_user_message:
             topic = _prior_topic(request)
         elif "pasos" in text and any(term in text for term in ("de donde", "fuente", "origen")):
             topic = "sources"
@@ -138,6 +171,11 @@ class FakeAIProvider(AIProvider):
             topic = "dashboard"
 
         preset = self._preset(text)
+        if comparison and has_prior_user_message and _explicit_preset(text) is None:
+            preset = _prior_preset(request)
+        elif "mas o menos" in text and preset == "previous-month":
+            # This asks for the current month against the previous period.
+            preset = "this-month"
         name, arguments = self._tool_for(topic, preset, comparison)
         return AIProviderResponse(
             tool_calls=(
@@ -150,17 +188,7 @@ class FakeAIProvider(AIProvider):
 
     @staticmethod
     def _preset(text: str) -> str:
-        if "hoy" in text or "today" in text:
-            return "today"
-        if "90" in text:
-            return "90d"
-        if "semana" in text:
-            return "7d"
-        if "mes pasado" in text or "mes anterior" in text:
-            return "previous-month"
-        if "este mes" in text or "mes" in text:
-            return "this-month"
-        return "30d"
+        return _explicit_preset(text) or "30d"
 
     @staticmethod
     def _tool_for(topic: str, preset: str, comparison: bool) -> tuple[str, dict]:

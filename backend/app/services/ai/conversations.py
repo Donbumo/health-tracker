@@ -7,7 +7,7 @@ import time
 import uuid
 
 from flask import current_app
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, FormatChecker
 from sqlalchemy.orm import selectinload
 
 from app.extensions import db
@@ -18,7 +18,10 @@ from app.services.ai.types import (
     AIProviderDraft,
     AIProviderMessage,
     AIProviderRequest,
+    AIProviderResponse,
+    AIProviderToolCall,
     AIProviderToolResult,
+    AIUsage,
 )
 
 
@@ -336,7 +339,45 @@ class AIConversationService:
                 "El proveedor AI excedió el tiempo permitido.",
                 504,
             )
+        self._validate_provider_response(response)
         return response
+
+    @staticmethod
+    def _validate_provider_response(response) -> None:
+        valid = isinstance(response, AIProviderResponse)
+        valid = valid and (
+            response.content is None or isinstance(response.content, str)
+        )
+        valid = valid and isinstance(response.tool_calls, tuple) and all(
+            isinstance(item, AIProviderToolCall) for item in response.tool_calls
+        )
+        valid = valid and isinstance(response.drafts, tuple) and all(
+            isinstance(item, AIProviderDraft) for item in response.drafts
+        )
+        valid = valid and isinstance(response.usage, AIUsage)
+        if valid:
+            for value in (response.usage.input_tokens, response.usage.output_tokens):
+                if value is not None and (
+                    type(value) is not int or value < 0 or value > 1_000_000_000
+                ):
+                    valid = False
+                    break
+        if not valid:
+            raise AIServiceError(
+                "invalid_provider_response",
+                "El proveedor AI devolvió una respuesta no válida.",
+                502,
+            )
+
+    @staticmethod
+    def _enforce_usage_limit(input_tokens: int, output_tokens: int) -> None:
+        maximum = _bounded_config("AI_MAX_TOTAL_TOKENS", 1, 10_000_000)
+        if input_tokens + output_tokens > maximum:
+            raise AIServiceError(
+                "provider_usage_limit",
+                "El proveedor AI excedió el límite de uso del turno.",
+                502,
+            )
 
     def _respond(
         self,
@@ -364,6 +405,7 @@ class AIConversationService:
         response = self._provider_call(provider, request)
         total_input = response.usage.input_tokens or 0
         total_output = response.usage.output_tokens or 0
+        self._enforce_usage_limit(total_input, total_output)
         all_evidence: list[dict] = []
         call_count = 0
         rounds = 0
@@ -402,6 +444,7 @@ class AIConversationService:
             response = self._provider_call(provider, followup_request)
             total_input += response.usage.input_tokens or 0
             total_output += response.usage.output_tokens or 0
+            self._enforce_usage_limit(total_input, total_output)
 
         if not isinstance(response.content, str) or not response.content.strip():
             raise AIServiceError(
@@ -526,7 +569,12 @@ class AIConversationService:
                 "El proveedor devolvió un borrador no permitido.",
                 502,
             )
-        errors = list(Draft202012Validator(schema).iter_errors(draft.payload))
+        errors = list(
+            Draft202012Validator(
+                schema,
+                format_checker=FormatChecker(),
+            ).iter_errors(draft.payload)
+        )
         if errors:
             raise AIServiceError(
                 "invalid_draft",

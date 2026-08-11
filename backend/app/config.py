@@ -127,6 +127,7 @@ class Config:
     AI_MAX_HISTORY_MESSAGES = int(os.getenv("AI_MAX_HISTORY_MESSAGES", "20"))
     AI_MAX_TOOL_CALLS = int(os.getenv("AI_MAX_TOOL_CALLS", "6"))
     AI_MAX_TOOL_ROUNDS = int(os.getenv("AI_MAX_TOOL_ROUNDS", "3"))
+    AI_MAX_TOTAL_TOKENS = int(os.getenv("AI_MAX_TOTAL_TOKENS", "100000"))
     AI_PROVIDER_TIMEOUT_SECONDS = int(os.getenv("AI_PROVIDER_TIMEOUT_SECONDS", "20"))
 
     SESSION_COOKIE_HTTPONLY = True

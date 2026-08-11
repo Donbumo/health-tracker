@@ -378,6 +378,28 @@ def _activities(user: User, arguments: dict) -> AIToolExecution:
         (item.get("sourceApplication") or item.get("sourceFormat") or "unknown")
         for item in result["items"]
     )
+    items = [
+        {
+            key: item[key]
+            for key in (
+                "discipline",
+                "subtype",
+                "title",
+                "startTime",
+                "endTime",
+                "localDate",
+                "environment",
+                "status",
+                "sourceFormat",
+                "sourceApplication",
+                "summary",
+                "lapCount",
+                "sampleCount",
+            )
+            if key in item
+        }
+        for item in result["items"]
+    ]
     period = {"kind": "recent", "timezone": _timezone(user)}
     evidence = tuple(
         _source_item("activities", source, count, period)
@@ -386,7 +408,7 @@ def _activities(user: User, arguments: dict) -> AIToolExecution:
     data = {
         "period": period,
         "metrics": {"count": len(result["items"]), "has_more": bool(result["next_cursor"])},
-        "items": result["items"],
+        "items": items,
         "coverage": {"returned": len(result["items"]), "limit": limit},
         "sources": list(evidence),
     }

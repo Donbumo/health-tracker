@@ -10,6 +10,7 @@ AI arranca desactivada. `fake` sigue siendo el provider determinista sin red par
 AI_ENABLED=false
 AI_PROVIDER=fake
 AI_MODEL=fake-health-v1
+AI_BASE_URL=https://api.openai.com/v1
 AI_API_KEY=
 AI_MAX_INPUT_CHARS=4000
 AI_MAX_HISTORY_MESSAGES=20
@@ -23,7 +24,21 @@ AI_PROVIDER_TIMEOUT_SECONDS=20
 AI_DRAFT_TTL_HOURS=168
 ```
 
-Para cloud se usan `AI_PROVIDER=openai`, un modelo compatible en `AI_MODEL` y `AI_API_KEY` exclusivamente desde env/secret. La key nunca se guarda en DB, frontend, exports, excepciones o logs. Si falta configuración, la app y `/health` arrancan con normalidad y AI queda `disabled` o `unconfigured`.
+Para cloud se usan `AI_PROVIDER=openai`, un modelo compatible en `AI_MODEL` y `AI_API_KEY` exclusivamente desde env/secret. `AI_BASE_URL` acepta la base HTTPS de una Responses API compatible y, si no se configura, conserva exactamente `https://api.openai.com/v1`; el adapter siempre llama a `<base>/responses`. La key nunca se guarda en DB, frontend, exports, excepciones o logs. Si falta configuración, la app y `/health` arrancan con normalidad y AI queda `disabled` o `unconfigured`.
+
+### Perfil gratuito de QA con OpenRouter
+
+Este perfil reutiliza `OpenAIResponsesProvider`; `AI_PROVIDER=openai` identifica el adapter existente y no introduce lógica de dominio específica de OpenRouter.
+
+```text
+AI_ENABLED=true
+AI_PROVIDER=openai
+AI_MODEL=openrouter/free
+AI_BASE_URL=https://openrouter.ai/api/v1
+AI_API_KEY=<secret de QA>
+```
+
+Se limita a desarrollo y QA manual con fixtures sintéticas: no se deben enviar datos personales o reales de salud. El router gratuito selecciona modelos disponibles dinámicamente, por lo que capacidad, latencia, disponibilidad y rate limits pueden variar y no constituyen un perfil de producción.
 
 El adapter declara capabilities provider-neutral: tools, imágenes, structured output, usage y si es remoto. El servicio decide disponibilidad por capabilities; no contiene ramas funcionales por vendor. Las imágenes permanecen deshabilitadas.
 

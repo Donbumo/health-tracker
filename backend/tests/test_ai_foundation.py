@@ -206,11 +206,19 @@ class CapturingTextProvider(AIProvider):
         return AIProviderResponse(content="OK")
 
 
-def _enable_openai(app, transport, *, api_key="qa-openai-key-never-real"):
+def _enable_openai(
+    app,
+    transport,
+    *,
+    api_key="qa-openai-key-never-real",
+    base_url="https://api.openai.com/v1",
+    model="gpt-5-mini-qa",
+):
     app.config.update(
         AI_ENABLED=True,
         AI_PROVIDER="openai",
-        AI_MODEL="gpt-5-mini-qa",
+        AI_MODEL=model,
+        AI_BASE_URL=base_url,
         AI_API_KEY=api_key,
         AI_HTTP_TRANSPORT=transport,
         AI_RATE_LIMIT_ENABLED=False,
@@ -744,11 +752,14 @@ def test_web_draft_preview_confirm_and_remote_privacy_controls(app, client, user
 
     app.config.update(
         AI_PROVIDER="openai",
-        AI_MODEL="gpt-5-mini-qa",
+        AI_MODEL="openrouter/free",
+        AI_BASE_URL="https://openrouter.ai/api/v1",
         AI_API_KEY="qa-web-key-never-real",
     )
     privacy = client.get("/ai").get_data(as_text=True)
     assert "Privacidad y AI remota" in privacy
+    assert "openai" in privacy
+    assert "openrouter/free" in privacy
     assert "qa-web-key-never-real" not in privacy
 
 
@@ -784,7 +795,7 @@ def test_openai_responses_adapter_uses_mocked_http_tools_usage_and_store_false(
             "usage": {"input_tokens": 7, "output_tokens": 3},
         }
 
-    _enable_openai(app, transport)
+    _enable_openai(app, transport, base_url="")
     token = _api_login(client)
     blocked = client.post("/api/v1/ai/conversations", json={}, headers=_auth(token))
     assert blocked.status_code == 503
@@ -805,6 +816,11 @@ def test_openai_responses_adapter_uses_mocked_http_tools_usage_and_store_false(
     assert response.status_code == 201, response.get_json()
     assert len(requests) == 2
     assert all(item[0] == "https://api.openai.com/v1/responses" for item in requests)
+    assert all(
+        item[1]["Authorization"] == "Bearer qa-openai-key-never-real"
+        for item in requests
+    )
+    assert all(item[1]["Content-Type"] == "application/json" for item in requests)
     assert all(item[2]["store"] is False for item in requests)
     assert requests[0][2]["model"] == "gpt-5-mini-qa"
     assert any(tool["name"] == "get_weight_trend" for tool in requests[0][2]["tools"])
@@ -819,6 +835,48 @@ def test_openai_responses_adapter_uses_mocked_http_tools_usage_and_store_false(
         assert assistant.provider == "openai"
         assert assistant.input_tokens == 18
         assert assistant.output_tokens == 8
+
+
+def test_openai_responses_adapter_uses_configurable_base_url(app, client, user):
+    requests = []
+
+    def transport(url, headers, body, timeout):
+        requests.append((url, headers, json.loads(body), timeout))
+        return {
+            "output": [
+                {
+                    "type": "message",
+                    "content": [{"type": "output_text", "text": "Respuesta QA."}],
+                }
+            ],
+            "usage": {"input_tokens": 4, "output_tokens": 2},
+        }
+
+    _enable_openai(
+        app,
+        transport,
+        api_key="qa-openrouter-key-never-real",
+        base_url="https://openrouter.ai/api/v1/",
+        model="openrouter/free",
+    )
+    token = _api_login(client)
+    client.put(
+        "/api/v1/ai/settings",
+        json={"remote_consent_enabled": True},
+        headers=_auth(token),
+    )
+    conversation_id = _create_conversation(client, token)
+    response = _send(client, token, conversation_id, "Consulta sintética QA")
+
+    assert response.status_code == 201, response.get_json()
+    assert len(requests) == 1
+    url, headers, payload, _timeout = requests[0]
+    assert url == "https://openrouter.ai/api/v1/responses"
+    assert headers["Authorization"] == "Bearer qa-openrouter-key-never-real"
+    assert headers["Content-Type"] == "application/json"
+    assert payload["model"] == "openrouter/free"
+    assert payload["store"] is False
+    assert "qa-openrouter-key-never-real" not in json.dumps(payload)
 
 
 def test_openai_missing_key_is_unconfigured_without_breaking_health(app, client, user):
@@ -909,6 +967,27 @@ def test_openai_malformed_tool_call_is_rejected_at_provider_boundary(app, client
     response = _send(client, token, conversation_id, "Tool malformada QA")
     assert response.status_code == 502
     assert response.get_json()["error"]["code"] == "provider_malformed_tool_call"
+
+
+def test_openai_malformed_response_is_sanitized(app, client, user, caplog):
+    _enable_openai(
+        app,
+        lambda *_args: {"unexpected": "private-provider-response-detail"},
+    )
+    token = _api_login(client)
+    client.put(
+        "/api/v1/ai/settings",
+        json={"remote_consent_enabled": True},
+        headers=_auth(token),
+    )
+    conversation_id = _create_conversation(client, token)
+    response = _send(client, token, conversation_id, "Respuesta malformada QA")
+
+    assert response.status_code == 502
+    assert response.get_json()["error"]["code"] == "provider_malformed_response"
+    assert "private-provider-response-detail" not in (
+        caplog.text + response.get_data(as_text=True)
+    )
 
 
 def test_context_budget_limits_messages_characters_and_turns_deterministically(

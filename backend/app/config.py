@@ -123,6 +123,7 @@ class Config:
     AI_ENABLED = _as_bool(os.getenv("AI_ENABLED"), False)
     AI_PROVIDER = os.getenv("AI_PROVIDER", "").strip().casefold()
     AI_MODEL = os.getenv("AI_MODEL", "").strip()
+    AI_BASE_URL = os.getenv("AI_BASE_URL", "https://api.openai.com/v1").strip()
     AI_API_KEY = os.getenv("AI_API_KEY", "")
     AI_MAX_INPUT_CHARS = int(os.getenv("AI_MAX_INPUT_CHARS", "4000"))
     AI_MAX_HISTORY_MESSAGES = int(os.getenv("AI_MAX_HISTORY_MESSAGES", "20"))

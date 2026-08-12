@@ -7,6 +7,7 @@ import re
 import socket
 import unicodedata
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 import uuid
 
@@ -392,7 +393,7 @@ class FakeAIProvider(AIProvider):
         )
 
 
-OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
+OPENAI_BASE_URL = "https://api.openai.com/v1"
 _DRAFT_TOOL_NAMES = {
     "prepare_body_measurement_draft": "body_measurement",
     "prepare_food_entry_draft": "food_entry",
@@ -463,6 +464,24 @@ def _post_openai_json(url: str, headers: dict, body: bytes, timeout: int) -> dic
     return json.loads(raw.decode("utf-8"))
 
 
+def _responses_url(base_url: str | None) -> str:
+    raw = (base_url or OPENAI_BASE_URL).strip().rstrip("/")
+    parts = urlsplit(raw)
+    if (
+        parts.scheme != "https"
+        or not parts.netloc
+        or parts.username is not None
+        or parts.password is not None
+        or parts.query
+        or parts.fragment
+    ):
+        raise AIProviderError(
+            "invalid_ai_configuration", "La configuración AI no es válida.", 503
+        )
+    path = f"{parts.path.rstrip('/')}/responses"
+    return urlunsplit((parts.scheme, parts.netloc, path, "", ""))
+
+
 class OpenAIResponsesProvider(AIProvider):
     """Thin Responses API adapter with an injectable transport for offline tests."""
 
@@ -475,8 +494,11 @@ class OpenAIResponsesProvider(AIProvider):
         remote=True,
     )
 
-    def __init__(self, api_key: str, transport=None):
+    def __init__(
+        self, api_key: str, *, base_url: str | None = None, transport=None
+    ):
         self._api_key = api_key
+        self._responses_url = _responses_url(base_url)
         self._transport = transport or _post_openai_json
 
     def respond(self, request: AIProviderRequest) -> AIProviderResponse:
@@ -535,7 +557,7 @@ class OpenAIResponsesProvider(AIProvider):
         }
         try:
             document = self._transport(
-                OPENAI_RESPONSES_URL,
+                self._responses_url,
                 {
                     "Authorization": f"Bearer {self._api_key}",
                     "Content-Type": "application/json",
@@ -737,6 +759,7 @@ def get_provider() -> AIProvider:
     if provider is None and status["provider"] == "openai":
         provider = OpenAIResponsesProvider(
             str(current_app.config.get("AI_API_KEY") or ""),
+            base_url=str(current_app.config.get("AI_BASE_URL") or ""),
             transport=current_app.config.get("AI_HTTP_TRANSPORT"),
         )
     if not isinstance(provider, AIProvider):

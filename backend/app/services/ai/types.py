@@ -11,6 +11,15 @@ class AIUsage:
 
 
 @dataclass(frozen=True)
+class AIProviderCapabilities:
+    supports_tools: bool = False
+    supports_images: bool = False
+    supports_structured_output: bool = False
+    supports_usage: bool = False
+    remote: bool = False
+
+
+@dataclass(frozen=True)
 class AIProviderMessage:
     role: str
     content: str
@@ -45,6 +54,7 @@ class AIProviderToolResult:
     data: dict[str, Any] | None = None
     evidence: tuple[dict[str, Any], ...] = ()
     error_code: str | None = None
+    arguments: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

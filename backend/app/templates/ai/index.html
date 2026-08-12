@@ -19,13 +19,31 @@
     <h2 id="ai-status-title">Estado</h2>
     {% if ai_status.state == 'available' %}
       <p><span class="status status-success">Disponible</span></p>
-      <p class="muted">Proveedor {{ ai_status.provider }} · modelo {{ ai_status.model }}. Las acciones de escritura y adjuntos siguen desactivados.</p>
+      <p class="muted">Proveedor {{ ai_status.provider }} · modelo {{ ai_status.model }}. Peso y comida solo se escriben tras confirmar un borrador; adjuntos siguen desactivados.</p>
+    {% elif ai_status.state == 'consent_required' %}
+      <p><span class="status status-warning">Requiere consentimiento</span></p>
+      <p>{{ ai_status.reason }}</p>
     {% else %}
       <p><span class="status status-warning">{{ 'Desactivado' if ai_status.state == 'disabled' else 'Sin configurar' }}</span></p>
       <p>{{ ai_status.reason }}</p>
       <p class="muted">El resto de Health Tracker continúa funcionando normalmente.</p>
     {% endif %}
   </div>
+</section>
+
+<section class="card" aria-labelledby="ai-privacy-title">
+  <h2 id="ai-privacy-title">Privacidad y AI remota</h2>
+  <p>Proveedor configurado: <strong>{{ ai_status.provider or 'ninguno' }}</strong> · modelo <strong>{{ ai_status.model or 'ninguno' }}</strong>.</p>
+  {% if ai_status.remote %}
+    <p>Al habilitarla, tu pregunta, el contexto reciente acotado y únicamente los datos mínimos devueltos por las herramientas necesarias se enviarán al proveedor remoto. No se envía tu API key ni un volcado de tu perfil.</p>
+    <form action="{{ url_for('ai.remote_consent') }}" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="checkbox"><input type="checkbox" name="remote_consent" value="enabled"{% if ai_status.remote_consent_enabled %} checked{% endif %}> Habilito explícitamente AI remota para mis consultas.</label>
+      <button class="button button-secondary" type="submit">Guardar preferencia</button>
+    </form>
+  {% else %}
+    <p class="muted">El proveedor configurado no envía datos a un servicio remoto. La preferencia remota permanece deshabilitada.</p>
+  {% endif %}
 </section>
 
 <section aria-labelledby="conversation-list-title">

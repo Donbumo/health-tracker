@@ -200,7 +200,7 @@ class AIActionDraft(db.Model):
             name="ck_ai_action_drafts_type",
         ),
         db.CheckConstraint(
-            "status IN ('pending_confirmation','cancelled')",
+            "status IN ('pending_confirmation','applied','rejected','expired','failed')",
             name="ck_ai_action_drafts_status",
         ),
         db.UniqueConstraint("public_id", name="uq_ai_action_drafts_public_id"),
@@ -238,6 +238,13 @@ class AIActionDraft(db.Model):
         server_default="pending_confirmation",
     )
     provenance_json = db.Column(db.JSON, nullable=False, default=dict)
+    applied_resource_type = db.Column(db.String(32), nullable=True)
+    applied_resource_public_ids_json = db.Column(db.JSON, nullable=False, default=list)
+    error_code = db.Column(db.String(64), nullable=True)
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    applied_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    rejected_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    failed_at = db.Column(db.DateTime(timezone=True), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

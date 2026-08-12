@@ -3,6 +3,9 @@ from decimal import Decimal
 import json
 import os
 from pathlib import Path
+from urllib.error import HTTPError
+from concurrent.futures import ThreadPoolExecutor
+from threading import Barrier
 import uuid
 
 import pytest
@@ -16,6 +19,7 @@ from app.models import (
     AIMessage,
     AIToolCall,
     DailyEnergy,
+    NutritionItem,
     User,
     WeighIn,
 )
@@ -191,6 +195,29 @@ class BoundaryProvider(AIProvider):
         return AIProviderResponse(content="Traté la fuente como datos, no como instrucciones.")
 
 
+class CapturingTextProvider(AIProvider):
+    name = "capture-test"
+
+    def __init__(self):
+        self.requests = []
+
+    def respond(self, request: AIProviderRequest) -> AIProviderResponse:
+        self.requests.append(request)
+        return AIProviderResponse(content="OK")
+
+
+def _enable_openai(app, transport, *, api_key="qa-openai-key-never-real"):
+    app.config.update(
+        AI_ENABLED=True,
+        AI_PROVIDER="openai",
+        AI_MODEL="gpt-5-mini-qa",
+        AI_API_KEY=api_key,
+        AI_HTTP_TRANSPORT=transport,
+        AI_RATE_LIMIT_ENABLED=False,
+        AI_TODAY_OVERRIDE=date(2026, 8, 9),
+    )
+
+
 def test_ai_disabled_is_safe_and_does_not_break_global_health(app, client, user):
     token = _api_login(client)
     status = client.get("/api/v1/ai/status", headers=_auth(token))
@@ -201,7 +228,15 @@ def test_ai_disabled_is_safe_and_does_not_break_global_health(app, client, user)
         "provider": None,
         "model": None,
         "reason": "La función AI está desactivada.",
-        "write_actions_enabled": False,
+        "capabilities": {
+            "tools": False,
+            "images": False,
+            "structured_output": False,
+            "usage": False,
+        },
+        "remote": False,
+        "remote_consent_enabled": False,
+        "write_actions_enabled": ["body_measurement", "food_entry"],
         "attachments_enabled": False,
     }
     unavailable = client.post(
@@ -678,6 +713,380 @@ def test_web_ai_is_authenticated_responsive_surface_with_retry_and_delete(app, c
     assert 'href="/ai"' in navigation
 
 
+def test_web_draft_preview_confirm_and_remote_privacy_controls(app, client, user):
+    _enable_ai(app)
+    login(client)
+    created = client.post("/ai/conversations", follow_redirects=False)
+    conversation_url = created.headers["Location"]
+    sent = client.post(
+        f"{conversation_url}/messages",
+        data={"content": "Peso 74.5 kg"},
+        follow_redirects=True,
+    )
+    html = sent.get_data(as_text=True)
+    assert "Confirmar y guardar" in html
+    assert "reportado por ti" in html
+    with app.app_context():
+        draft = db.session.execute(db.select(AIActionDraft)).scalar_one()
+        draft_id = draft.public_id
+        conversation_id = draft.conversation.public_id
+    applied = client.post(
+        f"/ai/drafts/{draft_id}/confirm",
+        data={
+            "conversation_id": conversation_id,
+            "weight": "74.5",
+            "unit": "kg",
+        },
+        follow_redirects=True,
+    )
+    assert applied.status_code == 200
+    assert "Guardado tras tu confirmación explícita" in applied.get_data(as_text=True)
+
+    app.config.update(
+        AI_PROVIDER="openai",
+        AI_MODEL="gpt-5-mini-qa",
+        AI_API_KEY="qa-web-key-never-real",
+    )
+    privacy = client.get("/ai").get_data(as_text=True)
+    assert "Privacidad y AI remota" in privacy
+    assert "qa-web-key-never-real" not in privacy
+
+
+def test_openai_responses_adapter_uses_mocked_http_tools_usage_and_store_false(
+    app, client, user
+):
+    requests = []
+
+    def transport(url, headers, body, timeout):
+        document = json.loads(body)
+        requests.append((url, headers, document, timeout))
+        if any(item.get("type") == "function_call_output" for item in document["input"]):
+            return {
+                "output": [
+                    {
+                        "type": "message",
+                        "content": [
+                            {"type": "output_text", "text": "Resumen remoto QA seguro."}
+                        ],
+                    }
+                ],
+                "usage": {"input_tokens": 11, "output_tokens": 5},
+            }
+        return {
+            "output": [
+                {
+                    "type": "function_call",
+                    "call_id": "cloud-call-qa",
+                    "name": "get_weight_trend",
+                    "arguments": '{"preset":"7d"}',
+                }
+            ],
+            "usage": {"input_tokens": 7, "output_tokens": 3},
+        }
+
+    _enable_openai(app, transport)
+    token = _api_login(client)
+    blocked = client.post("/api/v1/ai/conversations", json={}, headers=_auth(token))
+    assert blocked.status_code == 503
+    status = client.get("/api/v1/ai/status", headers=_auth(token)).get_json()["data"]
+    assert status["state"] == "consent_required"
+    assert status["remote"] is True
+    assert requests == []
+
+    enabled = client.put(
+        "/api/v1/ai/settings",
+        json={"remote_consent_enabled": True},
+        headers=_auth(token),
+    )
+    assert enabled.status_code == 200
+    assert enabled.get_json()["data"]["state"] == "available"
+    conversation_id = _create_conversation(client, token)
+    response = _send(client, token, conversation_id, "¿Cómo cambió mi peso?")
+    assert response.status_code == 201, response.get_json()
+    assert len(requests) == 2
+    assert all(item[0] == "https://api.openai.com/v1/responses" for item in requests)
+    assert all(item[2]["store"] is False for item in requests)
+    assert requests[0][2]["model"] == "gpt-5-mini-qa"
+    assert any(tool["name"] == "get_weight_trend" for tool in requests[0][2]["tools"])
+    assert any(item.get("type") == "function_call_output" for item in requests[1][2]["input"])
+    serialized = json.dumps(requests[0][2])
+    assert "test-user" not in serialized
+    assert "qa-openai-key-never-real" not in serialized
+    with app.app_context():
+        assistant = db.session.execute(
+            db.select(AIMessage).where(AIMessage.role == "assistant")
+        ).scalar_one()
+        assert assistant.provider == "openai"
+        assert assistant.input_tokens == 18
+        assert assistant.output_tokens == 8
+
+
+def test_openai_missing_key_is_unconfigured_without_breaking_health(app, client, user):
+    _enable_openai(app, lambda *_args: {}, api_key="")
+    token = _api_login(client)
+    status = client.get("/api/v1/ai/status", headers=_auth(token)).get_json()["data"]
+    assert status["state"] == "unconfigured"
+    assert "AI_API_KEY" in status["reason"]
+    assert client.get("/api/v1/health").status_code == 200
+
+
+@pytest.mark.parametrize(
+    "failure,expected_code,expected_status",
+    [
+        (TimeoutError("private-timeout-detail"), "provider_timeout", 504),
+        (
+            HTTPError(
+                "https://api.openai.com/v1/responses",
+                401,
+                "private-auth-detail",
+                {},
+                None,
+            ),
+            "provider_auth",
+            502,
+        ),
+        (
+            HTTPError(
+                "https://api.openai.com/v1/responses",
+                429,
+                "private-quota-detail",
+                {},
+                None,
+            ),
+            "provider_quota",
+            429,
+        ),
+    ],
+)
+def test_openai_provider_errors_are_safe_and_retryable(
+    app, client, user, caplog, failure, expected_code, expected_status
+):
+    def transport(*_args):
+        raise failure
+
+    _enable_openai(app, transport)
+    token = _api_login(client)
+    client.put(
+        "/api/v1/ai/settings",
+        json={"remote_consent_enabled": True},
+        headers=_auth(token),
+    )
+    conversation_id = _create_conversation(client, token)
+    response = _send(client, token, conversation_id, "Consulta remota QA")
+    assert response.status_code == expected_status
+    assert response.get_json()["error"]["code"] == expected_code
+    combined = caplog.text + response.get_data(as_text=True)
+    assert "private-timeout-detail" not in combined
+    assert "private-auth-detail" not in combined
+    assert "private-quota-detail" not in combined
+    with app.app_context():
+        assert [item.role for item in db.session.execute(db.select(AIMessage)).scalars()] == [
+            "user"
+        ]
+
+
+def test_openai_malformed_tool_call_is_rejected_at_provider_boundary(app, client, user):
+    def transport(*_args):
+        return {
+            "output": [
+                {
+                    "type": "function_call",
+                    "call_id": "bad-call",
+                    "name": "get_weight_trend",
+                    "arguments": "not-json",
+                }
+            ]
+        }
+
+    _enable_openai(app, transport)
+    token = _api_login(client)
+    client.put(
+        "/api/v1/ai/settings",
+        json={"remote_consent_enabled": True},
+        headers=_auth(token),
+    )
+    conversation_id = _create_conversation(client, token)
+    response = _send(client, token, conversation_id, "Tool malformada QA")
+    assert response.status_code == 502
+    assert response.get_json()["error"]["code"] == "provider_malformed_tool_call"
+
+
+def test_context_budget_limits_messages_characters_and_turns_deterministically(
+    app, client, user
+):
+    provider = CapturingTextProvider()
+    _enable_ai(app, provider)
+    app.config.update(
+        AI_MAX_HISTORY_MESSAGES=20,
+        AI_MAX_HISTORY_CHARS=100,
+        AI_MAX_HISTORY_TURNS=1,
+    )
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    for index in range(4):
+        response = _send(
+            client,
+            token,
+            conversation_id,
+            f"Turno {index} " + ("x" * 48),
+        )
+        assert response.status_code == 201
+    history = provider.requests[-1].messages
+    assert sum(len(item.content) for item in history) <= 100
+    assert sum(item.role == "user" for item in history) <= 1
+    assert history[-1].content.startswith("Turno 3")
+
+
+def test_body_draft_confirm_is_idempotent_and_uses_official_service(app, client, user):
+    _enable_ai(app)
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    sent = _send(client, token, conversation_id, "Peso 82.4 kg")
+    draft_id = sent.get_json()["data"]["drafts"][0]["id"]
+    first = client.post(
+        f"/api/v1/ai/drafts/{draft_id}/confirm", json={}, headers=_auth(token)
+    )
+    second = client.post(
+        f"/api/v1/ai/drafts/{draft_id}/confirm", json={}, headers=_auth(token)
+    )
+    assert first.status_code == second.status_code == 200
+    assert first.get_json()["data"]["applied_resource"] == second.get_json()["data"][
+        "applied_resource"
+    ]
+    with app.app_context():
+        records = db.session.execute(db.select(WeighIn)).scalars().all()
+        assert len(records) == 1
+        assert records[0].weight_kg == Decimal("82.400")
+        assert records[0].source == "manual"
+        draft = db.session.execute(db.select(AIActionDraft)).scalar_one()
+        assert draft.status == "applied"
+        assert draft.provenance_json["value_origin"] == "reported_by_user"
+        assert draft.provenance_json["interpretation"] == "parsed_by_ai"
+
+
+def test_draft_reject_is_idempotent_and_foreign_owner_is_hidden(app, client, user):
+    _enable_ai(app)
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    draft_id = _send(client, token, conversation_id, "Peso 70 kg").get_json()["data"][
+        "drafts"
+    ][0]["id"]
+    with app.app_context():
+        other = User(username="ai-draft-other", role="user")
+        other.set_password("fictional-other-password")
+        db.session.add(other)
+        db.session.commit()
+    other_token = _api_login(
+        client,
+        username="ai-draft-other",
+        password="fictional-other-password",
+        device_id="99999999-9999-4999-8999-999999999999",
+    )
+    assert client.post(
+        f"/api/v1/ai/drafts/{draft_id}/reject", json={}, headers=_auth(other_token)
+    ).status_code == 404
+    first = client.post(
+        f"/api/v1/ai/drafts/{draft_id}/reject", json={}, headers=_auth(token)
+    )
+    second = client.post(
+        f"/api/v1/ai/drafts/{draft_id}/reject", json={}, headers=_auth(token)
+    )
+    assert first.status_code == second.status_code == 200
+    assert first.get_json()["data"]["status"] == "rejected"
+    with app.app_context():
+        assert db.session.execute(db.select(WeighIn)).scalars().all() == []
+
+
+def test_food_text_draft_is_editable_confirmed_and_rejectable_without_silent_write(
+    app, client, user
+):
+    _enable_ai(app)
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    response = _send(client, token, conversation_id, "200 g de arroz y 150 g de pollo")
+    assert response.status_code == 201
+    draft = response.get_json()["data"]["drafts"][0]
+    assert draft["type"] == "food_entry"
+    assert len(draft["payload"]["items"]) == 2
+    with app.app_context():
+        assert db.session.execute(db.select(NutritionItem)).scalars().all() == []
+    confirmed = client.post(
+        f"/api/v1/ai/drafts/{draft['id']}/confirm",
+        json={
+            "payload": {
+                "meal_type": "lunch",
+                "items": [
+                    {"name": "arroz cocido", "quantity": "200", "unit": "g"},
+                    {"name": "pollo", "quantity": "150", "unit": "g"},
+                ],
+            }
+        },
+        headers=_auth(token),
+    )
+    assert confirmed.status_code == 200, confirmed.get_json()
+    assert len(confirmed.get_json()["data"]["applied_resource"]["ids"]) == 2
+    second = _send(client, token, conversation_id, "Comí 3 huevos")
+    second_id = second.get_json()["data"]["drafts"][0]["id"]
+    rejected = client.post(
+        f"/api/v1/ai/drafts/{second_id}/reject", json={}, headers=_auth(token)
+    )
+    assert rejected.status_code == 200
+    with app.app_context():
+        items = db.session.execute(
+            db.select(NutritionItem).order_by(NutritionItem.id)
+        ).scalars().all()
+        assert [item.name for item in items] == ["arroz cocido", "pollo"]
+        assert all(item.calories is None and item.protein_g is None for item in items)
+
+
+def test_conversation_and_account_hard_delete_cleanup_ai_without_undoing_applied_data(
+    app, client, user
+):
+    _enable_ai(app)
+    token = _api_login(client)
+    first_conversation = _create_conversation(client, token)
+    draft_id = _send(client, token, first_conversation, "Peso 68 kg").get_json()["data"][
+        "drafts"
+    ][0]["id"]
+    client.post(f"/api/v1/ai/drafts/{draft_id}/confirm", json={}, headers=_auth(token))
+    assert client.delete(
+        f"/api/v1/ai/conversations/{first_conversation}", headers=_auth(token)
+    ).status_code == 200
+    with app.app_context():
+        assert db.session.execute(db.select(AIConversation)).scalars().all() == []
+        assert db.session.execute(db.select(AIMessage)).scalars().all() == []
+        assert db.session.execute(db.select(AIActionDraft)).scalars().all() == []
+        assert len(db.session.execute(db.select(WeighIn)).scalars().all()) == 1
+    second_conversation = _create_conversation(client, token)
+    assert _send(client, token, second_conversation, "¿Cómo voy?").status_code == 201
+    with app.app_context():
+        account = db.session.get(User, user)
+        for conversation in account.ai_conversations:
+            list(conversation.messages)
+            list(conversation.tool_calls)
+            list(conversation.drafts)
+        db.session.delete(account)
+        db.session.commit()
+        assert db.session.execute(db.select(AIConversation)).scalars().all() == []
+        assert db.session.execute(db.select(AIMessage)).scalars().all() == []
+        assert db.session.execute(db.select(AIToolCall)).scalars().all() == []
+        assert db.session.execute(db.select(AIActionDraft)).scalars().all() == []
+
+
+def test_external_provider_provenance_is_vendor_neutral():
+    from app.services.ai.tools import _source_item
+
+    item = _source_item(
+        "activities",
+        "strava",
+        2,
+        {"from": "2026-08-01", "to": "2026-08-09", "timezone": "UTC"},
+    )
+    assert item["source_type"] == "external_provider"
+    assert item["provider"] == "strava"
+    assert item["resource_type"] == "activity"
+
+
 @pytest.mark.skipif(
     not Path("/.dockerenv").exists() and os.getenv("AI_MARIADB_QA") != "1",
     reason="MariaDB AI integration runs only in Docker",
@@ -722,6 +1131,77 @@ def test_mariadb_ai_persistence_owner_scope_and_cascade(app, tmp_path):
             assert db.session.execute(
                 db.select(AIConversation).where(AIConversation.user_id == account_id)
             ).scalars().all() == []
+            assert db.session.execute(
+                db.select(AIMessage).where(AIMessage.user_id == account_id)
+            ).scalars().all() == []
+            assert db.session.execute(
+                db.select(AIToolCall).where(AIToolCall.user_id == account_id)
+            ).scalars().all() == []
+            assert db.session.execute(
+                db.select(AIActionDraft).where(AIActionDraft.user_id == account_id)
+            ).scalars().all() == []
         finally:
             db.session.execute(db.delete(User).where(User.id.in_([account_id, other_id])))
+            db.session.commit()
+
+
+@pytest.mark.skipif(
+    not Path("/.dockerenv").exists() and os.getenv("AI_MARIADB_QA") != "1",
+    reason="MariaDB AI concurrency runs only in Docker",
+)
+def test_mariadb_concurrent_draft_confirmation_creates_one_resource(app, tmp_path):
+    mariadb_app = create_app(
+        {
+            "TESTING": True,
+            "SECRET_KEY": "ai-concurrent-secret-key-long-enough",
+            "API_TOKEN_SIGNING_KEY": "ai-concurrent-signing-key-long-enough",
+            "DATA_ROOT": tmp_path / "ai-mariadb-concurrent",
+            "UPLOAD_ROOT": tmp_path / "ai-mariadb-concurrent" / "raw",
+            "GENERATED_UPLOAD_ROOT": tmp_path / "ai-mariadb-concurrent" / "generated",
+            "SCHEMA_ROOT": app.config["SCHEMA_ROOT"],
+            "APP_TIMEZONE": "UTC",
+            "WTF_CSRF_ENABLED": False,
+            "API_RATE_LIMIT_ENABLED": False,
+            "AI_ENABLED": True,
+            "AI_PROVIDER": "fake",
+            "AI_MODEL": "fake-health-v1",
+            "AI_TODAY_OVERRIDE": date(2026, 8, 9),
+        }
+    )
+    username = f"ai-concurrent-{uuid.uuid4().hex}"
+    with mariadb_app.app_context():
+        account = User(username=username, role="user", timezone="UTC")
+        account.set_password("fictional-concurrent-password")
+        db.session.add(account)
+        db.session.commit()
+        account_id = account.id
+        conversation = AIConversationService().create(account_id)
+        _message, drafts = AIConversationService().send_message(
+            account, conversation.public_id, "Peso 81.2 kg"
+        )
+        draft_id = drafts[0].public_id
+
+    barrier = Barrier(2)
+
+    def confirm():
+        with mariadb_app.app_context():
+            current = db.session.get(User, account_id)
+            barrier.wait(timeout=10)
+            row = AIConversationService().confirm_draft(current, draft_id)
+            return row.status, tuple(row.applied_resource_public_ids_json)
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(executor.map(lambda _index: confirm(), range(2)))
+        assert results[0] == results[1]
+        assert results[0][0] == "applied"
+        with mariadb_app.app_context():
+            records = db.session.execute(
+                db.select(WeighIn).where(WeighIn.user_id == account_id)
+            ).scalars().all()
+            assert len(records) == 1
+            assert records[0].public_id == results[0][1][0]
+    finally:
+        with mariadb_app.app_context():
+            db.session.execute(db.delete(User).where(User.id == account_id))
             db.session.commit()

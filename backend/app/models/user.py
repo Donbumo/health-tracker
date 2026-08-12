@@ -34,6 +34,12 @@ class User(UserMixin, db.Model):
     display_name = db.Column(db.String(100), nullable=True)
     timezone = db.Column(db.String(64), nullable=True)
     onboarding_dismissed_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    ai_remote_consent_enabled = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+    ai_remote_consent_updated_at = db.Column(
+        db.DateTime(timezone=True), nullable=True
+    )
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

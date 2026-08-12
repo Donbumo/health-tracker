@@ -23,21 +23,57 @@
         <div class="ai-message-content">{{ message.content }}</div>
         {% if message.drafts %}
           {% for draft in message.drafts %}
-            <section class="ai-draft" aria-label="Borrador pendiente">
-              <div><span class="status status-warning">Pendiente de confirmación</span><strong>{{ draft.draft_type|replace('_', ' ') }}</strong></div>
-              <dl class="metadata">
-                {% for key, value in draft.payload_json.items() %}<dt>{{ key }}</dt><dd>{{ value }}</dd>{% endfor %}
-              </dl>
-              <p class="muted">Vista previa solamente. Esta versión no puede confirmar ni escribir el borrador.</p>
+            <section class="ai-draft" aria-label="Borrador {{ draft.status }}">
+              <div>
+                <span class="status {{ 'status-success' if draft.status == 'applied' else 'status-warning' }}">{{ draft.status|replace('_', ' ') }}</span>
+                <strong>{{ draft.draft_type|replace('_', ' ') }}</strong>
+              </div>
+              {% if draft.status == 'pending_confirmation' %}
+                <form action="{{ url_for('ai.confirm_draft', draft_id=draft.public_id) }}" method="post">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="conversation_id" value="{{ conversation.public_id }}">
+                  {% if draft.draft_type == 'body_measurement' %}
+                    <label>Peso <input name="weight" value="{{ draft.payload_json.weight }}" inputmode="decimal" required></label>
+                    <label>Unidad <select name="unit"><option value="kg"{% if draft.payload_json.unit == 'kg' %} selected{% endif %}>kg</option><option value="lb"{% if draft.payload_json.unit == 'lb' %} selected{% endif %}>lb</option></select></label>
+                  {% elif draft.draft_type == 'food_entry' %}
+                    <label>Fecha <input type="date" name="date" value="{{ draft.payload_json.date|default('') }}"></label>
+                    <label>Comida <select name="meal_type">{% for value in ['breakfast', 'lunch', 'dinner', 'snack', 'extra', 'other'] %}<option value="{{ value }}"{% if draft.payload_json.meal_type == value %} selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
+                    {% for item in draft.payload_json['items'] %}
+                      <fieldset><legend>Elemento {{ loop.index }}</legend>
+                        <label>Nombre <input name="item_name_{{ loop.index0 }}" value="{{ item.name }}" required></label>
+                        <label>Cantidad <input name="item_quantity_{{ loop.index0 }}" value="{{ item.quantity|default('', true) }}" inputmode="decimal"></label>
+                        <label>Unidad <input name="item_unit_{{ loop.index0 }}" value="{{ item.unit|default('', true) }}"></label>
+                      </fieldset>
+                    {% endfor %}
+                    {% if draft.payload_json.warnings %}<ul>{% for warning in draft.payload_json.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>{% endif %}
+                  {% else %}
+                    <p class="muted">La confirmación de este tipo todavía no está habilitada.</p>
+                  {% endif %}
+                  {% if draft.draft_type in ['body_measurement', 'food_entry'] %}<button class="button" type="submit">Confirmar y guardar</button>{% endif %}
+                </form>
+                <form action="{{ url_for('ai.reject_draft', draft_id=draft.public_id) }}" method="post">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="button button-secondary" type="submit">Rechazar</button>
+                </form>
+                <p class="muted">Aún no se escribió ningún dato. Origen: reportado por ti e interpretado por AI.</p>
+              {% elif draft.status == 'applied' %}
+                <p>Guardado tras tu confirmación explícita. Recursos: {{ draft.applied_resource_public_ids_json|join(', ') }}.</p>
+              {% elif draft.status == 'rejected' %}
+                <p class="muted">Rechazado; no se escribió ningún dato.</p>
+              {% else %}
+                <p class="muted">Este borrador ya no puede aplicarse{% if draft.error_code %}: {{ draft.error_code }}{% endif %}.</p>
+              {% endif %}
             </section>
           {% endfor %}
         {% endif %}
         {% if message.evidence_json %}
           <details class="ai-evidence">
             <summary>Fuentes y evidencia</summary>
+            {% set first = message.evidence_json[0] %}
+            {% if first.period %}<p><strong>Periodo:</strong> {{ first.period.from|default(first.period.kind|default('reciente')) }}{% if first.period.to %} a {{ first.period.to }}{% endif %}{% if first.period.timezone %} · {{ first.period.timezone }}{% endif %}</p>{% endif %}
             <ul>
               {% for item in message.evidence_json %}
-                <li><strong>{{ item.metric|default('dato') }}</strong>: {{ item.source|default('no disponible') }} · {{ item.evidence_kind|default('registrado') }}</li>
+                <li><strong>{{ item.source|default('Health Tracker') }}</strong> · {{ item.metric|default('dato') }} · {{ item.evidence_kind|default('registrado') }}{% if item.records is defined %} · cobertura: {{ item.records }} registros{% endif %}</li>
               {% endfor %}
             </ul>
           </details>

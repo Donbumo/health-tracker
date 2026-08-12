@@ -27,7 +27,7 @@ def index():
     return render_template(
         "ai/index.html",
         conversations=conversations,
-        ai_status=service.status(),
+        ai_status=service.status(current_user._get_current_object()),
     )
 
 
@@ -35,7 +35,7 @@ def index():
 @login_required
 def create_conversation():
     service = AIConversationService()
-    status = service.status()
+    status = service.status(current_user._get_current_object())
     if status["state"] != "available":
         flash(status["reason"] or "La función AI no está disponible.", "warning")
         return redirect(url_for("ai.index"))
@@ -59,7 +59,7 @@ def conversation(conversation_id: str):
     return render_template(
         "ai/conversation.html",
         conversation=row,
-        ai_status=service.status(),
+        ai_status=service.status(current_user._get_current_object()),
     )
 
 
@@ -102,3 +102,89 @@ def delete_conversation(conversation_id: str):
         return redirect(url_for("ai.index"))
     flash("Conversación eliminada.", "success")
     return redirect(url_for("ai.index"))
+
+
+@ai_bp.post("/settings/remote-consent")
+@login_required
+def remote_consent():
+    enabled = request.form.get("remote_consent") == "enabled"
+    try:
+        AIConversationService.set_remote_consent(current_user.id, enabled)
+    except AIServiceError as error:
+        _web_error(error)
+    else:
+        flash(
+            "AI remota habilitada con consentimiento explícito."
+            if enabled
+            else "AI remota deshabilitada.",
+            "success",
+        )
+    return redirect(url_for("ai.index"))
+
+
+@ai_bp.post("/drafts/<draft_id>/confirm")
+@login_required
+def confirm_draft(draft_id: str):
+    service = AIConversationService()
+    try:
+        draft = service.get_draft(current_user.id, draft_id)
+        if draft.draft_type == "body_measurement":
+            edits = {
+                "weight": request.form.get("weight"),
+                "unit": request.form.get("unit"),
+            }
+        elif draft.draft_type == "food_entry":
+            items = []
+            for index, original in enumerate((draft.payload_json or {}).get("items", [])):
+                item = dict(original)
+                item.update(
+                    {
+                        "name": request.form.get(f"item_name_{index}"),
+                        "quantity": request.form.get(f"item_quantity_{index}") or None,
+                        "unit": request.form.get(f"item_unit_{index}") or None,
+                    }
+                )
+                items.append(item)
+            edits = {
+                "date": request.form.get("date") or None,
+                "meal_type": request.form.get("meal_type"),
+                "items": items,
+            }
+            if edits["date"] is None:
+                edits.pop("date")
+        else:
+            edits = None
+        row = service.confirm_draft(
+            current_user._get_current_object(), draft_id, edits=edits
+        )
+    except AIServiceError as error:
+        _web_error(error)
+        conversation_id = request.form.get("conversation_id")
+        if conversation_id:
+            return redirect(
+                url_for("ai.conversation", conversation_id=conversation_id)
+            )
+        return redirect(url_for("ai.index"))
+    flash(
+        "Borrador aplicado."
+        if row.status == "applied"
+        else "El borrador no cambió.",
+        "success",
+    )
+    return redirect(
+        url_for("ai.conversation", conversation_id=row.conversation.public_id)
+    )
+
+
+@ai_bp.post("/drafts/<draft_id>/reject")
+@login_required
+def reject_draft(draft_id: str):
+    try:
+        row = AIConversationService().reject_draft(current_user.id, draft_id)
+    except AIServiceError as error:
+        _web_error(error)
+        return redirect(url_for("ai.index"))
+    flash("Borrador rechazado; no se escribió ningún dato.", "success")
+    return redirect(
+        url_for("ai.conversation", conversation_id=row.conversation.public_id)
+    )

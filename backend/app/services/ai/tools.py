@@ -135,7 +135,7 @@ def _source_category(source: str) -> tuple[str, str]:
 
 def _source_item(metric: str, source: str, count: int, period: dict) -> dict:
     category, evidence_kind = _source_category(source)
-    return {
+    item = {
         "metric": metric,
         "period": period,
         "source": _clean_text(source, 128),
@@ -143,6 +143,15 @@ def _source_item(metric: str, source: str, count: int, period: dict) -> dict:
         "evidence_kind": evidence_kind,
         "records": count,
     }
+    if category == "external_provider":
+        item.update(
+            {
+                "source_type": "external_provider",
+                "provider": _clean_text(source, 128),
+                "resource_type": "activity" if metric == "activities" else metric,
+            }
+        )
+    return item
 
 
 class AIProvenanceService:
@@ -231,13 +240,20 @@ class AIProvenanceService:
         if "activities" in domains:
             start_at, end_at = date_range.utc_bounds()
             activities = db.session.execute(
-                db.select(Activity.source_app, Activity.source_format).where(
+                db.select(
+                    Activity.source_type,
+                    Activity.source_app,
+                    Activity.source_format,
+                ).where(
                     Activity.user_id == user_id,
                     Activity.started_at >= start_at,
                     Activity.started_at < end_at,
                 )
             ).all()
-            counts = Counter((source_app or source_format or "unknown") for source_app, source_format in activities)
+            counts = Counter(
+                (source_app or source_format or source_type or "unknown")
+                for source_type, source_app, source_format in activities
+            )
             evidence.extend(
                 _source_item("activities", source, count, period)
                 for source, count in counts.items()

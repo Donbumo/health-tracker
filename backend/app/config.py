@@ -123,12 +123,17 @@ class Config:
     AI_ENABLED = _as_bool(os.getenv("AI_ENABLED"), False)
     AI_PROVIDER = os.getenv("AI_PROVIDER", "").strip().casefold()
     AI_MODEL = os.getenv("AI_MODEL", "").strip()
+    AI_API_KEY = os.getenv("AI_API_KEY", "")
     AI_MAX_INPUT_CHARS = int(os.getenv("AI_MAX_INPUT_CHARS", "4000"))
     AI_MAX_HISTORY_MESSAGES = int(os.getenv("AI_MAX_HISTORY_MESSAGES", "20"))
+    AI_MAX_HISTORY_CHARS = int(os.getenv("AI_MAX_HISTORY_CHARS", "16000"))
+    AI_MAX_HISTORY_TURNS = int(os.getenv("AI_MAX_HISTORY_TURNS", "10"))
     AI_MAX_TOOL_CALLS = int(os.getenv("AI_MAX_TOOL_CALLS", "6"))
     AI_MAX_TOOL_ROUNDS = int(os.getenv("AI_MAX_TOOL_ROUNDS", "3"))
     AI_MAX_TOTAL_TOKENS = int(os.getenv("AI_MAX_TOTAL_TOKENS", "100000"))
+    AI_MAX_OUTPUT_TOKENS = int(os.getenv("AI_MAX_OUTPUT_TOKENS", "2000"))
     AI_PROVIDER_TIMEOUT_SECONDS = int(os.getenv("AI_PROVIDER_TIMEOUT_SECONDS", "20"))
+    AI_DRAFT_TTL_HOURS = int(os.getenv("AI_DRAFT_TTL_HOURS", "168"))
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"

@@ -20,7 +20,7 @@ def _service_error(error: AIServiceError):
 
 
 def _require_available(service: AIConversationService) -> None:
-    status = service.status()
+    status = service.status(g.api_user)
     if status["state"] != "available":
         raise ApiError(
             "ai_unavailable",
@@ -32,7 +32,30 @@ def _require_available(service: AIConversationService) -> None:
 @api_v1_bp.get("/ai/status")
 @bearer_required
 def ai_status():
-    return success(AIConversationService.status())
+    return success(AIConversationService.status(g.api_user))
+
+
+@api_v1_bp.get("/ai/settings")
+@bearer_required
+def ai_settings():
+    return success(AIConversationService.status(g.api_user))
+
+
+@api_v1_bp.put("/ai/settings")
+@bearer_required
+def ai_update_settings():
+    payload = json_body()
+    if set(payload) != {"remote_consent_enabled"}:
+        raise ApiError(
+            "invalid_request", "Se requiere remote_consent_enabled.", 400
+        )
+    try:
+        user = AIConversationService.set_remote_consent(
+            g.api_user.id, payload["remote_consent_enabled"]
+        )
+    except AIServiceError as error:
+        _service_error(error)
+    return success(AIConversationService.status(user))
 
 
 @api_v1_bp.post("/ai/conversations")
@@ -126,3 +149,34 @@ def ai_retry_message(conversation_id: str):
         },
         status=201,
     )
+
+
+@api_v1_bp.post("/ai/drafts/<draft_id>/confirm")
+@bearer_required
+def ai_confirm_draft(draft_id: str):
+    payload = json_body()
+    if set(payload) - {"payload"} or (
+        "payload" in payload and not isinstance(payload["payload"], dict)
+    ):
+        raise ApiError(
+            "invalid_request", "La corrección del borrador no es válida.", 400
+        )
+    try:
+        row = AIConversationService().confirm_draft(
+            g.api_user, draft_id, edits=payload.get("payload")
+        )
+    except AIServiceError as error:
+        _service_error(error)
+    return success(serialize_draft(row))
+
+
+@api_v1_bp.post("/ai/drafts/<draft_id>/reject")
+@bearer_required
+def ai_reject_draft(draft_id: str):
+    if json_body():
+        raise ApiError("invalid_request", "El rechazo no acepta campos.", 400)
+    try:
+        row = AIConversationService().reject_draft(g.api_user.id, draft_id)
+    except AIServiceError as error:
+        _service_error(error)
+    return success(serialize_draft(row))

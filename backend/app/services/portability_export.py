@@ -12,6 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.models import (
+    AIConversation,
     Activity, ActivityLap, PlanActivityLink, PlanActualComparisonSnapshot,
     DailyEnergy, DailyNutrition, Exercise, FoodProduct, NutritionItem, NutritionMeal, PlannedWorkout,
     PortableArtifact, PortableExportJob, TrainingPlan, TrainingPlanWorkout,
@@ -498,6 +499,87 @@ def _serialize_records(
         output["external_sources"] = [_record("external_sources", _stable_uuid("source", source), {
             "source": source, "domains": sorted(domains), "reference_only": True,
         }) for source, domains in sorted(sources.items()) if source != "manual"]
+    if "ai_conversations" in sections:
+        rows = _query(
+            AIConversation,
+            user.id,
+            AIConversation.created_at,
+            AIConversation.public_id,
+            loaders=(
+                selectinload(AIConversation.messages),
+                selectinload(AIConversation.tool_calls),
+                selectinload(AIConversation.drafts),
+            ),
+        )
+        output["ai_conversations"] = []
+        for row in rows:
+            output["ai_conversations"].append(
+                _record(
+                    "ai_conversations",
+                    row.public_id,
+                    {
+                        "title": row.title,
+                        "status": row.status,
+                        "created_at": row.created_at,
+                        "updated_at": row.updated_at,
+                        "messages": [
+                            {
+                                "public_id": message.public_id,
+                                "role": message.role,
+                                "content": message.content,
+                                "evidence": message.evidence_json or [],
+                                "provider": message.provider,
+                                "model": message.model,
+                                "usage": {
+                                    "input_tokens": message.input_tokens,
+                                    "output_tokens": message.output_tokens,
+                                },
+                                "created_at": message.created_at,
+                            }
+                            for message in row.messages
+                        ],
+                        "tool_calls": [
+                            {
+                                "public_id": call.public_id,
+                                "request_message_public_id": call.request_message.public_id,
+                                "tool_name": call.tool_name,
+                                "result_summary": call.result_summary_json,
+                                "evidence": call.evidence_json or [],
+                                "status": call.status,
+                                "error_code": call.error_code,
+                                "created_at": call.created_at,
+                                "completed_at": call.completed_at,
+                            }
+                            for call in row.tool_calls
+                        ],
+                        "drafts": [
+                            {
+                                "public_id": draft.public_id,
+                                "message_public_id": draft.message.public_id,
+                                "draft_type": draft.draft_type,
+                                "payload": draft.payload_json,
+                                "status": draft.status,
+                                "provenance": draft.provenance_json or {},
+                                "applied_resource": {
+                                    "type": draft.applied_resource_type,
+                                    "public_ids": draft.applied_resource_public_ids_json
+                                    or [],
+                                }
+                                if draft.applied_resource_type
+                                else None,
+                                "error_code": draft.error_code,
+                                "expires_at": draft.expires_at,
+                                "applied_at": draft.applied_at,
+                                "rejected_at": draft.rejected_at,
+                                "failed_at": draft.failed_at,
+                                "created_at": draft.created_at,
+                                "updated_at": draft.updated_at,
+                            }
+                            for draft in row.drafts
+                        ],
+                    },
+                )
+            )
     if "attachments" in sections:
         output["attachments"] = []
         maximum_total = current_app.config["PORTABILITY_MAX_ATTACHMENTS_BYTES"]

@@ -45,6 +45,7 @@ SECTION_PATHS = {
     "custom_foods": "records/custom_foods.jsonl",
     "steps": "records/steps.jsonl",
     "external_sources": "records/external_sources.jsonl",
+    "ai_conversations": "records/ai_conversations.jsonl",
     "attachments": "records/attachments.jsonl",
 }
 ALL_SECTIONS = tuple(SECTION_PATHS)

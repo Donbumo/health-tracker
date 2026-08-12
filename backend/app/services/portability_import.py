@@ -12,6 +12,7 @@ from werkzeug.datastructures import FileStorage
 
 from app.extensions import db
 from app.models import (
+    AIActionDraft, AIConversation, AIMessage, AIToolCall,
     Activity, ActivityLap, ActivityRouteMetadata, ActivitySeriesArtifact,
     PlanActivityLink, PlanActualComparisonSnapshot,
     DailyEnergy, DailyNutrition, Exercise, ExerciseAlias, ExerciseLoadProfile,
@@ -41,7 +42,7 @@ DEPENDENCY_ORDER = (
     "medical_studies", "lab_panels", "lab_results",
     "schedules", "activities", "activity_laps", "activity_series", "plan_activity_links", "plan_actual_comparisons",
     "sessions", "session_exercises", "sets", "body_stats",
-    "nutrition_entries", "steps", "attachments", "medical_documents_metadata", "external_sources",
+    "nutrition_entries", "steps", "ai_conversations", "attachments", "medical_documents_metadata", "external_sources",
 )
 PUBLIC_MODELS = {
     "exercises": Exercise, "plans": TrainingPlan, "workouts": TrainingPlanWorkout,
@@ -55,6 +56,7 @@ PUBLIC_MODELS = {
     "plan_activity_links": PlanActivityLink,
     "plan_actual_comparisons": PlanActualComparisonSnapshot,
     "activity_series": ActivitySeriesArtifact,
+    "ai_conversations": AIConversation,
 }
 
 
@@ -262,6 +264,67 @@ def _existing_data(section: str, row) -> dict:
     if section == "session_exercises":
         return {"session_public_id": row.training_session.public_id, "exercise_order": row.exercise_order,
             "planned_exercise_order": row.planned_exercise_order, "name": row.name, "notes": row.notes}
+    if section == "ai_conversations":
+        return {
+            "title": row.title,
+            "status": row.status,
+            "created_at": row.created_at,
+            "updated_at": row.updated_at,
+            "messages": [
+                {
+                    "public_id": message.public_id,
+                    "role": message.role,
+                    "content": message.content,
+                    "evidence": message.evidence_json or [],
+                    "provider": message.provider,
+                    "model": message.model,
+                    "usage": {
+                        "input_tokens": message.input_tokens,
+                        "output_tokens": message.output_tokens,
+                    },
+                    "created_at": message.created_at,
+                }
+                for message in row.messages
+            ],
+            "tool_calls": [
+                {
+                    "public_id": call.public_id,
+                    "request_message_public_id": call.request_message.public_id,
+                    "tool_name": call.tool_name,
+                    "result_summary": call.result_summary_json,
+                    "evidence": call.evidence_json or [],
+                    "status": call.status,
+                    "error_code": call.error_code,
+                    "created_at": call.created_at,
+                    "completed_at": call.completed_at,
+                }
+                for call in row.tool_calls
+            ],
+            "drafts": [
+                {
+                    "public_id": draft.public_id,
+                    "message_public_id": draft.message.public_id,
+                    "draft_type": draft.draft_type,
+                    "payload": draft.payload_json,
+                    "status": draft.status,
+                    "provenance": draft.provenance_json or {},
+                    "applied_resource": {
+                        "type": draft.applied_resource_type,
+                        "public_ids": draft.applied_resource_public_ids_json or [],
+                    }
+                    if draft.applied_resource_type
+                    else None,
+                    "error_code": draft.error_code,
+                    "expires_at": draft.expires_at,
+                    "applied_at": draft.applied_at,
+                    "rejected_at": draft.rejected_at,
+                    "failed_at": draft.failed_at,
+                    "created_at": draft.created_at,
+                    "updated_at": draft.updated_at,
+                }
+                for draft in row.drafts
+            ],
+        }
     if section == "body_stats":
         return {"recorded_at": row.recorded_at, "weight_kg": row.weight_kg,
             "body_fat_percent": row.body_fat_percentage, "muscle_mass_kg": row.muscle_mass_kg,
@@ -548,6 +611,113 @@ def _apply_record(job, section, record, strategy, maps, created_paths):
     if section == "external_sources":
         _add_mapping(job, section, source_id, source_id, None, maps); return "skipped"
     force_new = strategy == "import_as_new" and next(item for item in job.plan_json["records"] if item["section"] == section and item["source_public_id"] == source_id)["classification"] not in {"new"}
+    if section == "ai_conversations":
+        destination, collision = _destination_uuid(
+            AIConversation, source_id, user_id, force_new
+        )
+        conversation = AIConversation(
+            public_id=destination,
+            user_id=user_id,
+            title=str(data["title"])[:160],
+            status=data.get("status", "active"),
+            created_at=_datetime(data["created_at"], required=True),
+            updated_at=_datetime(data["updated_at"], required=True),
+        )
+        db.session.add(conversation)
+        db.session.flush()
+        messages = {}
+        for message_data in data.get("messages", []):
+            message_source = message_data["public_id"]
+            message_destination = message_source
+            if force_new or db.session.execute(
+                db.select(AIMessage.id).where(AIMessage.public_id == message_source)
+            ).scalar_one_or_none() is not None:
+                message_destination = str(uuid.uuid4())
+            usage = message_data.get("usage") or {}
+            message = AIMessage(
+                public_id=message_destination,
+                conversation_id=conversation.id,
+                user_id=user_id,
+                role=message_data["role"],
+                content=message_data["content"],
+                attachments_json=[],
+                evidence_json=message_data.get("evidence") or [],
+                provider=message_data.get("provider"),
+                model=message_data.get("model"),
+                input_tokens=usage.get("input_tokens"),
+                output_tokens=usage.get("output_tokens"),
+                created_at=_datetime(message_data["created_at"], required=True),
+            )
+            db.session.add(message)
+            db.session.flush()
+            messages[message_source] = message
+        for call_data in data.get("tool_calls", []):
+            request_message = messages.get(call_data["request_message_public_id"])
+            if request_message is None:
+                raise PortabilityImportError(
+                    "broken_reference",
+                    "Una llamada AI referencia un mensaje ausente.",
+                    409,
+                )
+            call_destination = call_data["public_id"]
+            if force_new or db.session.execute(
+                db.select(AIToolCall.id).where(AIToolCall.public_id == call_destination)
+            ).scalar_one_or_none() is not None:
+                call_destination = str(uuid.uuid4())
+            db.session.add(
+                AIToolCall(
+                    public_id=call_destination,
+                    conversation_id=conversation.id,
+                    request_message_id=request_message.id,
+                    user_id=user_id,
+                    provider_call_id=None,
+                    tool_name=call_data["tool_name"],
+                    sanitized_arguments_json={},
+                    result_summary_json=call_data.get("result_summary"),
+                    evidence_json=call_data.get("evidence") or [],
+                    status=call_data["status"],
+                    error_code=call_data.get("error_code"),
+                    created_at=_datetime(call_data["created_at"], required=True),
+                    completed_at=_datetime(call_data.get("completed_at")),
+                )
+            )
+        for draft_data in data.get("drafts", []):
+            message = messages.get(draft_data["message_public_id"])
+            if message is None:
+                raise PortabilityImportError(
+                    "broken_reference", "Un borrador AI referencia un mensaje ausente.", 409
+                )
+            draft_destination = draft_data["public_id"]
+            if force_new or db.session.execute(
+                db.select(AIActionDraft.id).where(
+                    AIActionDraft.public_id == draft_destination
+                )
+            ).scalar_one_or_none() is not None:
+                draft_destination = str(uuid.uuid4())
+            resource = draft_data.get("applied_resource") or {}
+            db.session.add(
+                AIActionDraft(
+                    public_id=draft_destination,
+                    conversation_id=conversation.id,
+                    message_id=message.id,
+                    user_id=user_id,
+                    draft_type=draft_data["draft_type"],
+                    payload_json=draft_data.get("payload") or {},
+                    status=draft_data["status"],
+                    provenance_json=draft_data.get("provenance") or {},
+                    applied_resource_type=resource.get("type"),
+                    applied_resource_public_ids_json=resource.get("public_ids") or [],
+                    error_code=draft_data.get("error_code"),
+                    expires_at=_datetime(draft_data.get("expires_at")),
+                    applied_at=_datetime(draft_data.get("applied_at")),
+                    rejected_at=_datetime(draft_data.get("rejected_at")),
+                    failed_at=_datetime(draft_data.get("failed_at")),
+                    created_at=_datetime(draft_data["created_at"], required=True),
+                    updated_at=_datetime(draft_data["updated_at"], required=True),
+                )
+            )
+        _add_mapping(job, section, source_id, destination, collision, maps)
+        return "inserted"
     if section == "activities":
         destination, collision = _destination_uuid(Activity, source_id, user_id, force_new)
         started = _datetime(data["started_at"], required=True)

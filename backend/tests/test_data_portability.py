@@ -21,10 +21,12 @@ from app.api_v1.rate_limit import rate_limiter
 from app import create_app
 from app.extensions import db
 from app.models import (
+    AIActionDraft, AIConversation, AIMessage, AIToolCall,
     LabResult, MedicalDocument, MedicalDuplicateCandidate, MedicalStudy, PortableExportJob,
     PortableImportJob, UploadedFile, User, WeighIn,
 )
 from app.services.portable_archive import PortableArchiveError, PortableArchiveReader, PortableLimits
+from app.services.ai.conversations import AIConversationService
 from tests.test_mobile_sync import _api_login, _auth
 
 
@@ -276,6 +278,74 @@ def test_round_trip_foreign_uuid_remap_and_repeat_has_zero_duplicates(app, clien
     assert repeated_apply.get_json()["data"]["counts"]["skipped"] == 1
     with app.app_context():
         assert db.session.scalar(db.select(db.func.count()).select_from(WeighIn).where(WeighIn.user_id == destination_id)) == 1
+
+
+def test_ai_conversations_are_portable_without_secrets_or_provider_internals(
+    app, client, user
+):
+    app.config.update(
+        AI_ENABLED=True,
+        AI_PROVIDER="fake",
+        AI_MODEL="fake-health-v1",
+        AI_API_KEY="qa-secret-that-must-not-be-exported",
+        AI_TODAY_OVERRIDE=date(2026, 8, 9),
+    )
+    with app.app_context():
+        account = db.session.get(User, user)
+        account.timezone = "UTC"
+        service = AIConversationService()
+        conversation = service.create(user, title="Conversación portable QA")
+        service.send_message(account, conversation.public_id, "Peso 72 kg")
+        service.send_message(account, conversation.public_id, "¿Cómo cambió mi peso?")
+        source_public_id = conversation.public_id
+
+    token = _api_login(client)["access_token"]
+    exported = _export(
+        client,
+        token,
+        key="ai-portability",
+        sections=["ai_conversations"],
+    )
+    assert exported.status_code == 201, exported.get_json()
+    package = _package(client, token, exported.get_json()["data"]["export_id"])
+    assert b"qa-secret-that-must-not-be-exported" not in package
+    assert b"provider_call_id" not in package
+    assert b"sanitized_arguments_json" not in package
+    assert b"chain_of_thought" not in package
+    with ZipFile(io.BytesIO(package)) as archive:
+        records = [
+            json.loads(line)
+            for line in archive.read("records/ai_conversations.jsonl").splitlines()
+        ]
+        assert len(records) == 1
+        data = records[0]["data"]
+        assert len(data["messages"]) == 4
+        assert len(data["tool_calls"]) == 1
+        assert len(data["drafts"]) == 1
+        assert data["drafts"][0]["provenance"]["value_origin"] == "reported_by_user"
+
+    destination_id, destination_token = _second_user(app, client)
+    inspected = _inspect(
+        client, destination_token, package, ["ai_conversations"]
+    )
+    assert inspected.status_code == 201, inspected.get_json()
+    job = inspected.get_json()["data"]
+    applied = client.post(
+        f"/api/v1/mobile/portability/imports/{job['import_id']}/apply",
+        json={"confirmed": True, "plan_revision": 1, "decisions": []},
+        headers=_headers(destination_token, "ai-portability-apply"),
+    )
+    assert applied.status_code == 200, applied.get_json()
+    with app.app_context():
+        imported = db.session.execute(
+            db.select(AIConversation).where(AIConversation.user_id == destination_id)
+        ).scalar_one()
+        assert imported.public_id != source_public_id
+        assert len(imported.messages) == 4
+        assert len(imported.tool_calls) == 1
+        assert len(imported.drafts) == 1
+        assert imported.tool_calls[0].provider_call_id is None
+        assert imported.tool_calls[0].sanitized_arguments_json == {}
 
 
 def test_import_requires_confirmation_and_idempotency(app, client, user):
@@ -680,7 +750,7 @@ def test_checksum_undeclared_file_zip_bomb_and_file_count_limits(app, client, us
 def test_every_portable_schema_is_valid_and_uses_only_local_refs(app):
     root = Path(app.config["SCHEMA_ROOT"])
     schemas = sorted(root.glob("portable_*.schema.json"))
-    assert len(schemas) == 31
+    assert len(schemas) == 32
     names = {path.name for path in schemas}
     for path in schemas:
         document = json.loads(path.read_text(encoding="utf-8"))

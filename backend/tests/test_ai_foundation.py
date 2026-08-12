@@ -228,9 +228,7 @@ def _enable_openai(
 
 def test_ai_disabled_is_safe_and_does_not_break_global_health(app, client, user):
     token = _api_login(client)
-    status = client.get("/api/v1/ai/status", headers=_auth(token))
-    assert status.status_code == 200
-    assert status.get_json()["data"] == {
+    expected = {
         "enabled": False,
         "state": "disabled",
         "provider": None,
@@ -247,10 +245,34 @@ def test_ai_disabled_is_safe_and_does_not_break_global_health(app, client, user)
         "write_actions_enabled": ["body_measurement", "food_entry"],
         "attachments_enabled": False,
     }
-    unavailable = client.post(
-        "/api/v1/ai/conversations", json={}, headers=_auth(token)
+    configurations = (
+        {
+            "AI_ENABLED": False,
+            "AI_PROVIDER": "",
+            "AI_MODEL": "",
+            "AI_API_KEY": "",
+            "AI_PROVIDER_FACTORY": None,
+        },
+        {
+            "AI_ENABLED": False,
+            "AI_PROVIDER": "openai",
+            "AI_MODEL": "openrouter/free",
+            "AI_API_KEY": "qa-disabled-key-never-real",
+            "AI_PROVIDER_FACTORY": lambda: pytest.fail(
+                "disabled AI must not initialize a remote provider"
+            ),
+        },
     )
-    assert unavailable.status_code == 503
+    for configuration in configurations:
+        app.config.update(configuration)
+        status = client.get("/api/v1/ai/status", headers=_auth(token))
+        assert status.status_code == 200
+        assert status.get_json()["data"] == expected
+        unavailable = client.post(
+            "/api/v1/ai/conversations", json={}, headers=_auth(token)
+        )
+        assert unavailable.status_code == 503
+
     assert client.get("/api/v1/health").status_code == 200
     assert client.get("/dashboard").status_code == 302
 
@@ -801,6 +823,14 @@ def test_openai_responses_adapter_uses_mocked_http_tools_usage_and_store_false(
     assert blocked.status_code == 503
     status = client.get("/api/v1/ai/status", headers=_auth(token)).get_json()["data"]
     assert status["state"] == "consent_required"
+    assert status["provider"] == "openai"
+    assert status["model"] == "gpt-5-mini-qa"
+    assert status["capabilities"] == {
+        "tools": True,
+        "images": False,
+        "structured_output": True,
+        "usage": True,
+    }
     assert status["remote"] is True
     assert requests == []
 
@@ -884,6 +914,9 @@ def test_openai_missing_key_is_unconfigured_without_breaking_health(app, client,
     token = _api_login(client)
     status = client.get("/api/v1/ai/status", headers=_auth(token)).get_json()["data"]
     assert status["state"] == "unconfigured"
+    assert status["provider"] == "openai"
+    assert status["model"] == "gpt-5-mini-qa"
+    assert status["remote"] is True
     assert "AI_API_KEY" in status["reason"]
     assert client.get("/api/v1/health").status_code == 200
 

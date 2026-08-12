@@ -682,15 +682,31 @@ class OpenAIResponsesProvider(AIProvider):
 
 def provider_status(user=None) -> dict:
     enabled = bool(current_app.config.get("AI_ENABLED"))
+    if not enabled:
+        return {
+            "enabled": False,
+            "state": "disabled",
+            "provider": None,
+            "model": None,
+            "reason": "La función AI está desactivada.",
+            "capabilities": {
+                "tools": False,
+                "images": False,
+                "structured_output": False,
+                "usage": False,
+            },
+            "remote": False,
+            "remote_consent_enabled": False,
+            "write_actions_enabled": ["body_measurement", "food_entry"],
+            "attachments_enabled": False,
+        }
+
     provider_name = str(current_app.config.get("AI_PROVIDER") or "").strip().casefold()
     model = str(current_app.config.get("AI_MODEL") or "").strip()
     injected = current_app.config.get("AI_PROVIDER_INSTANCE") is not None or callable(
         current_app.config.get("AI_PROVIDER_FACTORY")
     )
-    if not enabled:
-        state = "disabled"
-        reason = "La función AI está desactivada."
-    elif not provider_name or not model:
+    if not provider_name or not model:
         state = "unconfigured"
         reason = "Falta configurar AI_PROVIDER o AI_MODEL."
     elif provider_name not in {"fake", "openai"} and not injected:

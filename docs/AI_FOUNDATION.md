@@ -1,43 +1,61 @@
-# AI Foundation · Beta 1.1
+# AI Foundation · Beta 1.1 RC
 
-Health Tracker AI es una interfaz segura sobre datos y servicios existentes, no un chatbot con acceso general al sistema.
+Health Tracker AI es una interfaz segura sobre datos y servicios existentes. No tiene acceso general al sistema, no diagnostica y no ejecuta escrituras autónomas.
 
-## Habilitación
+## Configuración
 
-La aplicación arranca con AI desactivada. Valores de ejemplo:
+AI arranca desactivada. `fake` sigue siendo el provider determinista sin red para QA; `openai` es el adapter cloud real sobre Responses API.
 
 ```text
 AI_ENABLED=false
 AI_PROVIDER=fake
 AI_MODEL=fake-health-v1
+AI_API_KEY=
 AI_MAX_INPUT_CHARS=4000
 AI_MAX_HISTORY_MESSAGES=20
+AI_MAX_HISTORY_CHARS=16000
+AI_MAX_HISTORY_TURNS=10
 AI_MAX_TOOL_CALLS=6
 AI_MAX_TOOL_ROUNDS=3
 AI_MAX_TOTAL_TOKENS=100000
+AI_MAX_OUTPUT_TOKENS=2000
 AI_PROVIDER_TIMEOUT_SECONDS=20
+AI_DRAFT_TTL_HOURS=168
 ```
 
-`AI_ENABLED=false`, provider ausente o modelo ausente no afectan `/health` ni el resto del producto. La web muestra `disabled`/`unconfigured` y permite consultar o eliminar historial previo. El provider `fake` es determinista, no usa red y existe para QA/demo; no debe confundirse con un modelo clínico ni con un provider cloud.
+Para cloud se usan `AI_PROVIDER=openai`, un modelo compatible en `AI_MODEL` y `AI_API_KEY` exclusivamente desde env/secret. La key nunca se guarda en DB, frontend, exports, excepciones o logs. Si falta configuración, la app y `/health` arrancan con normalidad y AI queda `disabled` o `unconfigured`.
 
-Credenciales de futuros adapters viven solo en secrets/env. No se guardan en DB, no se exponen al frontend y no deben aparecer en logs. Beta 1.1 no incluye un adapter cloud ni requiere Internet.
+El adapter declara capabilities provider-neutral: tools, imágenes, structured output, usage y si es remoto. El servicio decide disponibilidad por capabilities; no contiene ramas funcionales por vendor. Las imágenes permanecen deshabilitadas.
 
-## Arquitectura
+## Consentimiento y datos enviados
+
+Un provider remoto exige consentimiento por usuario antes de enviar el primer mensaje. `/ai` muestra provider/model, explica la transferencia y permite habilitar o deshabilitar AI remota; la API usa `GET/PUT /api/v1/ai/settings`. La preferencia se guarda sin credenciales y deshabilitarla bloquea nuevos envíos, no oculta el historial.
+
+Por turno solo pueden salir:
+
+- la pregunta;
+- mensajes recientes seleccionados por límites de mensajes, caracteres y turnos;
+- instrucciones de seguridad y schemas de tools/drafts;
+- resultados mínimos de las tools necesarias.
+
+No salen perfil completo, email, username, `user_id`, ORM, SQL, raw payloads, paths, archivos, tokens, secretos ni datos de otro owner. El adapter cloud usa `store=false`; la política operativa del proveedor desplegado sigue siendo responsabilidad del operador.
+
+## Arquitectura y límites
 
 ```text
 web session o API Bearer
   → AIConversationService
-  → AIProvider (interfaz estable)
-  → AIToolRegistry / validación
-  → services y read models existentes
-  → modelos owner-only / MariaDB
+  → AIProvider
+  → AIToolRegistry allowlisted
+  → services/read models owner-only
+  → MariaDB
 ```
 
-El historial persistido contiene mensajes, tool utilizado, argumentos validados/sanitizados, resultado resumido, evidencia, errores seguros y uso técnico disponible. No se persiste chain-of-thought.
+El contexto se selecciona desde lo más reciente de forma determinista con `AI_MAX_HISTORY_MESSAGES`, `AI_MAX_HISTORY_CHARS` y `AI_MAX_HISTORY_TURNS`. Cada turno limita rondas/tools, output y usage total reportado. No se almacena chain-of-thought. Solo se guardan mensaje, modelo/provider, input/output tokens, auditoría reducida y evidencia.
 
-Los límites por turno cubren caracteres de entrada, mensajes de historial, rondas/cantidad de tools, uso total reportado, longitud de respuesta y deadline entregado al adapter. Un adapter remoto debe respetar `timeout_seconds` en su propia llamada de red; el servicio rechaza además respuestas que excedan el tiempo configurado.
+Errores de timeout, autenticación, quota/rate limit, modelo ausente, respuesta/tool call malformada y proveedor offline se convierten a códigos y mensajes seguros. El cuerpo crudo del provider y sus credenciales no se registran. El mensaje del usuario queda disponible para retry.
 
-## Tools disponibles
+## Tools read-only
 
 - `get_dashboard_summary`
 - `get_weight_trend`
@@ -49,93 +67,38 @@ Los límites por turno cubren caracteres de entrada, mensajes de historial, rond
 - `get_goals_summary`
 - `get_data_sources_summary`
 
-Cada tool recibe el `User` efectivo desde sesión/Bearer. Sus schemas prohíben propiedades adicionales, incluido `user_id`. El registry no contiene SQL, filesystem, shell, browser, URLs arbitrarias ni datos médicos. Los resultados son payloads pequeños con `period`, `metrics`, `coverage`, `sources` y, cuando aplica, puntos recientes. ORM, raw payloads, rutas internas y archivos no salen de la capa server-side.
+Los schemas son cerrados y nunca aceptan owner del modelo. No existen tools de SQL, shell, filesystem, browser, URL o medicina. Los payloads exponen `period`, `metrics`, `coverage`, fuentes y solo los puntos recientes necesarios. Null sigue significando ausencia, no cero.
 
-Los pasos usan la selección efectiva ya existente; una fuente manual no se suma silenciosamente a Health Connect si podrían solaparse.
+Todo texto importado, notas y procedencia externa cruza la frontera como `untrusted_data`: es DATA, nunca instrucciones. La procedencia de futuras integraciones se representa como `source_type=external_provider`, `provider` y `resource_type`; AI no conoce endpoints del proveedor externo.
 
-## Evidencia y procedencia
+## Conversaciones, evidencia y borrado
 
-Las respuestas conservan evidencia estructurada con métrica, periodo, fuente, categoría y tipo:
+La web vive en `/ai` con Flask-Login/CSRF. API v1 usa Bearer y UUID públicos. Recursos de otro owner responden 404. La evidencia visible resume periodo, cobertura y fuentes principales sin tool arguments de debug.
 
-- `recorded`: captura manual u otro dato registrado;
-- `imported`: Health Connect, device sync, import o proveedor externo;
-- `calculated`: agregado determinista de Health Tracker;
-- `ai_interpretation`: texto producido por el provider a partir de evidencia.
+El delete de conversación es hard delete y elimina mensajes, tool audit y drafts; no revierte recursos de salud que el usuario ya confirmó. El delete de cuenta elimina toda la jerarquía AI por FK `ON DELETE CASCADE`.
 
-Las categorías de fuente contemplan `manual`, `health_connect`, `import`, `device`, `external_provider` y `other`. No se asume que pasos significa Health Connect.
+## Drafts y confirmación
 
-Campos importados o externos se acotan y se envían al provider dentro de un envelope `untrusted_data`. La instrucción de sistema los declara DATA, no instrucciones; la selección de tools permanece en allowlist server-side.
-
-## Conversaciones y superficies
-
-La web vive en `/ai` y usa Flask-Login + CSRF. API v1 usa Bearer exclusivamente:
+Los estados son `pending_confirmation`, `applied`, `rejected`, `expired` y `failed`. `body_measurement` y `food_entry` pueden confirmarse; `workout_entry` y `steps_entry` continúan preparados pero no habilitados.
 
 ```text
-GET    /api/v1/ai/status
-POST   /api/v1/ai/conversations
-GET    /api/v1/ai/conversations
-GET    /api/v1/ai/conversations/<uuid>
-DELETE /api/v1/ai/conversations/<uuid>
-POST   /api/v1/ai/conversations/<uuid>/messages
-POST   /api/v1/ai/conversations/<uuid>/retry
+mensaje → draft → preview editable → confirmación explícita
+        → service oficial del dominio → recurso → applied
 ```
 
-Recursos ajenos responden 404. El delete de conversación elimina mensajes, tool audit y drafts por cascade. Account deletion elimina conversaciones por FK `ON DELETE CASCADE`.
+Peso reutiliza `create_body_stat`; comida reutiliza `create_nutrition_item`. El modelo nunca escribe. `Peso 82.4 kg`, `Comí 3 huevos` y cantidades en gramos generan previews con procedencia `reported_by_user` + `parsed_by_ai`. Los nutrientes desconocidos quedan null con warnings/missing fields, no se inventan.
 
-Las conversaciones AI no forman parte de `user_data_export` ni `health-tracker-portable-v1` en esta revisión: esos son contratos públicos versionados y no deben ampliarse sin schema, import, round-trip y política de merge. Esta exclusión es explícita, no impide borrado, y debe revisarse antes de Beta 1.1 final.
+Confirmación y rechazo son owner-only. La confirmación bloquea la fila, ejecuta una transacción y usa `client_event_id` determinista derivado del draft por recurso. Repeticiones y confirmaciones concurrentes devuelven el mismo resultado sin duplicar. El draft enlaza tipo e IDs públicos creados.
 
-## Drafts y escritura
+## Portabilidad
 
-`AIActionDraft` contempla:
+`health-tracker-portable-v1` incluye la sección `ai_conversations` con conversaciones, mensajes, evidencia, usage técnico, metadata reducida de tools y drafts. Import hace preview, resolución owner-only y round-trip como las demás secciones.
 
-- `food_entry`
-- `body_measurement`
-- `workout_entry`
-- `steps_entry`
+Se omiten API keys, secretos, `provider_call_id`, argumentos internos, respuestas crudas y chain-of-thought. El consentimiento remoto no se importa: habilitar transferencia en otro entorno exige una decisión local explícita.
 
-El fake provider implementa una primera interpretación de `Peso 82.4 kg` a `body_measurement`. El estado es siempre `pending_confirmation`. No existe endpoint de confirmación en esta fase y el chat no llama a servicios de escritura.
+## Limitaciones del RC
 
-Flujo futuro obligatorio:
-
-```text
-mensaje → interpretación → draft → preview → confirmación explícita
-        → servicio oficial del dominio → DB
-```
-
-## Imágenes e importación asistida
-
-El modelo de mensaje conserva un campo de attachments, pero la API rechaza adjuntos no vacíos con `attachments_not_supported`. No se guarda una foto ni se estima comida hasta disponer de upload privado owner-only, límites, preview y borrado. Una futura imagen de comida producirá `FoodEntryDraft` marcado `estimated_by_ai`; nunca una medición exacta ni escritura automática.
-
-La importación asistida futura debe reutilizar:
-
-```text
-imagen/PDF/texto/CSV/JSON
-  → adapter AI read-only
-  → JSON canónico existente
-  → schema oficial
-  → preview del Import Hub
-  → confirmación owner-bound
-  → importador oficial
-```
-
-No se creará un segundo importador. Los generadores AI no inventan requeridos, no escriben DB/archivos y mantienen aliases fuera del contrato canónico.
-
-## Añadir un provider
-
-1. Implementar `AIProvider.respond(AIProviderRequest)` en un módulo adapter.
-2. Traducir mensajes/tools/results sin importar SDKs en servicios de Health Tracker.
-3. Respetar el timeout recibido y devolver `AIProviderResponse` provider-neutral.
-4. Leer credenciales solo desde env/secrets y sanear errores/logs.
-5. Agregar factory/config, fake tests, fallo/timeout, tool loop y prueba de que no requiere red.
-
-## Añadir un tool
-
-1. Reutilizar un service/read model owner-only; no consultar un owner pedido por el modelo.
-2. Definir schema cerrado con rangos y `additionalProperties: false`.
-3. Devolver estructura pequeña, distinguir null de cero e incluir cobertura/fuente.
-4. Tratar texto importado/externo como datos no confiables.
-5. Probar aislamiento entre dos usuarios, timezone, argumentos inválidos, ausencia de datos y procedencia.
-
-## Datos enviados a un provider remoto futuro
-
-Solo se enviarían el historial acotado seleccionado para el turno, la pregunta del usuario, definiciones de tools y resultados estructurados/saneados necesarios. No se envían contraseñas, tokens, secrets, `user_id` interno, ORM, SQL, paths, archivos completos, raw payloads o datos de otros usuarios. Un adapter remoto debe documentar proveedor, región/retención aplicable y consentimiento operativo antes de habilitarse.
+- Attachments y food vision siguen rechazados hasta existir storage privado owner-only con lifecycle completo.
+- No hay coach autónomo, diagnóstico, Strava, BLE ni acciones silenciosas.
+- No se calculan costos monetarios ni billing.
+- Confirmación de workout/steps queda para una iteración posterior.

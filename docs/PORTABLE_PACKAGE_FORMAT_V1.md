@@ -1,5 +1,9 @@
 # Formato `health-tracker-portable-v1`
 
+## Extensión Beta 1.1
+
+La sección `ai_conversations` (`records/ai_conversations.jsonl`) conserva conversaciones, mensajes, evidencia/usage técnico, metadata reducida de tool calls y drafts. Omite API keys, secretos, IDs/argumentos internos del provider, respuestas crudas y chain-of-thought. El consentimiento remoto no se restaura desde un paquete.
+
 ## Extensión Alpha 2.0
 
 Se añaden `activities`, `activity_laps`, `plan_activity_links`, `plan_actual_comparisons` y `activity_series`. Las cuatro primeras pueden incluirse en una exportación normal; `activity_series` exige `include_activity_series=true`. Los puntos de ruta dentro de `activities` exigen de forma independiente `include_activity_coordinates=true`. Sin opt-in, la ruta solo declara estado y `included=false`. Nunca se incluye el archivo FIT/GPX/TCX original, paths de storage ni fingerprints completos.
@@ -53,6 +57,7 @@ records/
   custom_foods.jsonl
   steps.jsonl
   external_sources.jsonl
+  ai_conversations.jsonl
   attachments.jsonl
 attachments/
   <portable-uuid>/<safe-ascii-name>

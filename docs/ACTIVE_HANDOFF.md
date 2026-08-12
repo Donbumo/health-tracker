@@ -2,34 +2,35 @@
 
 ## Estado actual
 
-- Rama `feature/beta-1.1-ai-foundation`, worktree aislado y base Beta 1.0.1 exacta `64abf34b0c7082fc31c75b8a4bef62c5786e50d1` desde `master`.
-- Beta 1.1 incorpora una base AI neutral al proveedor: fake provider sin red, conversaciones y follow-ups persistentes, 9 tools owner-only de solo lectura, evidencia/procedencia, API Bearer y UI Flask/Jinja.
-- La frontera del provider valida respuestas y uso reportado; los follow-ups del fake conservan tema y periodo, y los payloads de actividad se minimizan antes de cruzar al provider.
-- La migración aditiva `20260809_0037` parte del único head `20260731_0036` y crea conversaciones, mensajes, auditoría de tools y drafts owner-only.
-- `AI_ENABLED` permanece desactivado por defecto. Sin provider/model configurado, el resto de la app y `/health` siguen operativos.
-- El índice canónico de contexto sigue en `docs/DOCUMENTATION_INDEX.md`; configuración, límites y fronteras están en `docs/AI_FOUNDATION.md`.
+- Rama `feature/beta-1.1-ai-foundation`; Iteration 2 convierte la base AI en release candidate Beta 1.1.
+- `FakeAIProvider` sigue sin red. `OpenAIResponsesProvider` usa Responses API mediante HTTP liviano, `store=false`, timeout, tools/function calls, usage y errores seguros; tests usan transporte mock.
+- AI remota exige consentimiento explícito por usuario y muestra provider/model/privacidad en `/ai`. `AI_ENABLED=false` permanece como default seguro.
+- El contexto está acotado por mensajes, caracteres, turnos, tools, rondas, output y usage total.
+- `body_measurement` y `food_entry` usan preview editable y confirmación owner-only por servicios oficiales. Bloqueo de fila + `client_event_id` determinista impiden duplicados, incluso concurrentes en MariaDB.
+- Conversaciones AI son portables en `health-tracker-portable-v1`; se omiten credenciales, argumentos/provider internals y chain-of-thought.
+- Migración `20260811_0038` añade consentimiento y metadata de aplicación de drafts sobre head `20260809_0037`.
 
 ## Trabajo en curso
 
-- Implementación, documentación, migración, pruebas focales y gate MariaDB están cerrados y listos para revisión.
-- No hay merge, tag, despliegue NAS ni cambios Android en alcance.
-
-## Bloqueadores y riesgos
-
-- No hay bloqueadores funcionales para la base AI. El único provider disponible es `fake`; todavía no existe adaptador cloud ni política operativa de retención/consentimiento para enviar datos a terceros.
-- Los drafts son vistas previas `pending_confirmation`: no existe escritura ni endpoint de confirmación. Adjuntos/food image se rechazan hasta disponer de upload privado y preview.
-- Las conversaciones todavía no forman parte de los contratos públicos versionados de portabilidad/export; sí se eliminan con la conversación o la cuenta mediante cascada.
-- Un adapter remoto futuro debe imponer el timeout en su propia llamada de red además de respetar los límites recibidos por la frontera provider-neutral.
-
-## Siguiente paso
-
-- Integrar un provider cloud detrás de la abstracción existente, con timeout real, retención explícita, consentimiento y revisión de minimización antes de habilitarlo.
-- Después, diseñar confirmación explícita e idempotente de drafts mediante servicios oficiales, sin permitir escritura directa desde el modelo.
+- Implementación y automatización están cerradas; falta únicamente registrar commits/push y entregar el reporte de QA.
+- El índice de contexto sigue en `docs/DOCUMENTATION_INDEX.md`; el contrato AI está en `docs/AI_FOUNDATION.md`.
 
 ## Pruebas relevantes
 
-- `python -m compileall -q backend`: pasa.
-- Focal AI local: `32 passed, 1 skipped`; la omisión es exclusivamente el caso reservado para MariaDB/Docker.
-- Focal AI/API/navegación/dashboard/web: `103 passed, 2 skipped`.
-- MariaDB efímera 11.4 con `tmpfs`: zero-to-head, `0037 -> 0036 -> 0037`, `flask db current/check`, limpieza y `tests/test_ai_foundation.py`: `33 passed`.
-- El runner confirmó cero volúmenes persistentes, stacks diarios sin cambios y limpieza completa de contenedor, red, imagen y storage temporal.
+- MariaDB 11.4 efímera: base vacía→0038, downgrade 0038→0037, upgrade 0037→0038, `db current` y `db check`.
+- Suite AI con gates MariaDB: 47 passed, incluyendo concurrencia, owner isolation y cascadas.
+- Suite local AI + portabilidad: 70 passed; los skips corresponden a gates reservados a contenedor.
+- Suite backend completa con fixtures QA: 792 passed, 12 skipped.
+- Tests cloud no usan Internet ni una API key real.
+
+## Bloqueadores y riesgos
+
+- No hay bloqueadores funcionales conocidos para QA manual.
+- Attachments/food vision continúan deshabilitados: no se amplió scope sin storage privado completo.
+- `workout_entry` y `steps_entry` no se confirman todavía.
+- No hay coach, diagnóstico, Strava, BLE, billing, cambios Android, merge, tag ni deploy.
+
+## Siguiente paso
+
+- QA manual del flujo `/ai`: consentimiento remoto con configuración de entorno de QA, follow-ups, evidencia, confirmación/rechazo de peso/comida y portabilidad.
+- Mantener cualquier habilitación cloud de producción detrás de revisión operativa de proveedor, modelo, retención y secrets.

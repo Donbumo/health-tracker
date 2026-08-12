@@ -84,7 +84,7 @@ Alpha 1.6 añade una base local experimental para fuentes externas y BLE: regist
 
 La estructura real del código manda sobre diagramas o rutas narrativas antiguas. Consulta `architecture/OVERVIEW.md` y el árbol del repositorio en vez de copiar una estructura sugerida a nuevas tareas.
 
-Beta 1.1 incorpora una interfaz AI segura sobre servicios reales: conversaciones y follow-ups persistentes, provider desacoplado, tools read-only owner-only, evidencia estructurada y drafts sin confirmación/escritura. No es un chatbot aislado, no permite SQL generado por LLM y no convierte Health Tracker en un sistema de diagnóstico. La frontera detallada está en [AI_FOUNDATION.md](AI_FOUNDATION.md).
+Beta 1.1 incorpora una interfaz AI segura sobre servicios reales: provider fake y adapter cloud desacoplados, consentimiento remoto por usuario, conversaciones acotadas, tools read-only owner-only, evidencia, portabilidad y drafts de peso/comida con confirmación explícita e idempotente. El modelo no recibe acceso a SQL/shell/filesystem y nunca escribe directamente ni diagnostica. La frontera y limitaciones están en [AI_FOUNDATION.md](AI_FOUNDATION.md).
 
 ## Capacidades de producto
 

@@ -14,7 +14,7 @@ Base URL: `/api/v1`. Éxito usa `data` y `meta` (`api_version`, `request_id`); e
 
 ## AI Foundation
 
-Beta 1.1 agrega `GET /ai/status`, create/list/get/delete de `/ai/conversations`, `POST /ai/conversations/<uuid>/messages` y `POST /ai/conversations/<uuid>/retry`. Todos requieren Bearer, derivan el owner del token y usan IDs públicos. Los mensajes solo pueden invocar la allowlist server-side documentada en [AI_FOUNDATION.md](AI_FOUNDATION.md); no aceptan `user_id`, SQL, shell, filesystem o URLs. Los drafts devueltos son `pending_confirmation` y esta fase no expone confirmación/escritura.
+Beta 1.1 agrega `GET /ai/status`, `GET/PUT /ai/settings`, create/list/get/delete de `/ai/conversations`, message/retry y `POST /ai/drafts/<uuid>/{confirm,reject}`. Todos requieren Bearer, derivan el owner del token y usan IDs públicos. Settings controla consentimiento remoto; confirm/reject es idempotente, owner-only y solo habilita `body_measurement`/`food_entry` mediante servicios oficiales. La allowlist no acepta `user_id`, SQL, shell, filesystem o URLs. Ver [AI_FOUNDATION.md](AI_FOUNDATION.md).
 
 Endpoints: `GET /health`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `POST /auth/logout-all`, `GET /me`, `GET /devices`, `DELETE /devices/<uuid>`, `GET /companion/bootstrap` y `GET /routines/active`.
 

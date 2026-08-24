@@ -128,11 +128,40 @@ def confirm_draft(draft_id: str):
     service = AIConversationService()
     try:
         draft = service.get_draft(current_user.id, draft_id)
+        ambiguous_fields = [
+            str(value)
+            for value in (draft.payload_json or {}).get("ambiguous_fields", [])
+            if str(value)
+        ]
         if draft.draft_type == "body_measurement":
             edits = {
                 "weight": request.form.get("weight"),
                 "unit": request.form.get("unit"),
             }
+            resolved_ambiguous = {
+                field_name
+                for field_name in ("weight", "unit")
+                if edits.get(field_name) not in (None, "")
+            }
+            for field_name in (
+                "recorded_at",
+                "body_fat_percent",
+                "muscle_mass_kg",
+                "water_percent",
+                "visceral_fat",
+                "bmr_kcal",
+                "bmi",
+                "notes",
+            ):
+                value = request.form.get(field_name)
+                if value not in (None, ""):
+                    edits[field_name] = value
+                    resolved_ambiguous.add(field_name)
+            edits["ambiguous_fields"] = [
+                field_name
+                for field_name in ambiguous_fields
+                if field_name not in resolved_ambiguous
+            ]
         elif draft.draft_type == "food_entry":
             items = []
             for index, original in enumerate((draft.payload_json or {}).get("items", [])):
@@ -144,14 +173,55 @@ def confirm_draft(draft_id: str):
                         "unit": request.form.get(f"item_unit_{index}") or None,
                     }
                 )
+                for field_name in (
+                    "calories_kcal",
+                    "protein_g",
+                    "fat_g",
+                    "net_carbs_g",
+                    "total_carbs_g",
+                    "fiber_g",
+                    "sugar_g",
+                    "sodium_mg",
+                    "notes",
+                ):
+                    value = request.form.get(f"item_{field_name}_{index}")
+                    if value not in (None, ""):
+                        item[field_name] = value
                 items.append(item)
             edits = {
                 "date": request.form.get("date") or None,
                 "meal_type": request.form.get("meal_type"),
+                "meal_name": request.form.get("meal_name") or None,
                 "items": items,
             }
             if edits["date"] is None:
                 edits.pop("date")
+            resolved_ambiguous = {
+                field_name
+                for field_name in ("date", "meal_type", "meal_name")
+                if edits.get(field_name) not in (None, "")
+            }
+            for field_name in (
+                "name",
+                "quantity",
+                "unit",
+                "calories_kcal",
+                "protein_g",
+                "fat_g",
+                "net_carbs_g",
+                "total_carbs_g",
+                "fiber_g",
+                "sugar_g",
+                "sodium_mg",
+                "notes",
+            ):
+                if any(item.get(field_name) not in (None, "") for item in items):
+                    resolved_ambiguous.add(field_name)
+            edits["ambiguous_fields"] = [
+                field_name
+                for field_name in ambiguous_fields
+                if field_name not in resolved_ambiguous
+            ]
         else:
             edits = None
         row = service.confirm_draft(

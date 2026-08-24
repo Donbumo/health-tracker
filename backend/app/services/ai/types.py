@@ -64,7 +64,7 @@ class AIProviderRequest:
     tools: tuple[AIToolDefinition, ...]
     tool_results: tuple[AIProviderToolResult, ...] = ()
     safety_instructions: str = ""
-    timeout_seconds: int = 20
+    timeout_seconds: float = 20
 
 
 @dataclass(frozen=True)

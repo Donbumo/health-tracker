@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from datetime import date, datetime, timezone
 from decimal import Decimal
 import json
 import re
@@ -128,7 +129,7 @@ class FakeAIProvider(AIProvider):
 
         original = _last_user_text(request)
         text = _normalized(original)
-        draft = self._body_measurement_draft(original)
+        draft = self._body_measurement_draft(request)
         if draft is not None:
             return AIProviderResponse(
                 content=(
@@ -140,7 +141,7 @@ class FakeAIProvider(AIProvider):
                 usage=self._usage(request, original),
             )
 
-        food_draft = self._food_entry_draft(original)
+        food_draft = self._food_entry_draft(request)
         if food_draft is not None:
             return AIProviderResponse(
                 content=(
@@ -149,6 +150,14 @@ class FakeAIProvider(AIProvider):
                     "que no estaban disponibles."
                 ),
                 drafts=(food_draft,),
+                usage=self._usage(request, original),
+            )
+        if self._food_nutrient_fields(original):
+            return AIProviderResponse(
+                content=(
+                    "Conservé los nutrientes que indicaste. ¿De qué fecha y comida "
+                    "(desayuno, comida, cena o snack) fue?"
+                ),
                 usage=self._usage(request, original),
             )
 
@@ -186,7 +195,7 @@ class FakeAIProvider(AIProvider):
             topic = _prior_topic(request)
         elif "pasos" in text and any(term in text for term in ("de donde", "fuente", "origen")):
             topic = "sources"
-        elif "peso" in text:
+        elif "peso" in text or "pesaj" in text:
             topic = "weight"
         elif "proteina" in text or "nutric" in text:
             topic = "nutrition"
@@ -207,7 +216,11 @@ class FakeAIProvider(AIProvider):
         elif "mas o menos" in text and preset == "previous-month":
             # This asks for the current month against the previous period.
             preset = "this-month"
-        name, arguments = self._tool_for(topic, preset, comparison)
+        if topic == "weight" and self._is_point_body_question(text):
+            name = "get_latest_body_measurement"
+            arguments = self._point_body_arguments(text)
+        else:
+            name, arguments = self._tool_for(topic, preset, comparison)
         return AIProviderResponse(
             tool_calls=(
                 AIProviderToolCall(
@@ -247,12 +260,60 @@ class FakeAIProvider(AIProvider):
         }
 
     @staticmethod
-    def _body_measurement_draft(text: str) -> AIProviderDraft | None:
-        match = re.fullmatch(
-            r"\s*(?:peso|weight)\s*(?:es|:)?\s*(\d{1,3}(?:[.,]\d{1,3})?)\s*(kg|lb|lbs)?\s*[.!]?\s*",
+    def _is_point_body_question(text: str) -> bool:
+        trend_terms = (
+            "tendencia",
+            "cambio",
+            "cambio mi",
+            "evolucion",
+            "promedio",
+            "subi",
+            "baje",
+            "ultimos ",
+            "esta semana",
+            "este mes",
+        )
+        return not any(term in text for term in trend_terms)
+
+    @staticmethod
+    def _point_body_arguments(text: str) -> dict:
+        match = re.search(r"\b(20\d{2}-\d{2}-\d{2})\b", text)
+        if match is not None:
+            return {
+                "date": match.group(1),
+                "match": "on_or_before" if "antes" in text else "exact",
+            }
+        if "hoy" in text:
+            override = current_app.config.get("AI_TODAY_OVERRIDE")
+            today = override if isinstance(override, date) else datetime.now(timezone.utc).date()
+            return {"date": today.isoformat(), "match": "exact"}
+        return {}
+
+    @classmethod
+    def _body_measurement_draft(
+        cls, request: AIProviderRequest
+    ) -> AIProviderDraft | None:
+        text = _last_user_text(request)
+        match = re.search(
+            r"(?:\bpeso\b|\bpes[eé]\b|\bweight\b)\s*(?:es|fue|:)?\s*(\d{1,3}(?:[.,]\d{1,3})?)\s*(kg|lb|lbs)?\b",
             text,
             flags=re.IGNORECASE,
         )
+        body_fat = re.search(
+            r"(\d{1,3}(?:[.,]\d{1,3})?)\s*%\s*(?:de\s*)?(?:grasa(?:\s+corporal)?|body\s+fat)",
+            text,
+            flags=re.IGNORECASE,
+        )
+        if match is None and body_fat is not None:
+            prior_users = [item.content for item in request.messages if item.role == "user"]
+            for prior in reversed(prior_users[:-1]):
+                match = re.search(
+                    r"(?:\bpeso\b|\bpes[eé]\b|\bweight\b)\s*(?:es|fue|:)?\s*(\d{1,3}(?:[.,]\d{1,3})?)\s*(kg|lb|lbs)?\b",
+                    prior,
+                    flags=re.IGNORECASE,
+                )
+                if match is not None:
+                    break
         if match is None:
             return None
         value = Decimal(match.group(1).replace(",", "."))
@@ -261,9 +322,12 @@ class FakeAIProvider(AIProvider):
             unit = "lb"
         if value <= 0 or value > 700:
             return None
+        payload = {"weight": format(value, "f"), "unit": unit}
+        if body_fat is not None:
+            payload["body_fat_percent"] = body_fat.group(1).replace(",", ".")
         return AIProviderDraft(
             draft_type="body_measurement",
-            payload={"weight": format(value, "f"), "unit": unit},
+            payload=payload,
             provenance={
                 "value_origin": "reported_by_user",
                 "interpretation": "parsed_by_ai",
@@ -271,8 +335,52 @@ class FakeAIProvider(AIProvider):
         )
 
     @staticmethod
-    def _food_entry_draft(text: str) -> AIProviderDraft | None:
+    def _food_nutrient_fields(text: str) -> dict[str, str]:
+        number = r"(\d{1,7}(?:[.,]\d{1,3})?)"
+        patterns = {
+            "calories_kcal": rf"{number}\s*(?:kcal|calor[ií]as?)\b",
+            "protein_g": rf"{number}\s*g(?:ramos?)?\s*(?:de\s*)?prote[ií]na\b",
+            "fat_g": rf"{number}\s*g(?:ramos?)?\s*(?:de\s*)?grasas?\b",
+            "net_carbs_g": rf"{number}\s*g(?:ramos?)?\s*(?:de\s*)?(?:carbos?|carbohidratos?)\s+netos?\b",
+            "total_carbs_g": rf"{number}\s*g(?:ramos?)?\s*(?:de\s*)?(?:carbos?|carbohidratos?)\b(?!\s+netos?)",
+            "fiber_g": rf"{number}\s*g(?:ramos?)?\s*(?:de\s*)?fibra\b",
+            "sugar_g": rf"{number}\s*g(?:ramos?)?\s*(?:de\s*)?az[uú]car(?:es)?\b",
+            "sodium_mg": rf"{number}\s*mg\s*(?:de\s*)?sodio\b",
+        }
+        result = {}
+        for field_name, pattern in patterns.items():
+            match = re.search(pattern, text, flags=re.IGNORECASE)
+            if match is not None:
+                result[field_name] = match.group(1).replace(",", ".")
+        return result
+
+    @classmethod
+    def _food_entry_draft(cls, request: AIProviderRequest) -> AIProviderDraft | None:
+        text = _last_user_text(request)
         normalized = _normalized(text).strip(" .!")
+        source_text = text
+        nutrient_fields = cls._food_nutrient_fields(text)
+        meal_type = None
+        meal_map = {
+            "desayuno": "breakfast",
+            "comida": "lunch",
+            "almuerzo": "lunch",
+            "cena": "dinner",
+            "snack": "snack",
+            "colacion": "snack",
+        }
+        for label, value in meal_map.items():
+            if label in normalized:
+                meal_type = value
+                break
+        has_today = "hoy" in normalized
+        if (meal_type is not None or has_today) and not nutrient_fields:
+            prior_users = [item.content for item in request.messages if item.role == "user"]
+            for prior in reversed(prior_users[:-1]):
+                nutrient_fields = cls._food_nutrient_fields(prior)
+                if nutrient_fields:
+                    source_text = prior
+                    break
         items = []
         egg = re.fullmatch(r"comi\s+(\d+)\s+huevos?", normalized)
         if egg:
@@ -292,18 +400,45 @@ class FakeAIProvider(AIProvider):
                         "unit": "g",
                     }
                 )
+        if nutrient_fields:
+            name = source_text.split(",", 1)[0].strip(" .!")
+            name = re.sub(r"^(?:com[ií]|registr[eé])\s+", "", name, flags=re.IGNORECASE)
+            items = [{"name": name[:200] or "alimento reportado", **nutrient_fields}]
         if not items:
             return None
+        if nutrient_fields and meal_type is None:
+            return None
+        target_date = None
+        if has_today:
+            override = current_app.config.get("AI_TODAY_OVERRIDE")
+            today = override if isinstance(override, date) else datetime.now(timezone.utc).date()
+            target_date = today.isoformat()
+        date_match = re.search(r"\b(20\d{2}-\d{2}-\d{2})\b", text)
+        if date_match is not None:
+            target_date = date_match.group(1)
+        payload = {
+            "meal_type": meal_type or "other",
+            "items": items,
+        }
+        if target_date is not None:
+            payload["date"] = target_date
+        if not nutrient_fields:
+            payload.update(
+                {
+                    "warnings": [
+                        "Faltan valores nutricionales; se guardarán como datos no disponibles."
+                    ],
+                    "missing_fields": [
+                        "calories_kcal",
+                        "protein_g",
+                        "fat_g",
+                        "total_carbs_g_or_net_carbs_g",
+                    ],
+                }
+            )
         return AIProviderDraft(
             draft_type="food_entry",
-            payload={
-                "meal_type": "other",
-                "items": items,
-                "warnings": [
-                    "Faltan valores nutricionales; se guardarán como datos no disponibles."
-                ],
-                "missing_fields": ["calories_kcal", "protein_g"],
-            },
+            payload=payload,
             provenance={
                 "value_origin": "reported_by_user",
                 "interpretation": "parsed_by_ai",
@@ -348,6 +483,20 @@ class FakeAIProvider(AIProvider):
                 f"{metrics.get('unit') or 'kg'} y el cambio disponible es "
                 f"{_number(metrics.get('change'))}."
             )
+        elif result.name == "get_latest_body_measurement":
+            if metrics.get("recorded_at") is None:
+                content = "No encontré una medición corporal para la fecha solicitada."
+            else:
+                details = [f"peso {_number(metrics.get('weight_kg'))} kg"]
+                if metrics.get("body_fat_percent") is not None:
+                    details.append(
+                        f"grasa corporal {_number(metrics.get('body_fat_percent'))}%"
+                    )
+                content = (
+                    f"Tu medición del {metrics.get('local_date')} registra "
+                    + " y ".join(details)
+                    + "."
+                )
         elif result.name == "get_nutrition_summary":
             protein = metrics.get("protein") or {}
             energy = metrics.get("energy") or {}
@@ -405,12 +554,28 @@ def _draft_tools() -> list[dict]:
         {
             "type": "function",
             "name": "prepare_body_measurement_draft",
-            "description": "Prepare, but never apply, a user-reported body weight draft.",
+            "description": (
+                "Prepare, but never apply, a complete user-reported body measurement. "
+                "Preserve every explicit supported metric; list unsupported or ambiguous "
+                "fields visibly. For a pending-draft follow-up, return the complete merged draft."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "weight": {"type": ["string", "number"]},
                     "unit": {"type": "string", "enum": ["kg", "lb"]},
+                    "recorded_at": {"type": "string", "format": "date-time"},
+                    "body_fat_percent": {"type": ["string", "number", "null"]},
+                    "muscle_mass_kg": {"type": ["string", "number", "null"]},
+                    "water_percent": {"type": ["string", "number", "null"]},
+                    "visceral_fat": {"type": ["string", "number", "null"]},
+                    "bmr_kcal": {"type": ["string", "number", "null"]},
+                    "bmi": {"type": ["string", "number", "null"]},
+                    "notes": {"type": ["string", "null"]},
+                    "warnings": {"type": "array", "items": {"type": "string"}},
+                    "missing_fields": {"type": "array", "items": {"type": "string"}},
+                    "unsupported_fields": {"type": "array", "items": {"type": "string"}},
+                    "ambiguous_fields": {"type": "array", "items": {"type": "string"}},
                 },
                 "required": ["weight", "unit"],
                 "additionalProperties": False,
@@ -420,7 +585,12 @@ def _draft_tools() -> list[dict]:
         {
             "type": "function",
             "name": "prepare_food_entry_draft",
-            "description": "Prepare, but never apply, editable food items reported by the user.",
+            "description": (
+                "Prepare, but never apply, complete editable food items. Preserve calories, "
+                "protein, fat, net and total carbohydrates without treating them as equivalent, "
+                "fiber, sugar and sodium when explicitly supplied. Preserve prior-turn nutrients "
+                "when date or meal arrives in a follow-up; list unsupported/ambiguous fields."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -429,6 +599,7 @@ def _draft_tools() -> list[dict]:
                         "type": "string",
                         "enum": ["breakfast", "lunch", "dinner", "snack", "extra", "other"],
                     },
+                    "meal_name": {"type": ["string", "null"]},
                     "items": {
                         "type": "array",
                         "minItems": 1,
@@ -441,6 +612,13 @@ def _draft_tools() -> list[dict]:
                                 "unit": {"type": ["string", "null"]},
                                 "calories_kcal": {"type": ["string", "number", "null"]},
                                 "protein_g": {"type": ["string", "number", "null"]},
+                                "fat_g": {"type": ["string", "number", "null"]},
+                                "net_carbs_g": {"type": ["string", "number", "null"]},
+                                "total_carbs_g": {"type": ["string", "number", "null"]},
+                                "fiber_g": {"type": ["string", "number", "null"]},
+                                "sugar_g": {"type": ["string", "number", "null"]},
+                                "sodium_mg": {"type": ["string", "number", "null"]},
+                                "notes": {"type": ["string", "null"]},
                             },
                             "required": ["name"],
                             "additionalProperties": False,
@@ -448,6 +626,8 @@ def _draft_tools() -> list[dict]:
                     },
                     "warnings": {"type": "array", "items": {"type": "string"}},
                     "missing_fields": {"type": "array", "items": {"type": "string"}},
+                    "unsupported_fields": {"type": "array", "items": {"type": "string"}},
+                    "ambiguous_fields": {"type": "array", "items": {"type": "string"}},
                 },
                 "required": ["meal_type", "items"],
                 "additionalProperties": False,
@@ -457,7 +637,7 @@ def _draft_tools() -> list[dict]:
     ]
 
 
-def _post_openai_json(url: str, headers: dict, body: bytes, timeout: int) -> dict:
+def _post_openai_json(url: str, headers: dict, body: bytes, timeout: float) -> dict:
     request = Request(url, data=body, headers=headers, method="POST")
     with urlopen(request, timeout=timeout) as response:
         raw = response.read()

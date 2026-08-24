@@ -26,7 +26,7 @@
             <section class="ai-draft" aria-label="Borrador {{ draft.status }}">
               <div>
                 <span class="status {{ 'status-success' if draft.status == 'applied' else 'status-warning' }}">{{ draft.status|replace('_', ' ') }}</span>
-                <strong>{{ draft.draft_type|replace('_', ' ') }}</strong>
+                <strong>{% if draft.provenance_json.correction_target %}Corrección de medición corporal{% else %}{{ draft.draft_type|replace('_', ' ') }}{% endif %}</strong>
               </div>
               {% if draft.status == 'pending_confirmation' %}
                 <form action="{{ url_for('ai.confirm_draft', draft_id=draft.public_id) }}" method="post">
@@ -35,20 +35,41 @@
                   {% if draft.draft_type == 'body_measurement' %}
                     <label>Peso <input name="weight" value="{{ draft.payload_json.weight }}" inputmode="decimal" required></label>
                     <label>Unidad <select name="unit"><option value="kg"{% if draft.payload_json.unit == 'kg' %} selected{% endif %}>kg</option><option value="lb"{% if draft.payload_json.unit == 'lb' %} selected{% endif %}>lb</option></select></label>
+                    {% if draft.payload_json.recorded_at %}<label>Fecha y hora <input name="recorded_at" value="{{ draft.payload_json.recorded_at }}"></label>{% endif %}
+                    <label>Grasa corporal (%) <input name="body_fat_percent" value="{{ draft.payload_json.body_fat_percent|default('', true) }}" inputmode="decimal"></label>
+                    <label>Masa muscular (kg) <input name="muscle_mass_kg" value="{{ draft.payload_json.muscle_mass_kg|default('', true) }}" inputmode="decimal"></label>
+                    <label>Agua corporal (%) <input name="water_percent" value="{{ draft.payload_json.water_percent|default('', true) }}" inputmode="decimal"></label>
+                    <label>Grasa visceral <input name="visceral_fat" value="{{ draft.payload_json.visceral_fat|default('', true) }}" inputmode="decimal"></label>
+                    <label>BMR (kcal) <input name="bmr_kcal" value="{{ draft.payload_json.bmr_kcal|default('', true) }}" inputmode="decimal"></label>
+                    <label>BMI / IMC <input name="bmi" value="{{ draft.payload_json.bmi|default('', true) }}" inputmode="decimal"></label>
+                    <label>Notas <input name="notes" value="{{ draft.payload_json.notes|default('', true) }}"></label>
                   {% elif draft.draft_type == 'food_entry' %}
                     <label>Fecha <input type="date" name="date" value="{{ draft.payload_json.date|default('') }}"></label>
                     <label>Comida <select name="meal_type">{% for value in ['breakfast', 'lunch', 'dinner', 'snack', 'extra', 'other'] %}<option value="{{ value }}"{% if draft.payload_json.meal_type == value %} selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>
+                    <label>Nombre de comida <input name="meal_name" value="{{ draft.payload_json.meal_name|default('', true) }}"></label>
                     {% for item in draft.payload_json['items'] %}
                       <fieldset><legend>Elemento {{ loop.index }}</legend>
                         <label>Nombre <input name="item_name_{{ loop.index0 }}" value="{{ item.name }}" required></label>
                         <label>Cantidad <input name="item_quantity_{{ loop.index0 }}" value="{{ item.quantity|default('', true) }}" inputmode="decimal"></label>
                         <label>Unidad <input name="item_unit_{{ loop.index0 }}" value="{{ item.unit|default('', true) }}"></label>
+                        <label>Calorías (kcal) <input name="item_calories_kcal_{{ loop.index0 }}" value="{{ item.calories_kcal|default('', true) }}" inputmode="decimal"></label>
+                        <label>Proteína (g) <input name="item_protein_g_{{ loop.index0 }}" value="{{ item.protein_g|default('', true) }}" inputmode="decimal"></label>
+                        <label>Grasa (g) <input name="item_fat_g_{{ loop.index0 }}" value="{{ item.fat_g|default('', true) }}" inputmode="decimal"></label>
+                        <label>Carbohidratos netos (g) <input name="item_net_carbs_g_{{ loop.index0 }}" value="{{ item.net_carbs_g|default('', true) }}" inputmode="decimal"></label>
+                        <label>Carbohidratos totales (g) <input name="item_total_carbs_g_{{ loop.index0 }}" value="{{ item.total_carbs_g|default('', true) }}" inputmode="decimal"></label>
+                        <label>Fibra (g) <input name="item_fiber_g_{{ loop.index0 }}" value="{{ item.fiber_g|default('', true) }}" inputmode="decimal"></label>
+                        <label>Azúcar (g) <input name="item_sugar_g_{{ loop.index0 }}" value="{{ item.sugar_g|default('', true) }}" inputmode="decimal"></label>
+                        <label>Sodio (mg) <input name="item_sodium_mg_{{ loop.index0 }}" value="{{ item.sodium_mg|default('', true) }}" inputmode="decimal"></label>
+                        <label>Notas <input name="item_notes_{{ loop.index0 }}" value="{{ item.notes|default('', true) }}"></label>
                       </fieldset>
                     {% endfor %}
-                    {% if draft.payload_json.warnings %}<ul>{% for warning in draft.payload_json.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>{% endif %}
                   {% else %}
                     <p class="muted">La confirmación de este tipo todavía no está habilitada.</p>
                   {% endif %}
+                  {% if draft.payload_json.warnings %}<div class="alert alert-warning" role="status"><strong>Advertencias</strong><ul>{% for warning in draft.payload_json.warnings %}<li>{{ warning }}</li>{% endfor %}</ul></div>{% endif %}
+                  {% if draft.payload_json.unsupported_fields %}<p class="muted"><strong>No soportado:</strong> {{ draft.payload_json.unsupported_fields|join(', ') }}</p>{% endif %}
+                  {% if draft.payload_json.ambiguous_fields %}<p class="alert alert-warning"><strong>Requiere corrección:</strong> {{ draft.payload_json.ambiguous_fields|join(', ') }}</p>{% endif %}
+                  {% if draft.payload_json.missing_fields %}<p class="muted"><strong>Sin dato:</strong> {{ draft.payload_json.missing_fields|join(', ') }}</p>{% endif %}
                   {% if draft.draft_type in ['body_measurement', 'food_entry'] %}<button class="button" type="submit">Confirmar y guardar</button>{% endif %}
                 </form>
                 <form action="{{ url_for('ai.reject_draft', draft_id=draft.public_id) }}" method="post">

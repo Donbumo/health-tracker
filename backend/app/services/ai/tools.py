@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from datetime import date, datetime
+from datetime import date, datetime, time, timedelta, timezone
 import re
 from typing import Callable
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -319,6 +319,96 @@ def _weight(user: User, arguments: dict) -> AIToolExecution:
     return AIToolExecution(sanitize_untrusted_data(data), tuple(evidence))
 
 
+def _latest_body_measurement(user: User, arguments: dict) -> AIToolExecution:
+    timezone_name = _timezone(user)
+    zone = ZoneInfo(timezone_name)
+    requested_date = arguments.get("date")
+    match = arguments.get("match")
+    if match is not None and requested_date is None:
+        raise AIToolError(
+            "invalid_tool_arguments",
+            "match requiere una fecha explícita.",
+            rejected=True,
+        )
+
+    statement = db.select(WeighIn).where(WeighIn.user_id == user.id)
+    if requested_date is None:
+        period = {"kind": "latest_available", "timezone": timezone_name}
+    else:
+        try:
+            target_date = date.fromisoformat(requested_date)
+        except (TypeError, ValueError) as error:
+            raise AIToolError(
+                "invalid_tool_arguments",
+                "La fecha solicitada debe usar YYYY-MM-DD.",
+                rejected=True,
+            ) from error
+        start_at = datetime.combine(target_date, time.min, zone).astimezone(timezone.utc)
+        end_at = datetime.combine(
+            target_date + timedelta(days=1), time.min, zone
+        ).astimezone(timezone.utc)
+        if match == "on_or_before":
+            statement = statement.where(WeighIn.recorded_at < end_at)
+            period = {
+                "kind": "latest_on_or_before",
+                "date": target_date.isoformat(),
+                "timezone": timezone_name,
+            }
+        else:
+            statement = statement.where(
+                WeighIn.recorded_at >= start_at,
+                WeighIn.recorded_at < end_at,
+            )
+            period = {
+                "kind": "exact_date",
+                "date": target_date.isoformat(),
+                "timezone": timezone_name,
+            }
+
+    record = db.session.execute(
+        statement.order_by(WeighIn.recorded_at.desc(), WeighIn.id.desc()).limit(1)
+    ).scalar_one_or_none()
+    metric_names = (
+        "weight_kg",
+        "body_fat_percent",
+        "muscle_mass_kg",
+        "water_percent",
+        "visceral_fat",
+        "bmr_kcal",
+        "bmi",
+    )
+    if record is None:
+        metrics = {name: None for name in metric_names}
+        metrics.update({"recorded_at": None, "local_date": None})
+        evidence: tuple[dict, ...] = ()
+    else:
+        recorded_at = record.recorded_at
+        if recorded_at.tzinfo is None or recorded_at.utcoffset() is None:
+            recorded_at = recorded_at.replace(tzinfo=timezone.utc)
+        else:
+            recorded_at = recorded_at.astimezone(timezone.utc)
+        metrics = {
+            "recorded_at": recorded_at.isoformat().replace("+00:00", "Z"),
+            "local_date": recorded_at.astimezone(zone).date().isoformat(),
+            "weight_kg": record.weight_kg,
+            "body_fat_percent": record.body_fat_percentage,
+            "muscle_mass_kg": record.muscle_mass_kg,
+            "water_percent": record.water_percentage,
+            "visceral_fat": record.visceral_fat,
+            "bmr_kcal": record.bmr_kcal,
+            "bmi": record.bmi,
+        }
+        source = _source_item("body_measurement", record.source, 1, period)
+        evidence = (source,)
+    data = {
+        "period": period,
+        "metrics": metrics,
+        "coverage": {"body_measurements": 1 if record is not None else 0},
+        "sources": list(evidence),
+    }
+    return AIToolExecution(sanitize_untrusted_data(data), evidence)
+
+
 def _nutrition(user: User, arguments: dict) -> AIToolExecution:
     date_range = _date_range(user, arguments)
     result = serialize_dashboard(NutritionTrendService().build(user.id, date_range))
@@ -536,9 +626,30 @@ class AIToolRegistry:
         )
         self._register(
             "get_weight_trend",
-            "Tendencia owner-only de peso con cobertura y fuente.",
+            "Tendencia owner-only de peso para cambios, promedios o periodos; no usar para una medición puntual.",
             _period_schema(),
             _weight,
+        )
+        self._register(
+            "get_latest_body_measurement",
+            (
+                "Medición corporal puntual owner-only. Sin argumentos devuelve la última "
+                "disponible sin límite temporal; date+exact busca ese día local y "
+                "date+on_or_before devuelve la última hasta ese día. Incluye peso y "
+                "todas las métricas de composición soportadas, zona horaria y procedencia."
+            ),
+            {
+                "type": "object",
+                "properties": {
+                    "date": {"type": "string", "format": "date"},
+                    "match": {
+                        "type": "string",
+                        "enum": ["exact", "on_or_before"],
+                    },
+                },
+                "additionalProperties": False,
+            },
+            _latest_body_measurement,
         )
         self._register(
             "get_nutrition_summary",

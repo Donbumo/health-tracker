@@ -28,6 +28,8 @@ def test_gunicorn_qa_defaults_are_explicit_and_logs_remain_visible():
         compose = compose_path.read_text(encoding="utf-8")
         assert "GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-60}" in compose
         assert "GUNICORN_KEEP_ALIVE: ${GUNICORN_KEEP_ALIVE:-5}" in compose
+        assert "AI_PROVIDER_TIMEOUT_SECONDS: ${AI_PROVIDER_TIMEOUT_SECONDS:-20}" in compose
+        assert "AI_OVERALL_DEADLINE_SECONDS: ${AI_OVERALL_DEADLINE_SECONDS:-50}" in compose
     else:
         assert os.environ["GUNICORN_TIMEOUT"] == "60"
         assert os.environ["GUNICORN_KEEP_ALIVE"] == "5"

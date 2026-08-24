@@ -3,6 +3,7 @@ from decimal import Decimal
 import json
 import os
 from pathlib import Path
+import time
 from urllib.error import HTTPError
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
@@ -24,7 +25,7 @@ from app.models import (
     WeighIn,
 )
 from app.services.ai.conversations import AIConversationService
-from app.services.ai.providers import AIProvider
+from app.services.ai.providers import AIProvider, AIProviderError
 from app.services.ai.tools import AIToolRegistry
 from app.services.ai.types import (
     AIProviderDraft,
@@ -167,6 +168,28 @@ class InvalidDraftProvider(AIProvider):
                 AIProviderDraft(
                     draft_type="steps_entry",
                     payload={"date": "not-a-date", "steps": 1234},
+                ),
+            ),
+        )
+
+
+class AmbiguousFoodDraftProvider(AIProvider):
+    name = "ambiguous-food-draft-test"
+
+    def respond(self, request: AIProviderRequest) -> AIProviderResponse:
+        return AIProviderResponse(
+            content="Revisa el nutriente ambiguo antes de confirmar.",
+            drafts=(
+                AIProviderDraft(
+                    draft_type="food_entry",
+                    payload={
+                        "meal_type": "breakfast",
+                        "items": [{"name": "Alimento QA ficticio"}],
+                        "ambiguous_fields": ["net_carbs_g"],
+                        "warnings": [
+                            "Asigna los carbohidratos netos al elemento correcto."
+                        ],
+                    },
                 ),
             ),
         )
@@ -424,6 +447,7 @@ def test_tool_registry_is_allowlisted_and_excludes_medical_shell_sql_and_urls(ap
         names = {item.name for item in AIToolRegistry().definitions}
     assert names == {
         "get_dashboard_summary",
+        "get_latest_body_measurement",
         "get_weight_trend",
         "get_nutrition_summary",
         "get_training_summary",
@@ -499,9 +523,10 @@ def test_timezone_boundary_missing_data_coverage_and_provenance(app, client, use
         f"/api/v1/ai/conversations/{conversation_id}", headers=_auth(token)
     ).get_json()["data"]
     audit = detail["messages"][0]["tool_calls"][0]
-    assert audit["result"]["metrics"]["entries"] == 1
-    assert audit["result"]["metrics"]["latest"] == "79.500"
-    assert audit["result"]["coverage"]["weight_entries"] == 1
+    assert audit["tool"] == "get_latest_body_measurement"
+    assert audit["result"]["metrics"]["weight_kg"] == "79.500"
+    assert audit["result"]["metrics"]["local_date"] == "2026-08-09"
+    assert audit["result"]["coverage"]["body_measurements"] == 1
     assert audit["evidence"][0]["source"] == "health_connect"
     assert audit["evidence"][0]["evidence_kind"] == "imported"
 
@@ -548,6 +573,7 @@ def test_steps_missing_is_null_not_zero_and_sources_are_not_silently_merged(app,
 
 
 def test_provider_failure_is_safe_persistent_and_does_not_log_secret(app, client, user, caplog):
+    caplog.set_level("INFO", logger="app")
     _enable_ai(app, FailingProvider())
     token = _api_login(client)
     conversation_id = _create_conversation(client, token)
@@ -556,6 +582,7 @@ def test_provider_failure_is_safe_persistent_and_does_not_log_secret(app, client
     assert response.get_json()["error"]["code"] == "provider_failure"
     assert "api-key-super-secret-qa" not in caplog.text
     assert "api-key-super-secret-qa" not in response.get_data(as_text=True)
+    assert "outcome=provider_error" in caplog.text
     with app.app_context():
         messages = db.session.execute(db.select(AIMessage)).scalars().all()
         assert [(item.role, item.content) for item in messages] == [
@@ -582,7 +609,10 @@ def test_provider_reported_usage_is_bounded_per_turn(app, client, user):
     assert response.get_json()["error"]["code"] == "provider_usage_limit"
 
 
-def test_tool_failure_is_audited_and_returns_safe_provider_response(app, client, user, monkeypatch):
+def test_tool_failure_is_audited_and_returns_safe_provider_response(
+    app, client, user, monkeypatch, caplog
+):
+    caplog.set_level("INFO", logger="app")
     provider = RequestedToolProvider("get_weight_trend", {"preset": "7d"})
     _enable_ai(app, provider)
 
@@ -599,9 +629,12 @@ def test_tool_failure_is_audited_and_returns_safe_provider_response(app, client,
         audit = db.session.execute(db.select(AIToolCall)).scalar_one()
         assert audit.status == "failed"
         assert audit.error_code == "tool_failure"
+    assert "outcome=tool_error" in caplog.text
+    assert "private-tool-payload" not in caplog.text
 
 
-def test_tool_loop_limit_stops_repeated_provider_calls(app, client, user):
+def test_tool_loop_limit_stops_repeated_provider_calls(app, client, user, caplog):
+    caplog.set_level("INFO", logger="app")
     _enable_ai(app, LoopProvider())
     app.config["AI_MAX_TOOL_ROUNDS"] = 1
     token = _api_login(client)
@@ -612,6 +645,7 @@ def test_tool_loop_limit_stops_repeated_provider_calls(app, client, user):
     with app.app_context():
         assert db.session.execute(db.select(AIToolCall)).scalars().all()[0].status == "completed"
         assert len(db.session.execute(db.select(AIToolCall)).scalars().all()) == 1
+    assert "outcome=round_limit" in caplog.text
 
 
 def test_prompt_injection_in_source_is_data_not_instructions(app, client, user):
@@ -1169,6 +1203,589 @@ def test_conversation_and_account_hard_delete_cleanup_ai_without_undoing_applied
         assert db.session.execute(db.select(AIMessage)).scalars().all() == []
         assert db.session.execute(db.select(AIActionDraft)).scalars().all() == []
         assert len(db.session.execute(db.select(WeighIn)).scalars().all()) == 1
+
+
+def test_latest_body_measurement_is_unbounded_exact_or_on_or_before_with_all_fields(
+    app, user
+):
+    _enable_ai(app)
+    with app.app_context():
+        account = db.session.get(User, user)
+        account.timezone = "America/Mexico_City"
+        other = User(username="latest-body-other", role="user", timezone="UTC")
+        other.set_password("fictional-latest-password")
+        db.session.add(other)
+        db.session.flush()
+        db.session.add_all(
+            [
+                WeighIn(
+                    user_id=user,
+                    recorded_at=datetime(2026, 7, 19, 14, tzinfo=timezone.utc),
+                    weight_kg=Decimal("84.1"),
+                    source="manual",
+                ),
+                WeighIn(
+                    user_id=user,
+                    recorded_at=datetime(2026, 7, 20, 14, tzinfo=timezone.utc),
+                    weight_kg=Decimal("83.4"),
+                    body_fat_percentage=Decimal("23.9"),
+                    muscle_mass_kg=Decimal("39.2"),
+                    water_percentage=Decimal("55.1"),
+                    visceral_fat=Decimal("8"),
+                    bmr_kcal=Decimal("1701"),
+                    bmi=Decimal("24.3"),
+                    source="health_connect",
+                ),
+                WeighIn(
+                    user_id=other.id,
+                    recorded_at=datetime(2026, 8, 24, 14, tzinfo=timezone.utc),
+                    weight_kg=Decimal("199"),
+                    source="manual",
+                ),
+            ]
+        )
+        db.session.commit()
+
+        registry = AIToolRegistry()
+        latest = registry.execute(account, "get_latest_body_measurement", {})
+        assert latest.data["metrics"] == {
+            "recorded_at": "2026-07-20T14:00:00Z",
+            "local_date": "2026-07-20",
+            "weight_kg": "83.400",
+            "body_fat_percent": "23.900",
+            "muscle_mass_kg": "39.200",
+            "water_percent": "55.100",
+            "visceral_fat": "8.000",
+            "bmr_kcal": "1701.00",
+            "bmi": "24.300",
+        }
+        assert latest.data["period"]["timezone"] == "America/Mexico_City"
+        assert latest.evidence[0]["source"] == "health_connect"
+        assert latest.evidence[0]["evidence_kind"] == "imported"
+        assert "199" not in json.dumps(latest.data)
+
+        exact = registry.execute(
+            account,
+            "get_latest_body_measurement",
+            {"date": "2026-07-20", "match": "exact"},
+        )
+        assert exact.data["metrics"]["weight_kg"] == "83.400"
+        prior = registry.execute(
+            account,
+            "get_latest_body_measurement",
+            {"date": "2026-07-19", "match": "on_or_before"},
+        )
+        assert prior.data["metrics"]["weight_kg"] == "84.100"
+
+
+def test_latest_body_measurement_returns_nulls_when_owner_has_no_measurement(app, user):
+    _enable_ai(app)
+    with app.app_context():
+        account = db.session.get(User, user)
+        result = AIToolRegistry().execute(account, "get_latest_body_measurement", {})
+        assert result.data["coverage"] == {"body_measurements": 0}
+        assert result.data["metrics"]["weight_kg"] is None
+        assert result.evidence == ()
+
+
+def test_point_weight_questions_select_latest_tool_without_recent_window(
+    app, client, user
+):
+    _enable_ai(app)
+    with app.app_context():
+        db.session.add(
+            WeighIn(
+                user_id=user,
+                recorded_at=datetime(2026, 7, 20, 12, tzinfo=timezone.utc),
+                weight_kg=Decimal("83.4"),
+                body_fat_percentage=Decimal("23.9"),
+                source="manual",
+            )
+        )
+        db.session.commit()
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    assert _send(client, token, conversation_id, "cuanto peso").status_code == 201
+    assert _send(
+        client, token, conversation_id, "mi ultimo pesaje fue el 2026-07-20"
+    ).status_code == 201
+    detail = client.get(
+        f"/api/v1/ai/conversations/{conversation_id}", headers=_auth(token)
+    ).get_json()["data"]
+    calls = [call for message in detail["messages"] for call in message["tool_calls"]]
+    assert [call["tool"] for call in calls] == [
+        "get_latest_body_measurement",
+        "get_latest_body_measurement",
+    ]
+    assert calls[0]["result"]["metrics"]["weight_kg"] == "83.400"
+    assert calls[1]["arguments"] == {"date": "2026-07-20", "match": "exact"}
+    assert calls[1]["result"]["metrics"]["body_fat_percent"] == "23.900"
+
+
+def test_body_draft_preserves_every_supported_metric_and_confirms_complete_payload(
+    app, client, user
+):
+    _enable_ai(app)
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    sent = _send(
+        client,
+        token,
+        conversation_id,
+        (
+            "Hoy pesé 83.4 kg, 23.9% grasa, 39.2 kg de masa muscular, "
+            "55.1% agua, grasa visceral 8, BMR 1701 e IMC 24.3"
+        ),
+    )
+    assert sent.status_code == 201, sent.get_json()
+    draft = sent.get_json()["data"]["drafts"][0]
+    assert draft["payload"] == {
+        "weight": "83.4",
+        "unit": "kg",
+        "body_fat_percent": "23.9",
+        "muscle_mass_kg": "39.2",
+        "water_percent": "55.1",
+        "visceral_fat": "8",
+        "bmr_kcal": "1701",
+        "bmi": "24.3",
+    }
+    confirmed = client.post(
+        f"/api/v1/ai/drafts/{draft['id']}/confirm", json={}, headers=_auth(token)
+    )
+    assert confirmed.status_code == 200, confirmed.get_json()
+    with app.app_context():
+        record = db.session.execute(db.select(WeighIn)).scalar_one()
+        assert record.weight_kg == Decimal("83.400")
+        assert record.body_fat_percentage == Decimal("23.900")
+        assert record.muscle_mass_kg == Decimal("39.200")
+        assert record.water_percentage == Decimal("55.100")
+        assert record.visceral_fat == Decimal("8.000")
+        assert record.bmr_kcal == Decimal("1701.00")
+        assert record.bmi == Decimal("24.300")
+
+
+def test_body_pending_draft_followup_amends_in_place_without_duplicate_record(
+    app, client, user
+):
+    _enable_ai(app)
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    first = _send(client, token, conversation_id, "Peso 83.4 kg").get_json()["data"]
+    second_response = _send(
+        client, token, conversation_id, "también 23.9% de grasa"
+    )
+    assert second_response.status_code == 201, second_response.get_json()
+    second = second_response.get_json()["data"]
+    assert second["drafts"][0]["id"] == first["drafts"][0]["id"]
+    assert second["drafts"][0]["payload"]["weight"] == "83.4"
+    assert second["drafts"][0]["payload"]["body_fat_percent"] == "23.9"
+    confirmed = client.post(
+        f"/api/v1/ai/drafts/{second['drafts'][0]['id']}/confirm",
+        json={},
+        headers=_auth(token),
+    )
+    assert confirmed.status_code == 200
+    with app.app_context():
+        assert db.session.execute(db.select(AIActionDraft)).scalars().all().__len__() == 1
+        records = db.session.execute(db.select(WeighIn)).scalars().all()
+        assert len(records) == 1
+        assert records[0].body_fat_percentage == Decimal("23.900")
+
+
+def test_body_followup_after_apply_creates_confirmed_revision_update(app, client, user):
+    _enable_ai(app)
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    first = _send(client, token, conversation_id, "Peso 83.4 kg").get_json()["data"]
+    client.post(
+        f"/api/v1/ai/drafts/{first['drafts'][0]['id']}/confirm",
+        json={},
+        headers=_auth(token),
+    )
+    correction = _send(
+        client, token, conversation_id, "faltó la grasa, era 23.9% de grasa"
+    ).get_json()["data"]["drafts"][0]
+    assert correction["id"] != first["drafts"][0]["id"]
+    assert correction["provenance"]["correction_target"]["base_revision"] == 1
+    with app.app_context():
+        assert db.session.execute(db.select(WeighIn)).scalar_one().revision == 1
+    applied = client.post(
+        f"/api/v1/ai/drafts/{correction['id']}/confirm",
+        json={},
+        headers=_auth(token),
+    )
+    assert applied.status_code == 200, applied.get_json()
+    with app.app_context():
+        records = db.session.execute(db.select(WeighIn)).scalars().all()
+        assert len(records) == 1
+        assert records[0].body_fat_percentage == Decimal("23.900")
+        assert records[0].revision == 2
+
+
+def test_food_draft_round_trips_all_supported_macros_and_preview_matches_record(
+    app, client, user
+):
+    _enable_ai(app)
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    response = _send(
+        client,
+        token,
+        conversation_id,
+        (
+            "Quest chocolate, 130 kcal, 30 g proteína, 4 g grasa, "
+            "3 g carbos netos, 5 g carbos totales, 2 g fibra, "
+            "1 g azúcar y 200 mg sodio; fue hoy desayuno"
+        ),
+    )
+    assert response.status_code == 201, response.get_json()
+    draft = response.get_json()["data"]["drafts"][0]
+    item = draft["payload"]["items"][0]
+    assert {field: item[field] for field in (
+        "calories_kcal", "protein_g", "fat_g", "net_carbs_g",
+        "total_carbs_g", "fiber_g", "sugar_g", "sodium_mg",
+    )} == {
+        "calories_kcal": "130",
+        "protein_g": "30",
+        "fat_g": "4",
+        "net_carbs_g": "3",
+        "total_carbs_g": "5",
+        "fiber_g": "2",
+        "sugar_g": "1",
+        "sodium_mg": "200",
+    }
+    first = client.post(
+        f"/api/v1/ai/drafts/{draft['id']}/confirm", json={}, headers=_auth(token)
+    )
+    second = client.post(
+        f"/api/v1/ai/drafts/{draft['id']}/confirm", json={}, headers=_auth(token)
+    )
+    assert first.status_code == second.status_code == 200
+    with app.app_context():
+        records = db.session.execute(db.select(NutritionItem)).scalars().all()
+        assert len(records) == 1
+        record = records[0]
+        for field_name, expected in {
+            "calories": "130.000", "protein_g": "30.000", "fat_g": "4.000",
+            "net_carbs_g": "3.000", "total_carbs_g": "5.000",
+            "fiber_g": "2.000", "sugar_g": "1.000", "sodium_mg": "200.000",
+        }.items():
+            assert getattr(record, field_name) == Decimal(expected)
+
+
+def test_food_followup_preserves_first_turn_nutrients_and_adds_date_and_meal(
+    app, client, user
+):
+    _enable_ai(app)
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    first = _send(
+        client,
+        token,
+        conversation_id,
+        "Quest chocolate, 130 kcal, 30 g proteína, 3 g carbos netos",
+    )
+    assert first.status_code == 201
+    assert first.get_json()["data"]["drafts"] == []
+    assert "fecha" in first.get_json()["data"]["message"]["content"].casefold()
+    second = _send(client, token, conversation_id, "fue hoy desayuno")
+    assert second.status_code == 201, second.get_json()
+    draft = second.get_json()["data"]["drafts"][0]
+    assert draft["payload"]["date"] == "2026-08-09"
+    assert draft["payload"]["meal_type"] == "breakfast"
+    assert draft["payload"]["items"][0]["calories_kcal"] == "130"
+    assert draft["payload"]["items"][0]["protein_g"] == "30"
+    assert draft["payload"]["items"][0]["net_carbs_g"] == "3"
+    confirmed = client.post(
+        f"/api/v1/ai/drafts/{draft['id']}/confirm", json={}, headers=_auth(token)
+    )
+    assert confirmed.status_code == 200
+    with app.app_context():
+        record = db.session.execute(db.select(NutritionItem)).scalar_one()
+        assert record.meal.daily_nutrition.date == date(2026, 8, 9)
+        assert record.meal.meal_type == "breakfast"
+        assert record.net_carbs_g == Decimal("3.000")
+
+
+def test_unsupported_food_field_is_warned_before_confirmation(app, client, user):
+    _enable_ai(app)
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    response = _send(
+        client,
+        token,
+        conversation_id,
+        "Quest QA, 130 kcal y 50 mg colesterol; fue hoy desayuno",
+    )
+    draft = response.get_json()["data"]["drafts"][0]
+    assert draft["payload"]["unsupported_fields"] == ["cholesterol"]
+    assert "no está soportado" in draft["payload"]["warnings"][0]
+
+
+def test_web_previews_show_body_composition_and_food_macros(app, client, user):
+    _enable_ai(app)
+    login(client)
+    created = client.post("/ai/conversations", follow_redirects=False)
+    conversation_url = created.headers["Location"]
+    body = client.post(
+        f"{conversation_url}/messages",
+        data={"content": "Hoy pesé 83.4 kg y 23.9% grasa"},
+        follow_redirects=True,
+    ).get_data(as_text=True)
+    assert "Grasa corporal (%)" in body
+    assert 'value="23.9"' in body
+    food = client.post(
+        f"{conversation_url}/messages",
+        data={
+            "content": "Quest QA, 130 kcal, 30 g proteína y 3 g carbos netos; fue hoy desayuno"
+        },
+        follow_redirects=True,
+    ).get_data(as_text=True)
+    assert "Carbohidratos netos (g)" in food
+    assert 'value="130"' in food
+    assert 'value="30"' in food
+    assert 'value="3"' in food
+
+
+def test_web_confirmation_only_clears_ambiguity_after_field_is_corrected(
+    app, client, user
+):
+    _enable_ai(app, AmbiguousFoodDraftProvider())
+    login(client)
+    created = client.post("/ai/conversations", follow_redirects=False)
+    conversation_url = created.headers["Location"]
+    preview = client.post(
+        f"{conversation_url}/messages",
+        data={"content": "Prepara un borrador nutricional QA ambiguo."},
+        follow_redirects=True,
+    )
+    assert "Requiere corrección:" in preview.get_data(as_text=True)
+    with app.app_context():
+        draft = db.session.execute(db.select(AIActionDraft)).scalar_one()
+        draft_id = draft.public_id
+        conversation_id = draft.conversation.public_id
+
+    unresolved = client.post(
+        f"/ai/drafts/{draft_id}/confirm",
+        data={
+            "conversation_id": conversation_id,
+            "meal_type": "breakfast",
+            "item_name_0": "Alimento QA ficticio",
+        },
+        follow_redirects=True,
+    )
+    assert "Corrige los campos ambiguos" in unresolved.get_data(as_text=True)
+    with app.app_context():
+        draft = db.session.execute(db.select(AIActionDraft)).scalar_one()
+        assert draft.status == "pending_confirmation"
+        assert draft.payload_json["ambiguous_fields"] == ["net_carbs_g"]
+        assert db.session.execute(db.select(NutritionItem)).scalars().all() == []
+
+    corrected = client.post(
+        f"/ai/drafts/{draft_id}/confirm",
+        data={
+            "conversation_id": conversation_id,
+            "meal_type": "breakfast",
+            "item_name_0": "Alimento QA ficticio",
+            "item_net_carbs_g_0": "3",
+        },
+        follow_redirects=True,
+    )
+    assert "Borrador aplicado" in corrected.get_data(as_text=True)
+    with app.app_context():
+        record = db.session.execute(db.select(NutritionItem)).scalar_one()
+        assert record.net_carbs_g == Decimal("3.000")
+
+
+def test_server_preserves_supported_explicit_field_dropped_by_provider(
+    app, client, user
+):
+    class DroppingProvider(AIProvider):
+        name = "dropping-test"
+
+        def respond(self, request):
+            return AIProviderResponse(
+                content="Borrador QA.",
+                drafts=(AIProviderDraft("body_measurement", {"weight": "83.4", "unit": "kg"}),),
+            )
+
+    _enable_ai(app, DroppingProvider())
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    response = _send(
+        client, token, conversation_id, "Hoy pesé 83.4 kg y 23.9% grasa"
+    )
+    draft = response.get_json()["data"]["drafts"][0]
+    assert draft["payload"]["body_fat_percent"] == "23.9"
+    assert draft["provenance"]["server_preserved_explicit_fields"] == [
+        "body_fat_percent"
+    ]
+
+
+def test_server_preserves_first_turn_food_macros_if_provider_drops_them_on_followup(
+    app, client, user
+):
+    class DroppingFoodProvider(AIProvider):
+        name = "dropping-food-test"
+
+        def __init__(self):
+            self.calls = 0
+
+        def respond(self, request):
+            self.calls += 1
+            if self.calls == 1:
+                return AIProviderResponse(content="¿De qué fecha y comida fue?")
+            return AIProviderResponse(
+                content="Borrador QA.",
+                drafts=(
+                    AIProviderDraft(
+                        "food_entry",
+                        {
+                            "date": "2026-08-09",
+                            "meal_type": "breakfast",
+                            "items": [{"name": "Quest chocolate"}],
+                        },
+                    ),
+                ),
+            )
+
+    _enable_ai(app, DroppingFoodProvider())
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    first = _send(
+        client,
+        token,
+        conversation_id,
+        "Quest chocolate, 130 kcal, 30 g proteína, 3 g carbos netos",
+    )
+    assert first.get_json()["data"]["drafts"] == []
+    second = _send(client, token, conversation_id, "fue hoy desayuno")
+    item = second.get_json()["data"]["drafts"][0]["payload"]["items"][0]
+    assert item["calories_kcal"] == "130"
+    assert item["protein_g"] == "30"
+    assert item["net_carbs_g"] == "3"
+
+
+def test_independent_tools_in_one_provider_response_use_one_followup_round(
+    app, client, user, caplog
+):
+    class MultiToolProvider(AIProvider):
+        name = "multi-tool-test"
+
+        def __init__(self):
+            self.requests = []
+
+        def respond(self, request):
+            self.requests.append(request)
+            if request.tool_results:
+                return AIProviderResponse(content="Resumen combinado QA.")
+            return AIProviderResponse(
+                tool_calls=(
+                    AIProviderToolCall("body-call", "get_latest_body_measurement", {}),
+                    AIProviderToolCall("steps-call", "get_steps_summary", {"preset": "7d"}),
+                )
+            )
+
+    caplog.set_level("INFO", logger="app")
+    provider = MultiToolProvider()
+    _enable_ai(app, provider)
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    response = _send(client, token, conversation_id, "Peso y pasos QA")
+    assert response.status_code == 201, response.get_json()
+    assert len(provider.requests) == 2
+    assert len(provider.requests[1].tool_results) == 2
+    assert "provider_round_count=2" in caplog.text
+    assert "tool_count=2" in caplog.text
+
+
+def test_slow_provider_and_slow_tool_use_distinct_deadlines_and_sanitized_logs(
+    app, client, user, monkeypatch, caplog
+):
+    class SlowProvider(AIProvider):
+        name = "slow-test"
+
+        def respond(self, request):
+            time.sleep(0.04)
+            return AIProviderResponse(content="No debería persistirse.")
+
+    caplog.set_level("INFO", logger="app")
+    _enable_ai(app, SlowProvider())
+    app.config.update(
+        AI_PROVIDER_TIMEOUT_SECONDS=0.02,
+        AI_OVERALL_DEADLINE_SECONDS=0.2,
+        GUNICORN_TIMEOUT=1,
+    )
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    secret_text = "slow-provider-private-prompt-qa"
+    response = _send(client, token, conversation_id, secret_text)
+    assert response.status_code == 504
+    assert response.get_json()["error"]["code"] == "provider_timeout"
+    assert "outcome=provider_timeout" in caplog.text
+    assert secret_text not in caplog.text
+
+    provider = RequestedToolProvider("get_weight_trend", {"preset": "7d"})
+    _enable_ai(app, provider)
+    app.config.update(
+        AI_PROVIDER_TIMEOUT_SECONDS=0.1,
+        AI_OVERALL_DEADLINE_SECONDS=0.15,
+        GUNICORN_TIMEOUT=1,
+    )
+    original = __import__(
+        "app.services.ai.tools", fromlist=["WeightTrendService"]
+    ).WeightTrendService.build
+
+    def slow_build(service, *args, **kwargs):
+        time.sleep(0.18)
+        return original(service, *args, **kwargs)
+
+    monkeypatch.setattr("app.services.ai.tools.WeightTrendService.build", slow_build)
+    second_conversation = _create_conversation(client, token)
+    response = _send(client, token, second_conversation, "consulta lenta QA")
+    assert response.status_code == 504
+    assert response.get_json()["error"]["code"] == "overall_deadline"
+    assert "outcome=overall_deadline" in caplog.text
+    assert "tool_names=get_weight_trend" in caplog.text
+
+
+def test_retry_after_provider_timeout_keeps_one_user_message_and_one_answer(
+    app, client, user
+):
+    class TimeoutOnceProvider(AIProvider):
+        name = "timeout-once-test"
+
+        def __init__(self):
+            self.calls = 0
+
+        def respond(self, request):
+            self.calls += 1
+            if self.calls == 1:
+                raise AIProviderError(
+                    "provider_timeout", "El proveedor AI agotó el tiempo de espera.", 504
+                )
+            return AIProviderResponse(content="Reintento QA completado.")
+
+    provider = TimeoutOnceProvider()
+    _enable_ai(app, provider)
+    token = _api_login(client)
+    conversation_id = _create_conversation(client, token)
+    first = _send(client, token, conversation_id, "Mensaje retry QA")
+    assert first.status_code == 504
+    retry = client.post(
+        f"/api/v1/ai/conversations/{conversation_id}/retry",
+        json={},
+        headers=_auth(token),
+    )
+    assert retry.status_code == 201, retry.get_json()
+    detail = client.get(
+        f"/api/v1/ai/conversations/{conversation_id}", headers=_auth(token)
+    ).get_json()["data"]
+    assert [(item["role"], item["content"]) for item in detail["messages"]] == [
+        ("user", "Mensaje retry QA"),
+        ("assistant", "Reintento QA completado."),
+    ]
+    assert detail["drafts"] == []
     second_conversation = _create_conversation(client, token)
     assert _send(client, token, second_conversation, "¿Cómo voy?").status_code == 201
     with app.app_context():
@@ -1197,6 +1814,81 @@ def test_external_provider_provenance_is_vendor_neutral():
     assert item["source_type"] == "external_provider"
     assert item["provider"] == "strava"
     assert item["resource_type"] == "activity"
+
+
+@pytest.mark.skipif(
+    not Path("/.dockerenv").exists() and os.getenv("AI_MARIADB_QA") != "1",
+    reason="MariaDB AI integration runs only in Docker",
+)
+def test_mariadb_body_and_food_multimetric_confirmation_is_idempotent(app, tmp_path):
+    mariadb_app = create_app(
+        {
+            "TESTING": True,
+            "SECRET_KEY": "ai-multimetric-secret-key-long-enough",
+            "API_TOKEN_SIGNING_KEY": "ai-multimetric-signing-key-long-enough",
+            "DATA_ROOT": tmp_path / "ai-mariadb-multimetric",
+            "UPLOAD_ROOT": tmp_path / "ai-mariadb-multimetric" / "raw",
+            "GENERATED_UPLOAD_ROOT": tmp_path / "ai-mariadb-multimetric" / "generated",
+            "SCHEMA_ROOT": app.config["SCHEMA_ROOT"],
+            "APP_TIMEZONE": "UTC",
+            "WTF_CSRF_ENABLED": False,
+            "API_RATE_LIMIT_ENABLED": False,
+            "AI_ENABLED": True,
+            "AI_PROVIDER": "fake",
+            "AI_MODEL": "fake-health-v1",
+            "AI_TODAY_OVERRIDE": date(2026, 8, 9),
+        }
+    )
+    username = f"ai-multimetric-{uuid.uuid4().hex}"
+    with mariadb_app.app_context():
+        account = User(username=username, role="user", timezone="UTC")
+        account.set_password("fictional-multimetric-password")
+        db.session.add(account)
+        db.session.commit()
+        account_id = account.id
+        try:
+            service = AIConversationService()
+            conversation = service.create(account_id)
+            _message, body_drafts = service.send_message(
+                account,
+                conversation.public_id,
+                "Hoy pesé 83.4 kg y 23.9% grasa",
+            )
+            first_body = service.confirm_draft(account, body_drafts[0].public_id)
+            second_body = service.confirm_draft(account, body_drafts[0].public_id)
+            assert first_body.applied_resource_public_ids_json == (
+                second_body.applied_resource_public_ids_json
+            )
+
+            _message, food_drafts = service.send_message(
+                account,
+                conversation.public_id,
+                (
+                    "Quest QA, 130 kcal, 30 g proteína y 3 g carbos netos; "
+                    "fue hoy desayuno"
+                ),
+            )
+            first_food = service.confirm_draft(account, food_drafts[0].public_id)
+            second_food = service.confirm_draft(account, food_drafts[0].public_id)
+            assert first_food.applied_resource_public_ids_json == (
+                second_food.applied_resource_public_ids_json
+            )
+
+            body_rows = db.session.execute(
+                db.select(WeighIn).where(WeighIn.user_id == account_id)
+            ).scalars().all()
+            food_rows = db.session.execute(
+                db.select(NutritionItem).where(NutritionItem.user_id == account_id)
+            ).scalars().all()
+            assert len(body_rows) == len(food_rows) == 1
+            assert body_rows[0].weight_kg == Decimal("83.400")
+            assert body_rows[0].body_fat_percentage == Decimal("23.900")
+            assert food_rows[0].calories == Decimal("130.000")
+            assert food_rows[0].protein_g == Decimal("30.000")
+            assert food_rows[0].net_carbs_g == Decimal("3.000")
+        finally:
+            db.session.execute(db.delete(User).where(User.id == account_id))
+            db.session.commit()
 
 
 @pytest.mark.skipif(

@@ -450,6 +450,21 @@ def _preserve_explicit_fields(
     return AIProviderDraft(draft.draft_type, payload, provenance)
 
 
+def _explicit_body_draft(user_text: str) -> AIProviderDraft | None:
+    fields = _explicit_body_fields(user_text)
+    if not {"weight", "unit"}.issubset(fields):
+        return None
+    return AIProviderDraft(
+        "body_measurement",
+        fields,
+        {
+            "value_origin": "reported_by_user",
+            "interpretation": "parsed_by_server_guard",
+            "server_deterministic_fallback": True,
+        },
+    )
+
+
 def _looks_like_draft_continuation(text: str) -> bool:
     normalized = re.sub(r"\s+", " ", text.casefold()).strip()
     return bool(
@@ -980,15 +995,46 @@ class AIConversationService:
                 draft_source_text = (
                     prior_user_messages[-2] + "\n" + prior_user_messages[-1]
                 )
+        fallback_body = _explicit_body_draft(draft_source_text)
+        prepared_drafts = []
+        for item in response.drafts:
+            prepared = _preserve_explicit_fields(item, draft_source_text)
+            try:
+                clean_payload = self._validate_draft_payload(
+                    prepared.draft_type,
+                    prepared.payload,
+                    provider_error=True,
+                )
+            except AIServiceError as error:
+                if (
+                    error.code == "invalid_draft"
+                    and prepared.draft_type == "body_measurement"
+                    and fallback_body is not None
+                ):
+                    prepared_drafts.append(fallback_body)
+                    fallback_body = None
+                    continue
+                raise
+            prepared_drafts.append(
+                AIProviderDraft(
+                    prepared.draft_type,
+                    clean_payload,
+                    prepared.provenance,
+                )
+            )
+            if prepared.draft_type == "body_measurement":
+                fallback_body = None
+        if fallback_body is not None:
+            prepared_drafts.append(fallback_body)
         drafts = [
             self._persist_draft(
                 user.id,
                 conversation.id,
                 assistant.id,
                 request_message.content,
-                _preserve_explicit_fields(item, draft_source_text),
+                item,
             )
-            for item in response.drafts
+            for item in prepared_drafts
         ]
         conversation.updated_at = datetime.now(timezone.utc)
         db.session.commit()
@@ -1140,18 +1186,6 @@ class AIConversationService:
                 "El proveedor devolvió un borrador no permitido.",
                 502,
             )
-        errors = list(
-            Draft202012Validator(
-                schema,
-                format_checker=FormatChecker(),
-            ).iter_errors(draft.payload)
-        )
-        if errors:
-            raise AIServiceError(
-                "invalid_draft",
-                "El proveedor devolvió un borrador inválido.",
-                502,
-            )
         clean_payload = cls._validate_draft_payload(
             draft.draft_type, draft.payload, provider_error=True
         )
@@ -1255,6 +1289,43 @@ class AIConversationService:
             raise AIServiceError(
                 "invalid_draft", "El borrador no tiene un formato permitido.", status
             )
+        payload = dict(payload)
+        if draft_type == "body_measurement":
+            for field_name in (
+                "recorded_at",
+                "body_fat_percent",
+                "muscle_mass_kg",
+                "water_percent",
+                "visceral_fat",
+                "bmr_kcal",
+                "bmi",
+                "notes",
+            ):
+                value = payload.get(field_name)
+                if isinstance(value, str) and not value.strip():
+                    payload.pop(field_name, None)
+        elif draft_type == "food_entry":
+            for field_name in ("date", "meal_name"):
+                value = payload.get(field_name)
+                if isinstance(value, str) and not value.strip():
+                    payload.pop(field_name, None)
+            clean_items = []
+            for raw_item in payload.get("items", []):
+                if not isinstance(raw_item, dict):
+                    clean_items.append(raw_item)
+                    continue
+                item = dict(raw_item)
+                for field_name in (
+                    "quantity",
+                    "unit",
+                    *FOOD_METRIC_FIELDS,
+                    "notes",
+                ):
+                    value = item.get(field_name)
+                    if isinstance(value, str) and not value.strip():
+                        item.pop(field_name, None)
+                clean_items.append(item)
+            payload["items"] = clean_items
         errors = list(
             Draft202012Validator(
                 schema, format_checker=FormatChecker()

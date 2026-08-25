@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 import uuid
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -13,12 +14,23 @@ from app.extensions import csrf, db, login_manager, migrate
 from app.models import User
 
 
+def _align_gunicorn_logging(app: Flask) -> None:
+    gunicorn_logger = logging.getLogger("gunicorn.error")
+    if not gunicorn_logger.handlers:
+        return
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
+    app.logger.propagate = False
+
+
 def create_app(test_config: dict | None = None) -> Flask:
     app = Flask(__name__)
     app.config.from_object(Config)
 
     if test_config:
         app.config.update(test_config)
+
+    _align_gunicorn_logging(app)
 
     proxy_counts = {
         name: app.config.get(name, 0)

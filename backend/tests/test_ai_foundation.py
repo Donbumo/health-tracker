@@ -1364,6 +1364,128 @@ def test_body_draft_preserves_every_supported_metric_and_confirms_complete_paylo
         assert record.bmi == Decimal("24.300")
 
 
+def test_provider_empty_optional_placeholders_are_treated_as_missing(
+    app, client, user
+):
+    class EmptyOptionalProvider(AIProvider):
+        name = "empty-optional-test"
+
+        def respond(self, request):
+            if "food" in request.messages[-1].content.casefold():
+                draft = AIProviderDraft(
+                    "food_entry",
+                    {
+                        "date": "",
+                        "meal_type": "breakfast",
+                        "meal_name": " ",
+                        "items": [
+                            {
+                                "name": "Alimento QA ficticio",
+                                "calories_kcal": "130",
+                                "protein_g": "30",
+                                "net_carbs_g": "3",
+                                "fat_g": "",
+                                "total_carbs_g": " ",
+                                "fiber_g": "",
+                                "sugar_g": "",
+                                "sodium_mg": "",
+                                "notes": "",
+                            }
+                        ],
+                    },
+                )
+            else:
+                draft = AIProviderDraft(
+                    "body_measurement",
+                    {
+                        "weight": "83.4",
+                        "unit": "kg",
+                        "body_fat_percent": "23.9",
+                        "muscle_mass_kg": "",
+                        "water_percent": " ",
+                        "visceral_fat": "",
+                        "bmr_kcal": "",
+                        "bmi": "",
+                        "notes": "",
+                    },
+                )
+            return AIProviderResponse(content="Borrador QA.", drafts=(draft,))
+
+    _enable_ai(app, EmptyOptionalProvider())
+    token = _api_login(client)
+
+    body_conversation = _create_conversation(client, token)
+    body = _send(client, token, body_conversation, "Body blank QA")
+    assert body.status_code == 201, body.get_json()
+    assert body.get_json()["data"]["drafts"][0]["payload"] == {
+        "weight": "83.4",
+        "unit": "kg",
+        "body_fat_percent": "23.9",
+    }
+
+    food_conversation = _create_conversation(client, token)
+    food = _send(client, token, food_conversation, "Food blank QA")
+    assert food.status_code == 201, food.get_json()
+    assert food.get_json()["data"]["drafts"][0]["payload"] == {
+        "meal_type": "breakfast",
+        "items": [
+            {
+                "name": "Alimento QA ficticio",
+                "calories_kcal": "130",
+                "protein_g": "30",
+                "net_carbs_g": "3",
+            }
+        ],
+    }
+
+
+def test_explicit_body_input_gets_deterministic_draft_when_provider_omits_or_malforms_it(
+    app, client, user
+):
+    class UnreliableBodyProvider(AIProvider):
+        name = "unreliable-body-test"
+
+        def respond(self, request):
+            if "malformed" in request.messages[-1].content.casefold():
+                return AIProviderResponse(
+                    content="Draft textual QA.",
+                    drafts=(
+                        AIProviderDraft(
+                            "body_measurement",
+                            {
+                                "weight": "83.4",
+                                "unit": "kg",
+                                "recorded_at": "today",
+                            },
+                        ),
+                    ),
+                )
+            return AIProviderResponse(content="Draft textual QA sin acción.")
+
+    _enable_ai(app, UnreliableBodyProvider())
+    token = _api_login(client)
+
+    for suffix in ("content only", "malformed"):
+        conversation_id = _create_conversation(client, token)
+        response = _send(
+            client,
+            token,
+            conversation_id,
+            f"Hoy pesé 83.4 kg y 23.9% grasa; {suffix}",
+        )
+        assert response.status_code == 201, response.get_json()
+        draft = response.get_json()["data"]["drafts"][0]
+        assert draft["payload"] == {
+            "weight": "83.4",
+            "unit": "kg",
+            "body_fat_percent": "23.9",
+        }
+        assert draft["provenance"]["server_deterministic_fallback"] is True
+
+    with app.app_context():
+        assert db.session.execute(db.select(WeighIn)).scalars().all() == []
+
+
 def test_body_pending_draft_followup_amends_in_place_without_duplicate_record(
     app, client, user
 ):

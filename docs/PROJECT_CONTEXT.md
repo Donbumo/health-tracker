@@ -76,6 +76,14 @@ Las reglas ejecutables de estos principios viven en `../AGENTS.md`, `schemas/AGE
 - Archivos: storage local por usuario para raw, generated, exports y backups.
 - Cliente móvil: Kotlin, Jetpack Compose, Room, WorkManager y OkHttp en `../android/`.
 
+## Política permanente de entornos
+
+El entorno **local** vive exclusivamente en `C:\Users\donbu\Documents\GitHub\health-tracker`. Usa un solo checkout, una sola MariaDB descartable, un solo proyecto Docker Compose, el puerto web `8000` y un único `.env` local ignorado por Git. Desarrollo, pruebas automáticas y QA manual cambian de rama feature dentro de ese mismo checkout; un número de versión no crea otro entorno.
+
+El entorno **de producción** vive en `~/health-tracker` en el NAS. Contiene datos reales y recibe únicamente `master` estable o releases aprobadas, con backup antes de migraciones. Nunca se usa para experimentos o QA.
+
+No se crean worktrees, stacks Docker paralelos, bases de datos, puertos o archivos de entorno por versión salvo petición explícita del usuario.
+
 El cliente móvil cubre planificación, ejecución, historial, progreso, registro diario de salud e importación Health Connect de solo lectura sin duplicar dominio: las rutinas editables publican versiones inmutables, la agenda usa planned workouts, la ejecución usa Companion Delivery/Mobile Sync y salud reutiliza peso, nutrición, catálogo y energía canónicos mediante endpoints owner-only.
 
 La web separa el análisis longitudinal en **Resumen** (`/dashboard`) de la operación cotidiana en **Hoy** (`/today`). Ambos consumen servicios owner-only existentes o read models internos; esta separación no crea un contrato móvil ni obliga a Android a consumir tendencias web.

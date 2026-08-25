@@ -3,6 +3,10 @@ param(
     [string]$SessionId,
     [string]$ProjectRoot,
     [string]$ReportRoot,
+    [string]$MigrationHead = '20260731_0036',
+    [string]$MigrationBase = '20260731_0035',
+    [ValidateRange(1, 3)][int]$MigrationCycles = 2,
+    [string[]]$PytestTargets = @(),
     [switch]$Help
 )
 
@@ -11,7 +15,9 @@ $ErrorActionPreference = 'Stop'
 
 if ($Help) {
     @'
-Usage: run_beta1_mariadb.ps1 [-SessionId <id>] [-ProjectRoot <repo>] [-ReportRoot <path>] [-Help]
+Usage: run_beta1_mariadb.ps1 [-SessionId <id>] [-ProjectRoot <repo>] [-ReportRoot <path>]
+       [-MigrationHead <revision>] [-MigrationBase <revision>] [-MigrationCycles <1..3>]
+       [-PytestTargets <path[,path...]>] [-Help]
 Builds a disposable QA image, runs migration cycles and the full backend suite
 against MariaDB 11.4 on tmpfs, then removes only the resources it created.
 It never invokes Docker Compose or creates a Docker volume.
@@ -48,6 +54,9 @@ $testsPassed = $false
 $cleanupPassed = $false
 $failure = $null
 $started = [DateTime]::UtcNow
+
+if ($MigrationHead -notmatch '^[0-9]{8}_[0-9]{4}$') { throw 'migration_head_invalid' }
+if ($MigrationBase -notmatch '^[0-9]{8}_[0-9]{4}$') { throw 'migration_base_invalid' }
 
 function Invoke-DockerChecked {
     param([Parameter(Mandatory = $true)][string[]]$Arguments)
@@ -159,21 +168,26 @@ USER app
     if (-not $healthy) { throw 'mariadb_health_timeout' }
     'MariaDB healthy on isolated tmpfs.' | Add-Content -LiteralPath $logPath -Encoding UTF8
 
-    Invoke-AppChecked @('-m', 'flask', '--app', 'app:create_app', 'db', 'upgrade', 'head')
+    Invoke-AppChecked @('-m', 'flask', '--app', 'app:create_app', 'db', 'upgrade', $MigrationHead)
     Invoke-AppChecked @('-m', 'flask', '--app', 'app:create_app', 'db', 'check')
     Invoke-AppChecked @('-m', 'flask', '--app', 'app:create_app', 'db', 'current')
     $zeroToHeadPassed = $true
-    foreach ($cycle in 1..2) {
-        "Migration cycle ${cycle}: head -> 0035 -> head." | Add-Content -LiteralPath $logPath -Encoding UTF8
-        Invoke-AppChecked @('-m', 'flask', '--app', 'app:create_app', 'db', 'downgrade', '20260731_0035')
-        Invoke-AppChecked @('-m', 'flask', '--app', 'app:create_app', 'db', 'upgrade', 'head')
+    foreach ($cycle in 1..$MigrationCycles) {
+        "Migration cycle ${cycle}: $MigrationHead -> $MigrationBase -> $MigrationHead." | Add-Content -LiteralPath $logPath -Encoding UTF8
+        Invoke-AppChecked @('-m', 'flask', '--app', 'app:create_app', 'db', 'downgrade', $MigrationBase)
+        Invoke-AppChecked @('-m', 'flask', '--app', 'app:create_app', 'db', 'upgrade', $MigrationHead)
         Invoke-AppChecked @('-m', 'flask', '--app', 'app:create_app', 'db', 'check')
         $cycleCount++
     }
 
-    'Running full pytest suite in isolated Docker/MariaDB environment.' |
+    $pytestDescription = if ($PytestTargets.Count -gt 0) {
+        'Running focal pytest targets in isolated Docker/MariaDB environment: ' + ($PytestTargets -join ', ')
+    } else {
+        'Running full pytest suite in isolated Docker/MariaDB environment.'
+    }
+    $pytestDescription |
         Add-Content -LiteralPath $logPath -Encoding UTF8
-    Invoke-AppChecked @('-m', 'pytest', '-q')
+    Invoke-AppChecked (@('-m', 'pytest', '-q') + $PytestTargets)
     $testsPassed = $true
 } catch {
     $failure = $_.Exception.Message
@@ -214,10 +228,14 @@ USER app
             docker_compose_used = $false
             persistent_data_used = $false
         }
-        migration_head = '20260731_0036'
+        migration_head = $MigrationHead
+        migration_base = $MigrationBase
         migration_zero_to_head_passed = $zeroToHeadPassed
-        migration_head_0035_head_cycles_passed = $cycleCount
-        full_pytest_passed = $testsPassed
+        migration_cycles_expected = $MigrationCycles
+        migration_cycles_passed = $cycleCount
+        pytest_targets = @($PytestTargets)
+        pytest_passed = $testsPassed
+        full_pytest_passed = ($testsPassed -and $PytestTargets.Count -eq 0)
         cleanup_passed = $cleanupPassed
         daily_containers_unchanged = $dailyUnchanged
         docker_volumes_unchanged = $volumesUnchanged
@@ -226,7 +244,7 @@ USER app
     Write-Beta1Json $report $reportPath 8
 }
 
-if ($failure -or -not $zeroToHeadPassed -or $cycleCount -ne 2 -or -not $testsPassed -or -not $cleanupPassed) {
+if ($failure -or -not $zeroToHeadPassed -or $cycleCount -ne $MigrationCycles -or -not $testsPassed -or -not $cleanupPassed) {
     [Console]::Error.WriteLine("Beta 1 MariaDB QA failed; report: $reportPath")
     exit 4
 }

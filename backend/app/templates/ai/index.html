@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Asistente AI · Health Tracker{% endblock %}
+{% block breadcrumb %}Asistente AI{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <p class="eyebrow">Beta 1.1</p>
+    <h1>Asistente AI</h1>
+    <p class="lead">Consulta tus datos mediante herramientas owner-only de solo lectura.</p>
+  </div>
+  <form action="{{ url_for('ai.create_conversation') }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="button" type="submit"{% if ai_status.state != 'available' %} disabled{% endif %}>Nueva conversación</button>
+  </form>
+</div>
+
+<section class="card ai-status-card" aria-labelledby="ai-status-title">
+  <div>
+    <h2 id="ai-status-title">Estado</h2>
+    {% if ai_status.state == 'available' %}
+      <p><span class="status status-success">Disponible</span></p>
+      <p class="muted">Proveedor {{ ai_status.provider }} · modelo {{ ai_status.model }}. Peso y comida solo se escriben tras confirmar un borrador; adjuntos siguen desactivados.</p>
+    {% elif ai_status.state == 'consent_required' %}
+      <p><span class="status status-warning">Requiere consentimiento</span></p>
+      <p>{{ ai_status.reason }}</p>
+    {% else %}
+      <p><span class="status status-warning">{{ 'Desactivado' if ai_status.state == 'disabled' else 'Sin configurar' }}</span></p>
+      <p>{{ ai_status.reason }}</p>
+      <p class="muted">El resto de Health Tracker continúa funcionando normalmente.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="card" aria-labelledby="ai-privacy-title">
+  <h2 id="ai-privacy-title">Privacidad y AI remota</h2>
+  <p>Proveedor configurado: <strong>{{ ai_status.provider or 'ninguno' }}</strong> · modelo <strong>{{ ai_status.model or 'ninguno' }}</strong>.</p>
+  {% if ai_status.remote %}
+    <p>Al habilitarla, tu pregunta, el contexto reciente acotado y únicamente los datos mínimos devueltos por las herramientas necesarias se enviarán al proveedor remoto. No se envía tu API key ni un volcado de tu perfil.</p>
+    <form action="{{ url_for('ai.remote_consent') }}" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label class="checkbox"><input type="checkbox" name="remote_consent" value="enabled"{% if ai_status.remote_consent_enabled %} checked{% endif %}> Habilito explícitamente AI remota para mis consultas.</label>
+      <button class="button button-secondary" type="submit">Guardar preferencia</button>
+    </form>
+  {% else %}
+    <p class="muted">El proveedor configurado no envía datos a un servicio remoto. La preferencia remota permanece deshabilitada.</p>
+  {% endif %}
+</section>
+
+<section aria-labelledby="conversation-list-title">
+  <div class="section-heading">
+    <div><h2 id="conversation-list-title">Tus conversaciones</h2><p>Solo tú puedes abrirlas o eliminarlas.</p></div>
+  </div>
+  {% if conversations %}
+    <div class="ai-conversation-list">
+      {% for item in conversations %}
+        <a class="card ai-conversation-link" href="{{ url_for('ai.conversation', conversation_id=item.public_id) }}">
+          <span><strong>{{ item.title }}</strong><small>{{ item.messages|length }} mensajes</small></span>
+          <span aria-hidden="true">→</span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state"><h2>Aún no hay conversaciones</h2><p>Cuando AI esté disponible, inicia una para consultar tendencias, pasos, actividades u objetivos.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

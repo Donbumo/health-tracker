@@ -16,7 +16,7 @@ def _as_bool(value: str | None, default: bool = False) -> bool:
 
 class Config:
     APP_VERSION = os.getenv("APP_VERSION") or os.getenv("GIT_COMMIT", "unknown")
-    RELEASE_LABEL = "Health Tracker Beta 1"
+    RELEASE_LABEL = "Health Tracker Beta 1.1"
     SECRET_KEY = os.getenv("SECRET_KEY")
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL") or URL.create(
         drivername="mysql+pymysql",
@@ -119,6 +119,26 @@ class Config:
     )
     ACTIVITY_FILE_MAX_BYTES = int(os.getenv("ACTIVITY_FILE_MAX_MB", "10")) * 1024 * 1024
     ACTIVITY_USER_MAX_BYTES = int(os.getenv("ACTIVITY_USER_MAX_MB", "250")) * 1024 * 1024
+
+    AI_ENABLED = _as_bool(os.getenv("AI_ENABLED"), False)
+    AI_PROVIDER = os.getenv("AI_PROVIDER", "").strip().casefold()
+    AI_MODEL = os.getenv("AI_MODEL", "").strip()
+    AI_BASE_URL = os.getenv("AI_BASE_URL", "https://api.openai.com/v1").strip()
+    AI_API_KEY = os.getenv("AI_API_KEY", "")
+    AI_MAX_INPUT_CHARS = int(os.getenv("AI_MAX_INPUT_CHARS", "4000"))
+    AI_MAX_HISTORY_MESSAGES = int(os.getenv("AI_MAX_HISTORY_MESSAGES", "20"))
+    AI_MAX_HISTORY_CHARS = int(os.getenv("AI_MAX_HISTORY_CHARS", "16000"))
+    AI_MAX_HISTORY_TURNS = int(os.getenv("AI_MAX_HISTORY_TURNS", "10"))
+    AI_MAX_TOOL_CALLS = int(os.getenv("AI_MAX_TOOL_CALLS", "6"))
+    AI_MAX_TOOL_ROUNDS = int(os.getenv("AI_MAX_TOOL_ROUNDS", "3"))
+    AI_MAX_TOTAL_TOKENS = int(os.getenv("AI_MAX_TOTAL_TOKENS", "100000"))
+    AI_MAX_OUTPUT_TOKENS = int(os.getenv("AI_MAX_OUTPUT_TOKENS", "2000"))
+    AI_PROVIDER_TIMEOUT_SECONDS = int(os.getenv("AI_PROVIDER_TIMEOUT_SECONDS", "20"))
+    AI_OVERALL_DEADLINE_SECONDS = int(
+        os.getenv("AI_OVERALL_DEADLINE_SECONDS", "50")
+    )
+    AI_DRAFT_TTL_HOURS = int(os.getenv("AI_DRAFT_TTL_HOURS", "168"))
+    GUNICORN_TIMEOUT = int(os.getenv("GUNICORN_TIMEOUT", "60"))
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"

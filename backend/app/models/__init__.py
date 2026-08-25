@@ -66,6 +66,7 @@ from app.models.medical_records import (
     MedicalStudy,
     MedicalStudySource,
 )
+from app.models.ai import AIActionDraft, AIConversation, AIMessage, AIToolCall
 
 
 __all__ = [
@@ -129,4 +130,8 @@ __all__ = [
     "LabResultRevision",
     "MedicalDuplicateCandidate",
     "MedicalAuditEvent",
+    "AIConversation",
+    "AIMessage",
+    "AIToolCall",
+    "AIActionDraft",
 ]

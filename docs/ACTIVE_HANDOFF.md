@@ -2,32 +2,35 @@
 
 ## Estado actual
 
-- Trabajo realizado exclusivamente en `feature/web-dashboard-trends`, desde `a7dfb20baca52ff17d5422137823ee5ecc138adb`.
-- `/dashboard` es el resumen analítico por periodos y `/today` conserva el flujo operativo diario.
-- El resumen incluye energía, proteína, peso y entrenamiento, con intervalos por zona horaria, comparación opcional, cobertura y gráficos SVG locales.
-- No hay migraciones, cambios de schema público ni dependencias frontend nuevas. El head Alembic continúa en `20260731_0036`.
-- La guía funcional y las fórmulas están en `DASHBOARD_TRENDS.md`; el índice de entrada sigue siendo `DOCUMENTATION_INDEX.md`.
+- Rama `feature/beta-1.1-ai-foundation`; Iteration 2 convierte la base AI en release candidate Beta 1.1.
+- `FakeAIProvider` sigue sin red. `OpenAIResponsesProvider` usa Responses API mediante HTTP liviano, `store=false`, timeout, tools/function calls, usage y errores seguros; tests usan transporte mock.
+- AI remota exige consentimiento explícito por usuario y muestra provider/model/privacidad en `/ai`. `AI_ENABLED=false` permanece como default seguro.
+- El contexto está acotado por mensajes, caracteres, turnos, tools, rondas, output y usage total.
+- `body_measurement` y `food_entry` usan preview editable y confirmación owner-only por servicios oficiales. Bloqueo de fila + `client_event_id` determinista impiden duplicados, incluso concurrentes en MariaDB.
+- Conversaciones AI son portables en `health-tracker-portable-v1`; se omiten credenciales, argumentos/provider internals y chain-of-thought.
+- Migración `20260811_0038` añade consentimiento y metadata de aplicación de drafts sobre head `20260809_0037`.
 
 ## Trabajo en curso
 
-- La implementación y la QA funcional/visual del dashboard están cerradas y listas para revisión del diff.
-- La validación usa únicamente datos ficticios: tema oscuro real y tema claro mediante un override QA aislado ya retirado.
-- El gate MariaDB usa una base efímera desde cero, valida Alembic, aislamiento por propietario, agregados e índice con `EXPLAIN`, y elimina después sus recursos exclusivos.
-- No quedan servidores, bases, logs, capturas, overrides, contenedores, redes ni volúmenes efímeros del dashboard.
-
-## Bloqueadores y riesgos
-
-- El checkout base no contiene las fixtures generadas FIT/GPX/TCX bajo `examples/qa/real-file-imports`; las pruebas que dependen de esos archivos fallan antes de entrar en el código del dashboard.
-- El volumen de entrenamiento se oculta si el periodo mezcla modalidades que no admiten una comparación honesta; esta es una limitación deliberada, no imputación de datos.
-- Los días sin registros permanecen como huecos y reducen la cobertura; no se rellenan con cero.
-
-## Siguiente paso
-
-Revisar el diff y, solo con autorización explícita posterior, decidir el commit. No hay commit, push, merge ni tag en este handoff.
+- Implementación y automatización están cerradas; falta únicamente registrar commits/push y entregar el reporte de QA.
+- El índice de contexto sigue en `docs/DOCUMENTATION_INDEX.md`; el contrato AI está en `docs/AI_FOUNDATION.md`.
 
 ## Pruebas relevantes
 
-- Suite focal del dashboard: rangos, DST, serialización, aislamiento por propietario, unidades, valores faltantes, comparación y número constante de consultas.
-- Regresiones de autenticación, navegación, `/`, `/dashboard` y `/today`.
-- Suite backend completa y pasada adicional sin los dos módulos que requieren fixtures ausentes.
-- `compileall`, `docker compose config --quiet`, Alembic `upgrade`, `heads`, `current`, `check`, `git diff --check` y QA visual real.
+- MariaDB 11.4 efímera: base vacía→0038, downgrade 0038→0037, upgrade 0037→0038, `db current` y `db check`.
+- Suite AI con gates MariaDB: 47 passed, incluyendo concurrencia, owner isolation y cascadas.
+- Suite local AI + portabilidad: 70 passed; los skips corresponden a gates reservados a contenedor.
+- Suite backend completa con fixtures QA: 792 passed, 12 skipped.
+- Tests cloud no usan Internet ni una API key real.
+
+## Bloqueadores y riesgos
+
+- No hay bloqueadores funcionales conocidos para QA manual.
+- Attachments/food vision continúan deshabilitados: no se amplió scope sin storage privado completo.
+- `workout_entry` y `steps_entry` no se confirman todavía.
+- No hay coach, diagnóstico, Strava, BLE, billing, cambios Android, merge, tag ni deploy.
+
+## Siguiente paso
+
+- QA manual del flujo `/ai`: consentimiento remoto con configuración de entorno de QA, follow-ups, evidencia, confirmación/rechazo de peso/comida y portabilidad.
+- Mantener cualquier habilitación cloud de producción detrás de revisión operativa de proveedor, modelo, retención y secrets.

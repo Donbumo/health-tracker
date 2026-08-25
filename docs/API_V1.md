@@ -12,6 +12,10 @@ Contrato detallado: [SYNC_PROTOCOL_1_0.md](SYNC_PROTOCOL_1_0.md).
 
 Base URL: `/api/v1`. Éxito usa `data` y `meta` (`api_version`, `request_id`); error usa `error.code`, mensaje seguro, `details` y el mismo `meta`.
 
+## AI Foundation
+
+Beta 1.1 agrega `GET /ai/status`, `GET/PUT /ai/settings`, create/list/get/delete de `/ai/conversations`, message/retry y `POST /ai/drafts/<uuid>/{confirm,reject}`. Todos requieren Bearer, derivan el owner del token y usan IDs públicos. Settings controla consentimiento remoto; confirm/reject es idempotente, owner-only y solo habilita `body_measurement`/`food_entry` mediante servicios oficiales. La allowlist no acepta `user_id`, SQL, shell, filesystem o URLs. Ver [AI_FOUNDATION.md](AI_FOUNDATION.md).
+
 Endpoints: `GET /health`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `POST /auth/logout-all`, `GET /me`, `GET /devices`, `DELETE /devices/<uuid>`, `GET /companion/bootstrap` y `GET /routines/active`.
 
 Los privados solo aceptan `Authorization: Bearer`; cookies, query parameters y Flask-Login no autentican la API. Fechas son RFC3339 UTC. Sync offline, conflictos, tombstones y planned workouts existen desde Alpha 0.7. Watch bridge, Bluetooth, telemetría continua e integraciones de fabricante siguen sin implementar.

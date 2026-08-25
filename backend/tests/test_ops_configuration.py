@@ -1,10 +1,11 @@
+import logging
 import os
 from pathlib import Path
 
 import pytest
-from flask import request
+from flask import Flask, request
 
-from app import create_app
+from app import _align_gunicorn_logging, create_app
 
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
@@ -28,9 +29,25 @@ def test_gunicorn_qa_defaults_are_explicit_and_logs_remain_visible():
         compose = compose_path.read_text(encoding="utf-8")
         assert "GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-60}" in compose
         assert "GUNICORN_KEEP_ALIVE: ${GUNICORN_KEEP_ALIVE:-5}" in compose
+        assert "AI_PROVIDER_TIMEOUT_SECONDS: ${AI_PROVIDER_TIMEOUT_SECONDS:-20}" in compose
+        assert "AI_OVERALL_DEADLINE_SECONDS: ${AI_OVERALL_DEADLINE_SECONDS:-50}" in compose
     else:
         assert os.environ["GUNICORN_TIMEOUT"] == "60"
         assert os.environ["GUNICORN_KEEP_ALIVE"] == "5"
+
+
+def test_flask_info_logs_use_the_gunicorn_error_handler(monkeypatch):
+    gunicorn_logger = logging.getLogger("gunicorn.error")
+    handler = logging.NullHandler()
+    monkeypatch.setattr(gunicorn_logger, "handlers", [handler])
+    monkeypatch.setattr(gunicorn_logger, "level", logging.INFO)
+
+    probe = Flask("gunicorn-logging-probe")
+    _align_gunicorn_logging(probe)
+
+    assert probe.logger.handlers == [handler]
+    assert probe.logger.level == logging.INFO
+    assert probe.logger.propagate is False
 
 
 def _proxy_probe_app(app, **overrides):

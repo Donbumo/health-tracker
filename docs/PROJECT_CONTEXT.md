@@ -4,6 +4,12 @@ Este documento es contexto frío. Explica la visión y los límites duraderos de
 
 Para trabajo en curso consulta `ACTIVE_HANDOFF.md`. Para localizar contratos y guías usa `DOCUMENTATION_INDEX.md`. La arquitectura ejecutable resumida está en `architecture/OVERVIEW.md`.
 
+## Base y dirección actuales
+
+La base oficial es **Health Tracker Beta 1.0.1** en `master` (`64abf34b0c7082fc31c75b8a4bef62c5786e50d1`). Web, Android, API y MariaDB forman una sola base consolidada; Resumen longitudinal y Hoy están cerrados, Health Connect funciona en dispositivo físico y mobile sync/offline está operativo. Objetivos/recordatorios/adherencia, registros médicos, intercambio de actividades y portabilidad de datos también existen.
+
+La prioridad actual es **Beta 1.1 AI Foundation** y la segunda es **Beta 1.2 External Integrations**. Después siguen AI Actions/Assisted Logging y Device Bridge/BLE. IA e integraciones comparten el mismo modelo de procedencia. Ninguna feature nueva debe partir de ramas Alpha antiguas ni de `integration/alpha-1.5-dashboard`.
+
 ## Visión
 
 Health Tracker es una plataforma privada, self-hosted y multiusuario para normalizar, conservar, analizar e intercambiar datos personales de salud y entrenamiento.
@@ -70,6 +76,14 @@ Las reglas ejecutables de estos principios viven en `../AGENTS.md`, `schemas/AGE
 - Archivos: storage local por usuario para raw, generated, exports y backups.
 - Cliente móvil: Kotlin, Jetpack Compose, Room, WorkManager y OkHttp en `../android/`.
 
+## Política permanente de entornos
+
+El entorno **local** vive exclusivamente en `C:\Users\donbu\Documents\GitHub\health-tracker`. Usa un solo checkout, una sola MariaDB descartable, un solo proyecto Docker Compose, el puerto web `8000` y un único `.env` local ignorado por Git. Desarrollo, pruebas automáticas y QA manual cambian de rama feature dentro de ese mismo checkout; un número de versión no crea otro entorno.
+
+El entorno **de producción** vive en `~/health-tracker` en el NAS. Contiene datos reales y recibe únicamente `master` estable o releases aprobadas, con backup antes de migraciones. Nunca se usa para experimentos o QA.
+
+No se crean worktrees, stacks Docker paralelos, bases de datos, puertos o archivos de entorno por versión salvo petición explícita del usuario.
+
 El cliente móvil cubre planificación, ejecución, historial, progreso, registro diario de salud e importación Health Connect de solo lectura sin duplicar dominio: las rutinas editables publican versiones inmutables, la agenda usa planned workouts, la ejecución usa Companion Delivery/Mobile Sync y salud reutiliza peso, nutrición, catálogo y energía canónicos mediante endpoints owner-only.
 
 La web separa el análisis longitudinal en **Resumen** (`/dashboard`) de la operación cotidiana en **Hoy** (`/today`). Ambos consumen servicios owner-only existentes o read models internos; esta separación no crea un contrato móvil ni obliga a Android a consumir tendencias web.
@@ -77,6 +91,8 @@ La web separa el análisis longitudinal en **Resumen** (`/dashboard`) de la oper
 Alpha 1.6 añade una base local experimental para fuentes externas y BLE: registro/deduplicación, diagnóstico Health Connect de báscula, asociación, descubrimiento GATT, captura privada/replay y evidencia de protocolo. No amplía el dominio servidor ni afirma soporte S400: ningún valor BLE llega al dominio de salud mientras el mapper permanezca deshabilitado.
 
 La estructura real del código manda sobre diagramas o rutas narrativas antiguas. Consulta `architecture/OVERVIEW.md` y el árbol del repositorio en vez de copiar una estructura sugerida a nuevas tareas.
+
+Beta 1.1 incorpora una interfaz AI segura sobre servicios reales: provider fake y adapter cloud desacoplados, consentimiento remoto por usuario, conversaciones acotadas, tools read-only owner-only, evidencia, portabilidad y drafts de peso/comida con confirmación explícita e idempotente. El modelo no recibe acceso a SQL/shell/filesystem y nunca escribe directamente ni diagnostica. La frontera y limitaciones están en [AI_FOUNDATION.md](AI_FOUNDATION.md).
 
 ## Capacidades de producto
 
@@ -154,4 +170,4 @@ Consulta `DOCUMENTATION_INDEX.md` para el mapa completo por dominio.
 
 Android `2.0.0-beta01` es una estabilización de Alpha 2.0, no una nueva fase funcional. Room 10, Alembic 0036, contratos, cinco pestañas y límites de producto permanecen congelados. Los gates conectados y QA físico se documentan como pendientes cuando no se han ejecutado; consulta [BETA_1_ANDROID_STABILIZATION.md](BETA_1_ANDROID_STABILIZATION.md).
 
-Alpha 1.9 incorpora documentación médica privada sin convertir Health Tracker en herramienta clínica: conserva estudios, resultados y originales, compara únicamente unidades/métodos técnicamente compatibles y mantiene rangos/estados como procedencia del informe. OCR, IA, diagnóstico, recomendaciones, FHIR obligatorio y rangos universales siguen fuera de los límites del producto. Véase [ALPHA_1_9_MEDICAL_RECORDS.md](ALPHA_1_9_MEDICAL_RECORDS.md).
+Alpha 1.9 incorpora documentación médica privada sin convertir Health Tracker en herramienta clínica: conserva estudios, resultados y originales, compara únicamente unidades/métodos técnicamente compatibles y mantiene rangos/estados como procedencia del informe. OCR clínico, diagnóstico, recomendaciones, FHIR obligatorio y rangos universales siguen fuera de los límites del producto; la capa AI general no altera esa restricción. Véase [ALPHA_1_9_MEDICAL_RECORDS.md](ALPHA_1_9_MEDICAL_RECORDS.md).

@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 import uuid
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -13,12 +14,23 @@ from app.extensions import csrf, db, login_manager, migrate
 from app.models import User
 
 
+def _align_gunicorn_logging(app: Flask) -> None:
+    gunicorn_logger = logging.getLogger("gunicorn.error")
+    if not gunicorn_logger.handlers:
+        return
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
+    app.logger.propagate = False
+
+
 def create_app(test_config: dict | None = None) -> Flask:
     app = Flask(__name__)
     app.config.from_object(Config)
 
     if test_config:
         app.config.update(test_config)
+
+    _align_gunicorn_logging(app)
 
     proxy_counts = {
         name: app.config.get(name, 0)
@@ -107,6 +119,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     from app.api_v1 import api_v1_bp
     from app.planned import planned_bp
     from app.workout_drafts import workout_drafts_bp
+    from app.ai import ai_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(activities_bp)
@@ -123,6 +136,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(recipes_bp)
     app.register_blueprint(planned_bp)
     app.register_blueprint(workout_drafts_bp)
+    app.register_blueprint(ai_bp)
     csrf.exempt(api_v1_bp)
     app.register_blueprint(api_v1_bp)
     register_commands(app)

@@ -2,7 +2,7 @@
 
 Aplicación privada, self-hosted y multiusuario para centralizar salud, nutrición, entrenamiento, archivos e intercambio de datos mediante contratos JSON versionados.
 
-Base integrada actual: tag `alpha-1.0.1-runtime-security` (`1938a48`). La cronología de entregas está en [docs/history/IMPLEMENTATION_HISTORY.md](docs/history/IMPLEMENTATION_HISTORY.md); no uses un hito histórico como contrato vigente.
+Base oficial actual: **Health Tracker Beta 1.0.1**, rama `master`, commit `64abf34b0c7082fc31c75b8a4bef62c5786e50d1`. Todo desarrollo nuevo parte de `master`; las ramas Alpha antiguas son históricas y no son bases de features. La cronología está en [docs/history/IMPLEMENTATION_HISTORY.md](docs/history/IMPLEMENTATION_HISTORY.md), pero ningún hito histórico redefine el contrato vigente.
 
 ## Capacidades actuales
 
@@ -15,6 +15,9 @@ Base integrada actual: tag `alpha-1.0.1-runtime-security` (`1938a48`). La cronol
 - Cliente Android nativo en Kotlin/Compose con ejecución desde teléfono, cache Room, cola offline y sincronización en segundo plano.
 - Interfaz Flask/Jinja responsive, Import Hub y PWA limitada a assets estáticos.
 - Web separada en **Resumen** longitudinal (`/dashboard`) y **Hoy** operativo (`/today`), con rangos, comparación, cobertura y gráficos locales accesibles sin cambiar la API móvil.
+- Base AI provider-neutral con conversaciones persistentes, follow-ups, tools owner-only de solo lectura, evidencia/procedencia, API Bearer, UI web y drafts sin escritura silenciosa.
+
+Web, Android, API y MariaDB están consolidados en Beta 1.0.1. Health Connect y mobile sync/offline tienen validación física; también existen objetivos/recordatorios/adherencia, registros médicos, intercambio de actividades y portabilidad. La prioridad de producto es **Beta 1.1 AI Foundation**, seguida de integraciones externas.
 
 El código Android existe, pero este checkout no incluye un APK publicado ni firma de producción. Tampoco incluye app de reloj, Bluetooth, telemetría continua, FIT de salida ni integraciones privadas de fabricantes. Consulta [docs/ROADMAP.md](docs/ROADMAP.md).
 

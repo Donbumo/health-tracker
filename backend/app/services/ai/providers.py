@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import Decimal
 import json
@@ -637,11 +638,109 @@ def _draft_tools() -> list[dict]:
     ]
 
 
-def _post_openai_json(url: str, headers: dict, body: bytes, timeout: float) -> dict:
+def _post_openai_json(
+    url: str, headers: dict, body: bytes, timeout: float
+) -> _OpenAIHTTPResponse:
     request = Request(url, data=body, headers=headers, method="POST")
     with urlopen(request, timeout=timeout) as response:
         raw = response.read()
-    return json.loads(raw.decode("utf-8"))
+        status = getattr(response, "status", None)
+        content_type = _response_content_type(getattr(response, "headers", None))
+    try:
+        document = json.loads(raw.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError):
+        _log_openai_response_diagnostic(
+            status=status,
+            content_type=content_type,
+            document=None,
+        )
+        raise
+    return _OpenAIHTTPResponse(document, status, content_type)
+
+
+@dataclass(frozen=True)
+class _OpenAIHTTPResponse:
+    document: object
+    status: int | None
+    content_type: str | None
+
+
+def _response_content_type(headers) -> str | None:
+    try:
+        value = headers.get("Content-Type") if headers is not None else None
+    except (AttributeError, TypeError, ValueError):
+        return None
+    if not isinstance(value, str):
+        return None
+    media_type = value.partition(";")[0].strip().casefold()
+    if not re.fullmatch(r"[a-z0-9!#$&^_.+-]+/[a-z0-9!#$&^_.+-]+", media_type):
+        return None
+    return media_type[:96]
+
+
+def _diagnostic_token(value) -> str:
+    if isinstance(value, int) and not isinstance(value, bool):
+        return str(value)
+    if isinstance(value, str):
+        clean = value.strip()
+        if re.fullmatch(r"[A-Za-z0-9_.:/-]{1,96}", clean):
+            return clean
+        if clean:
+            return "present"
+    return "none"
+
+
+def _log_openai_response_diagnostic(
+    *,
+    status: int | None,
+    content_type: str | None,
+    document,
+) -> None:
+    top_level_keys: list[str] = []
+    output_item_types: list[str] = []
+    error_code = "none"
+    error_type = "none"
+    if isinstance(document, dict):
+        for key in list(document)[:32]:
+            top_level_keys.append(_diagnostic_token(key))
+        output = document.get("output")
+        if isinstance(output, list):
+            for item in output[:32]:
+                if isinstance(item, dict):
+                    output_item_types.append(_diagnostic_token(item.get("type")))
+                else:
+                    output_item_types.append("non_object")
+        error = document.get("error")
+        if isinstance(error, dict):
+            error_code = _diagnostic_token(error.get("code"))
+            error_type = _diagnostic_token(error.get("type"))
+    current_app.logger.warning(
+        "ai_provider_response_rejected http_status=%s content_type=%s "
+        "top_level_keys=%s output_item_types=%s has_id=%s has_model=%s "
+        "has_usage=%s error_code=%s error_type=%s",
+        status if type(status) is int else "unknown",
+        content_type or "unknown",
+        ",".join(sorted(set(top_level_keys))) or "none",
+        ",".join(output_item_types) or "none",
+        "yes" if isinstance(document, dict) and "id" in document else "no",
+        "yes" if isinstance(document, dict) and "model" in document else "no",
+        "yes" if isinstance(document, dict) and "usage" in document else "no",
+        error_code,
+        error_type,
+    )
+
+
+def _http_error_document(error: HTTPError):
+    try:
+        raw = error.read(65_537)
+    except (AttributeError, OSError, TypeError, ValueError):
+        return None
+    if not raw or len(raw) > 65_536:
+        return None
+    try:
+        return json.loads(raw.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError, TypeError, ValueError):
+        return None
 
 
 def _responses_url(base_url: str | None) -> str:
@@ -736,7 +835,7 @@ class OpenAIResponsesProvider(AIProvider):
             "max_output_tokens": maximum,
         }
         try:
-            document = self._transport(
+            transport_response = self._transport(
                 self._responses_url,
                 {
                     "Authorization": f"Bearer {self._api_key}",
@@ -746,6 +845,12 @@ class OpenAIResponsesProvider(AIProvider):
                 request.timeout_seconds,
             )
         except HTTPError as error:
+            document = _http_error_document(error)
+            _log_openai_response_diagnostic(
+                status=error.code,
+                content_type=_response_content_type(error.headers),
+                document=document,
+            )
             self._raise_http(error.code)
         except (TimeoutError, socket.timeout) as error:
             raise AIProviderError(
@@ -761,7 +866,26 @@ class OpenAIResponsesProvider(AIProvider):
                 "El proveedor AI devolvió una respuesta no válida.",
                 502,
             ) from error
-        return self._parse(document)
+        if isinstance(transport_response, _OpenAIHTTPResponse):
+            document = transport_response.document
+            http_status = transport_response.status
+            content_type = transport_response.content_type
+            if type(http_status) is int and not 200 <= http_status < 300:
+                _log_openai_response_diagnostic(
+                    status=http_status,
+                    content_type=content_type,
+                    document=document,
+                )
+                self._raise_http(http_status)
+        else:
+            document = transport_response
+            http_status = None
+            content_type = None
+        return self._parse(
+            document,
+            http_status=http_status,
+            content_type=content_type,
+        )
 
     @staticmethod
     def _raise_http(status: int) -> None:
@@ -788,7 +912,24 @@ class OpenAIResponsesProvider(AIProvider):
         )
 
     @staticmethod
-    def _parse(document) -> AIProviderResponse:
+    def _parse(
+        document,
+        *,
+        http_status: int | None = None,
+        content_type: str | None = None,
+    ) -> AIProviderResponse:
+        try:
+            return OpenAIResponsesProvider._parse_document(document)
+        except AIProviderError:
+            _log_openai_response_diagnostic(
+                status=http_status,
+                content_type=content_type,
+                document=document,
+            )
+            raise
+
+    @staticmethod
+    def _parse_document(document) -> AIProviderResponse:
         if not isinstance(document, dict) or not isinstance(document.get("output"), list):
             raise AIProviderError(
                 "provider_malformed_response",
@@ -800,13 +941,37 @@ class OpenAIResponsesProvider(AIProvider):
         drafts = []
         for item in document["output"]:
             if not isinstance(item, dict):
-                continue
-            if item.get("type") == "message":
-                for content in item.get("content") or []:
-                    if isinstance(content, dict) and content.get("type") == "output_text":
-                        if isinstance(content.get("text"), str):
-                            text_parts.append(content["text"])
-            elif item.get("type") == "function_call":
+                raise AIProviderError(
+                    "provider_malformed_response",
+                    "El proveedor AI devolvió una respuesta no válida.",
+                    502,
+                )
+            item_type = item.get("type")
+            if item_type == "message":
+                contents = item.get("content")
+                if not isinstance(contents, list):
+                    raise AIProviderError(
+                        "provider_malformed_response",
+                        "El proveedor AI devolvió una respuesta no válida.",
+                        502,
+                    )
+                for content in contents:
+                    if not isinstance(content, dict):
+                        raise AIProviderError(
+                            "provider_malformed_response",
+                            "El proveedor AI devolvió una respuesta no válida.",
+                            502,
+                        )
+                    if content.get("type") == "output_text":
+                        text = content.get("text")
+                        if not isinstance(text, str):
+                            raise AIProviderError(
+                                "provider_malformed_response",
+                                "El proveedor AI devolvió una respuesta no válida.",
+                                502,
+                            )
+                        text_parts.append(text)
+            elif item_type == "function_call":
                 name = item.get("name")
                 call_id = item.get("call_id")
                 try:
@@ -817,7 +982,13 @@ class OpenAIResponsesProvider(AIProvider):
                         "El proveedor AI devolvió una llamada de herramienta no válida.",
                         502,
                     ) from error
-                if not isinstance(name, str) or not isinstance(call_id, str) or not isinstance(arguments, dict):
+                if (
+                    not isinstance(name, str)
+                    or not name.strip()
+                    or not isinstance(call_id, str)
+                    or not call_id.strip()
+                    or not isinstance(arguments, dict)
+                ):
                     raise AIProviderError(
                         "provider_malformed_tool_call",
                         "El proveedor AI devolvió una llamada de herramienta no válida.",
@@ -846,9 +1017,29 @@ class OpenAIResponsesProvider(AIProvider):
         content = "\n".join(part.strip() for part in text_parts if part.strip()) or None
         if drafts and content is None:
             content = "Preparé un borrador editable. Revísalo antes de confirmarlo."
-        usage = document.get("usage") or {}
-        if not isinstance(usage, dict):
+        if content is None and not calls and not drafts:
+            raise AIProviderError(
+                "provider_malformed_response",
+                "El proveedor AI no devolvió contenido utilizable.",
+                502,
+            )
+        usage = document.get("usage")
+        if usage is None:
             usage = {}
+        if not isinstance(usage, dict):
+            raise AIProviderError(
+                "provider_malformed_response",
+                "El proveedor AI devolvió una respuesta no válida.",
+                502,
+            )
+        for field_name in ("input_tokens", "output_tokens"):
+            value = usage.get(field_name)
+            if value is not None and (type(value) is not int or value < 0):
+                raise AIProviderError(
+                    "provider_malformed_response",
+                    "El proveedor AI devolvió una respuesta no válida.",
+                    502,
+                )
         return AIProviderResponse(
             content=content,
             tool_calls=tuple(calls),

@@ -1,5 +1,6 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
+import io
 import json
 import os
 from pathlib import Path
@@ -25,7 +26,11 @@ from app.models import (
     WeighIn,
 )
 from app.services.ai.conversations import AIConversationService
-from app.services.ai.providers import AIProvider, AIProviderError
+from app.services.ai.providers import (
+    AIProvider,
+    AIProviderError,
+    OpenAIResponsesProvider,
+)
 from app.services.ai.tools import AIToolRegistry
 from app.services.ai.types import (
     AIProviderDraft,
@@ -943,6 +948,198 @@ def test_openai_responses_adapter_uses_configurable_base_url(app, client, user):
     assert "qa-openrouter-key-never-real" not in json.dumps(payload)
 
 
+@pytest.mark.parametrize(
+    "output,expected_content,expected_call_count",
+    [
+        (
+            [
+                {
+                    "type": "message",
+                    "content": [{"type": "output_text", "text": "OK"}],
+                }
+            ],
+            "OK",
+            0,
+        ),
+        (
+            [
+                {
+                    "type": "function_call",
+                    "call_id": "call-qa",
+                    "name": "get_latest_body_measurement",
+                    "arguments": "{}",
+                }
+            ],
+            None,
+            1,
+        ),
+        (
+            [
+                {"type": "reasoning", "id": "reasoning-qa", "summary": []},
+                {
+                    "type": "function_call",
+                    "call_id": "call-reasoning-qa",
+                    "name": "get_latest_body_measurement",
+                    "arguments": "{}",
+                },
+            ],
+            None,
+            1,
+        ),
+        (
+            [
+                {"type": "reasoning", "id": "reasoning-message-qa", "summary": []},
+                {
+                    "type": "message",
+                    "content": [
+                        {"type": "output_text", "text": "Respuesta con razonamiento."}
+                    ],
+                },
+            ],
+            "Respuesta con razonamiento.",
+            0,
+        ),
+        (
+            [
+                {"type": "future_auxiliary_item", "opaque": "private-ignored-value"},
+                {
+                    "type": "message",
+                    "content": [
+                        {"type": "output_text", "text": "Respuesta compatible."}
+                    ],
+                },
+            ],
+            "Respuesta compatible.",
+            0,
+        ),
+    ],
+    ids=(
+        "message",
+        "function-call",
+        "reasoning-and-function-call",
+        "reasoning-and-message",
+        "unknown-auxiliary-and-message",
+    ),
+)
+def test_openai_responses_parser_accepts_heterogeneous_valid_output_items(
+    app, output, expected_content, expected_call_count
+):
+    document = {
+        "id": "resp-openrouter-qa",
+        "model": "openai/gpt-oss-20b:free",
+        "output": output,
+        "usage": {"input_tokens": 12, "output_tokens": 7},
+    }
+
+    with app.app_context():
+        parsed = OpenAIResponsesProvider._parse(
+            document,
+            http_status=200,
+            content_type="application/json",
+        )
+
+    assert parsed.content == expected_content
+    assert len(parsed.tool_calls) == expected_call_count
+    assert parsed.usage == AIUsage(input_tokens=12, output_tokens=7)
+
+
+@pytest.mark.parametrize(
+    "output",
+    [
+        [],
+        [{"type": "reasoning", "id": "reasoning-only-qa", "summary": []}],
+        [{"type": "future_auxiliary_item", "opaque": "ignored"}],
+    ],
+    ids=("empty", "reasoning-only", "unknown-only"),
+)
+def test_openai_responses_parser_rejects_output_without_usable_item(app, output):
+    with app.app_context(), pytest.raises(AIProviderError) as raised:
+        OpenAIResponsesProvider._parse(
+            {"output": output},
+            http_status=200,
+            content_type="application/json",
+        )
+
+    assert raised.value.code == "provider_malformed_response"
+
+
+@pytest.mark.parametrize(
+    "tool_call",
+    [
+        {"type": "function_call", "call_id": "call-qa", "arguments": "{}"},
+        {
+            "type": "function_call",
+            "name": "get_latest_body_measurement",
+            "arguments": "{}",
+        },
+        {
+            "type": "function_call",
+            "call_id": "call-qa",
+            "name": "get_latest_body_measurement",
+        },
+        {
+            "type": "function_call",
+            "call_id": "call-qa",
+            "name": "get_latest_body_measurement",
+            "arguments": "[]",
+        },
+    ],
+    ids=("missing-name", "missing-call-id", "missing-arguments", "non-object-arguments"),
+)
+def test_openai_responses_parser_rejects_incomplete_function_calls(app, tool_call):
+    with app.app_context(), pytest.raises(AIProviderError) as raised:
+        OpenAIResponsesProvider._parse(
+            {"output": [tool_call]},
+            http_status=200,
+            content_type="application/json",
+        )
+
+    assert raised.value.code == "provider_malformed_tool_call"
+
+
+def test_openai_rejected_response_diagnostic_is_structured_and_sanitized(
+    app, caplog
+):
+    caplog.set_level("WARNING", logger="app")
+    private_reasoning = "private-reasoning-must-not-be-logged"
+    private_error_message = "private-provider-error-message"
+    document = {
+        "id": "resp-qa",
+        "model": "openai/gpt-oss-20b:free",
+        "usage": {"input_tokens": 1, "output_tokens": 1},
+        "output": [
+            {
+                "type": "reasoning",
+                "content": [{"type": "reasoning_text", "text": private_reasoning}],
+            }
+        ],
+        "error": {
+            "code": "provider_error_qa",
+            "type": "upstream_error_qa",
+            "message": private_error_message,
+        },
+    }
+
+    with app.app_context(), pytest.raises(AIProviderError):
+        OpenAIResponsesProvider._parse(
+            document,
+            http_status=200,
+            content_type="application/json",
+        )
+
+    assert "ai_provider_response_rejected" in caplog.text
+    assert "http_status=200" in caplog.text
+    assert "content_type=application/json" in caplog.text
+    assert "output_item_types=reasoning" in caplog.text
+    assert "has_id=yes" in caplog.text
+    assert "has_model=yes" in caplog.text
+    assert "has_usage=yes" in caplog.text
+    assert "error_code=provider_error_qa" in caplog.text
+    assert "error_type=upstream_error_qa" in caplog.text
+    assert private_reasoning not in caplog.text
+    assert private_error_message not in caplog.text
+
+
 def test_openai_missing_key_is_unconfigured_without_breaking_health(app, client, user):
     _enable_openai(app, lambda *_args: {}, api_key="")
     token = _api_login(client)
@@ -973,6 +1170,17 @@ def test_openai_missing_key_is_unconfigured_without_breaking_health(app, client,
         (
             HTTPError(
                 "https://api.openai.com/v1/responses",
+                403,
+                "private-forbidden-detail",
+                {},
+                None,
+            ),
+            "provider_auth",
+            502,
+        ),
+        (
+            HTTPError(
+                "https://api.openai.com/v1/responses",
                 429,
                 "private-quota-detail",
                 {},
@@ -980,6 +1188,17 @@ def test_openai_missing_key_is_unconfigured_without_breaking_health(app, client,
             ),
             "provider_quota",
             429,
+        ),
+        (
+            HTTPError(
+                "https://api.openai.com/v1/responses",
+                503,
+                "private-unavailable-detail",
+                {},
+                None,
+            ),
+            "provider_offline",
+            503,
         ),
     ],
 )
@@ -1003,11 +1222,59 @@ def test_openai_provider_errors_are_safe_and_retryable(
     combined = caplog.text + response.get_data(as_text=True)
     assert "private-timeout-detail" not in combined
     assert "private-auth-detail" not in combined
+    assert "private-forbidden-detail" not in combined
     assert "private-quota-detail" not in combined
+    assert "private-unavailable-detail" not in combined
     with app.app_context():
         assert [item.role for item in db.session.execute(db.select(AIMessage)).scalars()] == [
             "user"
         ]
+
+
+def test_openai_http_json_error_is_mapped_and_diagnosed_without_body_leak(
+    app, client, user, caplog
+):
+    caplog.set_level("WARNING", logger="app")
+    private_message = "private-openrouter-error-message"
+    error = HTTPError(
+        "https://openrouter.ai/api/v1/responses",
+        429,
+        "private-http-reason",
+        {"Content-Type": "application/json; charset=utf-8"},
+        io.BytesIO(
+            json.dumps(
+                {
+                    "error": {
+                        "code": "rate_limit_exceeded",
+                        "type": "rate_limit_error",
+                        "message": private_message,
+                    }
+                }
+            ).encode("utf-8")
+        ),
+    )
+
+    def transport(*_args):
+        raise error
+
+    _enable_openai(app, transport, base_url="https://openrouter.ai/api/v1")
+    token = _api_login(client)
+    client.put(
+        "/api/v1/ai/settings",
+        json={"remote_consent_enabled": True},
+        headers=_auth(token),
+    )
+    conversation_id = _create_conversation(client, token)
+    response = _send(client, token, conversation_id, "Error HTTP sintético QA")
+
+    assert response.status_code == 429
+    assert response.get_json()["error"]["code"] == "provider_quota"
+    assert "http_status=429" in caplog.text
+    assert "content_type=application/json" in caplog.text
+    assert "error_code=rate_limit_exceeded" in caplog.text
+    assert "error_type=rate_limit_error" in caplog.text
+    assert private_message not in caplog.text
+    assert "private-http-reason" not in caplog.text
 
 
 def test_openai_malformed_tool_call_is_rejected_at_provider_boundary(app, client, user):
@@ -1034,6 +1301,27 @@ def test_openai_malformed_tool_call_is_rejected_at_provider_boundary(app, client
     response = _send(client, token, conversation_id, "Tool malformada QA")
     assert response.status_code == 502
     assert response.get_json()["error"]["code"] == "provider_malformed_tool_call"
+
+
+def test_openai_invalid_json_is_rejected_without_raw_content(app, client, user, caplog):
+    private_raw = "private-invalid-json-provider-content"
+
+    def transport(*_args):
+        raise json.JSONDecodeError("invalid provider JSON", private_raw, 0)
+
+    _enable_openai(app, transport)
+    token = _api_login(client)
+    client.put(
+        "/api/v1/ai/settings",
+        json={"remote_consent_enabled": True},
+        headers=_auth(token),
+    )
+    conversation_id = _create_conversation(client, token)
+    response = _send(client, token, conversation_id, "JSON inválido sintético QA")
+
+    assert response.status_code == 502
+    assert response.get_json()["error"]["code"] == "provider_malformed_response"
+    assert private_raw not in (caplog.text + response.get_data(as_text=True))
 
 
 def test_openai_malformed_response_is_sanitized(app, client, user, caplog):

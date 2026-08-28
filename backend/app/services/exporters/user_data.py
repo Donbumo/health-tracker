@@ -16,6 +16,7 @@ from app.models import (
     UploadedFile,
     User,
     WeighIn,
+    ExternalAccount,
 )
 from app.services.exporters.base import (
     BaseExporter,
@@ -202,6 +203,22 @@ def _export_record_metadata(record: ExportRecord, user_id: int) -> dict[str, Any
     }
 
 
+def _external_account_metadata(account: ExternalAccount, user_id: int) -> dict[str, Any]:
+    if account.user_id != user_id:
+        raise ExportError("External account does not belong to this user")
+    return {
+        "provider": account.provider,
+        "provider_account_id": account.provider_account_id,
+        "display_name": account.display_name,
+        "scopes": list(account.scopes_json or []),
+        "status": account.status,
+        "connected_at": _iso(account.connected_at),
+        "last_sync_at": _iso(account.last_sync_at),
+        "last_success_at": _iso(account.last_success_at),
+        "reference_only": True,
+    }
+
+
 def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
     if user.id != user_id:
         raise ExportError("User export does not belong to this user")
@@ -232,6 +249,9 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
         user_id,
         ExportRecord.created_at,
         ExportRecord.id,
+    )
+    external_accounts = _records(
+        ExternalAccount, user_id, ExternalAccount.provider, ExternalAccount.id
     )
     from app.models import ExerciseLoadProfile
 
@@ -295,6 +315,9 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
             "uploads": [_upload_metadata(upload, user_id) for upload in uploads],
             "export_records": [
                 _export_record_metadata(record, user_id) for record in export_records
+            ],
+            "external_integrations": [
+                _external_account_metadata(account, user_id) for account in external_accounts
             ],
         },
     }

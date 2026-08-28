@@ -173,6 +173,11 @@ class User(UserMixin, db.Model):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    external_accounts = db.relationship(
+        "ExternalAccount",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def set_password(self, password: str) -> None:
         self.password_hash = generate_password_hash(password)

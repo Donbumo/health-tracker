@@ -67,6 +67,12 @@ from app.models.medical_records import (
     MedicalStudySource,
 )
 from app.models.ai import AIActionDraft, AIConversation, AIMessage, AIToolCall
+from app.models.integration import (
+    ExternalAccount,
+    ExternalImportEvent,
+    ExternalResource,
+    ExternalSyncCursor,
+)
 
 
 __all__ = [
@@ -134,4 +140,8 @@ __all__ = [
     "AIMessage",
     "AIToolCall",
     "AIActionDraft",
+    "ExternalAccount",
+    "ExternalImportEvent",
+    "ExternalResource",
+    "ExternalSyncCursor",
 ]

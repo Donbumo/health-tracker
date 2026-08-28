@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Integraciones · Health Tracker{% endblock %}
+{% block content %}
+  {% set error_labels = {
+    'auth_expired': 'Autorización expirada',
+    'auth_error': 'La cuenta requiere autorización',
+    'missing_scope': 'Falta un permiso de lectura',
+    'rate_limited': 'Límite temporal de Strava alcanzado',
+    'provider_unavailable': 'Strava no está disponible temporalmente',
+    'remote_revocation_pending': 'Revocación remota pendiente',
+    'sync_page_limit': 'Sync pausado; puede reanudarse',
+    'sync_failed': 'El sync no pudo completarse'
+  } %}
+  <section class="page-heading">
+    <div>
+      <h1>Integraciones</h1>
+      <p>Conecta proveedores externos de solo lectura. Health Tracker conserva procedencia y nunca envía cambios a Strava.</p>
+    </div>
+  </section>
+
+  {% if not strava_enabled %}
+    <section class="card">
+      <span class="badge">Strava</span>
+      <h2>Strava no está configurado</h2>
+      <p>El operador debe habilitar las credenciales OAuth y el almacén cifrado antes de conectar una cuenta.</p>
+    </section>
+  {% elif not accounts %}
+    <section class="card integration-card">
+      <div>
+        <span class="badge">Strava</span>
+        <h2>Entrenamientos desde Strava</h2>
+        <p>Importa actividades de entrenamiento con un backfill inicial acotado de {{ default_initial_days }} días.</p>
+      </div>
+      <form action="{{ url_for('integrations.strava_connect') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="button" type="submit">Connect with Strava</button>
+      </form>
+    </section>
+  {% else %}
+    {% for account in accounts %}
+      <section class="card integration-card">
+        <div class="integration-card-heading">
+          <div>
+            <span class="badge">Strava</span>
+            <h2>{{ account.display_name or 'Cuenta Strava' }}</h2>
+          </div>
+          <span class="status {% if account.status == 'connected' %}status-success{% elif account.status == 'disconnected' %}status-muted{% else %}status-warning{% endif %}">
+            {{ account.status|replace('_', ' ') }}
+          </span>
+        </div>
+        <dl class="metadata">
+          <dt>Permisos</dt><dd>{{ account.scopes|join(', ') }}</dd>
+          <dt>Último sync</dt><dd>{{ account.last_sync_at.isoformat() if account.last_sync_at else 'Aún no ejecutado' }}</dd>
+          <dt>Último sync exitoso</dt><dd>{{ account.last_success_at.isoformat() if account.last_success_at else 'Aún no ejecutado' }}</dd>
+          <dt>Resultado</dt>
+          <dd>
+            {% if account.last_sync_summary %}
+              {{ account.last_sync_summary.imported or 0 }} importadas ·
+              {{ account.last_sync_summary.updated or 0 }} actualizadas ·
+              {{ account.last_sync_summary.skipped or 0 }} sin cambios ·
+              {{ account.last_sync_summary.failed or 0 }} fallidas
+            {% else %}Sin resultados todavía{% endif %}
+          </dd>
+          {% if account.last_error_code %}<dt>Atención</dt><dd>{{ error_labels.get(account.last_error_code, account.last_error_code|replace('_', ' ')) }}</dd>{% endif %}
+        </dl>
+
+        {% if account.status in ['connected', 'sync_error'] %}
+          <form class="integration-sync-form" action="{{ url_for('integrations.strava_sync') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="account_id" value="{{ account.public_id }}">
+            <label for="range-{{ loop.index }}">Rango</label>
+            <select id="range-{{ loop.index }}" name="range">
+              <option value="incremental">Cambios recientes</option>
+              <option value="30">Últimos 30 días</option>
+              <option value="90">Últimos 90 días</option>
+              <option value="full">Historial completo</option>
+            </select>
+            <label class="checkbox"><input type="checkbox" name="confirm_full_history" value="yes"> Confirmo historial completo si selecciono esa opción.</label>
+            <button class="button" type="submit">Sync now</button>
+          </form>
+        {% else %}
+          <form action="{{ url_for('integrations.strava_connect') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="button" type="submit">Reconnect Strava</button>
+          </form>
+        {% endif %}
+
+        <form action="{{ url_for('integrations.strava_disconnect') }}" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="account_id" value="{{ account.public_id }}">
+          <label class="checkbox"><input type="checkbox" name="confirm_disconnect" value="yes" required> Conservar actividades y desconectar esta cuenta.</label>
+          <button class="button button-danger" type="submit">Disconnect</button>
+        </form>
+      </section>
+    {% endfor %}
+  {% endif %}
+{% endblock %}

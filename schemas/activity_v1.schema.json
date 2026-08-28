@@ -43,6 +43,11 @@
         "sourceFormat": {"enum": ["fit", "gpx", "tcx", "json", "csv", "unknown"]},
         "sourceApplication": {"type": "string", "maxLength": 128},
         "sourceDevice": {"type": "string", "maxLength": 128},
+        "sourceType": {"enum": ["uploaded", "device_sync", "external_provider"]},
+        "provider": {"type": "string", "maxLength": 32},
+        "externalAccountId": {"type": "string", "format": "uuid"},
+        "resourceType": {"const": "activity"},
+        "externalResourceId": {"type": "string", "maxLength": 128},
         "originalFileId": {"type": "string", "format": "uuid"},
         "contentFingerprint": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "revision": {"type": "integer", "minimum": 1},
@@ -90,7 +95,7 @@
     },
     "sourceReference": {
       "type": "object", "additionalProperties": false, "required": ["format"],
-      "properties": {"format": {"enum": ["fit", "gpx", "tcx", "json", "csv", "unknown"]}, "application": {"type": "string", "maxLength": 128}, "originalFileId": {"type": "string", "format": "uuid"}, "sourceActivityId": {"type": "string", "maxLength": 128}, "plannedWorkoutId": {"type": "string", "format": "uuid"}, "packageId": {"type": "string", "format": "uuid"}, "deliveryId": {"type": "string", "format": "uuid"}, "clientEventId": {"type": "string", "format": "uuid"}}
+      "properties": {"format": {"enum": ["fit", "gpx", "tcx", "json", "csv", "unknown"]}, "application": {"type": "string", "maxLength": 128}, "originalFileId": {"type": "string", "format": "uuid"}, "sourceActivityId": {"type": "string", "maxLength": 128}, "sourceType": {"enum": ["uploaded", "device_sync", "external_provider"]}, "provider": {"type": "string", "maxLength": 32}, "externalAccountId": {"type": "string", "format": "uuid"}, "resourceType": {"const": "activity"}, "externalResourceId": {"type": "string", "maxLength": 128}, "plannedWorkoutId": {"type": "string", "format": "uuid"}, "packageId": {"type": "string", "format": "uuid"}, "deliveryId": {"type": "string", "format": "uuid"}, "clientEventId": {"type": "string", "format": "uuid"}}
     }
   }
 }

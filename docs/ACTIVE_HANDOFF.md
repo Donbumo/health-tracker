@@ -2,35 +2,32 @@
 
 ## Estado actual
 
-- Rama `feature/beta-1.1-ai-foundation`; Iteration 2 convierte la base AI en release candidate Beta 1.1.
-- `FakeAIProvider` sigue sin red. `OpenAIResponsesProvider` usa Responses API mediante HTTP liviano, `store=false`, timeout, tools/function calls, usage y errores seguros; tests usan transporte mock.
-- AI remota exige consentimiento explícito por usuario y muestra provider/model/privacidad en `/ai`. `AI_ENABLED=false` permanece como default seguro.
-- El contexto está acotado por mensajes, caracteres, turnos, tools, rondas, output y usage total.
-- `body_measurement` y `food_entry` usan preview editable y confirmación owner-only por servicios oficiales. Bloqueo de fila + `client_event_id` determinista impiden duplicados, incluso concurrentes en MariaDB.
-- Conversaciones AI son portables en `health-tracker-portable-v1`; se omiten credenciales, argumentos/provider internals y chain-of-thought.
-- Migración `20260811_0038` añade consentimiento y metadata de aplicación de drafts sobre head `20260809_0037`.
+- Rama `feature/external-integrations-strava`; la vertical slice de External Integrations está implementada con Strava como primer provider read-only.
+- `IntegrationProvider` y el registry allowlisted separan OAuth, refresh, revocación, pull/fetch y normalización del dominio core.
+- `ExternalAccount`, `ExternalSyncCursor`, `ExternalResource` y `ExternalImportEvent` son owner-only; la migración única `20260827_0039` está sobre `20260811_0038`.
+- Access/refresh tokens usan AES-GCM con clave de entorno independiente y nunca entran en templates, read models, exports ni portabilidad.
+- El sync inicial está acotado, el incremental conserva overlap/checkpoint, el upsert es idempotente y la procedencia `external_provider/strava` llega a vistas, exports y read models AI existentes.
+- El webhook público solo valida y encola; `flask integrations process-pending-events` procesa create/update/delete/deauthorization sin añadir Redis/Celery.
 
 ## Trabajo en curso
 
-- Implementación y automatización están cerradas; falta únicamente registrar commits/push y entregar el reporte de QA.
-- El índice de contexto sigue en `docs/DOCUMENTATION_INDEX.md`; el contrato AI está en `docs/AI_FOUNDATION.md`.
+- No queda implementación funcional pendiente en la rama.
+- Falta el smoke OAuth real porque el entorno local no tiene `STRAVA_CLIENT_ID` ni `STRAVA_CLIENT_SECRET` configurados; el sistema está ready for real OAuth smoke.
 
 ## Pruebas relevantes
 
-- MariaDB 11.4 efímera: base vacía→0038, downgrade 0038→0037, upgrade 0037→0038, `db current` y `db check`.
-- Suite AI con gates MariaDB: 47 passed, incluyendo concurrencia, owner isolation y cascadas.
-- Suite local AI + portabilidad: 70 passed; los skips corresponden a gates reservados a contenedor.
-- Suite backend completa con fixtures QA: 792 passed, 12 skipped.
-- Tests cloud no usan Internet ni una API key real.
+- Suite focal de integraciones sin red: 19 passed, 1 skipped; incluye contrato HTTP Strava mockeado, OAuth/state/scopes, AES-GCM, refresh rotation, sync, dedup, errores, webhooks, UI/AI, portabilidad y cascadas.
+- MariaDB 11.4 local: `flask db upgrade`, `db current` en `20260827_0039 (head)` y `db check` sin cambios pendientes.
+- Gate MariaDB de refresh concurrente con token rotado: 1 passed en schema QA temporal separado y ya eliminado.
+- Suite backend completa: 849 passed, 14 skipped; `compileall` correcto. El warning único corresponde al fixture deliberado de ZIP duplicado en Full Backup.
 
 ## Bloqueadores y riesgos
 
-- No hay bloqueadores funcionales conocidos para QA manual.
-- Attachments/food vision continúan deshabilitados: no se amplió scope sin storage privado completo.
-- `workout_entry` y `steps_entry` no se confirman todavía.
-- No hay coach, diagnóstico, Strava, BLE, billing, cambios Android, merge, tag ni deploy.
+- No hay bloqueadores funcionales conocidos.
+- El smoke real requiere registrar la app en Strava y configurar las credenciales/verify token/clave de cifrado sin imprimirlos ni versionarlos.
+- No se hizo merge, tag ni cambio en NAS.
 
 ## Siguiente paso
 
-- QA manual del flujo `/ai`: consentimiento remoto con configuración de entorno de QA, follow-ups, evidencia, confirmación/rechazo de peso/comida y portabilidad.
-- Mantener cualquier habilitación cloud de producción detrás de revisión operativa de proveedor, modelo, retención y secrets.
+- QA real local: connect, identity, backfill inicial, repeat sync sin duplicados, visibilidad UI/AI y disconnect/reconnect seguro.
+- Tras aprobar ese smoke, revisar operativamente callback público y suscripción webhook antes de cualquier despliegue al NAS.

@@ -19,6 +19,7 @@ from app.models import (
     TrainingSession, TrainingSessionExercise, TrainingSet, UploadedFile, User,
     UserGoal, ReminderRule, WeighIn,
     LabPanel, LabResult, MedicalDocument, MedicalStudy,
+    ExternalAccount,
 )
 from app.services.activity_interchange import activity_route, activity_series
 from app.services.portable_archive import (
@@ -187,6 +188,7 @@ def _serialize_records(
     if "activities" in sections:
         output["activities"] = []
         for row in activity_rows:
+            external = (row.canonical_json or {}).get("provenance") or {}
             route_data = {"included": False, "state": row.route_metadata.state if row.route_metadata else "unavailable"}
             if include_activity_coordinates and row.route_metadata and row.route_metadata.state == "available":
                 visible = activity_route(row, user.id)
@@ -213,6 +215,10 @@ def _serialize_records(
                 "environment": row.environment, "status": row.status,
                 "source_format": row.source_format,
                 "source_application": row.source_app, "source_device": row.source_device,
+                "source_type": row.source_type if external else None,
+                "provider": external.get("provider"),
+                "external_account_id": external.get("external_account_id"),
+                "external_resource_id": external.get("external_resource_id"),
                 "metrics_provenance": row.metrics_provenance_json or {},
                 "warnings": row.warnings_json or [], "route": route_data,
             }, row.revision))
@@ -499,6 +505,20 @@ def _serialize_records(
         output["external_sources"] = [_record("external_sources", _stable_uuid("source", source), {
             "source": source, "domains": sorted(domains), "reference_only": True,
         }) for source, domains in sorted(sources.items()) if source != "manual"]
+        for account in _query(ExternalAccount, user.id, ExternalAccount.provider, ExternalAccount.public_id):
+            output["external_sources"].append(_record("external_sources", account.public_id, {
+                "source": "external_provider",
+                "provider": account.provider,
+                "provider_account_id": account.provider_account_id,
+                "display_name": account.display_name,
+                "scopes": list(account.scopes_json or []),
+                "connection_status": account.status,
+                "connected_at": account.connected_at,
+                "last_sync_at": account.last_sync_at,
+                "last_success_at": account.last_success_at,
+                "domains": ["activities"],
+                "reference_only": True,
+            }, account.revision))
     if "ai_conversations" in sections:
         rows = _query(
             AIConversation,

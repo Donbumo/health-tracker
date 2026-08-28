@@ -70,7 +70,12 @@ RESTORABLE_SECTIONS = (
     "activities",
     "routes",
 )
-UNSUPPORTED_SECTIONS = ("uploads", "daily_balances", "export_records")
+UNSUPPORTED_SECTIONS = (
+    "uploads",
+    "daily_balances",
+    "export_records",
+    "external_integrations",
+)
 
 
 class AccountRestoreError(ValueError):
@@ -1225,6 +1230,9 @@ class AccountRestoreService:
         data = document["data"]
         if section == "activities":
             record.activity_type = data["activity_type"].strip()
+            record.title = data.get("title")
+            record.original_type = data.get("original_type") or record.activity_type
+            record.discipline = data.get("discipline", "unknown")
             record.started_at = datetime.fromisoformat(data["started_at"].replace("Z", "+00:00"))
             record.ended_at = (
                 datetime.fromisoformat(data["ended_at"].replace("Z", "+00:00"))
@@ -1233,6 +1241,7 @@ class AccountRestoreService:
             )
             for field in (
                 "duration_seconds",
+                "elapsed_time_seconds",
                 "moving_time_seconds",
                 "avg_heart_rate_bpm",
                 "max_heart_rate_bpm",
@@ -1251,8 +1260,16 @@ class AccountRestoreService:
                 "elevation_loss_meters",
             ):
                 setattr(record, field, _decimal(data.get(field)))
-            for field in ("sport_profile", "manufacturer", "product", "source_app", "notes"):
+            for field in ("sport_profile", "manufacturer", "product", "source_app", "source_device", "notes"):
                 setattr(record, field, data.get(field))
+            record.timezone_name = data.get("timezone")
+            record.utc_offset_minutes = data.get("utc_offset_minutes")
+            local_started_at = data.get("local_started_at")
+            record.local_date = (
+                date.fromisoformat(local_started_at[:10]) if local_started_at else record.started_at.date()
+            )
+            provenance = document.get("provenance") or {}
+            record.source_activity_id = provenance.get("external_resource_id")
             record.laps_json = data.get("laps")
             record.track_json = data.get("track")
             record.bounds_json = data.get("bounds")

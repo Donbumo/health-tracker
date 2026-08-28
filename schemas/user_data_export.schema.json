@@ -48,7 +48,8 @@
         "medical_lab_reports": {"$ref": "#/$defs/exportSection"},
         "activities": {"$ref": "#/$defs/exportSection"},
         "routes": {"$ref": "#/$defs/exportSection"},
-        "export_records": {"$ref": "#/$defs/exportSection"}
+        "export_records": {"$ref": "#/$defs/exportSection"},
+        "external_integrations": {"$ref": "#/$defs/exportSection"}
       }
     }
   },
@@ -64,6 +65,13 @@
               "password",
               "secret",
               "token",
+              "access_token",
+              "refresh_token",
+              "access_token_ciphertext",
+              "refresh_token_ciphertext",
+              "pending_revoke_token_ciphertext",
+              "client_secret",
+              "encryption_key",
               "storage_path",
               "stored_filename"
             ]

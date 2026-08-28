@@ -26,6 +26,7 @@ from app.services.demo_seed import (
 from app.services.backup_reconcile import BackupReconciliationService
 from app.services.mobile_sync import canonical_hash
 from app.services.workout_drafts import cleanup_report as workout_draft_cleanup_report
+from app.services.integrations.webhooks import process_pending_events
 
 
 @click.command("seed-admin")
@@ -328,6 +329,21 @@ def workout_drafts_cleanup_command(apply_changes: bool) -> None:
         click.echo(f"{key}={report[key]}")
 
 
+@click.group("integrations")
+def integrations_group() -> None:
+    """Process durable external integration work."""
+
+
+@integrations_group.command("process-pending-events")
+@click.option("--limit", type=click.IntRange(min=1, max=1000), default=100, show_default=True)
+@with_appcontext
+def process_pending_integration_events_command(limit: int) -> None:
+    """Process queued provider events without printing provider payloads."""
+    report = process_pending_events(limit=limit)
+    for key in ("processed", "completed", "failed", "ignored"):
+        click.echo(f"{key}={report[key]}")
+
+
 def register_commands(app) -> None:
     app.cli.add_command(seed_admin_command)
     app.cli.add_command(seed_group)
@@ -336,3 +352,4 @@ def register_commands(app) -> None:
     app.cli.add_command(mobile_sync_group)
     app.cli.add_command(companion_group)
     app.cli.add_command(workout_drafts_group)
+    app.cli.add_command(integrations_group)

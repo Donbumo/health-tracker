@@ -33,7 +33,7 @@
                 <td>{% if activity.distance_meters is not none %}{{ activity.distance_meters }} m{% else %}—{% endif %}</td>
                 <td>{{ activity.avg_heart_rate_bpm if activity.avg_heart_rate_bpm is not none else '—' }}</td>
                 <td>{{ activity.calories_kcal if activity.calories_kcal is not none else '—' }}</td>
-                <td>{{ activity.source_format or activity.source_app or activity.source_type }}</td>
+                <td>{% if activity.source_type == 'external_provider' %}<span class="badge">{{ activity.source_app|title }}</span>{% else %}{{ activity.source_format or activity.source_app or activity.source_type }}{% endif %}</td>
               </tr>
             {% endfor %}
           </tbody>

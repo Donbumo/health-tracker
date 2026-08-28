@@ -191,7 +191,12 @@ def _existing_data(section: str, row) -> dict:
             "average_power_watts": row.avg_power_watts, "maximum_power_watts": row.max_power_watts,
             "environment": row.environment, "status": row.status,
             "source_format": row.source_format, "source_application": row.source_app,
-            "source_device": row.source_device, "metrics_provenance": row.metrics_provenance_json or {},
+            "source_device": row.source_device,
+            "source_type": row.source_type if row.source_type == "external_provider" else None,
+            "provider": ((row.canonical_json or {}).get("provenance") or {}).get("provider"),
+            "external_account_id": ((row.canonical_json or {}).get("provenance") or {}).get("external_account_id"),
+            "external_resource_id": ((row.canonical_json or {}).get("provenance") or {}).get("external_resource_id"),
+            "metrics_provenance": row.metrics_provenance_json or {},
             "warnings": row.warnings_json or [],
             "route": {"included": False, "state": route.state if route else "unavailable"},
         }
@@ -738,6 +743,22 @@ def _apply_record(job, section, record, strategy, maps, created_paths):
             ("average_speed_mps", "avg_speed_mps"), ("maximum_speed_mps", "max_speed_mps"),
             ("average_power_watts", "avg_power_watts"), ("maximum_power_watts", "max_power_watts")):
             if data.get(source) is not None: canonical_data[target] = data[source]
+        source_type = data.get("source_type", "uploaded")
+        provenance = None
+        if source_type == "external_provider":
+            provenance = {
+                "source": "external_provider",
+                "provider": data.get("provider") or data.get("source_application"),
+                "external_account_id": data.get("external_account_id"),
+                "resource_type": "activity",
+                "external_resource_id": data.get("external_resource_id"),
+            }
+        canonical_document = {
+            "schema_version": "1.0", "record_type": "activity", "user_id": user_id,
+            "source_type": source_type, "data": canonical_data,
+        }
+        if provenance:
+            canonical_document["provenance"] = provenance
         row = Activity(
             public_id=destination, user_id=user_id, activity_type=str(data["original_type"])[:64],
             discipline=data["discipline"], subtype=data.get("subtype"), original_type=data["original_type"],
@@ -752,9 +773,10 @@ def _apply_record(job, section, record, strategy, maps, created_paths):
             max_cadence_rpm=_decimal(data.get("maximum_cadence_rpm")), avg_speed_mps=_decimal(data.get("average_speed_mps")),
             max_speed_mps=_decimal(data.get("maximum_speed_mps")), avg_power_watts=data.get("average_power_watts"),
             max_power_watts=data.get("maximum_power_watts"), source_app=data.get("source_application"),
-            source_device=data.get("source_device"), source_type="uploaded", source_format=data.get("source_format", "unknown"),
+            source_device=data.get("source_device"), source_type=source_type, source_format=data.get("source_format", "unknown"),
+            source_activity_id=data.get("external_resource_id"),
             fingerprint_sha256=fingerprint,
-            canonical_json={"schema_version": "1.0", "record_type": "activity", "user_id": user_id, "source_type": "uploaded", "data": canonical_data},
+            canonical_json=canonical_document,
             point_count=0, warnings_json=data.get("warnings") or [], metrics_provenance_json=data.get("metrics_provenance") or {},
             environment=data.get("environment", "unknown"), status=data.get("status", "imported"),
             revision=max(1, int(record.get("revision", 1))),

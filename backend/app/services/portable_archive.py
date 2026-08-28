@@ -62,6 +62,8 @@ FORBIDDEN_KEYS = {
     "relative_path", "server_url", "host", "ip_address", "mac", "mac_address",
     "gatt", "gatt_snapshot", "changes_token", "manufacturer_data",
     "authorization", "cookie", "signing_key", "device_authentication_secret",
+    "access_token_ciphertext", "refresh_token_ciphertext",
+    "pending_revoke_token_ciphertext", "client_secret", "encryption_key",
 }
 
 

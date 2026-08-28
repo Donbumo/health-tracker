@@ -1084,6 +1084,9 @@ class StandardImportExecutor:
         if record is None or record.user_id != user_id:
             raise StandardImportError("Activity target does not belong to this user")
         record.activity_type = data["activity_type"].strip()
+        record.title = data.get("title")
+        record.original_type = data.get("original_type") or record.activity_type
+        record.discipline = data.get("discipline", "unknown")
         record.started_at = datetime.fromisoformat(data["started_at"].replace("Z", "+00:00"))
         record.ended_at = (
             datetime.fromisoformat(data["ended_at"].replace("Z", "+00:00"))
@@ -1092,6 +1095,7 @@ class StandardImportExecutor:
         )
         for field in (
             "duration_seconds",
+            "elapsed_time_seconds",
             "moving_time_seconds",
             "avg_heart_rate_bpm",
             "max_heart_rate_bpm",
@@ -1110,9 +1114,17 @@ class StandardImportExecutor:
             "elevation_loss_meters",
         ):
             setattr(record, field, _decimal(data.get(field)))
-        for field in ("sport_profile", "manufacturer", "product", "source_app", "notes"):
+        for field in ("sport_profile", "manufacturer", "product", "source_app", "source_device", "notes"):
             setattr(record, field, data.get(field))
+        record.timezone_name = data.get("timezone")
+        record.utc_offset_minutes = data.get("utc_offset_minutes")
+        local_started_at = data.get("local_started_at")
+        record.local_date = (
+            date.fromisoformat(local_started_at[:10]) if local_started_at else record.started_at.date()
+        )
         record.source_type = document.get("source_type", "uploaded")
+        provenance = document.get("provenance") or {}
+        record.source_activity_id = provenance.get("external_resource_id")
         record.source_file_id = document.get("source_file_id")
         record.fingerprint_sha256 = _canonical_document_sha(document)
         record.canonical_json = document
@@ -1121,6 +1133,22 @@ class StandardImportExecutor:
         record.bounds_json = data.get("bounds")
         record.point_count = len(data.get("track") or [])
         record.warnings_json = data.get("warnings")
+        if record.source_type == "external_provider":
+            mapping = {
+                "elapsed_time_seconds": "elapsed_time",
+                "moving_time_seconds": "moving_time",
+                "distance_meters": "distance",
+                "calories_kcal": "calories",
+                "elevation_gain_meters": "ascent",
+                "avg_heart_rate_bpm": "heart_rate_average",
+                "max_heart_rate_bpm": "heart_rate_maximum",
+                "avg_speed_mps": "speed_average",
+                "max_speed_mps": "speed_maximum",
+            }
+            record.metrics_provenance_json = {
+                target: "source_provided" for source, target in mapping.items()
+                if data.get(source) is not None
+            }
         db.session.add(record)
         return record
 

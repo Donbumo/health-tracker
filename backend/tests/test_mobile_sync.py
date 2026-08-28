@@ -30,6 +30,7 @@ from app.services.workout_loads import calculate_workout_load
 
 
 DEVICE_ID = "71111111-1111-4111-8111-111111111111"
+QA_SCHEDULE_DATE = date.today()
 
 
 @pytest.fixture(autouse=True)
@@ -114,7 +115,7 @@ def _schedule_payload(plan_id, version_id):
     return {
         "training_plan_id": plan_id,
         "training_plan_version_id": version_id,
-        "scheduled_for_date": "2026-08-01",
+        "scheduled_for_date": QA_SCHEDULE_DATE.isoformat(),
         "timezone": "America/Mexico_City",
         "week_number": 1,
         "day_number": 1,
@@ -122,18 +123,19 @@ def _schedule_payload(plan_id, version_id):
 
 
 def _completed_payload(planned_id, event_id=None):
+    scheduled = QA_SCHEDULE_DATE.isoformat()
     return {
         "schema_version": "1.0",
         "client_event_id": event_id or str(uuid.uuid4()),
         "planned_workout_id": planned_id,
-        "started_at": "2026-08-01T12:00:00Z",
-        "completed_at": "2026-08-01T12:45:00Z",
+        "started_at": f"{scheduled}T12:00:00Z",
+        "completed_at": f"{scheduled}T12:45:00Z",
         "timezone": "America/Mexico_City",
         "duration_seconds": 2700,
         "average_heart_rate_bpm": 126,
         "calories_burned": 321.5,
         "notes": "Sesión ficticia para QA",
-        "client_updated_at": "2026-08-01T12:46:00Z",
+        "client_updated_at": f"{scheduled}T12:46:00Z",
         "exercises": [
             {
                 "exercise_order": 1,
@@ -234,7 +236,11 @@ def test_planned_transitions_revision_conflict_and_cross_user_404(app, client, u
     assert started.get_json()["data"]["revision"] == 2
     stale = client.patch(
         f"/api/v1/planned-workouts/{created['id']}",
-        json={"base_revision": 1, "scheduled_for_date": "2026-08-02", "timezone": "UTC"},
+        json={
+            "base_revision": 1,
+            "scheduled_for_date": (QA_SCHEDULE_DATE + timedelta(days=1)).isoformat(),
+            "timezone": "UTC",
+        },
         headers={**headers, "Idempotency-Key": "stale-1"},
     )
     assert stale.status_code == 409

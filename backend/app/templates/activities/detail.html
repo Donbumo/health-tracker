@@ -24,7 +24,7 @@
       <dt>Cadencia promedio/máxima</dt><dd>{{ activity.avg_cadence_rpm or '—' }} / {{ activity.max_cadence_rpm or '—' }}</dd>
       <dt>Potencia promedio/máxima</dt><dd>{{ activity.avg_power_watts or '—' }} / {{ activity.max_power_watts or '—' }}</dd>
       <dt>Puntos</dt><dd>{{ activity.point_count }}</dd>
-      <dt>Fuente</dt><dd>{{ activity.source_format or activity.source_type }}{% if activity.source_device %} · {{ activity.source_device }}{% endif %}</dd>
+      <dt>Fuente</dt><dd>{% if activity.source_type == 'external_provider' %}<span class="badge">{{ activity.source_app|title }}</span> · proveedor externo{% else %}{{ activity.source_format or activity.source_type }}{% endif %}{% if activity.source_device %} · {{ activity.source_device }}{% endif %}</dd>
       <dt>Archivo original</dt><dd>{% if activity.original_file_public_id %}Conservado de forma privada{% else %}No disponible{% endif %}</dd>
       <dt>Huella</dt><dd><code>{{ activity.fingerprint_sha256[:12] }}…</code></dd>
     </dl>

@@ -12,6 +12,7 @@ from app.cli import register_commands
 from app.config import Config
 from app.extensions import csrf, db, login_manager, migrate
 from app.models import User
+from app.services.integrations.security import validate_integration_config
 
 
 def _align_gunicorn_logging(app: Flask) -> None:
@@ -87,6 +88,8 @@ def create_app(test_config: dict | None = None) -> Flask:
             "with the API-specific signing salt"
         )
 
+    validate_integration_config(app.config)
+
     Path(app.config["UPLOAD_ROOT"]).mkdir(parents=True, exist_ok=True)
     Path(app.config["GENERATED_UPLOAD_ROOT"]).mkdir(parents=True, exist_ok=True)
 
@@ -120,6 +123,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     from app.planned import planned_bp
     from app.workout_drafts import workout_drafts_bp
     from app.ai import ai_bp
+    from app.integrations import integrations_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(activities_bp)
@@ -137,6 +141,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(planned_bp)
     app.register_blueprint(workout_drafts_bp)
     app.register_blueprint(ai_bp)
+    app.register_blueprint(integrations_bp)
     csrf.exempt(api_v1_bp)
     app.register_blueprint(api_v1_bp)
     register_commands(app)

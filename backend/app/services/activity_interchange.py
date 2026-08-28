@@ -44,6 +44,7 @@ from app.services.activity_parsers import (
     ParsedActivityFile,
 )
 from app.services.files import UploadError, store_uploaded_file
+from app.services.validation import validate_json_document
 
 
 LOCATION_WARNING = "Las actividades pueden contener ubicación, horarios y métricas personales."
@@ -382,6 +383,151 @@ def owned_activity(user_id: int, public_id: str) -> Activity:
     return row
 
 
+def upsert_external_activity(
+    user_id: int,
+    *,
+    provider: str,
+    external_account_public_id: str,
+    external_resource_id: str,
+    normalized: dict[str, Any],
+) -> tuple[Activity, bool, bool]:
+    """Create or update a provider activity through the canonical Activity service."""
+    provider = str(provider).strip().casefold()
+    resource_id = str(external_resource_id).strip()
+    if not provider or len(provider) > 32 or not resource_id or len(resource_id) > 128:
+        raise ApiError("invalid_external_resource", "La identidad externa no es válida.", 400)
+    if normalized.get("external_resource_id") != resource_id:
+        raise ApiError("invalid_external_resource", "La actividad externa no coincide con el recurso.", 400)
+    if normalized.get("discipline") not in DISCIPLINES:
+        raise ApiError("invalid_external_resource", "La disciplina externa no es válida.", 400)
+    started_at = normalized.get("started_at")
+    if not isinstance(started_at, datetime) or started_at.tzinfo is None:
+        raise ApiError("invalid_external_resource", "La fecha externa no es válida.", 400)
+    started_at = started_at.astimezone(timezone.utc)
+    ended_at = normalized.get("ended_at")
+    if ended_at is not None:
+        if not isinstance(ended_at, datetime) or ended_at.tzinfo is None:
+            raise ApiError("invalid_external_resource", "La fecha final externa no es válida.", 400)
+        ended_at = ended_at.astimezone(timezone.utc)
+
+    provenance = {
+        "source": "external_provider",
+        "provider": provider,
+        "external_account_id": str(external_account_public_id),
+        "resource_type": "activity",
+        "external_resource_id": resource_id,
+    }
+    data = {
+        "activity_type": str(normalized["activity_type"])[:64],
+        "started_at": _rfc3339(started_at),
+        "source_app": provider,
+    }
+    if ended_at is not None:
+        data["ended_at"] = _rfc3339(ended_at)
+    for key in (
+        "title", "original_type", "discipline", "local_started_at", "timezone",
+        "utc_offset_minutes", "elapsed_time_seconds", "moving_time_seconds",
+        "distance_meters", "calories_kcal", "avg_heart_rate_bpm",
+        "max_heart_rate_bpm", "avg_speed_mps", "max_speed_mps",
+        "elevation_gain_meters", "source_device", "trainer", "commute",
+        "manual", "visibility",
+    ):
+        if normalized.get(key) is not None:
+            data[key] = normalized[key]
+    document = {
+        "schema_version": "1.0",
+        "record_type": "activity",
+        "user_id": user_id,
+        "source_type": "external_provider",
+        "provenance": provenance,
+        "data": data,
+    }
+    validate_json_document(document, "activity")
+    fingerprint = hashlib.sha256(
+        f"external:{provider}:{external_account_public_id}:activity:{resource_id}".encode("utf-8")
+    ).hexdigest()
+    activity = db.session.execute(
+        db.select(Activity).where(
+            Activity.user_id == user_id,
+            Activity.fingerprint_sha256 == fingerprint,
+        )
+    ).scalar_one_or_none()
+    created = activity is None
+    if created:
+        activity = Activity(user_id=user_id, fingerprint_sha256=fingerprint, canonical_json=document)
+        db.session.add(activity)
+    previous = deepcopy(activity.canonical_json) if not created else None
+    activity.activity_type = data["activity_type"]
+    activity.discipline = normalized["discipline"]
+    activity.original_type = normalized.get("original_type") or data["activity_type"]
+    activity.title = normalized.get("title")
+    activity.started_at = started_at
+    activity.ended_at = ended_at
+    activity.timezone_name = normalized.get("timezone")
+    activity.utc_offset_minutes = normalized.get("utc_offset_minutes")
+    local_started_at = normalized.get("local_started_at")
+    try:
+        activity.local_date = date.fromisoformat(str(local_started_at)[:10]) if local_started_at else started_at.date()
+    except ValueError:
+        activity.local_date = started_at.date()
+    activity.duration_seconds = normalized.get("elapsed_time_seconds")
+    activity.elapsed_time_seconds = normalized.get("elapsed_time_seconds")
+    activity.moving_time_seconds = normalized.get("moving_time_seconds")
+    activity.distance_meters = normalized.get("distance_meters")
+    activity.calories_kcal = normalized.get("calories_kcal")
+    activity.elevation_gain_meters = normalized.get("elevation_gain_meters")
+    activity.avg_heart_rate_bpm = normalized.get("avg_heart_rate_bpm")
+    activity.max_heart_rate_bpm = normalized.get("max_heart_rate_bpm")
+    activity.avg_speed_mps = normalized.get("avg_speed_mps")
+    activity.max_speed_mps = normalized.get("max_speed_mps")
+    activity.source_app = provider
+    activity.source_type = "external_provider"
+    activity.source_format = "json"
+    activity.source_device = normalized.get("source_device")
+    activity.source_activity_id = resource_id
+    activity.canonical_json = document
+    activity.laps_json = []
+    activity.track_json = None
+    activity.bounds_json = None
+    activity.point_count = 0
+    activity.warnings_json = []
+    metric_keys = {
+        "elapsed_time_seconds": "elapsed_time",
+        "moving_time_seconds": "moving_time",
+        "distance_meters": "distance",
+        "calories_kcal": "calories",
+        "elevation_gain_meters": "ascent",
+        "avg_heart_rate_bpm": "heart_rate_average",
+        "max_heart_rate_bpm": "heart_rate_maximum",
+        "avg_speed_mps": "speed_average",
+        "max_speed_mps": "speed_maximum",
+    }
+    activity.metrics_provenance_json = {
+        target: "source_provided" for source, target in metric_keys.items()
+        if normalized.get(source) is not None
+    }
+    activity.environment = "indoor" if normalized.get("trainer") else "unknown"
+    activity.status = "imported"
+    changed = created or previous != document
+    if not created and changed:
+        activity.revision += 1
+    db.session.flush()
+    return activity, created, changed
+
+
+def archive_external_activity(activity: Activity, user_id: int) -> bool:
+    _ensure_owner(activity, user_id)
+    if activity.source_type != "external_provider":
+        raise ApiError("invalid_external_resource", "La actividad no pertenece a un proveedor externo.", 409)
+    if activity.status == "archived":
+        return False
+    activity.status = "archived"
+    activity.archived_at = utcnow()
+    activity.revision += 1
+    db.session.flush()
+    return True
+
+
 def patch_activity(activity: Activity, user_id: int, payload: dict[str, Any], *, commit: bool = True) -> Activity:
     _ensure_owner(activity, user_id)
     allowed = {"base_revision", "title", "subtype", "environment"}
@@ -652,6 +798,7 @@ def export_activity(
 
 def normalized_activity_document(activity: Activity, user_id: int, *, include_series: bool, include_route: bool) -> dict[str, Any]:
     _ensure_owner(activity, user_id)
+    external = (activity.canonical_json or {}).get("provenance") or {}
     document = {
         "format": ACTIVITY_FORMAT, "formatVersion": "1.0",
         "activity": _activity_identity(activity),
@@ -664,6 +811,12 @@ def normalized_activity_document(activity: Activity, user_id: int, *, include_se
         "sourceReference": {
             "format": activity.source_format, "application": activity.source_app,
             "originalFileId": activity.original_file_public_id,
+            "sourceActivityId": activity.source_activity_id,
+            "sourceType": activity.source_type,
+            "provider": external.get("provider"),
+            "externalAccountId": external.get("external_account_id"),
+            "resourceType": external.get("resource_type"),
+            "externalResourceId": external.get("external_resource_id"),
         },
         "warnings": list(activity.warnings_json or []),
     }
@@ -1107,6 +1260,7 @@ def _gpx(points: list[dict[str, Any]], started_at: datetime) -> bytes:
 
 
 def _activity_identity(activity: Activity) -> dict[str, Any]:
+    external = (activity.canonical_json or {}).get("provenance") or {}
     return _without_none({
         "publicId": activity.public_id, "discipline": activity.discipline,
         "subtype": activity.subtype, "originalType": activity.original_type or activity.activity_type,
@@ -1116,6 +1270,11 @@ def _activity_identity(activity: Activity) -> dict[str, Any]:
         "environment": activity.environment, "status": activity.status,
         "sourceFormat": activity.source_format, "sourceApplication": activity.source_app,
         "sourceDevice": activity.source_device, "originalFileId": activity.original_file_public_id,
+        "sourceType": activity.source_type,
+        "provider": external.get("provider"),
+        "externalAccountId": external.get("external_account_id"),
+        "resourceType": external.get("resource_type"),
+        "externalResourceId": external.get("external_resource_id"),
         "contentFingerprint": activity.fingerprint_sha256, "revision": activity.revision,
         "createdAt": _rfc3339(activity.created_at), "updatedAt": _rfc3339(activity.updated_at),
     })

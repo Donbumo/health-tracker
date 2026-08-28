@@ -94,6 +94,16 @@ La estructura real del código manda sobre diagramas o rutas narrativas antiguas
 
 Beta 1.1 incorpora una interfaz AI segura sobre servicios reales: provider fake y adapter cloud desacoplados, consentimiento remoto por usuario, conversaciones acotadas, tools read-only owner-only, evidencia, portabilidad y drafts de peso/comida con confirmación explícita e idempotente. El modelo no recibe acceso a SQL/shell/filesystem y nunca escribe directamente ni diagnostica. La frontera y limitaciones están en [AI_FOUNDATION.md](AI_FOUNDATION.md).
 
+La base de integraciones externas incorpora Strava como primer provider real y mantiene el dominio de Health Tracker como autoridad de lectura para UI e IA. `IntegrationProvider` y su registry allowlisted aíslan OAuth, refresh, revocación, pull paginado y normalización; los servicios core no dependen de Strava y no existe una tool AI específica del proveedor.
+
+Las cuentas externas, cursores, recursos enlazados y eventos webhook son owner-only y usan FK con cascada desde `User`. Access/refresh tokens se cifran con AES-GCM y associated data mediante una clave independiente `INTEGRATION_TOKEN_ENCRYPTION_KEY`; client secret, verify token y material de cifrado permanecen exclusivamente en environment. Con `STRAVA_ENABLED=true` la aplicación falla cerrada si falta configuración completa o si se solicita un scope de escritura. Exports y portabilidad solo incluyen metadata allowlisted/reference-only y procedencia; nunca credenciales.
+
+El OAuth web usa state aleatorio, ligado a sesión/usuario y de un solo uso. Los scopes reales se validan y el refresh adquiere bloqueo de fila, persiste atómicamente access token, refresh token rotado y expiración antes de continuar. La desconexión usa el endpoint de revocación recomendado por Strava, invalida los tokens activos locales y conserva las actividades históricas; si Strava está temporalmente caído, solo queda un secreto cifrado aislado para retry de revocación.
+
+El sync inicial está acotado por `STRAVA_INITIAL_SYNC_DAYS` (90 por defecto); 30/90 días y full history requieren acciones explícitas. La paginación confirma cada página, conserva checkpoint reanudable y el incremental usa overlap seguro. `ExternalResource` deduplica por provider, cuenta externa, tipo e ID; el upsert llama al servicio oficial de actividades y conserva `source_type=external_provider`, `provider=strava` y el external resource ID en el contrato canónico. Los headers de rate limit se guardan saneados y un 429 pausa sin adelantar el cursor.
+
+`/integrations/strava/webhook` verifica el challenge y encola payloads estrictamente allowlisted, responde antes del trabajo pesado y deja create/update/delete/deauthorization al processor reusable y a `flask integrations process-pending-events`. Las actividades aparecen en las vistas existentes con badge Strava y en `get_activity_summary`/read models AI como evidencia importada, nunca como inferencia. La política de entornos no cambia: desarrollo/QA solo en el checkout local principal y producción solo en `~/health-tracker` del NAS, sin worktrees, stacks o puertos paralelos.
+
 ## Capacidades de producto
 
 ### Identidad y archivos

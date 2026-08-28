@@ -140,6 +140,22 @@ class Config:
     AI_DRAFT_TTL_HOURS = int(os.getenv("AI_DRAFT_TTL_HOURS", "168"))
     GUNICORN_TIMEOUT = int(os.getenv("GUNICORN_TIMEOUT", "60"))
 
+    PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000").strip().rstrip("/")
+    STRAVA_ENABLED = _as_bool(os.getenv("STRAVA_ENABLED"), False)
+    STRAVA_CLIENT_ID = os.getenv("STRAVA_CLIENT_ID", "").strip()
+    STRAVA_CLIENT_SECRET = os.getenv("STRAVA_CLIENT_SECRET", "")
+    STRAVA_SCOPES = tuple(
+        scope.strip()
+        for scope in os.getenv("STRAVA_SCOPES", "read,activity:read").replace(" ", ",").split(",")
+        if scope.strip()
+    )
+    STRAVA_WEBHOOK_VERIFY_TOKEN = os.getenv("STRAVA_WEBHOOK_VERIFY_TOKEN", "")
+    INTEGRATION_TOKEN_ENCRYPTION_KEY = os.getenv("INTEGRATION_TOKEN_ENCRYPTION_KEY", "")
+    STRAVA_INITIAL_SYNC_DAYS = int(os.getenv("STRAVA_INITIAL_SYNC_DAYS", "90"))
+    STRAVA_SYNC_OVERLAP_SECONDS = int(os.getenv("STRAVA_SYNC_OVERLAP_SECONDS", "21600"))
+    STRAVA_SYNC_MAX_PAGES = int(os.getenv("STRAVA_SYNC_MAX_PAGES", "50"))
+    STRAVA_HTTP_TIMEOUT_SECONDS = int(os.getenv("STRAVA_HTTP_TIMEOUT_SECONDS", "15"))
+
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = _as_bool(os.getenv("SESSION_COOKIE_SECURE"))

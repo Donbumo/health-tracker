@@ -10,6 +10,22 @@
     "data": {
       "type": "object", "additionalProperties": false,
       "required": ["discipline", "original_type", "started_at", "environment", "status", "source_format", "metrics_provenance", "warnings", "route"],
+      "allOf": [
+        {
+          "if": {
+            "properties": {"source_type": {"const": "external_provider"}},
+            "required": ["source_type"]
+          },
+          "then": {
+            "required": ["provider", "external_account_id", "external_resource_id"],
+            "properties": {
+              "provider": {"type": "string", "minLength": 1, "maxLength": 32},
+              "external_account_id": {"type": "string", "format": "uuid"},
+              "external_resource_id": {"type": "string", "minLength": 1, "maxLength": 128}
+            }
+          }
+        }
+      ],
       "properties": {
         "discipline": {"enum": ["cycling", "running", "walking", "hiking", "strength", "indoor_cycling", "other", "unknown"]},
         "subtype": {"type": ["string", "null"], "maxLength": 64}, "original_type": {"type": "string", "maxLength": 128},
@@ -25,6 +41,10 @@
         "average_power_watts": {"type": ["integer", "null"]}, "maximum_power_watts": {"type": ["integer", "null"]},
         "environment": {"enum": ["indoor", "outdoor", "unknown"]}, "status": {"enum": ["imported", "archived"]},
         "source_format": {"enum": ["fit", "gpx", "tcx", "json", "csv", "unknown"]}, "source_application": {"type": ["string", "null"], "maxLength": 128},
+        "source_type": {"enum": ["uploaded", "device_sync", "external_provider", null]},
+        "provider": {"type": ["string", "null"], "maxLength": 32},
+        "external_account_id": {"type": ["string", "null"], "format": "uuid"},
+        "external_resource_id": {"type": ["string", "null"], "maxLength": 128},
         "source_device": {"type": ["string", "null"], "maxLength": 128}, "metrics_provenance": {"type": "object"},
         "warnings": {"type": "array", "items": {"type": "string", "maxLength": 300}},
         "route": {"type": "object", "additionalProperties": true}

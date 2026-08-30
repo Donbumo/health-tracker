@@ -782,6 +782,41 @@ def test_web_ai_is_authenticated_responsive_surface_with_retry_and_delete(app, c
     assert 'href="/ai"' in navigation
 
 
+def test_dashboard_ai_deep_link_prepares_period_without_sending_message(app, client, user):
+    _enable_ai(app)
+    login(client)
+    prepared = client.get(
+        "/ai",
+        query_string={
+            "prompt": "Resume mi periodo",
+            "start": "2026-08-01",
+            "end": "2026-08-07",
+        },
+    )
+    html = prepared.get_data(as_text=True)
+    assert prepared.status_code == 200
+    assert "Contexto preparado" in html
+    assert "No se envía ni genera costo" in html
+    assert "Periodo: 2026-08-01 a 2026-08-07" in html
+
+    created = client.post(
+        "/ai/conversations",
+        data={
+            "prompt": "Resume mi periodo",
+            "start": "2026-08-01",
+            "end": "2026-08-07",
+        },
+        follow_redirects=False,
+    )
+    assert created.status_code == 302
+    conversation = client.get(created.headers["Location"])
+    conversation_html = conversation.get_data(as_text=True)
+    assert "Resume mi periodo" in conversation_html
+    assert "Periodo: 2026-08-01 a 2026-08-07" in conversation_html
+    with app.app_context():
+        assert db.session.execute(db.select(AIMessage)).scalars().all() == []
+
+
 def test_web_draft_preview_confirm_and_remote_privacy_controls(app, client, user):
     _enable_ai(app)
     login(client)

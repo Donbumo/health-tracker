@@ -118,7 +118,7 @@
 <form class="card ai-composer ai-message-form" action="{{ url_for('ai.send_message', conversation_id=conversation.public_id) }}" method="post">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <label for="ai-content">Tu mensaje</label>
-  <textarea id="ai-content" name="content" maxlength="{{ config.AI_MAX_INPUT_CHARS }}" required placeholder="Pregunta por tus tendencias, actividad, pasos u objetivos..."{% if ai_status.state != 'available' %} disabled{% endif %}></textarea>
+  <textarea id="ai-content" name="content" maxlength="{{ config.AI_MAX_INPUT_CHARS }}" required placeholder="Pregunta por tus tendencias, actividad, pasos u objetivos..."{% if ai_status.state != 'available' %} disabled{% endif %}>{{ prepared_prompt }}</textarea>
   <div class="ai-composer-actions">
     <p class="muted" data-ai-loading hidden>Consultando herramientas seguras…</p>
     <button class="button" type="submit" data-ai-submit{% if ai_status.state != 'available' %} disabled{% endif %}>Enviar</button>

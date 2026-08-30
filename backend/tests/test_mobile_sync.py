@@ -320,8 +320,14 @@ def test_completed_workout_maps_full_session_completes_plan_and_is_idempotent(
 
 
 def test_sync_bootstrap_pull_pagination_filter_tombstone_and_foreign_cursor(
-    app, client, user
+    app, client, user, monkeypatch
 ):
+    class BootstrapDate(date):
+        @classmethod
+        def today(cls):
+            return cls(2026, 8, 1)
+
+    monkeypatch.setattr("app.api_v1.mobile_sync_routes.date", BootstrapDate)
     plan_id, version_id = _add_plan(app, user)
     tokens = _api_login(client)
     headers = _auth(tokens["access_token"])

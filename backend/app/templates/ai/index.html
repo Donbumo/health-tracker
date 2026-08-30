@@ -10,9 +10,23 @@
   </div>
   <form action="{{ url_for('ai.create_conversation') }}" method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if prepared_prompt %}
+      <input type="hidden" name="prompt" value="{{ request.args.get('prompt', '') }}">
+      <input type="hidden" name="start" value="{{ prepared_start or '' }}">
+      <input type="hidden" name="end" value="{{ prepared_end or '' }}">
+    {% endif %}
     <button class="button" type="submit"{% if ai_status.state != 'available' %} disabled{% endif %}>Nueva conversación</button>
   </form>
 </div>
+
+{% if prepared_prompt %}
+  <section class="card ai-prepared-context" aria-labelledby="prepared-context-title">
+    <p class="eyebrow">Contexto preparado</p>
+    <h2 id="prepared-context-title">Pregunta sobre el periodo del dashboard</h2>
+    <p>El mensaje quedará precargado en una conversación nueva. No se envía ni genera costo hasta que pulses <strong>Enviar</strong>.</p>
+    <p class="muted">{{ prepared_prompt }}</p>
+  </section>
+{% endif %}
 
 <section class="card ai-status-card" aria-labelledby="ai-status-title">
   <div>

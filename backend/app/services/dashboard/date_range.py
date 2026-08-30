@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 MAX_DASHBOARD_DAYS = 366
-DEFAULT_PRESET = "30d"
+DEFAULT_PRESET = "7d"
 PRESET_LABELS = {
     "today": "Hoy",
     "7d": "Últimos 7 días",
@@ -142,8 +142,8 @@ class DashboardDateRange:
             ) from error
 
         local_today = today or datetime.now(zone).date()
-        raw_from = (query.get("from") or "").strip()
-        raw_to = (query.get("to") or "").strip()
+        raw_from = (query.get("from") or query.get("start") or "").strip()
+        raw_to = (query.get("to") or query.get("end") or "").strip()
         raw_compare = (query.get("compare") or "").strip()
         compare_previous = raw_compare == "previous"
         if raw_compare not in {"", "previous"}:
@@ -160,7 +160,13 @@ class DashboardDateRange:
             start_date = _parse_date(raw_from, "inicial")
             end_date = _parse_date(raw_to, "final")
         else:
-            preset = (query.get("preset") or DEFAULT_PRESET).strip()
+            raw_period = (query.get("period") or "").strip()
+            if raw_period:
+                if raw_period not in {"7", "30", "90"}:
+                    raise DashboardRangeError("El periodo seleccionado no es válido.")
+                preset = f"{raw_period}d"
+            else:
+                preset = (query.get("preset") or DEFAULT_PRESET).strip()
             if preset not in PRESET_LABELS:
                 raise DashboardRangeError("El periodo seleccionado no es válido.")
             end_date = local_today

@@ -4,179 +4,153 @@
   const dataNode = document.getElementById("dashboard-chart-data");
   if (!dataNode) return;
 
-  const chartContainers = [...document.querySelectorAll("[data-dashboard-chart]")];
-  const renderPayloadError = () => {
-    chartContainers.forEach((container) => {
-      const error = document.createElement("p");
-      error.className = "chart-empty";
-      error.textContent = "No se pudieron cargar los datos del gráfico.";
-      container.replaceChildren(error);
-    });
-  };
-
+  const containers = [...document.querySelectorAll("[data-dashboard-chart]")];
   let payload;
   try {
     payload = JSON.parse(dataNode.textContent || "{}");
   } catch (_error) {
-    renderPayloadError();
-    return;
+    payload = null;
   }
 
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    renderPayloadError();
-    return;
-  }
-
-  const asRows = (value) =>
+  const objectRows = (value) =>
     Array.isArray(value)
       ? value.filter((row) => row && typeof row === "object" && !Array.isArray(row))
       : [];
-
-  const alignPrevious = (kind) => {
-    const current = asRows(payload.trends?.[kind]);
-    const previous = asRows(payload.comparison?.trends?.[kind]);
-    return current.map((row, index) => {
-      const prefixed = {};
-      Object.entries(previous[index] || {}).forEach(([key, value]) => {
-        prefixed[`previous_${key}`] = value;
-      });
-      return { ...row, ...prefixed };
-    });
-  };
-
-  const configurations = {
-    energy: {
-      rows: () => alignPrevious("energy"),
-      x: "date",
-      unit: "kcal",
-      zeroBaseline: true,
-      series: [
-        { key: "consumed", label: "Ingesta actual", colorIndex: 0 },
-        { key: "expended", label: "Gasto actual", colorIndex: 1 },
-        { key: "balance", label: "Balance actual", colorIndex: 2 },
-        { key: "previous_consumed", label: "Ingesta anterior", colorIndex: 0, previous: true, x: "previous_date" },
-        { key: "previous_expended", label: "Gasto anterior", colorIndex: 1, previous: true, x: "previous_date" },
-        { key: "previous_balance", label: "Balance anterior", colorIndex: 2, previous: true, x: "previous_date" },
-      ],
-    },
-    protein: {
-      rows: () => alignPrevious("protein"),
-      x: "date",
-      unit: "g",
-      zeroBaseline: true,
-      series: [
-        { key: "grams", label: "Proteína actual", colorIndex: 0 },
-        { key: "target", label: "Objetivo actual", colorIndex: 1 },
-        { key: "previous_grams", label: "Proteína anterior", colorIndex: 0, previous: true, x: "previous_date" },
-        { key: "previous_target", label: "Objetivo anterior", colorIndex: 1, previous: true, x: "previous_date" },
-      ],
-    },
-    weight: {
-      rows: () => {
-        const previous = asRows(payload.comparison?.trends?.weight);
-        const current = asRows(payload.trends?.weight);
-        return [
-          ...previous.map((row) => ({
-            ...row,
-            previous: row.value,
-            previous_moving_average_7d: row.moving_average_7d,
-            value: null,
-            moving_average_7d: null,
-          })),
-          ...current,
-        ].sort((left, right) => String(left.recorded_at).localeCompare(String(right.recorded_at)));
-      },
-      x: "recorded_at",
-      unit: payload.units?.weight || "kg",
-      zeroBaseline: false,
-      series: [
-        { key: "value", label: "Peso actual", pointsOnly: true, colorIndex: 0 },
-        { key: "moving_average_7d", label: "Media móvil actual", colorIndex: 1 },
-        { key: "previous", label: "Peso anterior", pointsOnly: true, colorIndex: 0, previous: true },
-        { key: "previous_moving_average_7d", label: "Media móvil anterior", colorIndex: 1, previous: true },
-      ],
-    },
-    "training-sessions": {
-      rows: () => alignPrevious("training"),
-      x: "label",
-      unit: "conteo",
-      zeroBaseline: true,
-      bars: true,
-      series: [
-        { key: "sessions", label: "Sesiones actuales", colorIndex: 0 },
-        { key: "planned", label: "Planes actuales", colorIndex: 1 },
-        { key: "previous_sessions", label: "Sesiones anteriores", colorIndex: 0, previous: true, x: "previous_label" },
-        { key: "previous_planned", label: "Planes anteriores", colorIndex: 1, previous: true, x: "previous_label" },
-      ],
-    },
-    "training-duration": {
-      rows: () => alignPrevious("training"),
-      x: "label",
-      unit: "min",
-      zeroBaseline: true,
-      series: [
-        { key: "duration_minutes", label: "Duración actual", colorIndex: 0 },
-        { key: "previous_duration_minutes", label: "Duración anterior", colorIndex: 0, previous: true, x: "previous_label" },
-      ],
-    },
-    "training-adherence": {
-      rows: () => alignPrevious("training"),
-      x: "label",
-      unit: "%",
-      zeroBaseline: true,
-      series: [
-        { key: "adherence_percent", label: "Adherencia actual", colorIndex: 0 },
-        { key: "previous_adherence_percent", label: "Adherencia anterior", colorIndex: 0, previous: true, x: "previous_label" },
-      ],
-    },
-    "training-volume": {
-      rows: () => alignPrevious("training"),
-      x: "label",
-      unit: payload.units?.volume || "kg·reps",
-      zeroBaseline: true,
-      series: [
-        { key: "volume", label: "Volumen actual", colorIndex: 0 },
-        { key: "previous_volume", label: "Volumen anterior", colorIndex: 0, previous: true, x: "previous_label" },
-      ],
-    },
-  };
-
-  const numberValue = (value) => {
+  const numeric = (value) => {
     if (value === null || value === undefined || value === "") return null;
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
   };
-
-  const svgElement = (name, attributes = {}) => {
+  const format = (value) => {
+    const parsed = numeric(value);
+    if (parsed === null) return "Sin datos";
+    const magnitude = Math.abs(parsed);
+    return new Intl.NumberFormat("es-MX", {
+      maximumFractionDigits: magnitude >= 100 ? 0 : magnitude >= 10 ? 1 : 2,
+    }).format(parsed);
+  };
+  const svgNode = (name, attributes = {}) => {
     const node = document.createElementNS("http://www.w3.org/2000/svg", name);
     Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, String(value)));
     return node;
   };
-
-  const addText = (svg, text, x, y, className, anchor = "start") => {
-    const node = svgElement("text", { x, y, class: className, "text-anchor": anchor });
-    node.textContent = text;
+  const textNode = (svg, value, x, y, className, anchor = "start") => {
+    const node = svgNode("text", { x, y, class: className, "text-anchor": anchor });
+    node.textContent = value;
     svg.appendChild(node);
   };
 
-  const formatNumber = (value) => {
-    const magnitude = Math.abs(value);
-    const digits = magnitude >= 100 ? 0 : magnitude >= 10 ? 1 : 2;
-    return new Intl.NumberFormat("es-MX", { maximumFractionDigits: digits }).format(value);
+  const bodyMetricSelect = document.querySelector("[data-body-metric-select]");
+  const selectedBodyMetric = () => {
+    const metrics = objectRows(payload?.body?.metrics);
+    const key = bodyMetricSelect?.value || payload?.body?.default_metric;
+    return metrics.find((item) => item.key === key) || metrics[0] || null;
   };
 
-  const renderChart = (container, kind, index) => {
-    const config = configurations[kind];
-    if (!config) return;
-    const rows = config.rows();
+  const configs = {
+    energy: () => ({
+      rows: objectRows(payload?.trends?.energy),
+      x: "date",
+      unit: "kcal",
+      zero: true,
+      series: [
+        { key: "consumed", label: "Consumidas", type: "bar", className: "chart-series-intake" },
+        { key: "expended", label: "Gastadas", type: "bar", className: "chart-series-expenditure" },
+        { key: "balance", label: "Balance (déficit − / superávit +)", type: "balance", className: "chart-series-balance" },
+        { key: "consumed_rolling_7d", label: "Media consumo", type: "line", className: "chart-line-intake" },
+        { key: "expended_rolling_7d", label: "Media gasto", type: "line", className: "chart-line-expenditure chart-line-dashed" },
+      ],
+    }),
+    weight: () => ({
+      rows: objectRows(payload?.trends?.weight),
+      x: "recorded_at",
+      unit: payload?.units?.weight || "kg",
+      zero: false,
+      series: [
+        { key: "value", label: "Medición real", type: "point", className: "chart-series-0" },
+        { key: "moving_average_7d", label: "Media móvil 7 días", type: "line", className: "chart-series-1" },
+      ],
+    }),
+    body: () => {
+      const metric = selectedBodyMetric();
+      return {
+        rows: objectRows(metric?.points),
+        x: "recorded_at",
+        unit: metric?.unit || "",
+        zero: false,
+        series: [
+          { key: "value", label: metric?.label || "Composición", type: "point-line", className: "chart-series-0" },
+        ],
+      };
+    },
+    activity: () => ({
+      rows: objectRows(payload?.trends?.activity),
+      x: "date",
+      unit: "pasos",
+      zero: true,
+      series: [
+        { key: "steps", label: "Pasos", type: "bar", className: "chart-series-0" },
+        { key: "step_goal", label: "Meta", type: "line", className: "chart-series-2 chart-line-dashed" },
+      ],
+    }),
+    training: () => ({
+      rows: objectRows(payload?.trends?.training),
+      x: "label",
+      unit: "sesiones",
+      zero: true,
+      series: [
+        { key: "sessions", label: "Sesiones", type: "bar", className: "chart-series-0" },
+        { key: "planned", label: "Planeadas", type: "bar", className: "chart-series-1" },
+      ],
+    }),
+  };
+
+  const tooltipFor = (kind, row, series, value, unit) => {
+    const label = row.date || row.recorded_at || row.label || "Punto";
+    if (kind === "energy") {
+      const sources = objectRows(row.sources).length ? row.sources.join(", ") : (Array.isArray(row.sources) ? row.sources.join(", ") : "Sin fuente");
+      return `${label}. Consumidas: ${format(row.consumed)} kcal. Gastadas: ${format(row.expended)} kcal. Balance: ${format(row.balance)} kcal. Media consumo: ${format(row.consumed_rolling_7d)} kcal (${row.consumed_rolling_7d_days || 0} días con dato). Media gasto: ${format(row.expended_rolling_7d)} kcal (${row.expended_rolling_7d_days || 0} días con dato). Fuente: ${sources || "Sin fuente"}.`;
+    }
+    if (kind === "activity") {
+      const sources = Array.isArray(row.sources) && row.sources.length ? row.sources.join(", ") : "Sin fuente";
+      return `${label}. Pasos: ${format(row.steps)}. Meta: ${format(row.step_goal)}. Distancia: ${format(row.distance_km)} km. Calorías activas: ${format(row.active_calories)} kcal. Fuente: ${sources}.`;
+    }
+    const source = row.source ? ` Fuente: ${row.source}.` : "";
+    const displayUnit = unit === "sesiones" && Number(value) === 1 ? "sesión" : unit;
+    return `${label}. ${series.label}: ${format(value)}${displayUnit ? ` ${displayUnit}` : ""}.${source}`;
+  };
+
+  const addInteractiveLabel = (node, tooltip, tooltipNode) => {
+    node.setAttribute("tabindex", "0");
+    node.setAttribute("role", "img");
+    node.setAttribute("aria-label", tooltip);
+    const title = svgNode("title");
+    title.textContent = tooltip;
+    node.appendChild(title);
+    const reveal = () => { tooltipNode.textContent = tooltip; };
+    node.addEventListener("focus", reveal);
+    node.addEventListener("pointerenter", reveal);
+    node.addEventListener("click", reveal);
+  };
+
+  const render = (container, kind, index) => {
+    const config = configs[kind]?.();
+    container.replaceChildren();
+    if (!payload || !config) {
+      const error = document.createElement("p");
+      error.className = "chart-empty";
+      error.textContent = "No se pudieron cargar los datos del gráfico.";
+      container.appendChild(error);
+      return;
+    }
+
+    const rows = config.rows;
     const availableSeries = config.series.filter((series) =>
-      rows.some((row) => numberValue(row[series.key]) !== null)
+      rows.some((row) => numeric(row[series.key]) !== null)
     );
     const values = availableSeries.flatMap((series) =>
-      rows.map((row) => numberValue(row[series.key])).filter((value) => value !== null)
+      rows.map((row) => numeric(row[series.key])).filter((value) => value !== null)
     );
-
-    container.replaceChildren();
     if (!values.length) {
       const empty = document.createElement("p");
       empty.className = "chart-empty";
@@ -185,172 +159,170 @@
       return;
     }
 
-    const containerWidth = Math.round(container.getBoundingClientRect().width || 720);
-    const width = Math.max(320, Math.min(720, containerWidth));
-    const height = container.classList.contains("compact-chart") ? 220 : 280;
-    const margin = { top: 24, right: 18, bottom: 44, left: 62 };
+    const measuredWidth = Math.round(container.getBoundingClientRect().width || 720);
+    const width = Math.max(300, Math.min(1180, measuredWidth));
+    const primary = container.classList.contains("dashboard-chart-primary");
+    const compact = container.classList.contains("compact-chart");
+    const height = primary ? 390 : compact ? 250 : 300;
+    const margin = { top: 24, right: 16, bottom: 48, left: width < 430 ? 48 : 62 };
     const plotWidth = width - margin.left - margin.right;
     const plotHeight = height - margin.top - margin.bottom;
     let minimum = Math.min(...values);
     let maximum = Math.max(...values);
-    if (config.zeroBaseline) {
+    if (config.zero) {
       minimum = Math.min(0, minimum);
       maximum = Math.max(0, maximum);
     }
     if (minimum === maximum) {
-      const padding = minimum === 0 ? 1 : Math.abs(minimum) * 0.1;
-      minimum -= padding;
-      maximum += padding;
+      const pad = minimum === 0 ? 1 : Math.abs(minimum) * 0.12;
+      minimum -= config.zero && minimum === 0 ? 0 : pad;
+      maximum += pad;
     } else {
-      const padding = (maximum - minimum) * 0.08;
-      minimum -= config.zeroBaseline && minimum === 0 ? 0 : padding;
-      maximum += padding;
+      const pad = (maximum - minimum) * 0.08;
+      minimum -= config.zero && minimum === 0 ? 0 : pad;
+      maximum += pad;
     }
+    const slot = plotWidth / Math.max(rows.length, 1);
+    const x = (rowIndex) => margin.left + slot * rowIndex + slot / 2;
+    const y = (value) => margin.top + ((maximum - value) / (maximum - minimum)) * plotHeight;
 
-    const xPosition = (rowIndex) =>
-      rows.length <= 1
-        ? margin.left + plotWidth / 2
-        : margin.left + (rowIndex / (rows.length - 1)) * plotWidth;
-    const yPosition = (value) =>
-      margin.top + ((maximum - value) / (maximum - minimum)) * plotHeight;
+    const tooltip = document.createElement("div");
+    tooltip.className = "chart-tooltip";
+    tooltip.setAttribute("role", "status");
+    tooltip.setAttribute("aria-live", "polite");
+    tooltip.textContent = "Selecciona un punto para consultar el detalle.";
 
     const titleId = `dashboard-chart-title-${index}`;
-    const svg = svgElement("svg", {
+    const svg = svgNode("svg", {
       viewBox: `0 0 ${width} ${height}`,
       role: "img",
       "aria-labelledby": titleId,
       class: "trend-svg",
     });
-    const title = svgElement("title", { id: titleId });
-    title.textContent = `${availableSeries.map((series) => series.label).join(", ")} en ${config.unit}`;
+    const title = svgNode("title", { id: titleId });
+    title.textContent = availableSeries.map((series) => series.label).join(", ");
     svg.appendChild(title);
 
     for (let tick = 0; tick <= 4; tick += 1) {
       const ratio = tick / 4;
       const value = maximum - (maximum - minimum) * ratio;
-      const y = margin.top + plotHeight * ratio;
-      svg.appendChild(svgElement("line", {
-        x1: margin.left,
-        x2: width - margin.right,
-        y1: y,
-        y2: y,
-        class: "chart-grid-line",
-      }));
-      addText(svg, formatNumber(value), margin.left - 9, y + 4, "chart-axis-label", "end");
+      const lineY = margin.top + plotHeight * ratio;
+      svg.appendChild(svgNode("line", { x1: margin.left, x2: width - margin.right, y1: lineY, y2: lineY, class: "chart-grid-line" }));
+      textNode(svg, format(value), margin.left - 8, lineY + 4, "chart-axis-label", "end");
+    }
+    if (minimum < 0 && maximum > 0) {
+      svg.appendChild(svgNode("line", { x1: margin.left, x2: width - margin.right, y1: y(0), y2: y(0), class: "chart-zero-line" }));
     }
 
-    const labelIndexes = [...new Set([0, Math.floor((rows.length - 1) / 2), rows.length - 1])];
+    const maxLabels = width < 430 ? 3 : width < 760 ? 4 : 6;
+    const labelIndexes = [...new Set(Array.from({ length: Math.min(maxLabels, rows.length) }, (_, labelIndex) =>
+      Math.round((labelIndex * (rows.length - 1)) / Math.max(1, Math.min(maxLabels, rows.length) - 1))
+    ))];
     labelIndexes.forEach((rowIndex) => {
-      const fullLabel = String(rows[rowIndex]?.[config.x] || "");
-      const label = fullLabel.length > 18
-        ? `${fullLabel.slice(0, 10)}…${fullLabel.slice(-5)}`
-        : fullLabel;
+      const raw = String(rows[rowIndex]?.[config.x] || "");
+      const label = raw.length > 15 ? `${raw.slice(0, 10)}…` : raw;
       const anchor = rowIndex === 0 ? "start" : rowIndex === rows.length - 1 ? "end" : "middle";
-      addText(svg, label, xPosition(rowIndex), height - 14, "chart-axis-label", anchor);
+      textNode(svg, label, x(rowIndex), height - 15, "chart-axis-label", anchor);
     });
 
-    availableSeries.forEach((series, seriesIndex) => {
-      const colorIndex = series.colorIndex ?? seriesIndex;
-      const seriesClass = `chart-series-${colorIndex}${series.previous ? " chart-previous" : ""}`;
-      if (config.bars) {
-        const groupWidth = Math.max(2, plotWidth / Math.max(rows.length, 1));
-        const barWidth = Math.max(1, Math.min(18, (groupWidth * 0.72) / availableSeries.length));
+    const barSeries = availableSeries.filter((series) => series.type === "bar");
+    availableSeries.forEach((series) => {
+      if (series.type === "bar" || series.type === "balance") {
+        const regularIndex = barSeries.indexOf(series);
+        const regularWidth = Math.max(2, Math.min(22, (slot * 0.68) / Math.max(barSeries.length, 1)));
+        const balanceWidth = Math.max(2, Math.min(6, slot * 0.12));
         rows.forEach((row, rowIndex) => {
-          const value = numberValue(row[series.key]);
+          const value = numeric(row[series.key]);
           if (value === null) return;
-          const zeroY = yPosition(Math.max(0, minimum));
-          const valueY = yPosition(value);
-          const x = xPosition(rowIndex) - (barWidth * availableSeries.length) / 2 + seriesIndex * barWidth;
-          const rawPointLabel = row[series.x || config.x];
-          const pointLabel = rawPointLabel === null || rawPointLabel === undefined || rawPointLabel === ""
-            ? "Punto sin fecha"
-            : String(rawPointLabel);
-          const rect = svgElement("rect", {
-            x,
+          const zeroY = y(0);
+          const valueY = y(value);
+          const barWidth = series.type === "balance" ? balanceWidth : regularWidth;
+          const barX = series.type === "balance"
+            ? x(rowIndex) + slot * 0.34 - barWidth
+            : x(rowIndex) - (regularWidth * barSeries.length) / 2 + regularIndex * regularWidth;
+          const signClass = series.type === "balance"
+            ? (value < 0 ? "chart-bar-balance-deficit" : "chart-bar-balance-surplus")
+            : series.className;
+          const rect = svgNode("rect", {
+            x: barX,
             y: Math.min(zeroY, valueY),
             width: Math.max(1, barWidth - 1),
             height: Math.max(1, Math.abs(zeroY - valueY)),
-            class: `chart-bar ${seriesClass}`,
-            tabindex: 0,
-            role: "img",
-            "aria-label": `${pointLabel}: ${series.label}, ${formatNumber(value)} ${config.unit}`,
+            class: `chart-bar ${signClass}`,
           });
-          const tooltip = svgElement("title");
-          tooltip.textContent = `${pointLabel} · ${series.label}: ${formatNumber(value)} ${config.unit}`;
-          rect.appendChild(tooltip);
+          addInteractiveLabel(rect, tooltipFor(kind, row, series, value, config.unit), tooltip);
           svg.appendChild(rect);
         });
         return;
       }
 
-      if (!series.pointsOnly) {
+      const drawsLine = series.type === "line" || series.type === "point-line";
+      if (drawsLine) {
         let segment = [];
-        const flushSegment = () => {
-          if (!segment.length) return;
-          const path = svgElement("path", {
-            d: segment.map((point, pointIndex) => `${pointIndex ? "L" : "M"} ${point.x} ${point.y}`).join(" "),
-            class: `chart-line ${seriesClass}`,
-          });
-          svg.appendChild(path);
+        const flush = () => {
+          if (segment.length >= 2) {
+            svg.appendChild(svgNode("path", {
+              d: segment.map((point, pointIndex) => `${pointIndex ? "L" : "M"} ${point.x} ${point.y}`).join(" "),
+              class: `chart-line ${series.className}`,
+            }));
+          }
           segment = [];
         };
         rows.forEach((row, rowIndex) => {
-          const value = numberValue(row[series.key]);
-          if (value === null) {
-            flushSegment();
-          } else {
-            segment.push({ x: xPosition(rowIndex), y: yPosition(value) });
-          }
+          const value = numeric(row[series.key]);
+          if (value === null) flush();
+          else segment.push({ x: x(rowIndex), y: y(value) });
         });
-        flushSegment();
+        flush();
       }
 
       rows.forEach((row, rowIndex) => {
-        const value = numberValue(row[series.key]);
+        const value = numeric(row[series.key]);
         if (value === null) return;
-        const rawPointLabel = row[series.x || config.x];
-        const pointLabel = rawPointLabel === null || rawPointLabel === undefined || rawPointLabel === ""
-          ? "Punto sin fecha"
-          : String(rawPointLabel);
-        const point = svgElement("circle", {
-          cx: xPosition(rowIndex),
-          cy: yPosition(value),
-          r: series.pointsOnly ? 4.5 : 3,
-          class: `chart-point ${seriesClass}`,
-          tabindex: 0,
-          role: "img",
-          "aria-label": `${pointLabel}: ${series.label}, ${formatNumber(value)} ${config.unit}`,
+        const point = svgNode("circle", {
+          cx: x(rowIndex), cy: y(value), r: series.type === "point" || series.type === "point-line" ? 4.5 : 3,
+          class: `chart-point ${series.className}`,
         });
-        const tooltip = svgElement("title");
-        tooltip.textContent = `${pointLabel} · ${series.label}: ${formatNumber(value)} ${config.unit}`;
-        point.appendChild(tooltip);
+        addInteractiveLabel(point, tooltipFor(kind, row, series, value, config.unit), tooltip);
         svg.appendChild(point);
       });
     });
 
     const legend = document.createElement("ul");
     legend.className = "chart-legend";
-    availableSeries.forEach((series, seriesIndex) => {
+    availableSeries.forEach((series) => {
       const item = document.createElement("li");
       const swatch = document.createElement("span");
-      const colorIndex = series.colorIndex ?? seriesIndex;
-      swatch.className = `chart-legend-swatch chart-series-${colorIndex}${series.previous ? " chart-previous" : ""}`;
+      swatch.className = `chart-legend-swatch ${series.className} ${series.type === "bar" || series.type === "balance" ? "is-bar" : ""}`;
       swatch.setAttribute("aria-hidden", "true");
       item.append(swatch, document.createTextNode(series.label));
       legend.appendChild(item);
     });
-    container.append(svg, legend);
+    container.append(svg, legend, tooltip);
+  };
+
+  const updateBodySummary = () => {
+    const summary = document.querySelector("[data-body-current]");
+    const metric = selectedBodyMetric();
+    if (!summary || !metric) return;
+    const unit = metric.unit ? ` ${metric.unit}` : "";
+    summary.replaceChildren();
+    const label = document.createElement("span");
+    label.textContent = "Última medición";
+    const value = document.createElement("strong");
+    value.textContent = `${format(metric.latest)}${unit}`;
+    const detail = document.createElement("small");
+    detail.textContent = `${metric.entries} ${metric.entries === 1 ? "punto" : "puntos"}`;
+    summary.append(label, value, detail);
   };
 
   const renderAll = () => {
-    chartContainers.forEach((container, index) => {
-      renderChart(container, container.dataset.dashboardChart, index);
-    });
+    containers.forEach((container, index) => render(container, container.dataset.dashboardChart, index));
+    updateBodySummary();
   };
-
   renderAll();
-  if (!chartContainers.length) return;
 
+  bodyMetricSelect?.addEventListener("change", renderAll);
   let resizeFrame = null;
   window.addEventListener("resize", () => {
     if (resizeFrame !== null) window.cancelAnimationFrame(resizeFrame);
@@ -358,5 +330,5 @@
       renderAll();
       resizeFrame = null;
     });
-  });
+  }, { passive: true });
 })();

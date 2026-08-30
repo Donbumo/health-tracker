@@ -1,6 +1,60 @@
 (() => {
   "use strict";
 
+  const ENERGY_SERIES_KEYS = Object.freeze([
+    "consumed",
+    "expended",
+    "balance",
+    "consumed_rolling_7d",
+    "expended_rolling_7d",
+  ]);
+  const ENERGY_FOCUS_PRESETS = Object.freeze({
+    all: { visibleKeys: ENERGY_SERIES_KEYS, balanceSign: "all" },
+    bars: { visibleKeys: ["consumed", "expended", "balance"], balanceSign: "all" },
+    lines: { visibleKeys: ["consumed_rolling_7d", "expended_rolling_7d"], balanceSign: "all" },
+    balance: { visibleKeys: ["balance"], balanceSign: "all" },
+    deficit: { visibleKeys: ["balance"], balanceSign: "deficit" },
+    surplus: { visibleKeys: ["balance"], balanceSign: "surplus" },
+  });
+
+  const energyFocusState = (focus) => {
+    const preset = ENERGY_FOCUS_PRESETS[focus] || ENERGY_FOCUS_PRESETS.all;
+    return { visibleKeys: [...preset.visibleKeys], balanceSign: preset.balanceSign };
+  };
+  const toggleEnergySeries = (visibleKeys, key) => {
+    const visible = new Set(visibleKeys);
+    if (visible.has(key)) visible.delete(key);
+    else if (ENERGY_SERIES_KEYS.includes(key)) visible.add(key);
+    return ENERGY_SERIES_KEYS.filter((seriesKey) => visible.has(seriesKey));
+  };
+  const filterBalanceValue = (value, balanceSign) => {
+    if (balanceSign === "deficit" && value >= 0) return null;
+    if (balanceSign === "surplus" && value <= 0) return null;
+    return value;
+  };
+  const calculateBarLayout = (slotWidth, barCount) => {
+    if (!Number.isFinite(slotWidth) || slotWidth <= 0 || barCount <= 0) return [];
+    const bandWidth = Math.min(slotWidth * 0.74, 72);
+    const gap = barCount > 1 ? Math.min(3, slotWidth * 0.06) : 0;
+    const width = Math.max(0.5, Math.min(22, (bandWidth - gap * (barCount - 1)) / barCount));
+    const groupWidth = width * barCount + gap * (barCount - 1);
+    return Array.from({ length: barCount }, (_, index) => ({
+      width,
+      offset: -groupWidth / 2 + index * (width + gap),
+    }));
+  };
+
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+      ENERGY_SERIES_KEYS,
+      calculateBarLayout,
+      energyFocusState,
+      filterBalanceValue,
+      toggleEnergySeries,
+    };
+  }
+  if (typeof document === "undefined") return;
+
   const dataNode = document.getElementById("dashboard-chart-data");
   if (!dataNode) return;
 
@@ -41,6 +95,13 @@
   };
 
   const bodyMetricSelect = document.querySelector("[data-body-metric-select]");
+  const energyControls = document.querySelector("[data-energy-chart-controls]");
+  const initialEnergyState = energyFocusState("all");
+  const energyState = {
+    visibleKeys: new Set(initialEnergyState.visibleKeys),
+    balanceSign: initialEnergyState.balanceSign,
+    focus: "all",
+  };
   const selectedBodyMetric = () => {
     const metrics = objectRows(payload?.body?.metrics);
     const key = bodyMetricSelect?.value || payload?.body?.default_metric;
@@ -48,19 +109,23 @@
   };
 
   const configs = {
-    energy: () => ({
-      rows: objectRows(payload?.trends?.energy),
-      x: "date",
-      unit: "kcal",
-      zero: true,
-      series: [
+    energy: () => {
+      const series = [
         { key: "consumed", label: "Consumidas", type: "bar", className: "chart-series-intake" },
         { key: "expended", label: "Gastadas", type: "bar", className: "chart-series-expenditure" },
         { key: "balance", label: "Balance (déficit − / superávit +)", type: "balance", className: "chart-series-balance" },
         { key: "consumed_rolling_7d", label: "Media consumo", type: "line", className: "chart-line-intake" },
         { key: "expended_rolling_7d", label: "Media gasto", type: "line", className: "chart-line-expenditure chart-line-dashed" },
-      ],
-    }),
+      ];
+      return {
+        rows: objectRows(payload?.trends?.energy),
+        x: "date",
+        unit: "kcal",
+        zero: true,
+        balanceSign: energyState.balanceSign,
+        series: series.filter((item) => energyState.visibleKeys.has(item.key)),
+      };
+    },
     weight: () => ({
       rows: objectRows(payload?.trends?.weight),
       x: "recorded_at",
@@ -133,6 +198,15 @@
     node.addEventListener("click", reveal);
   };
 
+  const seriesValue = (row, series, config) => {
+    const value = numeric(row[series.key]);
+    if (value === null) return null;
+    if (series.key === "balance") {
+      return filterBalanceValue(value, config.balanceSign || "all");
+    }
+    return value;
+  };
+
   const render = (container, kind, index) => {
     const config = configs[kind]?.();
     container.replaceChildren();
@@ -146,10 +220,10 @@
 
     const rows = config.rows;
     const availableSeries = config.series.filter((series) =>
-      rows.some((row) => numeric(row[series.key]) !== null)
+      rows.some((row) => seriesValue(row, series, config) !== null)
     );
     const values = availableSeries.flatMap((series) =>
-      rows.map((row) => numeric(row[series.key])).filter((value) => value !== null)
+      rows.map((row) => seriesValue(row, series, config)).filter((value) => value !== null)
     );
     if (!values.length) {
       const empty = document.createElement("p");
@@ -210,7 +284,7 @@
       svg.appendChild(svgNode("line", { x1: margin.left, x2: width - margin.right, y1: lineY, y2: lineY, class: "chart-grid-line" }));
       textNode(svg, format(value), margin.left - 8, lineY + 4, "chart-axis-label", "end");
     }
-    if (minimum < 0 && maximum > 0) {
+    if (config.zero && minimum <= 0 && maximum >= 0) {
       svg.appendChild(svgNode("line", { x1: margin.left, x2: width - margin.right, y1: y(0), y2: y(0), class: "chart-zero-line" }));
     }
 
@@ -225,30 +299,28 @@
       textNode(svg, label, x(rowIndex), height - 15, "chart-axis-label", anchor);
     });
 
-    const barSeries = availableSeries.filter((series) => series.type === "bar");
+    const barSeries = availableSeries.filter((series) => series.type === "bar" || series.type === "balance");
+    const barLayout = calculateBarLayout(slot, barSeries.length);
     availableSeries.forEach((series) => {
       if (series.type === "bar" || series.type === "balance") {
-        const regularIndex = barSeries.indexOf(series);
-        const regularWidth = Math.max(2, Math.min(22, (slot * 0.68) / Math.max(barSeries.length, 1)));
-        const balanceWidth = Math.max(2, Math.min(6, slot * 0.12));
+        const layout = barLayout[barSeries.indexOf(series)];
         rows.forEach((row, rowIndex) => {
-          const value = numeric(row[series.key]);
+          const value = seriesValue(row, series, config);
           if (value === null) return;
           const zeroY = y(0);
           const valueY = y(value);
-          const barWidth = series.type === "balance" ? balanceWidth : regularWidth;
-          const barX = series.type === "balance"
-            ? x(rowIndex) + slot * 0.34 - barWidth
-            : x(rowIndex) - (regularWidth * barSeries.length) / 2 + regularIndex * regularWidth;
           const signClass = series.type === "balance"
             ? (value < 0 ? "chart-bar-balance-deficit" : "chart-bar-balance-surplus")
             : series.className;
           const rect = svgNode("rect", {
-            x: barX,
+            x: x(rowIndex) + layout.offset,
             y: Math.min(zeroY, valueY),
-            width: Math.max(1, barWidth - 1),
+            width: layout.width,
             height: Math.max(1, Math.abs(zeroY - valueY)),
             class: `chart-bar ${signClass}`,
+            "data-series": series.key,
+            "data-row-index": rowIndex,
+            "data-value": value,
           });
           addInteractiveLabel(rect, tooltipFor(kind, row, series, value, config.unit), tooltip);
           svg.appendChild(rect);
@@ -277,11 +349,13 @@
       }
 
       rows.forEach((row, rowIndex) => {
-        const value = numeric(row[series.key]);
+        const value = seriesValue(row, series, config);
         if (value === null) return;
         const point = svgNode("circle", {
           cx: x(rowIndex), cy: y(value), r: series.type === "point" || series.type === "point-line" ? 4.5 : 3,
           class: `chart-point ${series.className}`,
+          "data-series": series.key,
+          "data-row-index": rowIndex,
         });
         addInteractiveLabel(point, tooltipFor(kind, row, series, value, config.unit), tooltip);
         svg.appendChild(point);
@@ -300,6 +374,57 @@
     });
     container.append(svg, legend, tooltip);
   };
+
+  const updateEnergyControls = () => {
+    if (!energyControls) return;
+    energyControls.querySelectorAll("[data-energy-series-toggle]").forEach((button) => {
+      const active = energyState.visibleKeys.has(button.dataset.energySeriesToggle);
+      button.setAttribute("aria-pressed", String(active));
+      button.classList.toggle("is-active", active);
+    });
+    energyControls.querySelectorAll("[data-energy-focus]").forEach((button) => {
+      const active = energyState.focus === button.dataset.energyFocus;
+      button.setAttribute("aria-pressed", String(active));
+      button.classList.toggle("is-active", active);
+    });
+    const status = energyControls.querySelector("[data-energy-control-status]");
+    if (status) {
+      const count = energyState.visibleKeys.size;
+      const sign = energyState.balanceSign === "deficit"
+        ? " Solo déficit."
+        : energyState.balanceSign === "surplus" ? " Solo superávit." : "";
+      status.textContent = count
+        ? `${count} ${count === 1 ? "serie visible" : "series visibles"}.${sign}`
+        : "No hay series visibles. Activa una serie o elige un enfoque rápido.";
+    }
+  };
+
+  const renderEnergy = () => {
+    const index = containers.findIndex((container) => container.dataset.dashboardChart === "energy");
+    if (index >= 0) render(containers[index], "energy", index);
+  };
+
+  energyControls?.querySelectorAll("[data-energy-series-toggle]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const next = toggleEnergySeries([...energyState.visibleKeys], button.dataset.energySeriesToggle);
+      energyState.visibleKeys = new Set(next);
+      energyState.balanceSign = "all";
+      energyState.focus = "manual";
+      updateEnergyControls();
+      renderEnergy();
+    });
+  });
+  energyControls?.querySelectorAll("[data-energy-focus]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const focus = button.dataset.energyFocus;
+      const next = energyFocusState(focus);
+      energyState.visibleKeys = new Set(next.visibleKeys);
+      energyState.balanceSign = next.balanceSign;
+      energyState.focus = focus;
+      updateEnergyControls();
+      renderEnergy();
+    });
+  });
 
   const updateBodySummary = () => {
     const summary = document.querySelector("[data-body-current]");
@@ -320,6 +445,7 @@
     containers.forEach((container, index) => render(container, container.dataset.dashboardChart, index));
     updateBodySummary();
   };
+  updateEnergyControls();
   renderAll();
 
   bodyMetricSelect?.addEventListener("change", renderAll);

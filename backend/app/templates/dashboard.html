@@ -98,6 +98,30 @@
     </div>
     {{ source_details(energy.sources) }}
   </div>
+  <div class="energy-chart-controls" data-energy-chart-controls aria-describedby="energy-control-status">
+    <fieldset class="energy-control-set">
+      <legend>Series visibles</legend>
+      <div class="energy-control-list">
+        <button type="button" class="energy-control is-active" data-energy-series-toggle="consumed" aria-pressed="true">Consumo</button>
+        <button type="button" class="energy-control is-active" data-energy-series-toggle="expended" aria-pressed="true">Gasto</button>
+        <button type="button" class="energy-control is-active" data-energy-series-toggle="balance" aria-pressed="true">Balance</button>
+        <button type="button" class="energy-control is-active" data-energy-series-toggle="consumed_rolling_7d" aria-pressed="true">Media consumo</button>
+        <button type="button" class="energy-control is-active" data-energy-series-toggle="expended_rolling_7d" aria-pressed="true">Media gasto</button>
+      </div>
+    </fieldset>
+    <fieldset class="energy-control-set">
+      <legend>Enfoque rápido</legend>
+      <div class="energy-control-list">
+        <button type="button" class="energy-control energy-focus is-active" data-energy-focus="all" aria-pressed="true">Todo</button>
+        <button type="button" class="energy-control energy-focus" data-energy-focus="bars" aria-pressed="false">Solo barras</button>
+        <button type="button" class="energy-control energy-focus" data-energy-focus="lines" aria-pressed="false">Solo líneas</button>
+        <button type="button" class="energy-control energy-focus" data-energy-focus="balance" aria-pressed="false">Solo balance</button>
+        <button type="button" class="energy-control energy-focus" data-energy-focus="deficit" aria-pressed="false">Solo déficit</button>
+        <button type="button" class="energy-control energy-focus" data-energy-focus="surplus" aria-pressed="false">Solo superávit</button>
+      </div>
+    </fieldset>
+    <p id="energy-control-status" class="energy-control-status" data-energy-control-status aria-live="polite">5 series visibles.</p>
+  </div>
   <div class="dashboard-chart dashboard-chart-primary" data-dashboard-chart="energy" aria-describedby="energy-chart-summary">
     <p class="chart-fallback">La tabla accesible conserva los datos si JavaScript no está disponible.</p>
   </div>
@@ -261,5 +285,5 @@
 </div>
 
 <script id="dashboard-chart-data" type="application/json">{{ {'trends': dashboard.trends, 'comparison': dashboard.comparison, 'body': body, 'units': {'weight': weight.unit, 'volume': training.volume_unit}}|tojson }}</script>
-<script src="{{ url_for('static', filename='js/dashboard_charts.js', v='dashboard-2') }}" defer></script>
+<script src="{{ url_for('static', filename='js/dashboard_charts.js', v='dashboard-2-energy-controls') }}" defer></script>
 {% endblock %}

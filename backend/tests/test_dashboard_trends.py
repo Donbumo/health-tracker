@@ -577,7 +577,19 @@ def test_dashboard_and_today_routes_are_authenticated_canonical_and_private(clie
     assert "Análisis longitudinal" in html
     assert "Anterior equivalente" in html
     assert 'id="dashboard-chart-data" type="application/json"' in html
-    assert 'src="/static/js/dashboard_charts.js?v=dashboard-2"' in html
+    assert 'src="/static/js/dashboard_charts.js?v=dashboard-2-energy-controls"' in html
+    assert 'href="/static/css/app.css?v=dashboard-2-energy-controls"' in html
+    assert 'data-energy-chart-controls' in html
+    for series_key in (
+        "consumed",
+        "expended",
+        "balance",
+        "consumed_rolling_7d",
+        "expended_rolling_7d",
+    ):
+        assert f'data-energy-series-toggle="{series_key}"' in html
+    for focus in ("all", "bars", "lines", "balance", "deficit", "surplus"):
+        assert f'data-energy-focus="{focus}"' in html
     assert "cdn" not in html.lower()
     assert 'href="/today"' in html
 

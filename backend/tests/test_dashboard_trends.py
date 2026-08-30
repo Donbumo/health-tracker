@@ -11,6 +11,7 @@ from sqlalchemy import event, text
 from app import create_app
 from app.extensions import db
 from app.models import (
+    Activity,
     DailyEnergy,
     DailyNutrition,
     PlannedWorkout,
@@ -52,6 +53,18 @@ def test_dashboard_date_range_presets(preset, expected_start, expected_end, days
     assert result.start_date == expected_start
     assert result.end_date == expected_end
     assert result.days == days
+
+
+@pytest.mark.parametrize("period", ("7", "30", "90"))
+def test_dashboard_period_query_uses_reproducible_global_ranges(period):
+    result = _range({"period": period})
+    assert result.preset == f"{period}d"
+    assert result.days == int(period)
+
+
+def test_dashboard_default_period_is_seven_days():
+    assert _range().preset == "7d"
+    assert _range().days == 7
 
 
 def test_dashboard_custom_range_and_previous_period_are_inclusive():
@@ -138,6 +151,7 @@ def _session(user_id: int, plan, version, performed_at, *, load_mode="direct_tot
         planned_week_number=1,
         planned_day_number=1,
         duration_seconds=3600,
+        calories_burned=Decimal("250"),
     )
     db.session.add(record)
     db.session.flush()
@@ -173,6 +187,9 @@ def _seed_summary_period(user_id: int):
                 source="qa_fixture",
                 calories=Decimal("1000"),
                 protein_g=Decimal("50"),
+                fat_g=Decimal("40"),
+                net_carbs_g=Decimal("90"),
+                fiber_g=Decimal("20"),
             ),
             DailyNutrition(
                 user_id=user_id,
@@ -180,12 +197,18 @@ def _seed_summary_period(user_id: int):
                 source="qa_fixture",
                 calories=Decimal("1100"),
                 protein_g=Decimal("60"),
+                fat_g=Decimal("45"),
+                net_carbs_g=Decimal("95"),
+                fiber_g=Decimal("22"),
             ),
             DailyEnergy(
                 user_id=user_id,
                 date=date(2026, 7, 1),
                 source="device_qa",
                 total_calories=Decimal("900"),
+                active_calories=Decimal("300"),
+                steps=8000,
+                distance_meters=Decimal("6000"),
             ),
             DailyEnergy(
                 user_id=user_id,
@@ -198,6 +221,9 @@ def _seed_summary_period(user_id: int):
                 date=date(2026, 7, 2),
                 source="device_qa",
                 total_calories=Decimal("1000"),
+                active_calories=Decimal("350"),
+                steps=9000,
+                distance_meters=Decimal("7000"),
             ),
             UserGoal(
                 user_id=user_id,
@@ -212,16 +238,46 @@ def _seed_summary_period(user_id: int):
                 state="active",
                 source="qa_fixture",
             ),
+            UserGoal(
+                user_id=user_id,
+                goal_type="daily_steps",
+                target_value=Decimal("8500"),
+                unit="step",
+                period="daily",
+                applicable_days_json=[],
+                timezone="UTC",
+                start_date=date(2026, 7, 1),
+                end_date=date(2026, 7, 7),
+                state="active",
+                source="qa_fixture",
+            ),
+            UserGoal(
+                user_id=user_id,
+                goal_type="nutrition_calories",
+                target_value=Decimal("2000"),
+                unit="kcal",
+                period="daily",
+                applicable_days_json=[],
+                timezone="UTC",
+                start_date=date(2026, 7, 1),
+                end_date=date(2026, 7, 7),
+                state="active",
+                source="qa_fixture",
+            ),
             WeighIn(
                 user_id=user_id,
                 recorded_at=datetime(2026, 7, 1, 7, tzinfo=timezone.utc),
                 weight_kg=Decimal("70"),
+                body_fat_percentage=Decimal("18"),
+                muscle_mass_kg=Decimal("55"),
                 source="qa_fixture",
             ),
             WeighIn(
                 user_id=user_id,
                 recorded_at=datetime(2026, 7, 7, 7, tzinfo=timezone.utc),
                 weight_kg=Decimal("69.5"),
+                body_fat_percentage=Decimal("17.5"),
+                muscle_mass_kg=Decimal("55.5"),
                 source="qa_fixture",
             ),
         ]
@@ -274,20 +330,35 @@ def test_dashboard_summary_contract_preserves_decimal_nulls_units_and_coverage(a
     assert result["summary"]["energy"]["consumed_total"] == "2100.000"
     assert result["summary"]["energy"]["expended_total"] == "1800.00"
     assert result["summary"]["energy"]["balance_total"] == "300.000"
+    assert result["trends"]["energy"][1]["consumed_rolling_7d"] == "1050.00"
+    assert result["trends"]["energy"][1]["expended_rolling_7d"] == "900.00"
+    assert result["summary"]["nutrition"]["averages"]["fat"]["average"] == "42.50"
+    assert result["summary"]["nutrition"]["averages"]["net_carbs"]["average"] == "92.50"
     assert result["summary"]["protein"]["goal_total"] == "385.000"
     assert result["summary"]["protein"]["balance"] == "0.000"
     assert result["summary"]["protein"]["days_at_goal"] == 1
     assert result["summary"]["weight"]["unit"] == "lb"
     assert result["summary"]["weight"]["entries"] == 2
     assert result["summary"]["weight"]["moving_average_7d"] is not None
+    assert result["summary"]["body"]["default_metric"] == "body_fat"
+    assert result["summary"]["body"]["metrics"][0]["change"] == "-0.500"
+    assert result["summary"]["activity"]["steps_total"] == 17000
+    assert result["summary"]["activity"]["days_at_goal"] == 1
+    assert result["summary"]["activity"]["distance_km"] == "13.00"
     assert result["summary"]["training"]["sessions"] == 1
     assert result["summary"]["training"]["adherence_percent"] == "100.00"
     assert result["summary"]["training"]["volume_supported"] is True
     assert result["summary"]["training"]["volume"] == "1102.31"
+    assert result["summary"]["training"]["calories"] == "250.00"
     assert result["trends"]["energy"][2]["consumed"] is None
     assert result["coverage"]["nutrition_days"] == 2
     assert result["coverage"]["energy_days"] == 2
     assert result["coverage"]["weight_entries"] == 2
+    assert result["coverage"]["steps_days"] == 2
+    assert {goal["type"] for goal in result["goals"]} >= {
+        "daily_steps", "nutrition_calories", "nutrition_protein"
+    }
+    assert 3 <= len(result["insights"]) <= 5
     json.dumps(result)
 
 
@@ -306,7 +377,9 @@ def test_dashboard_summary_is_owner_only_and_does_not_turn_absence_into_zero(app
     assert result["summary"]["energy"]["consumed_total"] is None
     assert result["summary"]["protein"]["total"] is None
     assert result["summary"]["weight"]["latest"] is None
+    assert result["summary"]["activity"]["steps_total"] is None
     assert result["summary"]["training"]["sessions"] == 0
+    assert result["goals"] == []
     assert all(point["consumed"] is None for point in result["trends"]["energy"])
 
 
@@ -350,6 +423,9 @@ def test_dashboard_energy_uses_available_expenditure_when_manual_row_is_partial(
     assert result["summary"]["energy"]["expended_total"] == "1800.00"
     assert result["summary"]["energy"]["balance_total"] == "-800.000"
     assert result["trends"]["energy"][0]["source"] == "device_qa"
+    assert result["trends"]["energy"][0]["expenditure_source"] == "Dispositivo"
+    assert result["trends"]["activity"][0]["steps"] == 7000
+    assert result["trends"]["activity"][0]["sources"] == ["Manual"]
     assert result["trends"]["energy"][1]["expended"] is None
     assert result["trends"]["energy"][1]["balance"] is None
 
@@ -373,6 +449,45 @@ def test_dashboard_training_volume_is_unsupported_for_non_comparable_modes(app, 
     assert result["summary"]["training"]["volume"] is None
     assert result["summary"]["training"]["volume_supported"] is False
     assert "no comparables" in result["summary"]["training"]["volume_reason"]
+
+
+def test_dashboard_training_includes_imported_activity_without_mixing_strength_volume(app, user):
+    with app.app_context():
+        db.session.add(
+            Activity(
+                user_id=user,
+                activity_type="cycling",
+                discipline="cycling",
+                started_at=datetime(2026, 7, 3, 12, tzinfo=timezone.utc),
+                duration_seconds=1800,
+                calories_kcal=Decimal("220"),
+                source_type="uploaded",
+                source_format="tcx",
+                fingerprint_sha256="a" * 64,
+                canonical_json={
+                    "schema_version": "1.0",
+                    "record_type": "activity",
+                    "data": {"title": "Actividad QA ficticia"},
+                },
+                point_count=0,
+                metrics_provenance_json={},
+                status="imported",
+            )
+        )
+        db.session.commit()
+        result = DashboardSummaryService().build(
+            user,
+            _range({"from": "2026-07-01", "to": "2026-07-07"}),
+            "kg",
+        )
+    assert result["summary"]["training"]["sessions"] == 1
+    assert result["summary"]["training"]["activities"] == 1
+    assert result["summary"]["training"]["strength_sessions"] == 0
+    assert result["summary"]["training"]["duration_minutes"] == "30.00"
+    assert result["summary"]["training"]["calories"] == "220.00"
+    assert result["summary"]["training"]["volume"] is None
+    assert result["summary"]["training"]["sources"] == ["Importación"]
+    assert result["summary"]["training"]["distribution"][0]["label"] == "Cycling"
 
 
 def test_dashboard_weight_change_requires_two_real_points(app, user):
@@ -455,14 +570,14 @@ def test_dashboard_and_today_routes_are_authenticated_canonical_and_private(clie
     assert root.status_code == 200
     assert "Análisis longitudinal" in root.get_data(as_text=True)
 
-    dashboard = client.get("/dashboard", query_string={"preset": "30d", "compare": "previous"})
+    dashboard = client.get("/dashboard", query_string={"period": "30"})
     assert dashboard.status_code == 200
     assert dashboard.headers["Cache-Control"] == "private, no-store"
     html = dashboard.get_data(as_text=True)
     assert "Análisis longitudinal" in html
-    assert "Periodo anterior equivalente" in html
+    assert "Anterior equivalente" in html
     assert 'id="dashboard-chart-data" type="application/json"' in html
-    assert 'src="/static/js/dashboard_charts.js?v=dashboard-trends-2"' in html
+    assert 'src="/static/js/dashboard_charts.js?v=dashboard-2"' in html
     assert "cdn" not in html.lower()
     assert 'href="/today"' in html
 
@@ -484,6 +599,10 @@ def test_dashboard_invalid_get_filters_return_human_error_not_500(client, user):
     assert response.status_code == 400
     assert "fecha inicial no puede ser posterior" in response.get_data(as_text=True)
     assert "Se muestra el rango predeterminado" in response.get_data(as_text=True)
+
+    invalid_period = client.get("/dashboard", query_string={"period": "365"})
+    assert invalid_period.status_code == 400
+    assert "periodo seleccionado no es válido" in invalid_period.get_data(as_text=True)
 
 
 def test_dashboard_invalid_saved_timezone_returns_human_error_with_safe_fallback(app, client, user):
@@ -553,7 +672,7 @@ def test_dashboard_json_is_html_safe_and_tables_remain_as_accessible_fallback(ap
     assert "Los huecos representan datos ausentes" in html
 
 
-def test_dashboard_chart_payload_and_tables_include_previous_series(app, client, user):
+def test_dashboard_chart_payload_keeps_previous_period_and_accessible_tables(app, client, user):
     with app.app_context():
         _seed_summary_period(user)
     login(client)
@@ -572,13 +691,9 @@ def test_dashboard_chart_payload_and_tables_include_previous_series(app, client,
     assert response.status_code == 200
     assert "Anterior" in html
     assert "comparison" in html
-    assert '<option value="custom" selected disabled>Rango personalizado</option>' in html
-    assert "1 sesión" in html
-    assert "1 plan" in html
-    assert "1 sesiones" not in html
-    assert "1 planes" not in html
-    assert "previous_consumed" in script
-    assert "previous_duration_minutes" in script
+    assert 'name="start"' in html
+    assert "consumed_rolling_7d" in script
+    assert "chart-bar-balance-deficit" in script
 
 
 def test_dashboard_chart_script_handles_invalid_shapes_and_resize_without_silent_catch():
@@ -590,7 +705,8 @@ def test_dashboard_chart_script_handles_invalid_shapes_and_resize_without_silent
     assert "No se pudieron cargar los datos del gráfico." in script
     assert 'window.addEventListener("resize"' in script
     assert "window.requestAnimationFrame" in script
-    assert "Math.max(320, Math.min(720, containerWidth))" in script
+    assert "Math.max(300, Math.min(1180, measuredWidth))" in script
+    assert 'node.addEventListener("click", reveal)' in script
     assert "catch (_error) {\n    return;" not in script
 
 

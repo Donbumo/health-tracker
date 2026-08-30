@@ -1,245 +1,265 @@
 {% extends "base.html" %}
 {% block title %}Resumen · Health Tracker{% endblock %}
 {% block breadcrumb %}Resumen{% endblock %}
-{% macro metric(value, label, unit='', detail='') -%}
-  <div class="metric">
-    <strong>{{ value if value is not none else '—' }}{% if value is not none and unit %} {{ unit }}{% endif %}</strong>
-    <span>{{ label }}</span>
-    {% if detail %}<small class="help">{{ detail }}</small>{% endif %}
-  </div>
+
+{% macro number(value, digits=0) -%}
+  {%- if value is none -%}Sin datos
+  {%- elif digits == 0 -%}{{ '{:,.0f}'.format(value|float) }}
+  {%- elif digits == 1 -%}{{ '{:,.1f}'.format(value|float) }}
+  {%- else -%}{{ '{:,.2f}'.format(value|float) }}
+  {%- endif -%}
 {%- endmacro %}
-{% macro count_label(value, singular, plural) -%}
-  {{ value }} {{ singular if value == 1 else plural }}
+
+{% macro source_details(sources) -%}
+  {% if sources %}
+    <details class="dashboard-provenance">
+      <summary>Fuentes</summary>
+      <span>{{ sources|join(' · ') }}</span>
+    </details>
+  {% endif %}
 {%- endmacro %}
-{% macro comparison_metric(value, unit) -%}
-  {{ value if value is not none else '—' }}{% if value is not none %} {{ 'sesión' if unit == 'sesiones' and (value|float == 1 or value|float == -1) else 'plan' if unit == 'planes' and (value|float == 1 or value|float == -1) else unit }}{% endif %}
+
+{% macro comparison(row) -%}
+  {% if row and row.relative_change_percent is not none %}
+    {% set change = row.relative_change_percent|float %}
+    <span class="metric-comparison" aria-label="Cambio de {{ number(change|abs, 1) }} por ciento respecto al periodo anterior">
+      <span aria-hidden="true">{{ '↑' if change > 0 else '↓' if change < 0 else '→' }}</span>
+      {{ number(change|abs, 1) }}% vs periodo anterior
+    </span>
+  {% else %}
+    <span class="metric-comparison metric-comparison-muted">Sin comparación equivalente</span>
+  {% endif %}
 {%- endmacro %}
+
+{% macro hero_metric(label, value, unit='', row=none, detail='') -%}
+  <article class="hero-metric">
+    <p>{{ label }}</p>
+    <strong>{{ number(value) }}{% if value is not none and unit %} <small>{{ unit }}</small>{% endif %}</strong>
+    {% if detail %}<span class="hero-metric-detail">{{ detail }}</span>{% endif %}
+    {{ comparison(row) }}
+  </article>
+{%- endmacro %}
+
 {% block content %}
-  <section class="page-heading dashboard-heading">
+{% set energy = dashboard.summary.energy %}
+{% set nutrition = dashboard.summary.nutrition %}
+{% set activity = dashboard.summary.activity %}
+{% set weight = dashboard.summary.weight %}
+{% set body = dashboard.summary.body %}
+{% set training = dashboard.summary.training %}
+{% set comparisons = dashboard.comparison.metrics %}
+{% set period_title = {'7d': 'Últimos 7 días', '30d': 'Últimos 30 días', '90d': 'Últimos 90 días'}.get(dashboard.range.preset, dashboard.range.label) %}
+
+<section class="dashboard-hero" aria-labelledby="dashboard-title">
+  <div class="dashboard-hero-heading">
     <div>
-      <p class="eyebrow">Análisis longitudinal</p>
-      <h1>Resumen</h1>
-      <p>{{ dashboard.range.label }} · {{ dashboard.range.days }} días · {{ dashboard.range.timezone }}</p>
+      <p class="eyebrow">Análisis longitudinal · Resumen del periodo</p>
+      <h1 id="dashboard-title">Tu salud, en contexto</h1>
+      <p><strong>{{ period_title }}</strong> · {{ dashboard.range.label }} · {{ dashboard.range.timezone }}</p>
+      <p class="help">Anterior equivalente: {{ dashboard.comparison.range.label }}</p>
     </div>
-    <a class="button" href="{{ url_for('main.today') }}">Ir a Hoy</a>
-  </section>
+    <div class="dashboard-heading-actions">
+      <a class="button button-secondary" href="{{ url_for('main.today') }}">Abrir Hoy</a>
+    </div>
+  </div>
+
+  <nav class="period-switcher" aria-label="Periodo del dashboard">
+    {% for days in (7, 30, 90) %}
+      <a href="{{ url_for('main.dashboard', period=days) }}" class="period-option{% if dashboard.range.preset == days|string + 'd' %} is-active{% endif %}"{% if dashboard.range.preset == days|string + 'd' %} aria-current="page"{% endif %}>{{ days }} días</a>
+    {% endfor %}
+    <details class="period-custom">
+      <summary>Fechas</summary>
+      <form method="get" action="{{ url_for('main.dashboard') }}" class="custom-period-form">
+        <label>Desde <input type="date" name="start" required value="{{ dashboard.range['from'] }}"></label>
+        <label>Hasta <input type="date" name="end" required value="{{ dashboard.range['to'] }}"></label>
+        <button class="button button-secondary" type="submit">Aplicar</button>
+      </form>
+    </details>
+  </nav>
 
   {% if range_error %}
-    <div class="alert alert-danger" role="alert">
-      <strong>No se pudo aplicar el periodo.</strong> {{ range_error }} Se muestra el rango predeterminado.
-    </div>
+    <div class="alert alert-danger" role="alert"><strong>No se pudo aplicar el periodo.</strong> {{ range_error }} Se muestra el rango predeterminado.</div>
   {% endif %}
 
-  <section class="card dashboard-filters" aria-labelledby="period-heading">
-    <div class="section-heading">
-      <div><h2 id="period-heading">Periodo</h2><p class="help">Las fechas son inclusivas y usan la zona horaria guardada en tu cuenta.</p></div>
-      <a href="{{ url_for('main.account_preferences') }}">Revisar zona y unidades</a>
+  <div class="hero-metrics">
+    {{ hero_metric('Calorías consumidas', energy.consumed_total, 'kcal', comparisons.intake, energy.nutrition_days|string + '/' + dashboard.range.days|string + ' días') }}
+    {{ hero_metric('Calorías gastadas', energy.expended_total, 'kcal', comparisons.expenditure, energy.energy_days|string + '/' + dashboard.range.days|string + ' días') }}
+    {{ hero_metric('Balance acumulado', energy.balance_total, 'kcal', none, ('Déficit' if energy.balance_total is not none and energy.balance_total|float < 0 else 'Superávit' if energy.balance_total is not none and energy.balance_total|float > 0 else 'Equilibrio' if energy.balance_total is not none else 'Cobertura insuficiente') + (' · parcial' if energy.is_partial and energy.balance_total is not none else '')) }}
+    {{ hero_metric('Cambio de peso', weight.change, weight.unit, none, 'Primera vs última medición' if weight.change is not none else (weight.entries|string + ' medición' if weight.entries == 1 else 'Sin mediciones suficientes')) }}
+  </div>
+</section>
+
+<section class="dashboard-card dashboard-card-energy" aria-labelledby="energy-title">
+  <div class="dashboard-card-heading">
+    <div>
+      <p class="eyebrow">Energía</p>
+      <h2 id="energy-title">Balance diario</h2>
+      <p id="energy-chart-summary" class="help">Barras de consumo y gasto, balance con signo y medias móviles de 7 días. Los huecos representan datos ausentes.</p>
     </div>
-    <div class="dashboard-filter-grid">
-      <form method="get" action="{{ url_for('main.dashboard') }}" class="range-form">
-        <div class="field">
-          <label for="dashboard-preset">Periodo rápido</label>
-          <select id="dashboard-preset" name="preset">
-            {% if dashboard.range.preset == 'custom' %}<option value="custom" selected disabled>Rango personalizado</option>{% endif %}
-            {% for value, label in [('today', 'Hoy'), ('7d', 'Últimos 7 días'), ('30d', 'Últimos 30 días'), ('90d', 'Últimos 90 días'), ('this-month', 'Este mes'), ('previous-month', 'Mes anterior'), ('this-year', 'Este año')] %}
-              <option value="{{ value }}"{% if dashboard.range.preset == value %} selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <label class="checkbox">
-          <input type="checkbox" name="compare" value="previous"{% if dashboard.range.compare == 'previous' %} checked{% endif %}>
-          Comparar con el periodo anterior equivalente
-        </label>
-        <button class="button button-secondary" type="submit">Aplicar periodo</button>
-      </form>
-
-      <form method="get" action="{{ url_for('main.dashboard') }}" class="range-form">
-        <div class="custom-range-fields">
-          <div class="field">
-            <label for="dashboard-from">Desde</label>
-            <input id="dashboard-from" type="date" name="from" required value="{{ dashboard.range['from'] if dashboard.range.preset == 'custom' else '' }}">
-          </div>
-          <div class="field">
-            <label for="dashboard-to">Hasta</label>
-            <input id="dashboard-to" type="date" name="to" required value="{{ dashboard.range['to'] if dashboard.range.preset == 'custom' else '' }}">
-          </div>
-        </div>
-        <label class="checkbox">
-          <input type="checkbox" name="compare" value="previous"{% if dashboard.range.preset == 'custom' and dashboard.range.compare == 'previous' %} checked{% endif %}>
-          Comparar con el periodo anterior equivalente
-        </label>
-        <button class="button button-secondary" type="submit">Aplicar rango personalizado</button>
-      </form>
-    </div>
-  </section>
-
-  {% set energy = dashboard.summary.energy %}
-  {% set protein = dashboard.summary.protein %}
-  {% set weight = dashboard.summary.weight %}
-  {% set training = dashboard.summary.training %}
-
-  <section class="dashboard-domain" aria-labelledby="energy-heading">
-    <div class="section-heading">
-      <div><p class="eyebrow">Energía</p><h2 id="energy-heading">Ingesta, gasto y balance</h2></div>
-      <a href="{{ url_for('wellness.balance') }}">Ver balance diario</a>
-    </div>
-    {% if energy.nutrition_days == 0 and energy.energy_days == 0 %}
-      <div class="empty-state"><p>No hay nutrición ni gasto energético en este periodo.</p><a class="button" href="{{ url_for('main.today') }}">Capturar en Hoy</a></div>
-    {% else %}
-      <div class="summary-grid dashboard-summary-cards">
-        {{ metric(energy.consumed_total, 'ingeridas acumuladas', 'kcal', count_label(energy.nutrition_days, 'día con dato', 'días con dato')) }}
-        {{ metric(energy.expended_total, 'gastadas acumuladas', 'kcal', count_label(energy.energy_days, 'día con dato', 'días con dato')) }}
-        {{ metric(energy.balance_total, 'balance acumulado comparable', 'kcal', count_label(energy.balance_days, 'día con ambos datos', 'días con ambos datos')) }}
-        {{ metric(energy.consumed_average, 'ingesta media por día registrado', 'kcal') }}
-        {{ metric(energy.expended_average, 'gasto medio por día registrado', 'kcal') }}
-      </div>
-      <p class="formula"><strong>Fórmula:</strong> balance diario = calorías ingeridas − calorías gastadas. El acumulado suma únicamente días con ambos datos; no clasifica el resultado como bueno o malo.</p>
-      {% if energy.balance_days < energy.nutrition_days or energy.balance_days < energy.energy_days %}
-        <p class="notice warning">La cobertura no coincide: el balance excluye días incompletos en vez de tratarlos como cero.</p>
-      {% endif %}
-    {% endif %}
-  </section>
-
-  <section class="dashboard-domain" aria-labelledby="protein-heading">
-    <div class="section-heading">
-      <div><p class="eyebrow">Proteína</p><h2 id="protein-heading">Consumo y objetivo</h2></div>
-      <a href="{{ url_for('wellness.nutrition_list') }}">Ver nutrición</a>
-    </div>
-    {% if protein.protein_days == 0 %}
-      <div class="empty-state"><p>No hay proteína registrada en este periodo.</p><a class="button" href="{{ url_for('wellness.manual_nutrition') }}">Capturar nutrición</a></div>
-    {% else %}
-      <div class="summary-grid dashboard-summary-cards">
-        {{ metric(protein.total, 'proteína total', 'g', count_label(protein.protein_days, 'día con dato', 'días con dato')) }}
-        {{ metric(protein.average, 'promedio por día registrado', 'g') }}
-        {{ metric(protein.goal_total, 'objetivo acumulado', 'g', count_label(protein.goal_days, 'día con objetivo', 'días con objetivo')) }}
-        {{ metric(protein.balance, 'consumo menos objetivo', 'g', count_label(protein.paired_days, 'día comparable', 'días comparables')) }}
-        {{ metric(protein.compliance_percent, 'cumplimiento en días comparables', '%') }}
-        {{ metric(protein.days_at_goal, 'días en objetivo', '', 'solo días con consumo y objetivo') }}
-      </div>
-    {% endif %}
-    {% if protein.goal_days == 0 %}
-      <p class="notice warning">No hay un objetivo de proteína activo y aplicable en este periodo. No se calcula cumplimiento.</p>
-    {% else %}
-      <p class="help">Se usa por fecha el objetivo activo aplicable más recientemente actualizado. El modelo no conserva snapshots de cambios de estado fuera de sus fechas de vigencia.</p>
-    {% endif %}
-  </section>
-
-  <section class="dashboard-domain" aria-labelledby="weight-heading">
-    <div class="section-heading">
-      <div><p class="eyebrow">Peso</p><h2 id="weight-heading">Puntos reales y media móvil</h2></div>
-      <a href="{{ url_for('body.list_weigh_ins') }}">Peso y composición</a>
-    </div>
-    {% if weight.entries == 0 %}
-      <div class="empty-state"><p>No hay pesajes reales dentro del periodo.</p><a class="button" href="{{ url_for('main.manual_weigh_in') }}">Capturar peso</a></div>
-    {% else %}
-      <div class="summary-grid dashboard-summary-cards">
-        {{ metric(weight.latest, 'último peso', weight.unit, weight.latest_date) }}
-        {{ metric(weight.change, 'cambio entre primer y último punto', weight.unit, 'requiere al menos dos pesajes') }}
-        {{ metric(weight.average, 'promedio de puntos reales', weight.unit) }}
-        {{ metric(weight.minimum, 'mínimo', weight.unit) }}
-        {{ metric(weight.maximum, 'máximo', weight.unit) }}
-        {{ metric(weight.entries, 'pesajes reales') }}
-        {{ metric(weight.moving_average_7d, 'media móvil de 7 días', weight.unit, 'solo ventanas con al menos dos puntos') }}
-      </div>
-    {% endif %}
-    <p class="help">No se interpolan pesajes ni se asigna cero a días sin registro.</p>
-  </section>
-
-  <section class="dashboard-domain" aria-labelledby="training-heading">
-    <div class="section-heading">
-      <div><p class="eyebrow">Entrenamiento</p><h2 id="training-heading">Sesiones y adherencia</h2></div>
-      <a href="{{ url_for('sessions.list_sessions') }}">Ver historial</a>
-    </div>
-    {% if training.sessions == 0 and training.planned == 0 %}
-      <div class="empty-state"><p>No hay sesiones ni entrenamientos planeados en este periodo.</p><a class="button" href="{{ url_for('main.today') }}">Abrir Hoy</a></div>
-    {% else %}
-      <div class="summary-grid dashboard-summary-cards">
-        {{ metric(training.sessions, 'sesiones completadas') }}
-        {{ metric(training.planned, 'entrenamientos planeados') }}
-        {{ metric(training.adherence_percent, 'adherencia a planes', '%', count_label(training.completed_plans, 'plan completado', 'planes completados')) }}
-        {{ metric(training.duration_seconds, 'duración total', 's', count_label(training.duration_sessions, 'sesión con duración', 'sesiones con duración')) }}
-        {{ metric(training.duration_average_seconds, 'duración media registrada', 's') }}
-        {{ metric(training.active_days, 'días activos') }}
-        {{ metric(training.volume, 'volumen comparable', training.volume_unit) }}
-      </div>
-    {% endif %}
-    {% if not training.volume_supported %}<p class="notice warning">Volumen no disponible: {{ training.volume_reason }} No se suman cargas de peso corporal, asistencia ni duración/distancia.</p>{% endif %}
-  </section>
-
-  <section class="card coverage-card" aria-labelledby="coverage-heading">
-    <div class="section-heading"><div><p class="eyebrow">Calidad de lectura</p><h2 id="coverage-heading">Cobertura</h2></div></div>
-    <div class="summary-grid">
-      {{ metric(dashboard.coverage.period_days, 'días del periodo') }}
-      {{ metric(dashboard.coverage.nutrition_days, 'días con calorías ingeridas') }}
-      {{ metric(dashboard.coverage.energy_days, 'días con gasto') }}
-      {{ metric(dashboard.coverage.weight_entries, 'pesajes') }}
-      {{ metric(dashboard.coverage.training_sessions, 'sesiones') }}
-      {{ metric(dashboard.coverage.planned_workouts, 'planes') }}
-    </div>
-    <p class="help">La cobertura describe qué puede analizarse. Un día ausente no equivale a cero y no se usa para completar promedios.</p>
-  </section>
-
-  {% if dashboard.range.compare == 'previous' %}
-    <section class="card comparison-card" aria-labelledby="comparison-heading">
-      <div class="section-heading"><div><p class="eyebrow">Comparación</p><h2 id="comparison-heading">Periodo anterior equivalente</h2><p class="help">{{ dashboard.comparison.range.label }}</p></div></div>
-      {% if dashboard.comparison.available %}
-        <div class="table-wrap">
-          <table>
-            <caption class="visually-hidden">Comparación entre el periodo actual y el anterior</caption>
-            <thead><tr><th>Indicador</th><th>Actual</th><th>Anterior</th><th>Diferencia</th><th>Cambio relativo</th></tr></thead>
-            <tbody>
-              {% for row in dashboard.comparison.rows %}
-                <tr>
-                  <th scope="row">{{ row.label }}</th>
-                  <td>{{ comparison_metric(row.current, row.unit) }}</td>
-                  <td>{{ comparison_metric(row.previous, row.unit) }}</td>
-                  <td>{{ comparison_metric(row.absolute_change, row.unit) }}</td>
-                  <td>{{ row.relative_change_percent if row.relative_change_percent is not none else '—' }}{% if row.relative_change_percent is not none %} %{% endif %}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-        <p class="help">El cambio relativo se omite cuando el periodo anterior no tiene un denominador válido o cuando un porcentaje sería engañoso.</p>
-      {% else %}
-        <div class="empty-state"><p>No hay suficientes datos comparables en ambos periodos.</p></div>
-      {% endif %}
-    </section>
+    {{ source_details(energy.sources) }}
+  </div>
+  <div class="dashboard-chart dashboard-chart-primary" data-dashboard-chart="energy" aria-describedby="energy-chart-summary">
+    <p class="chart-fallback">La tabla accesible conserva los datos si JavaScript no está disponible.</p>
+  </div>
+  <div class="energy-summary-strip">
+    <div><span>Ingesta diaria</span><strong>{{ number(energy.consumed_average) }} kcal</strong></div>
+    <div><span>Gasto diario</span><strong>{{ number(energy.expended_average) }} kcal</strong></div>
+    <div><span>Balance diario</span><strong>{{ number(energy.balance_average) }} kcal</strong></div>
+    <div><span>Días completos</span><strong>{{ energy.complete_days }}/{{ dashboard.range.days }}</strong></div>
+    <div><span>Días incompletos</span><strong>{{ energy.incomplete_days }}</strong></div>
+  </div>
+  {% if energy.is_partial %}
+    <p class="data-caveat"><strong>Dato parcial:</strong> el balance acumulado suma únicamente los {{ energy.complete_days }} días con consumo y gasto; los días ausentes no se tratan como cero.</p>
   {% endif %}
+  <details class="chart-table"><summary>Ver datos diarios y fuentes</summary><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Consumidas</th><th>Gastadas</th><th>Balance</th><th>Media consumo</th><th>Media gasto</th><th>Fuente</th></tr></thead><tbody>{% for point in dashboard.trends.energy %}<tr><th scope="row">{{ point.date }}</th><td>{{ number(point.consumed) }}</td><td>{{ number(point.expended) }}</td><td>{{ number(point.balance) }}</td><td>{{ number(point.consumed_rolling_7d) }}</td><td>{{ number(point.expended_rolling_7d) }}</td><td>{{ point.sources|join(', ') if point.sources else 'Sin dato' }}</td></tr>{% endfor %}</tbody></table></div></details>
+</section>
 
-  <section class="dashboard-charts" aria-labelledby="trends-heading">
-    <div class="section-heading"><div><p class="eyebrow">Series</p><h2 id="trends-heading">Tendencias</h2><p class="help">Los huecos representan datos ausentes.</p></div></div>
-
-    <article class="card chart-card">
-      <h3>Energía diaria</h3>
-      <div class="dashboard-chart" data-dashboard-chart="energy"><p class="chart-fallback">El gráfico requiere JavaScript; la tabla conserva todos los datos.</p></div>
-      <details class="chart-table"><summary>Ver datos de energía en tabla</summary><div class="table-wrap"><table><thead><tr><th>Periodo</th><th>Fecha</th><th>Ingesta</th><th>Gasto</th><th>Balance</th></tr></thead><tbody>{% for point in dashboard.trends.energy %}<tr><td>Actual</td><th scope="row">{{ point.date }}</th><td>{{ point.consumed if point.consumed is not none else 'Sin dato' }}</td><td>{{ point.expended if point.expended is not none else 'Sin dato' }}</td><td>{{ point.balance if point.balance is not none else 'Sin dato' }}</td></tr>{% endfor %}{% if dashboard.range.compare == 'previous' %}{% for point in dashboard.comparison.trends.energy %}<tr><td>Anterior</td><th scope="row">{{ point.date }}</th><td>{{ point.consumed if point.consumed is not none else 'Sin dato' }}</td><td>{{ point.expended if point.expended is not none else 'Sin dato' }}</td><td>{{ point.balance if point.balance is not none else 'Sin dato' }}</td></tr>{% endfor %}{% endif %}</tbody></table></div></details>
-    </article>
-
-    <article class="card chart-card">
-      <h3>Proteína diaria</h3>
-      <div class="dashboard-chart" data-dashboard-chart="protein"><p class="chart-fallback">El gráfico requiere JavaScript; la tabla conserva todos los datos.</p></div>
-      <details class="chart-table"><summary>Ver datos de proteína en tabla</summary><div class="table-wrap"><table><thead><tr><th>Periodo</th><th>Fecha</th><th>Proteína</th><th>Objetivo</th></tr></thead><tbody>{% for point in dashboard.trends.protein %}<tr><td>Actual</td><th scope="row">{{ point.date }}</th><td>{{ point.grams if point.grams is not none else 'Sin dato' }}</td><td>{{ point.target if point.target is not none else 'Sin objetivo' }}</td></tr>{% endfor %}{% if dashboard.range.compare == 'previous' %}{% for point in dashboard.comparison.trends.protein %}<tr><td>Anterior</td><th scope="row">{{ point.date }}</th><td>{{ point.grams if point.grams is not none else 'Sin dato' }}</td><td>{{ point.target if point.target is not none else 'Sin objetivo' }}</td></tr>{% endfor %}{% endif %}</tbody></table></div></details>
-    </article>
-
-    <article class="card chart-card">
-      <h3>Peso y media móvil</h3>
-      <div class="dashboard-chart" data-dashboard-chart="weight"><p class="chart-fallback">El gráfico requiere JavaScript; la tabla conserva todos los puntos.</p></div>
-      <details class="chart-table"><summary>Ver pesajes en tabla</summary><div class="table-wrap"><table><thead><tr><th>Periodo</th><th>Fecha</th><th>Peso</th><th>Media móvil 7 días</th></tr></thead><tbody>{% for point in dashboard.trends.weight %}<tr><td>Actual</td><th scope="row">{{ point.recorded_at }}</th><td>{{ point.value }} {{ weight.unit }}</td><td>{{ point.moving_average_7d if point.moving_average_7d is not none else 'Evidencia insuficiente' }}</td></tr>{% else %}{% if dashboard.range.compare != 'previous' or not dashboard.comparison.trends.weight %}<tr><td colspan="4">Sin pesajes en el periodo.</td></tr>{% endif %}{% endfor %}{% if dashboard.range.compare == 'previous' %}{% for point in dashboard.comparison.trends.weight %}<tr><td>Anterior</td><th scope="row">{{ point.recorded_at }}</th><td>{{ point.value }} {{ weight.unit }}</td><td>{{ point.moving_average_7d if point.moving_average_7d is not none else 'Evidencia insuficiente' }}</td></tr>{% endfor %}{% endif %}</tbody></table></div></details>
-    </article>
-
-    <article class="card chart-card training-chart-card">
-      <h3>Entrenamiento por {{ 'día' if training.bucket == 'day' else 'semana' }}</h3>
-      <div class="training-chart-grid">
-        <div><h4>Sesiones y planes</h4><div class="dashboard-chart compact-chart" data-dashboard-chart="training-sessions"><p class="chart-fallback">Datos disponibles en la tabla.</p></div></div>
-        <div><h4>Duración</h4><div class="dashboard-chart compact-chart" data-dashboard-chart="training-duration"><p class="chart-fallback">Datos disponibles en la tabla.</p></div></div>
-        <div><h4>Adherencia</h4><div class="dashboard-chart compact-chart" data-dashboard-chart="training-adherence"><p class="chart-fallback">Datos disponibles en la tabla.</p></div></div>
-        {% if training.volume_supported %}<div><h4>Volumen</h4><div class="dashboard-chart compact-chart" data-dashboard-chart="training-volume"><p class="chart-fallback">Datos disponibles en la tabla.</p></div></div>{% endif %}
+<div class="dashboard-grid">
+  <section class="dashboard-card dashboard-card-span-8" aria-labelledby="weight-title">
+    <div class="dashboard-card-heading">
+      <div><p class="eyebrow">Cuerpo</p><h2 id="weight-title">Peso</h2><p class="help">Puntos reales y media móvil; no se interpolan mediciones.</p></div>
+      {{ source_details(weight.sources) }}
+    </div>
+    {% if weight.entries %}
+      <div class="section-kpis">
+        <div><span>Último</span><strong>{{ number(weight.latest, 1) }} {{ weight.unit }}</strong></div>
+        <div><span>Cambio</span><strong>{{ number(weight.change, 1) }}{% if weight.change is not none %} {{ weight.unit }}{% endif %}</strong></div>
+        <div><span>Mín / máx</span><strong>{{ number(weight.minimum, 1) }} / {{ number(weight.maximum, 1) }}</strong></div>
+        <div><span>Mediciones</span><strong>{{ weight.entries }}</strong></div>
       </div>
-      <details class="chart-table"><summary>Ver entrenamiento en tabla</summary><div class="table-wrap"><table><thead><tr><th>Comparación</th><th>Periodo</th><th>Sesiones</th><th>Planes</th><th>Duración (min)</th><th>Adherencia</th><th>Volumen</th></tr></thead><tbody>{% for point in dashboard.trends.training %}<tr><td>Actual</td><th scope="row">{{ point.label }}</th><td>{{ point.sessions }}</td><td>{{ point.planned }}</td><td>{{ point.duration_minutes if point.duration_minutes is not none else 'Sin dato' }}</td><td>{{ point.adherence_percent if point.adherence_percent is not none else 'Sin planes' }}</td><td>{{ point.volume if point.volume is not none else 'No disponible' }}</td></tr>{% endfor %}{% if dashboard.range.compare == 'previous' %}{% for point in dashboard.comparison.trends.training %}<tr><td>Anterior</td><th scope="row">{{ point.label }}</th><td>{{ point.sessions }}</td><td>{{ point.planned }}</td><td>{{ point.duration_minutes if point.duration_minutes is not none else 'Sin dato' }}</td><td>{{ point.adherence_percent if point.adherence_percent is not none else 'Sin planes' }}</td><td>{{ point.volume if point.volume is not none else 'No disponible' }}</td></tr>{% endfor %}{% endif %}</tbody></table></div></details>
-    </article>
+      <div class="dashboard-chart" data-dashboard-chart="weight"><p class="chart-fallback">Peso disponible en la tabla.</p></div>
+    {% else %}
+      <div class="empty-state"><h3>Aún no hay peso en este periodo</h3><p>Las mediciones fuera del rango no se arrastran a esta gráfica.</p><a class="button button-secondary" href="{{ url_for('main.manual_weigh_in') }}">Registrar peso</a></div>
+    {% endif %}
+    <details class="chart-table"><summary>Ver mediciones de peso</summary><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Peso</th><th>Media 7 días</th><th>Fuente</th></tr></thead><tbody>{% for point in dashboard.trends.weight %}<tr><th scope="row">{{ point.recorded_at }}</th><td>{{ number(point.value, 1) }} {{ weight.unit }}</td><td>{{ number(point.moving_average_7d, 1) }}</td><td>{{ point.source or 'Sin fuente' }}</td></tr>{% else %}<tr><td colspan="4">Sin mediciones en el periodo.</td></tr>{% endfor %}</tbody></table></div></details>
   </section>
 
-  <script id="dashboard-chart-data" type="application/json">{{ {'trends': dashboard.trends, 'comparison': dashboard.comparison, 'units': {'weight': weight.unit, 'volume': training.volume_unit}}|tojson }}</script>
-  <script src="{{ url_for('static', filename='js/dashboard_charts.js', v='dashboard-trends-2') }}" defer></script>
+  <section class="dashboard-card dashboard-card-span-4" aria-labelledby="body-title">
+    <div class="dashboard-card-heading"><div><p class="eyebrow">Composición</p><h2 id="body-title">Composición corporal</h2></div></div>
+    {% if body.metrics %}
+      <label class="body-metric-label" for="body-metric-select">Métrica</label>
+      <select id="body-metric-select" data-body-metric-select>
+        {% for item in body.metrics %}<option value="{{ item.key }}"{% if item.key == body.default_metric %} selected{% endif %}>{{ item.label }}</option>{% endfor %}
+      </select>
+      {% set default_body = body.metrics|first %}
+      <div class="body-current" data-body-current><span>Última medición</span><strong>{{ number(default_body.latest, 1) }} {{ default_body.unit }}</strong><small>{{ default_body.entries }} puntos</small></div>
+      <div class="dashboard-chart compact-chart" data-dashboard-chart="body"><p class="chart-fallback">Composición disponible en la tabla.</p></div>
+    {% else %}
+      <div class="empty-state"><h3>Sin composición corporal</h3><p>Cuando exista grasa, músculo, agua, grasa visceral o IMC aparecerá aquí.</p></div>
+    {% endif %}
+    <details class="chart-table"><summary>Ver composición en tabla</summary><div class="table-wrap"><table><thead><tr><th>Métrica</th><th>Última</th><th>Cambio</th><th>Puntos</th></tr></thead><tbody>{% for item in body.metrics %}<tr><th scope="row">{{ item.label }}</th><td>{{ number(item.latest, 1) }} {{ item.unit }}</td><td>{{ number(item.change, 1) }}</td><td>{{ item.entries }}</td></tr>{% else %}<tr><td colspan="4">Sin datos de composición.</td></tr>{% endfor %}</tbody></table></div></details>
+  </section>
+
+  <section class="dashboard-card dashboard-card-span-6" aria-labelledby="activity-title">
+    <div class="dashboard-card-heading">
+      <div><p class="eyebrow">Movimiento diario</p><h2 id="activity-title">Actividad</h2></div>
+      {{ source_details(activity.sources) }}
+    </div>
+    {% if dashboard.coverage.activity_days %}
+      <div class="section-kpis">
+        <div><span>Pasos promedio</span><strong>{{ number(activity.steps_average) }}</strong></div>
+        <div><span>Pasos totales</span><strong>{{ number(activity.steps_total) }}</strong></div>
+        <div><span>Distancia</span><strong>{{ number(activity.distance_km, 1) }} km</strong></div>
+        <div><span>Calorías activas</span><strong>{{ number(activity.active_calories) }} kcal</strong></div>
+      </div>
+      <div class="dashboard-chart" data-dashboard-chart="activity"><p class="chart-fallback">Actividad disponible en la tabla.</p></div>
+      {% if activity.paired_goal_days %}<p class="goal-note">Meta de pasos alcanzada {{ activity.days_at_goal }} de {{ activity.paired_goal_days }} días comparables.</p>{% endif %}
+    {% else %}
+      <div class="empty-state"><h3>Sin actividad diaria</h3><p>Pasos, distancia y calorías activas aparecerán cuando exista una fuente compatible.</p><a class="button button-secondary" href="{{ url_for('wellness.energy_list') }}">Ver energía</a></div>
+    {% endif %}
+    <details class="chart-table"><summary>Ver actividad diaria</summary><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Pasos</th><th>Meta</th><th>Distancia</th><th>Calorías activas</th><th>Fuente</th></tr></thead><tbody>{% for point in dashboard.trends.activity %}<tr><th scope="row">{{ point.date }}</th><td>{{ number(point.steps) }}</td><td>{{ number(point.step_goal) }}</td><td>{{ number(point.distance_km, 1) }}</td><td>{{ number(point.active_calories) }}</td><td>{{ point.sources|join(', ') if point.sources else 'Sin dato' }}</td></tr>{% endfor %}</tbody></table></div></details>
+  </section>
+
+  <section class="dashboard-card dashboard-card-span-6" aria-labelledby="training-title">
+    <div class="dashboard-card-heading">
+      <div><p class="eyebrow">Entrenamiento</p><h2 id="training-title">Sesiones y carga</h2></div>
+      {{ source_details(training.sources) }}
+    </div>
+    {% if training.sessions or training.planned %}
+      <div class="section-kpis">
+        <div><span>Sesiones</span><strong>{{ training.sessions }}</strong></div>
+        <div><span>Minutos</span><strong>{{ number(training.duration_minutes) }}</strong></div>
+        <div><span>Días entrenados</span><strong>{{ training.active_days }}</strong></div>
+        <div><span>Calorías</span><strong>{{ number(training.calories) }}{% if training.calories is not none %} kcal{% endif %}</strong></div>
+      </div>
+      <div class="dashboard-chart" data-dashboard-chart="training"><p class="chart-fallback">Entrenamiento disponible en la tabla.</p></div>
+      {% if training.volume_supported %}<p class="goal-note">Volumen de fuerza: <strong>{{ number(training.volume) }} {{ training.volume_unit }}</strong>.</p>{% elif training.strength_sessions %}<p class="help">{{ training.volume_reason }}</p>{% endif %}
+      {% if training.distribution %}<ul class="distribution-list" aria-label="Distribución por tipo">{% for item in training.distribution %}<li><span>{{ item.label }}</span><strong>{{ item.sessions }} · {{ number(item.duration_minutes) }} min</strong></li>{% endfor %}</ul>{% endif %}
+    {% else %}
+      <div class="empty-state"><h3>Sin entrenamiento en el periodo</h3><p>Se mostrarán sesiones de fuerza y actividades importadas sin equiparar su volumen.</p><a class="button button-secondary" href="{{ url_for('sessions.new_session') }}">Registrar sesión</a></div>
+    {% endif %}
+    <details class="chart-table"><summary>Ver entrenamiento agregado</summary><div class="table-wrap"><table><thead><tr><th>Periodo</th><th>Sesiones</th><th>Fuerza</th><th>Actividades</th><th>Minutos</th><th>Calorías</th><th>Volumen</th></tr></thead><tbody>{% for point in dashboard.trends.training %}<tr><th scope="row">{{ point.label }}</th><td>{{ point.sessions }}</td><td>{{ point.strength_sessions }}</td><td>{{ point.activity_sessions }}</td><td>{{ number(point.duration_minutes) }}</td><td>{{ number(point.calories) }}</td><td>{{ number(point.volume) }}</td></tr>{% endfor %}</tbody></table></div></details>
+  </section>
+
+  <section class="dashboard-card dashboard-card-span-7" aria-labelledby="nutrition-title">
+    <div class="dashboard-card-heading">
+      <div><p class="eyebrow">Nutrición</p><h2 id="nutrition-title">Promedios diarios</h2><p class="help">Los progresos comparan solo metas configuradas y días aplicables.</p></div>
+      {{ source_details(nutrition.sources) }}
+    </div>
+    <div class="macro-list">
+      {% for key in ('calories', 'protein', 'fat', 'net_carbs', 'fiber') %}
+        {% set item = nutrition.averages[key] %}
+        <div class="macro-row">
+          <div><strong>{{ item.label }}</strong><span>{{ number(item.average, 1) }} {{ item.unit }}{% if item.goal is not none %} / {{ number(item.goal, 1) }} {{ item.unit }}{% endif %}</span></div>
+          {% if item.percent_of_goal is not none %}
+            <progress value="{{ [item.percent_of_goal|float, 100]|min }}" max="100" aria-label="{{ item.label }}: {{ number(item.percent_of_goal) }} por ciento del objetivo"></progress>
+            <span>{{ number(item.percent_of_goal) }}%</span>
+          {% else %}
+            <span class="macro-no-goal">{{ item.days }}/{{ dashboard.range.days }} días · sin meta</span>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    {% if not energy.nutrition_days %}<div class="empty-state compact-empty"><p>No hay nutrición en este periodo.</p><a class="button button-secondary" href="{{ url_for('wellness.manual_nutrition') }}">Registrar nutrición</a></div>{% endif %}
+  </section>
+
+  <section class="dashboard-card dashboard-card-span-5" aria-labelledby="goals-title">
+    <div class="dashboard-card-heading"><div><p class="eyebrow">Seguimiento</p><h2 id="goals-title">Metas</h2></div></div>
+    {% if dashboard.goals %}
+      <ul class="goal-list">
+        {% for goal in dashboard.goals %}
+          <li>
+            <div><strong>{{ goal.label }}</strong><span>{{ goal.domain }} · {{ goal.source or 'Fuente no indicada' }}</span></div>
+            <div class="goal-values"><strong>{{ number(goal.actual, 1) }}</strong><span> / {{ number(goal.target, 1) }} {{ goal.display_unit }}</span></div>
+            {% if goal.percent is not none %}<progress value="{{ [goal.percent|float, 100]|min }}" max="100" aria-label="{{ goal.label }}: {{ number(goal.percent) }} por ciento"></progress>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state"><h3>Sin metas configuradas</h3><p>Este bloque usa únicamente el sistema de metas existente.</p></div>
+    {% endif %}
+  </section>
+
+  <section class="dashboard-card dashboard-card-span-7" aria-labelledby="insights-title">
+    <div class="dashboard-card-heading"><div><p class="eyebrow">Lectura automática</p><h2 id="insights-title">Insights del periodo</h2><p class="help">Reglas determinísticas; no usan AI ni afirman causalidad.</p></div></div>
+    <ol class="insight-list">{% for insight in dashboard.insights %}<li>{{ insight.text }}</li>{% else %}<li>No hay datos suficientes para generar insights.</li>{% endfor %}</ol>
+  </section>
+
+  <aside class="dashboard-card dashboard-card-span-5 ai-period-card" aria-labelledby="ai-period-title">
+    <p class="eyebrow">Profundiza</p>
+    <h2 id="ai-period-title">Pregunta a la AI sobre este periodo</h2>
+    <p>Se prepara el rango {{ dashboard.range['from'] }} a {{ dashboard.range['to'] }}. No se ejecuta ninguna consulta hasta que tú envíes el mensaje.</p>
+    <a class="button" href="{{ url_for('ai.index', prompt='Resume mi periodo', start=dashboard.range['from'], end=dashboard.range['to']) }}">Preguntar a la AI</a>
+    <div class="quick-prompt-list" aria-label="Preguntas rápidas">
+      {% for prompt in ('Resume mi periodo', '¿Cómo estuvo mi balance energético?', '¿Qué cambió en mi entrenamiento?', 'Analiza mi tendencia de peso') %}
+        <a href="{{ url_for('ai.index', prompt=prompt, start=dashboard.range['from'], end=dashboard.range['to']) }}">{{ prompt }}</a>
+      {% endfor %}
+    </div>
+  </aside>
+
+  <section class="dashboard-card dashboard-card-span-12 data-quality-card" aria-labelledby="quality-title">
+    <div class="dashboard-card-heading"><div><p class="eyebrow">Calidad de datos</p><h2 id="quality-title">Cobertura del periodo</h2><p class="help">La ausencia no se interpreta como cero.</p></div></div>
+    <div class="coverage-grid">
+      <div><span>Nutrición</span><strong>{{ dashboard.coverage.nutrition_days }}/{{ dashboard.range.days }}</strong><progress value="{{ dashboard.coverage.nutrition_days }}" max="{{ dashboard.range.days }}" aria-label="Cobertura de nutrición: {{ dashboard.coverage.nutrition_days }} de {{ dashboard.range.days }} días"></progress></div>
+      <div><span>Gasto</span><strong>{{ dashboard.coverage.energy_days }}/{{ dashboard.range.days }}</strong><progress value="{{ dashboard.coverage.energy_days }}" max="{{ dashboard.range.days }}" aria-label="Cobertura de gasto: {{ dashboard.coverage.energy_days }} de {{ dashboard.range.days }} días"></progress></div>
+      <div><span>Pasos</span><strong>{{ dashboard.coverage.steps_days }}/{{ dashboard.range.days }}</strong><progress value="{{ dashboard.coverage.steps_days }}" max="{{ dashboard.range.days }}" aria-label="Cobertura de pasos: {{ dashboard.coverage.steps_days }} de {{ dashboard.range.days }} días"></progress></div>
+      <div><span>Peso</span><strong>{{ dashboard.coverage.weight_entries }} {{ 'medición' if dashboard.coverage.weight_entries == 1 else 'mediciones' }}</strong></div>
+      <div><span>Entrenamiento</span><strong>{{ dashboard.coverage.training_sessions }} {{ 'sesión' if dashboard.coverage.training_sessions == 1 else 'sesiones' }}</strong></div>
+      <div><span>Composición</span><strong>{{ dashboard.coverage.body_measurements }} {{ 'medición' if dashboard.coverage.body_measurements == 1 else 'mediciones' }}</strong></div>
+    </div>
+  </section>
+</div>
+
+<script id="dashboard-chart-data" type="application/json">{{ {'trends': dashboard.trends, 'comparison': dashboard.comparison, 'body': body, 'units': {'weight': weight.unit, 'volume': training.volume_unit}}|tojson }}</script>
+<script src="{{ url_for('static', filename='js/dashboard_charts.js', v='dashboard-2') }}" defer></script>
 {% endblock %}

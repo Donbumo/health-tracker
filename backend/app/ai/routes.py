@@ -1,4 +1,6 @@
-from flask import abort, flash, redirect, render_template, request, url_for
+from datetime import date
+
+from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.ai import ai_bp
@@ -19,15 +21,41 @@ def _web_error(error: AIServiceError):
     flash(error.safe_message, "danger" if error.status >= 500 else "warning")
 
 
+def _prepared_prompt(values) -> tuple[str | None, str | None, str | None]:
+    prompt = (values.get("prompt") or "").strip()[:240]
+    raw_start = (values.get("start") or "").strip()
+    raw_end = (values.get("end") or "").strip()
+    if not prompt:
+        return None, None, None
+    if not raw_start or not raw_end:
+        return prompt[: current_app.config["AI_MAX_INPUT_CHARS"]], None, None
+    try:
+        start = date.fromisoformat(raw_start)
+        end = date.fromisoformat(raw_end)
+    except ValueError:
+        return prompt[: current_app.config["AI_MAX_INPUT_CHARS"]], None, None
+    if start > end or (end - start).days > 365:
+        return prompt[: current_app.config["AI_MAX_INPUT_CHARS"]], None, None
+    prepared = (
+        f"{prompt}\nPeriodo: {start.isoformat()} a {end.isoformat()} "
+        f"({current_user.timezone or current_app.config['APP_TIMEZONE']})."
+    )
+    return prepared[: current_app.config["AI_MAX_INPUT_CHARS"]], start.isoformat(), end.isoformat()
+
+
 @ai_bp.get("")
 @login_required
 def index():
     service = AIConversationService()
     conversations = service.list(current_user.id)
+    prepared_prompt, prepared_start, prepared_end = _prepared_prompt(request.args)
     return render_template(
         "ai/index.html",
         conversations=conversations,
         ai_status=service.status(current_user._get_current_object()),
+        prepared_prompt=prepared_prompt,
+        prepared_start=prepared_start,
+        prepared_end=prepared_end,
     )
 
 
@@ -44,7 +72,14 @@ def create_conversation():
     except AIServiceError as error:
         _web_error(error)
         return redirect(url_for("ai.index"))
-    return redirect(url_for("ai.conversation", conversation_id=row.public_id))
+    prepared_prompt, _, _ = _prepared_prompt(request.form)
+    return redirect(
+        url_for(
+            "ai.conversation",
+            conversation_id=row.public_id,
+            **({"prompt": prepared_prompt} if prepared_prompt else {}),
+        )
+    )
 
 
 @ai_bp.get("/conversations/<conversation_id>")
@@ -56,10 +91,15 @@ def conversation(conversation_id: str):
     except AIServiceError as error:
         _web_error(error)
         return redirect(url_for("ai.index"))
+    prepared_prompt = (request.args.get("prompt") or "").strip()
+    if row.messages:
+        prepared_prompt = ""
+    prepared_prompt = prepared_prompt[: current_app.config["AI_MAX_INPUT_CHARS"]]
     return render_template(
         "ai/conversation.html",
         conversation=row,
         ai_status=service.status(current_user._get_current_object()),
+        prepared_prompt=prepared_prompt,
     )
 
 

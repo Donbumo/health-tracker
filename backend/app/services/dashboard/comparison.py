@@ -52,6 +52,8 @@ class DashboardComparisonService:
         old_weight = previous["summary"]["weight"]
         training = current["summary"]["training"]
         old_training = previous["summary"]["training"]
+        activity = current["summary"]["activity"]
+        old_activity = previous["summary"]["activity"]
         rows = [
             _row("Energía ingerida", energy["consumed_total"], old_energy["consumed_total"], "kcal"),
             _row("Energía gastada", energy["expended_total"], old_energy["expended_total"], "kcal"),
@@ -65,7 +67,17 @@ class DashboardComparisonService:
             _row("Adherencia", training["adherence_percent"], old_training["adherence_percent"], "p. p.", relative=False),
             _row("Duración", training["duration_seconds"], old_training["duration_seconds"], "s"),
             _row("Volumen comparable", training["volume"], old_training["volume"], training["volume_unit"]),
+            _row("Pasos", activity["steps_total"], old_activity["steps_total"], "pasos"),
+            _row("Distancia", activity["distance_km"], old_activity["distance_km"], "km"),
         ]
+        by_key = {
+            "intake": rows[0],
+            "expenditure": rows[1],
+            "balance": rows[2],
+            "weight": rows[5],
+            "sessions": rows[7],
+            "steps": rows[-2],
+        }
         return {
             "range": previous_range,
             "available": any(
@@ -73,5 +85,7 @@ class DashboardComparisonService:
                 for row in rows
             ),
             "rows": rows,
+            "metrics": by_key,
             "trends": previous["trends"],
+            "coverage": previous["coverage"],
         }

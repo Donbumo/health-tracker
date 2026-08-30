@@ -1,19 +1,22 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from zoneinfo import ZoneInfo
 
-from sqlalchemy.orm import selectinload, with_loader_criteria
+from sqlalchemy.orm import joinedload, selectinload, with_loader_criteria
 
 from app.extensions import db
 from app.models import (
+    Activity,
     PlannedWorkout,
     TrainingSession,
     TrainingSessionExercise,
     TrainingSet,
 )
 from app.services.dashboard.date_range import DashboardDateRange
+from app.services.dashboard.provenance import source_label, source_labels
 
 
 LB_PER_KG = Decimal("2.2046226218487757")
@@ -62,13 +65,16 @@ def _percentage(numerator: int, denominator: int) -> Decimal | None:
     ).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
 
 
+def _minutes(seconds: int | None) -> Decimal | None:
+    if seconds is None:
+        return None
+    return (Decimal(seconds) / Decimal("60")).quantize(
+        TWO_PLACES, rounding=ROUND_HALF_UP
+    )
+
+
 class TrainingTrendService:
-    def build(
-        self,
-        user_id: int,
-        date_range: DashboardDateRange,
-        unit: str,
-    ) -> dict:
+    def load(self, user_id: int, date_range: DashboardDateRange) -> dict:
         start_at, end_at = date_range.utc_bounds()
         sessions = db.session.execute(
             db.select(TrainingSession)
@@ -79,6 +85,7 @@ class TrainingTrendService:
                 TrainingSession.performed_at < end_at,
             )
             .options(
+                joinedload(TrainingSession.training_plan),
                 selectinload(TrainingSession.exercises).selectinload(
                     TrainingSessionExercise.sets
                 ),
@@ -86,10 +93,7 @@ class TrainingTrendService:
                     TrainingSessionExercise,
                     TrainingSessionExercise.user_id == user_id,
                 ),
-                with_loader_criteria(
-                    TrainingSet,
-                    TrainingSet.user_id == user_id,
-                ),
+                with_loader_criteria(TrainingSet, TrainingSet.user_id == user_id),
             )
             .order_by(TrainingSession.performed_at, TrainingSession.id)
         ).scalars().all()
@@ -123,11 +127,54 @@ class TrainingTrendService:
                 )
             ).scalars()
         )
+        activities = db.session.execute(
+            db.select(Activity)
+            .where(
+                Activity.user_id == user_id,
+                Activity.archived_at.is_(None),
+                Activity.started_at >= start_at,
+                Activity.started_at < end_at,
+            )
+            .order_by(Activity.started_at, Activity.id)
+        ).scalars().all()
+        return {
+            "sessions": sessions,
+            "planned": planned,
+            "completed_plan_ids": completed_plan_ids,
+            "activities": activities,
+        }
 
+    def build_from_rows(
+        self,
+        loaded: dict,
+        date_range: DashboardDateRange,
+        unit: str,
+    ) -> dict:
+        start_at, end_at = date_range.utc_bounds()
+        sessions = [
+            row
+            for row in loaded["sessions"]
+            if start_at <= _as_utc(row.performed_at) < end_at
+        ]
+        planned = [
+            row
+            for row in loaded["planned"]
+            if date_range.start_date <= row.scheduled_for_date <= date_range.end_date
+        ]
+        activities = [
+            row
+            for row in loaded["activities"]
+            if start_at <= _as_utc(row.started_at) < end_at
+        ]
+        completed_plan_ids = loaded["completed_plan_ids"]
         zone = ZoneInfo(date_range.timezone)
         session_days = {
             row.id: _as_utc(row.performed_at).astimezone(zone).date()
             for row in sessions
+        }
+        activity_days = {
+            row.id: _as_utc(row.started_at).astimezone(zone).date()
+            for row in activities
         }
         completed_plans = sum(
             row.status == "completed" or row.id in completed_plan_ids
@@ -137,6 +184,19 @@ class TrainingTrendService:
             row.duration_seconds
             for row in sessions
             if row.duration_seconds is not None
+        ] + [
+            row.duration_seconds
+            for row in activities
+            if row.duration_seconds is not None
+        ]
+        calories = [
+            row.calories_burned
+            for row in sessions
+            if row.calories_burned is not None
+        ] + [
+            row.calories_kcal
+            for row in activities
+            if row.calories_kcal is not None
         ]
         all_sets = [
             item
@@ -159,6 +219,11 @@ class TrainingTrendService:
                 for row in sessions
                 if bucket_start <= session_days[row.id] <= bucket_end
             ]
+            bucket_activities = [
+                row
+                for row in activities
+                if bucket_start <= activity_days[row.id] <= bucket_end
+            ]
             bucket_plans = [
                 row
                 for row in planned
@@ -172,6 +237,19 @@ class TrainingTrendService:
                 row.duration_seconds
                 for row in bucket_sessions
                 if row.duration_seconds is not None
+            ] + [
+                row.duration_seconds
+                for row in bucket_activities
+                if row.duration_seconds is not None
+            ]
+            bucket_calories = [
+                row.calories_burned
+                for row in bucket_sessions
+                if row.calories_burned is not None
+            ] + [
+                row.calories_kcal
+                for row in bucket_activities
+                if row.calories_kcal is not None
             ]
             bucket_sets = [
                 item
@@ -189,13 +267,16 @@ class TrainingTrendService:
                         if bucket_days == 1
                         else f"{bucket_start.isoformat()} – {bucket_end.isoformat()}"
                     ),
-                    "sessions": len(bucket_sessions),
+                    "sessions": len(bucket_sessions) + len(bucket_activities),
+                    "strength_sessions": len(bucket_sessions),
+                    "activity_sessions": len(bucket_activities),
                     "planned": len(bucket_plans),
-                    "duration_minutes": (
-                        (Decimal(sum(bucket_durations)) / Decimal("60")).quantize(
-                            TWO_PLACES, rounding=ROUND_HALF_UP
-                        )
-                        if bucket_durations
+                    "duration_minutes": _minutes(
+                        sum(bucket_durations) if bucket_durations else None
+                    ),
+                    "calories": (
+                        sum(bucket_calories, Decimal("0"))
+                        if bucket_calories
                         else None
                     ),
                     "adherence_percent": _percentage(
@@ -205,20 +286,58 @@ class TrainingTrendService:
                 }
             )
 
+        distribution = defaultdict(lambda: {"sessions": 0, "duration_seconds": 0})
+        for row in sessions:
+            label = row.training_plan.name if row.training_plan else "Fuerza"
+            distribution[label]["sessions"] += 1
+            distribution[label]["duration_seconds"] += row.duration_seconds or 0
+        for row in activities:
+            label = (row.activity_type or row.discipline or "Actividad").replace("_", " ").title()
+            distribution[label]["sessions"] += 1
+            distribution[label]["duration_seconds"] += row.duration_seconds or 0
+        distribution_rows = [
+            {
+                "label": label,
+                "sessions": value["sessions"],
+                "duration_minutes": _minutes(value["duration_seconds"]),
+            }
+            for label, value in sorted(
+                distribution.items(), key=lambda item: (-item[1]["sessions"], item[0])
+            )
+        ]
+
         duration_total = sum(durations) if durations else None
+        total_sessions = len(sessions) + len(activities)
+        training_sources = [
+            "Importación"
+            if row.source_file_id
+            else "Dispositivo"
+            if row.source_device_id
+            else "Manual"
+            for row in sessions
+        ] + [
+            source_label(row.source_type, has_source_file=bool(row.source_file_id))
+            for row in activities
+        ]
+        active_dates = set(session_days.values()) | set(activity_days.values())
         return {
             "summary": {
-                "sessions": len(sessions),
+                "sessions": total_sessions,
+                "strength_sessions": len(sessions),
+                "activities": len(activities),
                 "planned": len(planned),
                 "completed_plans": completed_plans,
                 "adherence_percent": _percentage(completed_plans, len(planned)),
                 "duration_seconds": duration_total,
+                "duration_minutes": _minutes(duration_total),
                 "duration_average_seconds": (
                     Decimal(duration_total) / Decimal(len(durations))
                     if duration_total is not None
                     else None
                 ),
                 "duration_sessions": len(durations),
+                "calories": sum(calories, Decimal("0")) if calories else None,
+                "calorie_sessions": len(calories),
                 "volume": total_volume if volume_supported else None,
                 "volume_unit": f"{unit}·reps",
                 "volume_supported": volume_supported,
@@ -231,13 +350,25 @@ class TrainingTrendService:
                         else "No hay series comparables en el periodo."
                     )
                 ),
-                "active_days": len(set(session_days.values())),
+                "active_days": len(active_dates),
                 "bucket": "day" if bucket_days == 1 else "week",
+                "distribution": distribution_rows,
+                "sources": source_labels(training_sources),
             },
             "trend": trend,
             "coverage": {
-                "training_sessions": len(sessions),
+                "training_sessions": total_sessions,
+                "strength_sessions": len(sessions),
+                "imported_activities": len(activities),
                 "planned_workouts": len(planned),
                 "training_duration_sessions": len(durations),
             },
         }
+
+    def build(
+        self,
+        user_id: int,
+        date_range: DashboardDateRange,
+        unit: str,
+    ) -> dict:
+        return self.build_from_rows(self.load(user_id, date_range), date_range, unit)

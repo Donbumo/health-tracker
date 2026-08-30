@@ -7,8 +7,9 @@
     <p class="eyebrow">Conversación privada</p>
     <h1>{{ conversation.title }}</h1>
     <p class="muted">Las respuestas distinguen datos, cálculos e interpretación AI. No sustituyen atención médica.</p>
+    {% if active_template %}<p><span class="status status-muted">{{ active_template.title }}</span></p>{% endif %}
   </div>
-  <a class="button button-secondary" href="{{ url_for('ai.index') }}">Ver conversaciones</a>
+  <a class="button button-secondary" href="{{ url_for('ai.index') }}">Plantillas y conversaciones</a>
 </div>
 
 {% if ai_status.state != 'available' %}
@@ -110,13 +111,40 @@
 {% if conversation.messages and conversation.messages[-1].role == 'user' %}
   <form class="ai-retry-form" action="{{ url_for('ai.retry_message', conversation_id=conversation.public_id) }}" method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if active_template %}
+      <input type="hidden" name="template_id" value="{{ active_template.id }}">
+      <input type="hidden" name="period" value="{{ template_period }}">
+    {% endif %}
     <p class="muted">Este mensaje no tiene respuesta.</p>
     <button class="button button-secondary" type="submit"{% if ai_status.state != 'available' %} disabled{% endif %}>Reintentar</button>
   </form>
 {% endif %}
 
+{% if template_followups %}
+  <nav class="ai-followups" aria-label="Siguientes preguntas sugeridas">
+    <span class="muted">También puedes:</span>
+    <div>
+      {% for followup in template_followups %}
+        <a
+          class="ai-followup-link"
+          href="{{ url_for('ai.index', template=followup.template.id, period=followup.period) }}"
+          data-ai-followup
+        >
+          {{ followup.template.title }}
+          <span hidden data-ai-followup-prompt>{{ followup.prompt }}</span>
+        </a>
+      {% endfor %}
+    </div>
+    <p class="muted">La sugerencia solo rellena el editor; no se envía automáticamente.</p>
+  </nav>
+{% endif %}
+
 <form class="card ai-composer ai-message-form" action="{{ url_for('ai.send_message', conversation_id=conversation.public_id) }}" method="post">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  {% if active_template %}
+    <input type="hidden" name="template_id" value="{{ active_template.id }}">
+    <input type="hidden" name="period" value="{{ template_period }}">
+  {% endif %}
   <label for="ai-content">Tu mensaje</label>
   <textarea id="ai-content" name="content" maxlength="{{ config.AI_MAX_INPUT_CHARS }}" required placeholder="Pregunta por tus tendencias, actividad, pasos u objetivos..."{% if ai_status.state != 'available' %} disabled{% endif %}>{{ prepared_prompt }}</textarea>
   <div class="ai-composer-actions">
@@ -134,5 +162,5 @@
     <button class="button button-danger" type="submit">Eliminar definitivamente</button>
   </form>
 </details>
-<script src="{{ url_for('static', filename='js/ai_chat.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/ai_chat.js', v='2.0') }}" defer></script>
 {% endblock %}

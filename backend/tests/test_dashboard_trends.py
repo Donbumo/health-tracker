@@ -578,7 +578,7 @@ def test_dashboard_and_today_routes_are_authenticated_canonical_and_private(clie
     assert "Anterior equivalente" in html
     assert 'id="dashboard-chart-data" type="application/json"' in html
     assert 'src="/static/js/dashboard_charts.js?v=dashboard-2-energy-controls"' in html
-    assert 'href="/static/css/app.css?v=dashboard-2-energy-controls"' in html
+    assert 'href="/static/css/app.css?v=dashboard-2-ai-templates-2-1"' in html
     assert 'data-energy-chart-controls' in html
     for series_key in (
         "consumed",

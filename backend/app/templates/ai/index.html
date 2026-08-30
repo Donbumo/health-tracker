@@ -2,29 +2,112 @@
 {% block title %}Asistente AI · Health Tracker{% endblock %}
 {% block breadcrumb %}Asistente AI{% endblock %}
 {% block content %}
-<div class="page-heading">
+<div class="page-heading ai-catalog-heading">
   <div>
-    <p class="eyebrow">Beta 1.1</p>
+    <p class="eyebrow">AI Templates 2.0</p>
     <h1>Asistente AI</h1>
-    <p class="lead">Consulta tus datos mediante herramientas owner-only de solo lectura.</p>
+    <p class="lead">Elige una consulta o un registro guiado. Nada se envía hasta que pulses <strong>Enviar</strong>.</p>
   </div>
   <form action="{{ url_for('ai.create_conversation') }}" method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    {% if prepared_prompt %}
-      <input type="hidden" name="prompt" value="{{ request.args.get('prompt', '') }}">
-      <input type="hidden" name="start" value="{{ prepared_start or '' }}">
-      <input type="hidden" name="end" value="{{ prepared_end or '' }}">
-    {% endif %}
     <button class="button" type="submit"{% if ai_status.state != 'available' %} disabled{% endif %}>Nueva conversación</button>
   </form>
 </div>
 
-{% if prepared_prompt %}
+<section class="ai-template-workspace" aria-labelledby="ai-template-title" data-ai-template-catalog data-default-category="summary">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Catálogo</p>
+      <h2 id="ai-template-title">¿Qué quieres hacer?</h2>
+      <p>Las plantillas preparan un mensaje editable y reutilizan las herramientas seguras existentes.</p>
+    </div>
+  </div>
+
+  <div class="ai-template-toolbar" role="search">
+    <label class="ai-template-search" for="ai-template-search">
+      <span>Buscar</span>
+      <input id="ai-template-search" type="search" placeholder="Peso, energía, comida…" autocomplete="off" data-ai-template-search>
+    </label>
+    <label class="ai-template-period" for="ai-template-period">
+      <span>Periodo</span>
+      <select id="ai-template-period" data-ai-template-period>
+        {% for period_id, period_label in period_labels.items() %}
+          <option value="{{ period_id }}"{% if period_id == '30d' %} selected{% endif %}>{{ period_label|capitalize }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+
+  <div class="ai-category-filter" aria-label="Filtrar por categoría">
+    <button class="ai-category-button" type="button" data-ai-category="all" aria-pressed="false">Todo</button>
+    {% for category in categories %}
+      <button class="ai-category-button{{ ' is-active' if category.id == 'summary' else '' }}" type="button" data-ai-category="{{ category.id }}" aria-pressed="{{ 'true' if category.id == 'summary' else 'false' }}">{{ category.label }}</button>
+    {% endfor %}
+  </div>
+
+  <p class="muted ai-template-results" role="status" aria-live="polite" data-ai-template-results></p>
+  <div class="ai-template-grid">
+    {% for entry in catalog %}
+      {% set item = entry.template %}
+      <article
+        class="card ai-template-card{{ ' is-unavailable' if not entry.available else '' }}"
+        data-ai-template-card
+        data-category="{{ item.category }}"
+        data-periods="{{ item.allowed_periods|join(',') }}"
+        data-default-period="{{ item.default_period }}"
+      >
+        <div class="ai-template-card-main">
+          <span class="ai-template-token" aria-hidden="true">{{ item.token }}</span>
+          <div>
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.short_description }}</p>
+          </div>
+        </div>
+        <div class="ai-template-card-footer">
+          <span class="status status-muted" data-ai-period-label>{{ period_labels[item.default_period] }}</span>
+          {% if entry.available %}
+            <a
+              class="button button-secondary"
+              href="{{ url_for('ai.index', template=item.id, period=item.default_period) }}"
+              data-ai-template-use
+              data-template-id="{{ item.id }}"
+            >Usar</a>
+          {% else %}
+            <span class="status status-warning" title="{{ entry.unavailable_reason }}">No disponible</span>
+          {% endif %}
+        </div>
+        {% if not entry.available %}<p class="ai-template-unavailable">{{ entry.unavailable_reason }}</p>{% endif %}
+      </article>
+    {% endfor %}
+  </div>
+  <div class="empty-state ai-template-empty" hidden data-ai-template-empty>
+    <h3>Sin coincidencias</h3>
+    <p>Prueba otra búsqueda o categoría.</p>
+  </div>
+</section>
+
+{% if selected_template and prepared_prompt %}
   <section class="card ai-prepared-context" aria-labelledby="prepared-context-title">
-    <p class="eyebrow">Contexto preparado</p>
-    <h2 id="prepared-context-title">Pregunta sobre el periodo del dashboard</h2>
-    <p>El mensaje quedará precargado en una conversación nueva. No se envía ni genera costo hasta que pulses <strong>Enviar</strong>.</p>
-    <p class="muted">{{ prepared_prompt }}</p>
+    <div class="ai-prepared-heading">
+      <div>
+        <p class="eyebrow">Mensaje preparado</p>
+        <h2 id="prepared-context-title">{{ selected_template.title }}</h2>
+      </div>
+      <span class="status status-muted">{{ period_labels[selected_period] }}</span>
+    </div>
+    <p>Edita el texto si quieres. El proveedor no se consulta y no se consume uso en este paso.</p>
+    <form action="{{ url_for('ai.create_conversation') }}" method="post" class="ai-template-prepare-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="template_id" value="{{ selected_template.id }}">
+      <input type="hidden" name="period" value="{{ selected_period }}">
+      <label for="ai-prepared-prompt">Tu mensaje</label>
+      <textarea id="ai-prepared-prompt" name="content" maxlength="{{ config.AI_MAX_INPUT_CHARS }}" required>{{ prepared_prompt }}</textarea>
+      <div class="ai-prepared-actions">
+        <a class="button button-secondary" href="{{ url_for('ai.index') }}">Cancelar</a>
+        <button class="button" type="submit"{% if ai_status.state != 'available' %} disabled{% endif %}>Continuar sin enviar</button>
+      </div>
+    </form>
+    <p class="muted">En la conversación tendrás que pulsar <strong>Enviar</strong>. Las acciones solo crean un borrador hasta que confirmes el preview.</p>
   </section>
 {% endif %}
 
@@ -33,14 +116,14 @@
     <h2 id="ai-status-title">Estado</h2>
     {% if ai_status.state == 'available' %}
       <p><span class="status status-success">Disponible</span></p>
-      <p class="muted">Proveedor {{ ai_status.provider }} · modelo {{ ai_status.model }}. Peso y comida solo se escriben tras confirmar un borrador; adjuntos siguen desactivados.</p>
+      <p class="muted">Proveedor {{ ai_status.provider }} · modelo {{ ai_status.model }}. Peso y comida solo se escriben tras confirmar un borrador.</p>
     {% elif ai_status.state == 'consent_required' %}
       <p><span class="status status-warning">Requiere consentimiento</span></p>
       <p>{{ ai_status.reason }}</p>
     {% else %}
       <p><span class="status status-warning">{{ 'Desactivado' if ai_status.state == 'disabled' else 'Sin configurar' }}</span></p>
       <p>{{ ai_status.reason }}</p>
-      <p class="muted">El resto de Health Tracker continúa funcionando normalmente.</p>
+      <p class="muted">El catálogo y el resto de Health Tracker continúan funcionando normalmente.</p>
     {% endif %}
   </div>
 </section>
@@ -56,7 +139,7 @@
       <button class="button button-secondary" type="submit">Guardar preferencia</button>
     </form>
   {% else %}
-    <p class="muted">El proveedor configurado no envía datos a un servicio remoto. La preferencia remota permanece deshabilitada.</p>
+    <p class="muted">El proveedor configurado no envía datos a un servicio remoto. Adjuntos e imágenes permanecen deshabilitados.</p>
   {% endif %}
 </section>
 
@@ -74,7 +157,8 @@
       {% endfor %}
     </div>
   {% else %}
-    <div class="empty-state"><h2>Aún no hay conversaciones</h2><p>Cuando AI esté disponible, inicia una para consultar tendencias, pasos, actividades u objetivos.</p></div>
+    <div class="empty-state"><h2>Aún no hay conversaciones</h2><p>Elige una plantilla o inicia una conversación libre.</p></div>
   {% endif %}
 </section>
+<script src="{{ url_for('static', filename='js/ai_templates.js', v='2.0') }}" defer></script>
 {% endblock %}

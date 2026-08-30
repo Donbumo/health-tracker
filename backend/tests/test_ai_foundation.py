@@ -777,7 +777,7 @@ def test_web_ai_is_authenticated_responsive_surface_with_retry_and_delete(app, c
     assert 'class="card ai-composer ai-message-form"' in html
     assert "Fuentes y evidencia" not in html
     assert "Confirmo que quiero eliminarla" in html
-    assert 'src="/static/js/ai_chat.js"' in html
+    assert 'src="/static/js/ai_chat.js?v=2.0"' in html
     navigation = client.get("/dashboard").get_data(as_text=True)
     assert 'href="/ai"' in navigation
 
@@ -787,32 +787,30 @@ def test_dashboard_ai_deep_link_prepares_period_without_sending_message(app, cli
     login(client)
     prepared = client.get(
         "/ai",
-        query_string={
-            "prompt": "Resume mi periodo",
-            "start": "2026-08-01",
-            "end": "2026-08-07",
-        },
+        query_string={"template": "period-summary", "period": "7d"},
     )
     html = prepared.get_data(as_text=True)
     assert prepared.status_code == 200
-    assert "Contexto preparado" in html
-    assert "No se envía ni genera costo" in html
-    assert "Periodo: 2026-08-01 a 2026-08-07" in html
+    assert "Mensaje preparado" in html
+    assert "El proveedor no se consulta" in html
+    assert "los últimos 7 días" in html
 
     created = client.post(
         "/ai/conversations",
         data={
-            "prompt": "Resume mi periodo",
-            "start": "2026-08-01",
-            "end": "2026-08-07",
+            "template_id": "period-summary",
+            "period": "7d",
+            "content": "Resume mi periodo de los últimos 7 días.",
         },
         follow_redirects=False,
     )
-    assert created.status_code == 302
-    conversation = client.get(created.headers["Location"])
-    conversation_html = conversation.get_data(as_text=True)
+    assert created.status_code == 200
+    conversation_html = created.get_data(as_text=True)
     assert "Resume mi periodo" in conversation_html
-    assert "Periodo: 2026-08-01 a 2026-08-07" in conversation_html
+    dashboard_html = client.get("/dashboard?period=7").get_data(as_text=True)
+    assert "template=period-summary&amp;period=7d" in dashboard_html
+    assert "template=energy-balance&amp;period=7d" in dashboard_html
+    assert "prompt=" not in dashboard_html
     with app.app_context():
         assert db.session.execute(db.select(AIMessage)).scalars().all() == []
 

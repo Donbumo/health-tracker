@@ -260,13 +260,19 @@
   </section>
 
   <aside class="dashboard-card dashboard-card-span-5 ai-period-card" aria-labelledby="ai-period-title">
+    {% set ai_period = dashboard.range.preset if dashboard.range.preset in ['7d', '30d', '90d'] else '30d' %}
     <p class="eyebrow">Profundiza</p>
     <h2 id="ai-period-title">Pregunta a la AI sobre este periodo</h2>
-    <p>Se prepara el rango {{ dashboard.range['from'] }} a {{ dashboard.range['to'] }}. No se ejecuta ninguna consulta hasta que tú envíes el mensaje.</p>
-    <a class="button" href="{{ url_for('ai.index', prompt='Resume mi periodo', start=dashboard.range['from'], end=dashboard.range['to']) }}">Preguntar a la AI</a>
+    <p>Se prepara una consulta para {{ ai_period|replace('d', ' días') }}. No se envían cifras ni se ejecuta ninguna consulta hasta que tú envíes el mensaje.</p>
+    <a class="button" href="{{ url_for('ai.index', template='period-summary', period=ai_period) }}">Preguntar a la AI</a>
     <div class="quick-prompt-list" aria-label="Preguntas rápidas">
-      {% for prompt in ('Resume mi periodo', '¿Cómo estuvo mi balance energético?', '¿Qué cambió en mi entrenamiento?', 'Analiza mi tendencia de peso') %}
-        <a href="{{ url_for('ai.index', prompt=prompt, start=dashboard.range['from'], end=dashboard.range['to']) }}">{{ prompt }}</a>
+      {% for template_id, prompt in [
+        ('energy-balance', 'Balance energético'),
+        ('weight-trend', 'Tendencia de peso'),
+        ('activity-overview', 'Actividad'),
+        ('training-summary', 'Entrenamiento')
+      ] %}
+        <a href="{{ url_for('ai.index', template=template_id, period=ai_period) }}">{{ prompt }}</a>
       {% endfor %}
     </div>
   </aside>

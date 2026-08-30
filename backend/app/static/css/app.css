@@ -490,6 +490,36 @@ tbody tr:last-child td { border-bottom: 0; }
 }
 
 .ai-status-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.ai-template-workspace { margin-bottom: 1.25rem; }
+.ai-template-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(11rem, auto); gap: .75rem; align-items: end; margin-bottom: .75rem; }
+.ai-template-toolbar label, .ai-template-prepare-form { display: grid; gap: .35rem; }
+.ai-template-toolbar label > span, .ai-template-prepare-form > label { font-size: .875rem; font-weight: 750; }
+.ai-template-toolbar input, .ai-template-toolbar select { min-width: 0; min-height: 44px; font-size: 1rem; }
+.ai-category-filter { display: flex; flex-wrap: wrap; gap: .45rem; margin-bottom: .35rem; }
+.ai-category-button, .ai-followup-link { min-height: 44px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+.ai-category-button { padding: .55rem .85rem; }
+.ai-category-button:hover, .ai-category-button.is-active, .ai-category-button[aria-pressed="true"], .ai-followup-link:hover { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+.ai-template-results { min-height: 1.5rem; margin: .25rem 0 .55rem; }
+.ai-template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: .7rem; }
+.ai-template-card { display: grid; align-content: space-between; gap: .75rem; min-width: 0; margin: 0; padding: .85rem; }
+.ai-template-card[hidden] { display: none; }
+.ai-template-card-main { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr); gap: .7rem; align-items: start; }
+.ai-template-card h3 { margin: 0 0 .2rem; font-size: 1rem; }
+.ai-template-card p { margin: 0; font-size: .9rem; color: var(--text-muted); }
+.ai-template-token { display: inline-flex; align-items: center; justify-content: center; width: 2.75rem; min-height: 2.75rem; border-radius: .75rem; background: var(--primary-soft); color: var(--primary); font-size: .72rem; font-weight: 850; letter-spacing: .04em; }
+.ai-template-card-footer { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.ai-template-card-footer .button { min-height: 44px; padding: .55rem .8rem; }
+.ai-template-card.is-unavailable { background: var(--surface-muted); }
+.ai-template-unavailable { font-size: .8rem !important; }
+.ai-prepared-context { scroll-margin-top: 1rem; border-color: var(--primary); }
+.ai-prepared-heading, .ai-prepared-actions { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.ai-template-prepare-form textarea { min-height: 12rem; resize: vertical; }
+.ai-template-prepare-form select { width: min(100%, 20rem); }
+.ai-prepared-actions { justify-content: flex-end; margin-top: .35rem; }
+.ai-followups { display: grid; gap: .5rem; max-width: 52rem; margin: 0 auto 1rem; }
+.ai-followups > div { display: flex; flex-wrap: wrap; gap: .45rem; }
+.ai-followup-link { display: inline-flex; align-items: center; padding: .5rem .8rem; text-decoration: none; }
+.ai-followups p { margin: 0; }
 .ai-conversation-list { display: grid; gap: .75rem; }
 .ai-conversation-link { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0; color: var(--text); text-decoration: none; }
 .ai-conversation-link:hover { border-color: var(--primary); background: var(--primary-soft); }
@@ -516,6 +546,17 @@ tbody tr:last-child td { border-bottom: 0; }
 .ai-delete-zone { max-width: 52rem; margin-inline: auto; }
 
 @media (max-width: 650px) {
+  .ai-catalog-heading form, .ai-catalog-heading .button { width: 100%; }
+  .ai-template-toolbar { grid-template-columns: 1fr; }
+  .ai-category-filter { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ai-category-button { width: 100%; padding-inline: .4rem; }
+  .ai-template-grid { grid-template-columns: 1fr; }
+  .ai-template-card { padding: .8rem; }
+  .ai-prepared-heading, .ai-prepared-actions { align-items: stretch; flex-direction: column; }
+  .ai-prepared-actions .button { width: 100%; }
+  .ai-template-prepare-form textarea { min-height: 14rem; font-size: 1rem; }
+  .ai-followups > div { display: grid; grid-template-columns: 1fr; }
+  .ai-followup-link { width: 100%; }
   .ai-page-heading .button { width: 100%; }
   .ai-message { max-width: 96%; }
   .ai-composer-actions, .ai-retry-form { align-items: stretch; flex-direction: column; }

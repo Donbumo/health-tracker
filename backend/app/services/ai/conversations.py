@@ -22,6 +22,7 @@ from app.models import (
     WeighIn,
 )
 from app.services.ai.providers import AIProviderError, get_provider, provider_status
+from app.services.ai.template_registry import AITemplateError, AITemplateRegistry
 from app.services.ai.tools import AIToolError, AIToolRegistry, sanitize_untrusted_data
 from app.services.ai.types import (
     AIProviderDraft,
@@ -648,8 +649,10 @@ class AIConversationService:
         content,
         *,
         attachments=None,
+        template_id: str | None = None,
     ) -> tuple[AIMessage, list[AIActionDraft]]:
         self._ensure_available(user)
+        clean_template_id = self._validated_template_id(template_id)
         if attachments not in (None, []):
             raise AIServiceError(
                 "attachments_not_supported",
@@ -670,12 +673,22 @@ class AIConversationService:
             conversation.title = _title(message.content[:80])
         conversation.updated_at = datetime.now(timezone.utc)
         db.session.commit()
-        return self._respond(user, conversation, message)
+        return self._respond(
+            user,
+            conversation,
+            message,
+            template_id=clean_template_id,
+        )
 
     def retry_last_turn(
-        self, user: User, conversation_id: str
+        self,
+        user: User,
+        conversation_id: str,
+        *,
+        template_id: str | None = None,
     ) -> tuple[AIMessage, list[AIActionDraft]]:
         self._ensure_available(user)
+        clean_template_id = self._validated_template_id(template_id)
         conversation = self.get(user.id, conversation_id)
         if not conversation.messages or conversation.messages[-1].role != "user":
             raise AIServiceError(
@@ -683,7 +696,28 @@ class AIConversationService:
                 "No hay un mensaje pendiente para reintentar.",
                 409,
             )
-        return self._respond(user, conversation, conversation.messages[-1])
+        return self._respond(
+            user,
+            conversation,
+            conversation.messages[-1],
+            template_id=clean_template_id,
+        )
+
+    @staticmethod
+    def _validated_template_id(template_id: str | None) -> str | None:
+        if template_id in (None, ""):
+            return None
+        try:
+            availability = AITemplateRegistry().get(str(template_id))
+        except AITemplateError as error:
+            raise AIServiceError(error.code, error.safe_message, error.status) from error
+        if not availability.available:
+            raise AIServiceError(
+                "template_unavailable",
+                availability.unavailable_reason or "La plantilla no está disponible.",
+                409,
+            )
+        return availability.template.id
 
     def _ensure_available(self, user: User) -> None:
         status = provider_status(user)
@@ -836,12 +870,18 @@ class AIConversationService:
         user: User,
         conversation: AIConversation,
         request_message: AIMessage,
+        *,
+        template_id: str | None = None,
     ) -> tuple[AIMessage, list[AIActionDraft]]:
         timing = _AITurnTiming()
         provider_name = "unknown"
         try:
             result, provider_name = self._respond_timed(
-                user, conversation, request_message, timing
+                user,
+                conversation,
+                request_message,
+                timing,
+                template_id=template_id,
             )
             timing.outcome = "tool_error" if timing.tool_error else "success"
             return result
@@ -866,6 +906,8 @@ class AIConversationService:
         conversation: AIConversation,
         request_message: AIMessage,
         timing: _AITurnTiming,
+        *,
+        template_id: str | None = None,
     ) -> tuple[tuple[AIMessage, list[AIActionDraft]], str]:
         try:
             provider = get_provider()
@@ -1033,6 +1075,7 @@ class AIConversationService:
                 assistant.id,
                 request_message.content,
                 item,
+                template_id=template_id,
             )
             for item in prepared_drafts
         ]
@@ -1177,6 +1220,8 @@ class AIConversationService:
         message_id: int,
         user_text: str,
         draft: AIProviderDraft,
+        *,
+        template_id: str | None = None,
     ) -> AIActionDraft:
         ttl_hours = _bounded_config("AI_DRAFT_TTL_HOURS", 1, 24 * 365)
         schema = DRAFT_SCHEMAS.get(draft.draft_type)
@@ -1247,6 +1292,28 @@ class AIConversationService:
                             "base_revision": target.revision,
                         }
                         provenance["correction_of_applied_draft"] = applied.public_id
+        if (
+            draft.draft_type == "body_measurement"
+            and template_id == "correct-body-measurement"
+            and "correction_target" not in provenance
+        ):
+            target = db.session.execute(
+                db.select(WeighIn)
+                .where(WeighIn.user_id == user_id)
+                .order_by(WeighIn.recorded_at.desc(), WeighIn.id.desc())
+                .limit(1)
+            ).scalar_one_or_none()
+            if target is None:
+                raise AIServiceError(
+                    "body_measurement_not_found",
+                    "No hay una medición corporal que pueda corregirse.",
+                    422,
+                )
+            provenance["correction_target"] = {
+                "resource_type": "body_stat",
+                "public_id": target.public_id,
+                "base_revision": target.revision,
+            }
         row = AIActionDraft(
             conversation_id=conversation_id,
             message_id=message_id,

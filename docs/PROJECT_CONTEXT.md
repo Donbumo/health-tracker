@@ -94,6 +94,12 @@ La estructura real del código manda sobre diagramas o rutas narrativas antiguas
 
 Beta 1.1 incorpora una interfaz AI segura sobre servicios reales: provider fake y adapter cloud desacoplados, consentimiento remoto por usuario, conversaciones acotadas, tools read-only owner-only, evidencia, portabilidad y drafts de peso/comida con confirmación explícita e idempotente. El modelo no recibe acceso a SQL/shell/filesystem y nunca escribe directamente ni diagnostica. La frontera y limitaciones están en [AI_FOUNDATION.md](AI_FOUNDATION.md).
 
+AI Templates 2.0 organiza esa interfaz mediante un registro declarativo y provider-neutral en Python. Las plantillas del sistema son código versionado: declaran identidad, categoría, modo, periodos permitidos, capacidades requeridas, follow-ups y un constructor de prompt reutilizable. El catálogo cubre Resumen, Energía, Nutrición, Cuerpo, Actividad, Entrenamiento, Metas, Datos y Registrar; no consulta read models ni inicializa al proveedor durante el render.
+
+Los periodos admitidos son hoy, 7, 30 y 90 días según la coherencia de cada plantilla. La URL transporta únicamente el identificador estable de plantilla y el periodo, nunca cifras de salud ni el prompt editable. Elegir una plantilla solo prepara texto del lado servidor: crear la conversación tampoco envía el mensaje, y el usuario debe pulsar Enviar. Los follow-ups solo rellenan el editor. Las acciones de comida y medición corporal continúan como draft → preview → confirmación explícita; las correcciones corporales reutilizan el patch oficial owner-only. Ninguna plantilla escribe silenciosamente.
+
+El gating compara `required_capabilities` con tools/read models reales. Una tarjeta sin capacidad suficiente se marca no disponible; no se crea una tool por plantilla ni se fabrican análisis. Consentimiento remoto, límites de contexto, procedencia, tratamiento de texto externo como datos, ausencia distinta de cero y prohibición de diagnóstico permanecen en la capa AI común. Las plantillas personalizadas por usuario son una posibilidad futura, no una capacidad actual: requerirán un contrato separado de validación, ownership, límites y seguridad, sin convertir prompts de usuario en instrucciones de sistema.
+
 ## Capacidades de producto
 
 ### Identidad y archivos

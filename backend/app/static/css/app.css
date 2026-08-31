@@ -490,6 +490,31 @@ tbody tr:last-child td { border-bottom: 0; }
 }
 
 .ai-status-card { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.ai-adaptive-recommendations, .ai-adaptive-workspace { margin-bottom: 1.5rem; }
+.ai-recommendation-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: .7rem; }
+.ai-recommendation-card { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr) auto; gap: .75rem; align-items: center; min-width: 0; margin: 0; color: var(--text); text-decoration: none; }
+.ai-recommendation-card:hover { border-color: var(--primary); background: var(--primary-soft); }
+.ai-recommendation-card > span:nth-child(2) { display: grid; gap: .2rem; min-width: 0; }
+.ai-recommendation-card small { color: var(--text-muted); }
+.ai-adaptive-workspace { padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
+.ai-adaptive-workspace .section-heading { margin-bottom: .75rem; }
+.ai-template-period { display: grid; gap: .3rem; min-width: min(100%, 11rem); font-size: .875rem; font-weight: 750; }
+.ai-template-period select { min-height: 44px; }
+.ai-domain-filter { display: flex; flex-wrap: wrap; gap: .45rem; }
+.ai-intent-filter { margin-top: .75rem; }
+.ai-intent-filter > div { display: flex; flex-wrap: wrap; gap: .45rem; }
+.ai-intent-filter > div[hidden] { display: none; }
+.ai-domain-metrics { min-width: 0; margin-top: .75rem; padding: .7rem .8rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); }
+.ai-domain-metrics > div { display: grid; gap: .2rem; min-width: 0; }
+.ai-domain-metrics span { color: var(--text-muted); overflow-wrap: anywhere; }
+.ai-capability-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); gap: .7rem; }
+.ai-capability-card { display: grid; align-content: space-between; gap: .75rem; min-width: 0; margin: 0; padding: .9rem; }
+.ai-capability-card[hidden], .ai-domain-metrics [hidden] { display: none; }
+.ai-capability-card h3 { margin: .45rem 0 .25rem; font-size: 1.05rem; }
+.ai-capability-card p { margin: 0; overflow-wrap: anywhere; }
+.ai-legacy-presets { margin-bottom: 1.5rem; }
+.ai-legacy-presets > summary { min-height: 44px; padding: .7rem .9rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: pointer; font-weight: 800; }
+.ai-legacy-presets[open] > summary { margin-bottom: 1rem; border-color: var(--primary); }
 .ai-template-workspace { margin-bottom: 1.25rem; }
 .ai-template-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(11rem, auto); gap: .75rem; align-items: end; margin-bottom: .75rem; }
 .ai-template-toolbar label, .ai-template-prepare-form { display: grid; gap: .35rem; }
@@ -547,6 +572,12 @@ tbody tr:last-child td { border-bottom: 0; }
 
 @media (max-width: 650px) {
   .ai-catalog-heading form, .ai-catalog-heading .button { width: 100%; }
+  .ai-adaptive-workspace { padding: .75rem; }
+  .ai-domain-filter { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ai-intent-filter > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ai-capability-grid, .ai-recommendation-grid { grid-template-columns: 1fr; }
+  .ai-capability-card { padding: .8rem; }
+  .ai-template-period { width: 100%; }
   .ai-template-toolbar { grid-template-columns: 1fr; }
   .ai-category-filter { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ai-category-button { width: 100%; padding-inline: .4rem; }

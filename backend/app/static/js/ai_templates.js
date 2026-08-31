@@ -22,7 +22,110 @@
     return categoryMatches && normalizeText(text).includes(normalizeText(query).trim());
   };
 
+  const matchesCapability = (domain, activeDomain, intent, activeIntent) => (
+    domain === activeDomain && (!activeIntent || intent === activeIntent)
+  );
+
+  const updateStructuredPeriod = (href, location, selectedPeriod) => {
+    const target = new URL(href, location.origin);
+    target.searchParams.set("period", selectedPeriod);
+    return `${target.pathname}${target.search}`;
+  };
+
+  const initAdaptiveCatalog = (document, location) => {
+    const catalog = document.querySelector("[data-ai-adaptive-catalog]");
+    if (!catalog) return;
+
+    const cards = Array.from(catalog.querySelectorAll("[data-ai-capability-card]"));
+    const domainButtons = Array.from(catalog.querySelectorAll("[data-ai-domain]"));
+    const metricGroups = Array.from(catalog.querySelectorAll("[data-ai-domain-metrics]"));
+    const intentGroups = Array.from(catalog.querySelectorAll("[data-ai-domain-intents]"));
+    const periodSelect = catalog.querySelector("[data-ai-capability-period]");
+    const results = catalog.querySelector("[data-ai-capability-results]");
+    let activeDomain = catalog.dataset.defaultDomain || domainButtons[0]?.dataset.aiDomain || "";
+    let activeIntent = "";
+
+    const selectFirstIntent = () => {
+      const group = intentGroups.find((item) => item.dataset.aiDomainIntents === activeDomain);
+      const buttons = group ? Array.from(group.querySelectorAll("[data-ai-intent]")) : [];
+      const selected = buttons.find((button) => button.getAttribute("aria-pressed") === "true") || buttons[0];
+      activeIntent = selected ? selected.dataset.aiIntent : "";
+      buttons.forEach((button) => {
+        const active = button === selected;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+    };
+
+    selectFirstIntent();
+
+    const update = () => {
+      const requestedPeriod = periodSelect ? periodSelect.value : "30d";
+      let visible = 0;
+      cards.forEach((card) => {
+        const show = matchesCapability(
+          card.dataset.domain,
+          activeDomain,
+          card.dataset.intent,
+          activeIntent,
+        );
+        card.hidden = !show;
+        if (show) visible += 1;
+
+        const selectedPeriod = choosePeriod(
+          card.dataset.periods,
+          card.dataset.defaultPeriod,
+          requestedPeriod,
+        );
+        const link = card.querySelector("[data-ai-capability-use]");
+        if (link) link.href = updateStructuredPeriod(link.href, location, selectedPeriod);
+      });
+      metricGroups.forEach((group) => {
+        group.hidden = group.dataset.aiDomainMetrics !== activeDomain;
+      });
+      intentGroups.forEach((group) => {
+        group.hidden = group.dataset.aiDomainIntents !== activeDomain;
+      });
+      if (results) results.textContent = `${visible} ${visible === 1 ? "capacidad" : "capacidades"}`;
+    };
+
+    domainButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        activeDomain = button.dataset.aiDomain;
+        domainButtons.forEach((candidate) => {
+          const selected = candidate === button;
+          candidate.classList.toggle("is-active", selected);
+          candidate.setAttribute("aria-pressed", String(selected));
+        });
+        intentGroups.forEach((group) => {
+          Array.from(group.querySelectorAll("[data-ai-intent]")).forEach((candidate) => {
+            candidate.classList.remove("is-active");
+            candidate.setAttribute("aria-pressed", "false");
+          });
+        });
+        selectFirstIntent();
+        update();
+      });
+    });
+    intentGroups.forEach((group) => {
+      Array.from(group.querySelectorAll("[data-ai-intent]")).forEach((button) => {
+        button.addEventListener("click", () => {
+          activeIntent = button.dataset.aiIntent;
+          Array.from(group.querySelectorAll("[data-ai-intent]")).forEach((candidate) => {
+            const selected = candidate === button;
+            candidate.classList.toggle("is-active", selected);
+            candidate.setAttribute("aria-pressed", String(selected));
+          });
+          update();
+        });
+      });
+    });
+    if (periodSelect) periodSelect.addEventListener("change", update);
+    update();
+  };
+
   const init = (document, location) => {
+    initAdaptiveCatalog(document, location);
     const catalog = document.querySelector("[data-ai-template-catalog]");
     if (!catalog) return;
 
@@ -88,5 +191,13 @@
     update();
   };
 
-  return { choosePeriod, init, matchesTemplate, normalizeText };
+  return {
+    choosePeriod,
+    init,
+    initAdaptiveCatalog,
+    matchesCapability,
+    matchesTemplate,
+    normalizeText,
+    updateStructuredPeriod,
+  };
 });

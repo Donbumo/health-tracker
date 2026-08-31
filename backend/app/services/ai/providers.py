@@ -130,7 +130,12 @@ class FakeAIProvider(AIProvider):
 
         original = _last_user_text(request)
         text = _normalized(original)
-        draft = self._body_measurement_draft(request)
+        allowed_drafts = request.draft_types
+        draft = (
+            self._body_measurement_draft(request)
+            if allowed_drafts is None or "body_measurement" in allowed_drafts
+            else None
+        )
         if draft is not None:
             return AIProviderResponse(
                 content=(
@@ -142,7 +147,11 @@ class FakeAIProvider(AIProvider):
                 usage=self._usage(request, original),
             )
 
-        food_draft = self._food_entry_draft(request)
+        food_draft = (
+            self._food_entry_draft(request)
+            if allowed_drafts is None or "food_entry" in allowed_drafts
+            else None
+        )
         if food_draft is not None:
             return AIProviderResponse(
                 content=(
@@ -185,6 +194,28 @@ class FakeAIProvider(AIProvider):
                 usage=self._usage(request, original),
             )
 
+        allowed_tool_names = tuple(item.name for item in request.tools)
+        if len(allowed_tool_names) == 1:
+            name = allowed_tool_names[0]
+            comparison = any(
+                term in text
+                for term in ("comparado", "compara", "anterior", "mas o menos")
+            )
+            arguments = self._arguments_for_allowed_tool(
+                name,
+                self._preset(text),
+                comparison,
+                original,
+            )
+            return AIProviderResponse(
+                tool_calls=(
+                    AIProviderToolCall(
+                        call_id=str(uuid.uuid4()), name=name, arguments=arguments
+                    ),
+                ),
+                usage=self._usage(request, original),
+            )
+
         comparison = any(
             term in text
             for term in ("comparado", "compara", "anterior", "mas o menos")
@@ -222,6 +253,16 @@ class FakeAIProvider(AIProvider):
             arguments = self._point_body_arguments(text)
         else:
             name, arguments = self._tool_for(topic, preset, comparison)
+        if name not in allowed_tool_names:
+            if not allowed_tool_names:
+                return AIProviderResponse(
+                    content="No hace falta consultar datos adicionales para preparar esta respuesta.",
+                    usage=self._usage(request, original),
+                )
+            name = allowed_tool_names[0]
+            arguments = self._arguments_for_allowed_tool(
+                name, preset, comparison, original
+            )
         return AIProviderResponse(
             tool_calls=(
                 AIProviderToolCall(
@@ -259,6 +300,34 @@ class FakeAIProvider(AIProvider):
             "preset": preset,
             "compare_previous": comparison,
         }
+
+    @classmethod
+    def _arguments_for_allowed_tool(
+        cls,
+        name: str,
+        preset: str,
+        comparison: bool,
+        original: str,
+    ) -> dict:
+        if name == "get_latest_body_measurement":
+            return cls._point_body_arguments(_normalized(original))
+        if name in {"get_training_history", "get_activity_summary"}:
+            return {"limit": 10}
+        if name == "get_goals_summary":
+            return {"days": 7 if preset == "7d" else 90 if preset == "90d" else 30}
+        if name == "get_data_sources_summary":
+            return {"domain": "all", "preset": preset}
+        if name == "get_exercise_progress":
+            return {"preset": preset if preset in {"7d", "30d", "90d"} else "30d"}
+        if name == "get_food_patterns":
+            return {"preset": preset}
+        if name in {"get_dashboard_summary", "get_training_summary"}:
+            return {"preset": preset, "compare_previous": comparison}
+        if name in {"get_weight_trend", "get_nutrition_summary"}:
+            return {"preset": preset, "compare_previous": comparison}
+        if name == "get_steps_summary":
+            return {"preset": preset}
+        return {}
 
     @staticmethod
     def _is_point_body_question(text: str) -> bool:
@@ -550,8 +619,8 @@ _DRAFT_TOOL_NAMES = {
 }
 
 
-def _draft_tools() -> list[dict]:
-    return [
+def _draft_tools(allowed_types: tuple[str, ...] | None = None) -> list[dict]:
+    tools = [
         {
             "type": "function",
             "name": "prepare_body_measurement_draft",
@@ -636,6 +705,12 @@ def _draft_tools() -> list[dict]:
             "strict": False,
         },
     ]
+    if allowed_types is None:
+        return tools
+    allowed_names = {
+        name for name, draft_type in _DRAFT_TOOL_NAMES.items() if draft_type in allowed_types
+    }
+    return [item for item in tools if item["name"] in allowed_names]
 
 
 def _post_openai_json(
@@ -791,7 +866,7 @@ class OpenAIResponsesProvider(AIProvider):
             }
             for item in request.tools
         ]
-        tools.extend(_draft_tools())
+        tools.extend(_draft_tools(request.draft_types))
         input_items: list[dict] = [
             {"role": item.role, "content": item.content} for item in request.messages
         ]
@@ -834,6 +909,8 @@ class OpenAIResponsesProvider(AIProvider):
             "store": False,
             "max_output_tokens": maximum,
         }
+        if request.require_tool and request.tools:
+            payload["tool_choice"] = "required"
         try:
             transport_response = self._transport(
                 self._responses_url,

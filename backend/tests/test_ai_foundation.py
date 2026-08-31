@@ -461,6 +461,8 @@ def test_tool_registry_is_allowlisted_and_excludes_medical_shell_sql_and_urls(ap
         "get_steps_summary",
         "get_goals_summary",
         "get_data_sources_summary",
+        "get_food_patterns",
+        "get_exercise_progress",
     }
     assert not any(
         token in name for name in names for token in ("medical", "sql", "shell", "file", "url")
@@ -808,8 +810,8 @@ def test_dashboard_ai_deep_link_prepares_period_without_sending_message(app, cli
     conversation_html = created.get_data(as_text=True)
     assert "Resume mi periodo" in conversation_html
     dashboard_html = client.get("/dashboard?period=7").get_data(as_text=True)
-    assert "template=period-summary&amp;period=7d" in dashboard_html
-    assert "template=energy-balance&amp;period=7d" in dashboard_html
+    assert "intent=summary&amp;domain=all&amp;period=7d" in dashboard_html
+    assert "intent=summary&amp;domain=energy&amp;metric=balance&amp;period=7d" in dashboard_html
     assert "prompt=" not in dashboard_html
     with app.app_context():
         assert db.session.execute(db.select(AIMessage)).scalars().all() == []

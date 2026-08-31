@@ -63,21 +63,16 @@ def test_registry_has_complete_unique_stably_sorted_declarative_catalog():
     } <= {item.title for item in templates}
 
 
-def test_registry_capability_gating_is_honest_and_can_activate_real_future_reads():
+def test_registry_all_legacy_presets_are_backed_by_real_capabilities():
     registry = AITemplateRegistry()
     unavailable = {
         entry.template.id: entry.missing_capabilities
         for entry in registry.templates
         if not entry.available
     }
-    assert unavailable == {
-        "food-patterns": ("read:food_item_patterns",),
-        "exercise-progress": ("read:exercise_progress",),
-    }
-    enabled = AITemplateRegistry(
-        extra_capabilities={"read:food_item_patterns", "read:exercise_progress"}
-    )
-    assert all(entry.available for entry in enabled.templates)
+    assert unavailable == {}
+    assert registry.get("food-patterns").template.intent_spec().domain == "nutrition"
+    assert registry.get("exercise-progress").template.intent_spec().domain == "training"
 
 
 def test_prompt_builders_are_deterministic_server_side_and_contain_no_fixture_health_data():
@@ -137,7 +132,7 @@ def test_action_templates_expose_only_existing_draft_fields():
     }
     assert correction.required_capabilities == (
         "draft:body_measurement",
-        "action:body_correction",
+        "action:correct_measurement",
     )
 
 
@@ -157,8 +152,11 @@ def test_catalog_and_template_preview_render_without_provider_or_health_read_mod
     assert "Resumen" in html
     assert "Energía" in html
     assert "Registrar" in html
-    assert "No disponible" in html
-    assert "ai_templates.js?v=2.0" in html
+    assert "AI Capability Engine" in html
+    assert "Recomendado para ti" in html
+    assert "Capacidades por dominio" in html
+    assert "Accesos rápidos compatibles · 41 presets" in html
+    assert "ai_templates.js?v=3.0" in html
     assert client.get("/ai/templates").status_code == 200
 
     preview = client.get(
@@ -368,17 +366,17 @@ def test_compatible_followups_prefill_without_creating_or_sending_another_turn(
         assert db.session.execute(db.select(AIMessage)).scalars().all().__len__() == 2
 
 
-def test_dashboard_and_today_use_non_sensitive_template_deep_links(app, client, user):
+def test_dashboard_and_today_use_non_sensitive_structured_deep_links(app, client, user):
     _enable_fake_ai(app)
     login(client)
     dashboard = client.get("/dashboard?period=90").get_data(as_text=True)
-    assert "template=period-summary&amp;period=90d" in dashboard
-    assert "template=energy-balance&amp;period=90d" in dashboard
-    assert "template=weight-trend&amp;period=90d" in dashboard
-    assert "template=activity-overview&amp;period=90d" in dashboard
-    assert "template=training-summary&amp;period=90d" in dashboard
+    assert "intent=summary&amp;domain=all&amp;period=90d" in dashboard
+    assert "intent=summary&amp;domain=energy&amp;metric=balance&amp;period=90d" in dashboard
+    assert "intent=trend&amp;domain=body&amp;metric=weight&amp;period=90d" in dashboard
+    assert "intent=summary&amp;domain=activity&amp;period=90d" in dashboard
+    assert "intent=summary&amp;domain=training&amp;period=90d" in dashboard
     assert not re.search(r"(?:prompt|start|end)=", dashboard)
 
     today = client.get("/today").get_data(as_text=True)
     assert "Analizar hoy con IA" in today
-    assert "template=today-summary&amp;period=today" in today
+    assert "intent=summary&amp;domain=all&amp;period=today" in today

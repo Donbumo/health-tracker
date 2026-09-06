@@ -4,9 +4,9 @@
 {% block content %}
 <div class="page-heading ai-catalog-heading">
   <div>
-    <p class="eyebrow">AI Templates 2.0</p>
+    <p class="eyebrow">AI Capability Engine</p>
     <h1>Asistente AI</h1>
-    <p class="lead">Elige una consulta o un registro guiado. Nada se envía hasta que pulses <strong>Enviar</strong>.</p>
+    <p class="lead">Explora lo que Health Tracker sabe hacer con capacidades reales. Nada se envía hasta que pulses <strong>Enviar</strong>.</p>
   </div>
   <form action="{{ url_for('ai.create_conversation') }}" method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -14,6 +14,117 @@
   </form>
 </div>
 
+<section class="ai-adaptive-recommendations" aria-labelledby="ai-recommended-title">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Recomendado para ti</p>
+      <h2 id="ai-recommended-title">Siguientes lecturas útiles</h2>
+      <p>Sugerencias determinísticas basadas en disponibilidad; no usan el proveedor AI.</p>
+    </div>
+  </div>
+  <div class="ai-recommendation-grid">
+    {% for item in adaptive_catalog.recommendations %}
+      <a class="card ai-recommendation-card" href="{{ item.href }}">
+        <span class="ai-template-token" aria-hidden="true">{{ item.intent_label[:3]|upper }}</span>
+        <span><strong>{{ item.title }}</strong><small>{{ period_labels[item.spec.period] }}</small></span>
+        <span aria-hidden="true">→</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="ai-adaptive-workspace" aria-labelledby="ai-explore-title" data-ai-adaptive-catalog data-default-domain="nutrition">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Explorar</p>
+      <h2 id="ai-explore-title">Capacidades por dominio</h2>
+      <p>Elige dominio, intención, métrica y periodo. Cada combinación se valida otra vez en el servidor.</p>
+    </div>
+    <label class="ai-template-period" for="ai-capability-period">
+      <span>Periodo</span>
+      <select id="ai-capability-period" data-ai-capability-period>
+        {% for period_id, period_label in period_labels.items() %}
+          <option value="{{ period_id }}"{% if period_id == (selected_period or '30d') %} selected{% endif %}>{{ period_label|capitalize }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  <div class="ai-domain-filter" aria-label="Explorar dominio">
+    {% for domain in adaptive_catalog.domains if domain.domain_id != 'all' %}
+      <button
+        class="ai-category-button{{ ' is-active' if domain.domain_id == 'nutrition' else '' }}"
+        type="button"
+        data-ai-domain="{{ domain.domain_id }}"
+        aria-pressed="{{ 'true' if domain.domain_id == 'nutrition' else 'false' }}"
+      >{{ domain.label }}</button>
+    {% endfor %}
+  </div>
+  <div class="ai-domain-metrics" aria-label="Métricas declaradas">
+    {% for domain in adaptive_catalog.domains if domain.domain_id != 'all' %}
+      <div data-ai-domain-metrics="{{ domain.domain_id }}"{% if domain.domain_id != 'nutrition' %} hidden{% endif %}>
+        <strong>{{ domain.label }}</strong>
+        <span>{{ domain.metrics|map(attribute='label')|join(' · ') }}</span>
+      </div>
+    {% endfor %}
+  </div>
+  <div class="ai-intent-filter" aria-label="Elegir intención">
+    {% for domain in adaptive_catalog.domains if domain.domain_id != 'all' %}
+      <div data-ai-domain-intents="{{ domain.domain_id }}"{% if domain.domain_id != 'nutrition' %} hidden{% endif %}>
+        {% for capability in domain.read_capabilities %}
+          <button
+            class="ai-category-button{{ ' is-active' if domain.domain_id == 'nutrition' and loop.first else '' }}"
+            type="button"
+            data-ai-intent="{{ capability.intent.value }}"
+            aria-pressed="{{ 'true' if domain.domain_id == 'nutrition' and loop.first else 'false' }}"
+          >{{ intent_labels[capability.intent] }}</button>
+        {% endfor %}
+        {% for action in domain.action_capabilities if action.available %}
+          {% set action_intent = 'correct' if action.action_id.startswith('correct_') else 'record' %}
+          <button
+            class="ai-category-button"
+            type="button"
+            data-ai-intent="{{ action_intent }}"
+            aria-pressed="false"
+          >{{ 'Corregir' if action_intent == 'correct' else 'Registrar' }}</button>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+  <p class="muted" role="status" aria-live="polite" data-ai-capability-results></p>
+  <div class="ai-capability-grid">
+    {% for item in adaptive_catalog.experiences if item.spec.domain != 'all' %}
+      <article
+        class="card ai-capability-card"
+        data-ai-capability-card
+        data-domain="{{ item.spec.domain }}"
+        data-intent="{{ item.spec.intent.value }}"
+        data-periods="{{ item.allowed_periods|join(',') }}"
+        data-default-period="{{ item.spec.period }}"
+        {% if item.spec.domain != 'nutrition' or item.spec.intent.value != 'summary' %}hidden{% endif %}
+      >
+        <div>
+          <span class="status status-muted">{{ item.intent_label }}</span>
+          <h3>{{ item.metric_label or item.domain_label }}</h3>
+          <p>{{ item.description }}</p>
+        </div>
+        <div class="ai-template-card-footer">
+          {% if item.availability == 'available' %}
+            <span class="status status-success">Datos disponibles</span>
+          {% elif item.availability == 'insufficient_data' %}
+            <span class="status status-warning">Datos insuficientes</span>
+          {% else %}
+            <span class="status status-muted">Aún sin datos</span>
+          {% endif %}
+          <a class="button button-secondary" href="{{ item.href }}" data-ai-capability-use>Preparar</a>
+        </div>
+        {% if item.availability_reason %}<p class="muted">{{ item.availability_reason }}</p>{% endif %}
+      </article>
+    {% endfor %}
+  </div>
+</section>
+
+<details class="ai-legacy-presets">
+  <summary>Accesos rápidos compatibles · 41 presets</summary>
 <section class="ai-template-workspace" aria-labelledby="ai-template-title" data-ai-template-catalog data-default-category="summary">
   <div class="section-heading">
     <div>
@@ -85,21 +196,27 @@
     <p>Prueba otra búsqueda o categoría.</p>
   </div>
 </section>
+</details>
 
-{% if selected_template and prepared_prompt %}
+{% if selected_title and prepared_prompt %}
   <section class="card ai-prepared-context" aria-labelledby="prepared-context-title">
     <div class="ai-prepared-heading">
       <div>
         <p class="eyebrow">Mensaje preparado</p>
-        <h2 id="prepared-context-title">{{ selected_template.title }}</h2>
+        <h2 id="prepared-context-title">{{ selected_title }}</h2>
       </div>
       <span class="status status-muted">{{ period_labels[selected_period] }}</span>
     </div>
     <p>Edita el texto si quieres. El proveedor no se consulta y no se consume uso en este paso.</p>
     <form action="{{ url_for('ai.create_conversation') }}" method="post" class="ai-template-prepare-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="template_id" value="{{ selected_template.id }}">
-      <input type="hidden" name="period" value="{{ selected_period }}">
+      {% for name, value in selection_fields.items() %}
+        {% if value is sequence and value is not string %}
+          {% for item in value %}<input type="hidden" name="{{ name }}" value="{{ item }}">{% endfor %}
+        {% else %}
+          <input type="hidden" name="{{ name }}" value="{{ value }}">
+        {% endif %}
+      {% endfor %}
       <label for="ai-prepared-prompt">Tu mensaje</label>
       <textarea id="ai-prepared-prompt" name="content" maxlength="{{ config.AI_MAX_INPUT_CHARS }}" required>{{ prepared_prompt }}</textarea>
       <div class="ai-prepared-actions">
@@ -160,5 +277,5 @@
     <div class="empty-state"><h2>Aún no hay conversaciones</h2><p>Elige una plantilla o inicia una conversación libre.</p></div>
   {% endif %}
 </section>
-<script src="{{ url_for('static', filename='js/ai_templates.js', v='2.0') }}" defer></script>
+<script src="{{ url_for('static', filename='js/ai_templates.js', v='3.0') }}" defer></script>
 {% endblock %}

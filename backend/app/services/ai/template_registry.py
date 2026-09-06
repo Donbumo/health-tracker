@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 import re
 from typing import Callable, Mapping
 
+from app.services.ai.capabilities.composer import AdaptivePromptComposer
+from app.services.ai.capabilities.presets import PRESETS_BY_ID
+from app.services.ai.capabilities.registry import AICapabilityRegistry
+from app.services.ai.capabilities.types import AIIntentSpec, CapabilityError
 from app.services.ai.tools import AIToolRegistry
 
 
@@ -68,7 +73,16 @@ class AITemplate:
                 "invalid_template_period",
                 "El periodo no está disponible para esta plantilla.",
             )
-        prompt = self.prompt_builder(AITemplatePromptContext(selected_period)).strip()
+        context = AITemplatePromptContext(selected_period)
+        legacy_prompt = self.prompt_builder(context).strip()
+        if self.mode == "action":
+            objective = legacy_prompt.split(".", 1)[0]
+        else:
+            objective = legacy_prompt.split(f" para {context.period_label}", 1)[0]
+        prompt = AdaptivePromptComposer(_default_capability_registry()).compose(
+            self.intent_spec(selected_period),
+            objective=objective,
+        ).strip()
         if not prompt:
             raise AITemplateError(
                 "invalid_template_prompt",
@@ -76,6 +90,22 @@ class AITemplate:
                 500,
             )
         return prompt
+
+    def intent_spec(self, period: str | None = None) -> AIIntentSpec:
+        selected_period = period or self.default_period
+        preset = PRESETS_BY_ID.get(self.id)
+        if preset is None:
+            raise AITemplateError(
+                "template_without_preset",
+                "La plantilla AI no tiene un preset adaptativo.",
+                500,
+            )
+        spec = preset.spec(selected_period)
+        try:
+            _default_capability_registry().resolve(spec)
+        except CapabilityError as error:
+            raise AITemplateError(error.code, error.safe_message, error.status) from error
+        return spec
 
 
 @dataclass(frozen=True)
@@ -256,7 +286,7 @@ TEMPLATES = (
     _template("protein-consistency", "nutrition", "Analizar proteína", "Frecuencia y cobertura del registro de proteína.", "analysis", "PRO", "30d", _P, ("tool:get_nutrition_summary",), ("nutrition-overview", "macro-goals", "nutrition-data-quality"), _analysis_prompt("Analiza la consistencia de mi proteína", ("get_nutrition_summary",)), 220),
     _template("macro-goals", "nutrition", "Macros frente a metas", "Contrasta macros con metas ya configuradas.", "comparison", "MAC", "30d", _P, ("tool:get_nutrition_summary", "tool:get_goals_summary"), ("goals-progress", "protein-consistency", "nutrition-data-quality"), _analysis_prompt("Compara mis macros con mis metas configuradas", ("get_nutrition_summary", "get_goals_summary"), constraints=("No propongas ni inventes metas nuevas.",)), 230),
     _template("nutrition-data-quality", "nutrition", "Calidad nutricional", "Días cubiertos y campos ausentes.", "analysis", "CAL", "30d", _P, ("tool:get_nutrition_summary", "tool:get_data_sources_summary"), ("nutrition-overview", "data-sources", "log-food"), _analysis_prompt("Evalúa la calidad y cobertura de mis datos de nutrición", ("get_nutrition_summary", "get_data_sources_summary")), 240),
-    _template("food-patterns", "nutrition", "Patrones de alimentos", "Patrones sobre elementos de comida registrados.", "analysis", "PAT", "30d", _P, ("read:food_item_patterns",), (), _analysis_prompt("Analiza patrones de los alimentos que registré", ("food_item_patterns",)), 250),
+    _template("food-patterns", "nutrition", "Patrones de alimentos", "Patrones sobre elementos de comida registrados.", "analysis", "PAT", "30d", _P, ("tool:get_food_patterns",), (), _analysis_prompt("Analiza patrones de los alimentos que registré", ("get_food_patterns",)), 250),
 
     _template("weight-trend", "body", "Ver tendencia de peso", "Cambios, promedios y cobertura del peso.", "analysis", "PES", "30d", _P, ("tool:get_weight_trend",), ("body-composition", "compare-body-period", "data-quality"), _analysis_prompt("Analiza mi tendencia de peso", ("get_weight_trend",)), 310),
     _template("body-composition", "body", "Composición corporal", "Evolución de las métricas corporales disponibles.", "analysis", "COM", "30d", _PT, ("tool:get_weight_trend", "tool:get_latest_body_measurement"), ("weight-trend", "latest-body-measurement", "correct-body-measurement"), _analysis_prompt("Analiza mi peso y composición corporal disponible", ("get_weight_trend", "get_latest_body_measurement")), 320),
@@ -272,7 +302,7 @@ TEMPLATES = (
     _template("training-consistency", "training", "Consistencia de entrenamiento", "Frecuencia y cobertura de sesiones.", "analysis", "CON", "30d", _P, ("tool:get_training_summary",), ("training-summary", "training-history", "data-quality"), _analysis_prompt("Analiza la consistencia de mi entrenamiento", ("get_training_summary",)), 520),
     _template("training-volume", "training", "Volumen de entrenamiento", "Volumen únicamente cuando las cargas sean comparables.", "comparison", "VOL", "30d", _P, ("tool:get_training_summary",), ("training-summary", "compare-periods", "training-history"), _analysis_prompt("Analiza mi volumen de entrenamiento", ("get_training_summary",), comparison=True, constraints=("Compara volumen solo entre cargas compatibles; declara lo no comparable.",)), 530),
     _template("training-history", "training", "Historial de entrenamiento", "Revisa sesiones recientes sin inventar progreso.", "analysis", "HIS", "30d", ("30d", "90d"), ("tool:get_training_history",), ("training-summary", "training-consistency", "data-sources"), _analysis_prompt("Resume mi historial reciente de entrenamiento", ("get_training_history",)), 540),
-    _template("exercise-progress", "training", "Progreso por ejercicio", "Evolución específica de un ejercicio comparable.", "analysis", "EJE", "30d", _P, ("read:exercise_progress",), (), _analysis_prompt("Analiza el progreso de un ejercicio específico", ("exercise_progress",)), 550),
+    _template("exercise-progress", "training", "Progreso por ejercicio", "Evolución específica de un ejercicio comparable.", "analysis", "EJE", "30d", _P, ("tool:get_exercise_progress",), (), _analysis_prompt("Analiza el progreso de un ejercicio específico", ("get_exercise_progress",)), 550),
 
     _template("goals-overview", "goals", "Panorama de metas", "Estado de metas ya configuradas.", "analysis", "MET", "30d", _P, ("tool:get_goals_summary",), ("goals-progress", "goal-gaps", "data-quality"), _analysis_prompt("Resume mis metas configuradas", ("get_goals_summary",)), 610),
     _template("goals-progress", "goals", "Progreso de metas", "Adherencia descriptiva por periodo.", "analysis", "PRO", "30d", _P, ("tool:get_goals_summary",), ("goals-overview", "goal-gaps", "compare-periods"), _analysis_prompt("Analiza el progreso de mis metas configuradas", ("get_goals_summary",)), 620),
@@ -289,8 +319,13 @@ TEMPLATES = (
     _template("quick-snack", "log", "Snack rápido", "Inicia un borrador de snack.", "action", "SNK", "today", ("today",), ("draft:food_entry",), ("nutrition-overview",), _action_prompt("Quiero registrar rápidamente un snack", "food_entry", _FOOD_FIELDS, meal_type="snack"), 850, FOOD_INPUT_SCHEMA),
     _template("log-weight", "log", "Registrar peso", "Prepara un borrador de peso y fecha.", "action", "PES", "today", ("today",), ("draft:body_measurement",), ("weight-trend", "body-composition"), _action_prompt("Quiero registrar mi peso", "body_measurement", _BODY_FIELDS), 860, BODY_INPUT_SCHEMA),
     _template("log-body-composition", "log", "Registrar composición", "Prepara peso y métricas corporales soportadas.", "action", "COR", "today", ("today",), ("draft:body_measurement",), ("body-composition", "latest-body-measurement"), _action_prompt("Quiero registrar una medición de composición corporal", "body_measurement", _BODY_FIELDS), 870, BODY_INPUT_SCHEMA),
-    _template("correct-body-measurement", "log", "Corregir medición corporal", "Corrige la última medición mediante preview y patch oficial.", "action", "EDI", "today", ("today",), ("draft:body_measurement", "action:body_correction"), ("latest-body-measurement", "body-composition"), _action_prompt("Quiero corregir mi última medición corporal", "body_measurement", _BODY_FIELDS, correction=True), 880, BODY_INPUT_SCHEMA),
+    _template("correct-body-measurement", "log", "Corregir medición corporal", "Corrige la última medición mediante preview y patch oficial.", "action", "EDI", "today", ("today",), ("draft:body_measurement", "action:correct_measurement"), ("latest-body-measurement", "body-composition"), _action_prompt("Quiero corregir mi última medición corporal", "body_measurement", _BODY_FIELDS, correction=True), 880, BODY_INPUT_SCHEMA),
 )
+
+
+@lru_cache(maxsize=1)
+def _default_capability_registry() -> AICapabilityRegistry:
+    return AICapabilityRegistry()
 
 
 class AITemplateRegistry:
@@ -301,19 +336,14 @@ class AITemplateRegistry:
         extra_capabilities: set[str] | None = None,
     ):
         tools = tool_registry or AIToolRegistry()
-        capabilities = {f"tool:{item.name}" for item in tools.definitions}
-        capabilities.update(
-            {
-                "draft:food_entry",
-                "draft:body_measurement",
-                "action:body_correction",
-            }
-        )
+        capability_registry = AICapabilityRegistry(tool_registry=tools)
+        capabilities = set(capability_registry.capability_tokens)
         if extra_capabilities:
             capabilities.update(extra_capabilities)
         self._capabilities = frozenset(capabilities)
         self._templates = tuple(sorted(TEMPLATES, key=lambda item: item.sort_order))
         self._by_id = {item.id: item for item in self._templates}
+        self.capability_registry = capability_registry
         self._validate()
 
     @property
@@ -358,10 +388,16 @@ class AITemplateRegistry:
         prompt = template.build_prompt(selected_period)
         return template, selected_period, prompt
 
+    def intent_spec(self, template_id: str, period: str | None = None) -> AIIntentSpec:
+        template, selected_period, _prompt = self.prepare(template_id, period)
+        return template.intent_spec(selected_period)
+
     def _validate(self) -> None:
         category_ids = {item.id for item in CATEGORIES}
         if len(self._by_id) != len(self._templates):
             raise RuntimeError("AI template ids must be unique.")
+        if set(self._by_id) != set(PRESETS_BY_ID):
+            raise RuntimeError("Every legacy AI template must map to exactly one preset.")
         if tuple(item.sort_order for item in self._templates) != tuple(
             sorted(item.sort_order for item in self._templates)
         ):

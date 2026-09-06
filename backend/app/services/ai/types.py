@@ -26,10 +26,19 @@ class AIProviderMessage:
 
 
 @dataclass(frozen=True)
+class AIToolCapabilityMetadata:
+    domains: tuple[str, ...]
+    entities: tuple[str, ...]
+    metrics: tuple[str, ...]
+    operations: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class AIToolDefinition:
     name: str
     description: str
     input_schema: dict[str, Any]
+    capability: AIToolCapabilityMetadata | None = None
 
 
 @dataclass(frozen=True)
@@ -65,6 +74,8 @@ class AIProviderRequest:
     tool_results: tuple[AIProviderToolResult, ...] = ()
     safety_instructions: str = ""
     timeout_seconds: float = 20
+    draft_types: tuple[str, ...] | None = None
+    require_tool: bool = False
 
 
 @dataclass(frozen=True)

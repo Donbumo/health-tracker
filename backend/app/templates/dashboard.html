@@ -264,15 +264,15 @@
     <p class="eyebrow">Profundiza</p>
     <h2 id="ai-period-title">Pregunta a la AI sobre este periodo</h2>
     <p>Se prepara una consulta para {{ ai_period|replace('d', ' días') }}. No se envían cifras ni se ejecuta ninguna consulta hasta que tú envíes el mensaje.</p>
-    <a class="button" href="{{ url_for('ai.index', template='period-summary', period=ai_period) }}">Preguntar a la AI</a>
+    <a class="button" href="{{ url_for('ai.index', intent='summary', domain='all', period=ai_period) }}">Preguntar a la AI</a>
     <div class="quick-prompt-list" aria-label="Preguntas rápidas">
-      {% for template_id, prompt in [
-        ('energy-balance', 'Balance energético'),
-        ('weight-trend', 'Tendencia de peso'),
-        ('activity-overview', 'Actividad'),
-        ('training-summary', 'Entrenamiento')
+      {% for intent, domain, metric, prompt in [
+        ('summary', 'energy', 'balance', 'Balance energético'),
+        ('trend', 'body', 'weight', 'Tendencia de peso'),
+        ('summary', 'activity', '', 'Actividad'),
+        ('summary', 'training', '', 'Entrenamiento')
       ] %}
-        <a href="{{ url_for('ai.index', template=template_id, period=ai_period) }}">{{ prompt }}</a>
+        <a href="{{ url_for('ai.index', intent=intent, domain=domain, metric=metric or none, period=ai_period) }}">{{ prompt }}</a>
       {% endfor %}
     </div>
   </aside>

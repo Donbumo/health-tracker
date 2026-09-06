@@ -11,16 +11,22 @@ from jsonschema import Draft202012Validator
 
 from app.extensions import db
 from app.models import Activity, DailyEnergy, DailyNutrition, TrainingSession, User, WeighIn
-from app.services.ai.types import AIToolDefinition, AIToolExecution
+from app.services.ai.types import (
+    AIToolCapabilityMetadata,
+    AIToolDefinition,
+    AIToolExecution,
+)
 from app.services.dashboard.date_range import DashboardDateRange, DashboardRangeError
 from app.services.dashboard.nutrition import NutritionTrendService
 from app.services.dashboard.serializers import serialize_dashboard
 from app.services.dashboard.summary import DashboardSummaryService
 from app.services.dashboard.weight import WeightTrendService
 from app.services.engagement import adherence_summary
+from app.services.exercise_progress import ExerciseProgressService
 from app.services.mobile_health import health_progress
 from app.services.mobile_progress import history_page
 from app.services.mobile_sync import MobileSyncError
+from app.services.nutrition_patterns import NutritionPatternsService
 
 
 PERIOD_PRESETS = (
@@ -50,6 +56,12 @@ def _period_schema(*, comparison: bool = False) -> dict:
         "properties": properties,
         "additionalProperties": False,
     }
+
+
+def _metadata(domains, entities, metrics, operations):
+    return AIToolCapabilityMetadata(
+        tuple(domains), tuple(entities), tuple(metrics), tuple(operations)
+    )
 
 
 def _today_override() -> date | None:
@@ -301,7 +313,7 @@ def _dashboard(user: User, arguments: dict) -> AIToolExecution:
 
 
 def _weight(user: User, arguments: dict) -> AIToolExecution:
-    date_range = _date_range(user, arguments)
+    date_range = _date_range(user, arguments, comparison=True)
     result = serialize_dashboard(
         WeightTrendService().build(
             user.id, date_range, user.preferred_load_unit
@@ -309,11 +321,25 @@ def _weight(user: User, arguments: dict) -> AIToolExecution:
     )
     evidence = AIProvenanceService().for_domains(user.id, date_range, ("weight",))
     evidence.append(_calculated_evidence("weight_trend", date_range.as_dict()))
+    comparison = None
+    if date_range.compare_previous:
+        previous_range = date_range.previous_period()
+        previous = serialize_dashboard(
+            WeightTrendService().build(
+                user.id, previous_range, user.preferred_load_unit
+            )
+        )
+        comparison = {
+            "period": previous_range.as_dict(),
+            "metrics": previous["summary"],
+            "coverage": previous["coverage"],
+        }
     data = {
         "period": date_range.as_dict(),
         "metrics": result["summary"],
         "coverage": result["coverage"],
         "points": result["trend"][-30:],
+        "comparison": comparison,
         "sources": evidence,
     }
     return AIToolExecution(sanitize_untrusted_data(data), tuple(evidence))
@@ -410,17 +436,38 @@ def _latest_body_measurement(user: User, arguments: dict) -> AIToolExecution:
 
 
 def _nutrition(user: User, arguments: dict) -> AIToolExecution:
-    date_range = _date_range(user, arguments)
+    date_range = _date_range(user, arguments, comparison=True)
     result = serialize_dashboard(NutritionTrendService().build(user.id, date_range))
     evidence = AIProvenanceService().for_domains(user.id, date_range, ("nutrition",))
     evidence.append(_calculated_evidence("nutrition_summary", date_range.as_dict()))
+    comparison = None
+    if date_range.compare_previous:
+        previous_range = date_range.previous_period()
+        previous = serialize_dashboard(
+            NutritionTrendService().build(user.id, previous_range)
+        )
+        comparison = {
+            "period": previous_range.as_dict(),
+            "metrics": previous["summary"],
+            "coverage": previous["coverage"],
+        }
     data = {
         "period": date_range.as_dict(),
         "metrics": result["summary"],
         "coverage": result["coverage"],
+        "comparison": comparison,
         "sources": evidence,
     }
     return AIToolExecution(sanitize_untrusted_data(data), tuple(evidence))
+
+
+def _food_patterns(user: User, arguments: dict) -> AIToolExecution:
+    date_range = _date_range(user, arguments)
+    result = NutritionPatternsService().build(user.id, date_range)
+    evidence = AIProvenanceService().for_domains(user.id, date_range, ("nutrition",))
+    evidence.append(_calculated_evidence("food_patterns", date_range.as_dict()))
+    result["sources"] = evidence
+    return AIToolExecution(sanitize_untrusted_data(result), tuple(evidence))
 
 
 def _training(user: User, arguments: dict) -> AIToolExecution:
@@ -469,6 +516,26 @@ def _training_history(user: User, arguments: dict) -> AIToolExecution:
         "sources": list(evidence),
     }
     return AIToolExecution(sanitize_untrusted_data(data), evidence)
+
+
+def _exercise_progress(user: User, arguments: dict) -> AIToolExecution:
+    preset = arguments.get("preset", "30d")
+    exercise = arguments.get("exercise")
+    limit = arguments.get("limit", 8)
+    try:
+        result = ExerciseProgressService().build(
+            user.id,
+            preset,
+            exercise=exercise,
+            limit=limit,
+        )
+    except MobileSyncError as error:
+        raise AIToolError("invalid_tool_arguments", str(error)) from error
+    date_range = _date_range(user, {"preset": preset})
+    evidence = AIProvenanceService().for_domains(user.id, date_range, ("training",))
+    evidence.append(_calculated_evidence("exercise_progress", date_range.as_dict()))
+    result["sources"] = evidence
+    return AIToolExecution(sanitize_untrusted_data(result), tuple(evidence))
 
 
 def _activities(user: User, arguments: dict) -> AIToolExecution:
@@ -623,12 +690,24 @@ class AIToolRegistry:
             "Resumen longitudinal de energía, proteína, peso y entrenamiento.",
             _period_schema(comparison=True),
             _dashboard,
+            _metadata(
+                ("all", "energy", "data"),
+                ("dashboard_summary",),
+                ("balance", "intake", "expenditure", "coverage"),
+                ("summary", "trend", "compare", "coverage"),
+            ),
         )
         self._register(
             "get_weight_trend",
             "Tendencia owner-only de peso para cambios, promedios o periodos; no usar para una medición puntual.",
-            _period_schema(),
+            _period_schema(comparison=True),
             _weight,
+            _metadata(
+                ("body",),
+                ("body_measurement",),
+                ("weight", "body_fat", "muscle_mass", "body_water", "visceral_fat", "bmi", "bmr"),
+                ("summary", "trend", "compare", "coverage"),
+            ),
         )
         self._register(
             "get_latest_body_measurement",
@@ -650,18 +729,48 @@ class AIToolRegistry:
                 "additionalProperties": False,
             },
             _latest_body_measurement,
+            _metadata(
+                ("body",),
+                ("body_measurement",),
+                ("weight", "body_fat", "muscle_mass", "body_water", "visceral_fat", "bmi", "bmr"),
+                ("latest", "summary"),
+            ),
         )
         self._register(
             "get_nutrition_summary",
             "Resumen owner-only de nutrición y proteína.",
-            _period_schema(),
+            _period_schema(comparison=True),
             _nutrition,
+            _metadata(
+                ("nutrition",),
+                ("daily_nutrition",),
+                ("calories", "protein", "fat", "net_carbs", "total_carbs", "fiber", "sugar", "sodium"),
+                ("summary", "trend", "compare", "consistency", "coverage"),
+            ),
+        )
+        self._register(
+            "get_food_patterns",
+            "Patrones agregados owner-only de registros, comidas, nombres y cobertura; sin inferencias clínicas.",
+            _period_schema(),
+            _food_patterns,
+            _metadata(
+                ("nutrition",),
+                ("food_entry", "daily_nutrition"),
+                ("food_entries",),
+                ("patterns", "coverage"),
+            ),
         )
         self._register(
             "get_training_summary",
             "Resumen owner-only de entrenamiento y comparación opcional.",
             _period_schema(comparison=True),
             _training,
+            _metadata(
+                ("training",),
+                ("training_session",),
+                ("sessions", "duration", "volume"),
+                ("summary", "compare", "consistency", "coverage"),
+            ),
         )
         self._register(
             "get_training_history",
@@ -672,6 +781,32 @@ class AIToolRegistry:
                 "additionalProperties": False,
             },
             _training_history,
+            _metadata(
+                ("training",),
+                ("training_session",),
+                ("sessions",),
+                ("latest",),
+            ),
+        )
+        self._register(
+            "get_exercise_progress",
+            "Progreso owner-only por ejercicio con sesiones, sets y cargas únicamente comparables.",
+            {
+                "type": "object",
+                "properties": {
+                    "preset": {"type": "string", "enum": ["7d", "30d", "90d"]},
+                    "exercise": {"type": "string", "minLength": 1, "maxLength": 200},
+                    "limit": {"type": "integer", "minimum": 1, "maximum": 20},
+                },
+                "additionalProperties": False,
+            },
+            _exercise_progress,
+            _metadata(
+                ("training",),
+                ("exercise", "training_session", "training_set"),
+                ("exercise_load", "volume", "reps"),
+                ("trend", "progress"),
+            ),
         )
         self._register(
             "get_activity_summary",
@@ -682,12 +817,24 @@ class AIToolRegistry:
                 "additionalProperties": False,
             },
             _activities,
+            _metadata(
+                ("activity",),
+                ("activity",),
+                ("activity", "active_days"),
+                ("summary", "consistency"),
+            ),
         )
         self._register(
             "get_steps_summary",
             "Pasos efectivos por día sin sumar fuentes potencialmente solapadas.",
             _period_schema(),
             _steps,
+            _metadata(
+                ("activity",),
+                ("daily_steps",),
+                ("steps", "active_days"),
+                ("summary", "trend", "progress", "consistency", "coverage"),
+            ),
         )
         self._register(
             "get_goals_summary",
@@ -698,6 +845,12 @@ class AIToolRegistry:
                 "additionalProperties": False,
             },
             _goals,
+            _metadata(
+                ("goals", "nutrition"),
+                ("user_goal",),
+                ("goals", "adherence", "protein", "fat", "net_carbs"),
+                ("summary", "progress", "coverage", "compare"),
+            ),
         )
         self._register(
             "get_data_sources_summary",
@@ -714,10 +867,26 @@ class AIToolRegistry:
                 "additionalProperties": False,
             },
             _data_sources,
+            _metadata(
+                ("data", "nutrition", "activity", "training"),
+                ("data_source",),
+                ("coverage", "provenance"),
+                ("summary", "coverage", "sources"),
+            ),
         )
 
-    def _register(self, name: str, description: str, schema: dict, handler: Callable) -> None:
-        self._handlers[name] = (AIToolDefinition(name, description, schema), handler)
+    def _register(
+        self,
+        name: str,
+        description: str,
+        schema: dict,
+        handler: Callable,
+        capability: AIToolCapabilityMetadata,
+    ) -> None:
+        self._handlers[name] = (
+            AIToolDefinition(name, description, schema, capability),
+            handler,
+        )
 
     @property
     def definitions(self) -> tuple[AIToolDefinition, ...]:

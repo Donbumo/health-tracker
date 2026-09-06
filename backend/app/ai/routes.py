@@ -1,9 +1,19 @@
+from dataclasses import dataclass
+import time
+
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.ai import ai_bp
 from app.extensions import db
 from app.services.ai.conversations import AIConversationService, AIServiceError
+from app.services.ai.capabilities.composer import (
+    AdaptivePromptComposer,
+    AdaptiveTemplateComposer,
+    INTENT_LABELS,
+)
+from app.services.ai.capabilities.registry import AICapabilityRegistry
+from app.services.ai.capabilities.types import AIIntentSpec, CapabilityError
 from app.services.ai.template_registry import (
     AITemplateError,
     AITemplateRegistry,
@@ -24,15 +34,55 @@ def _web_error(error: AIServiceError):
     flash(error.safe_message, "danger" if error.status >= 500 else "warning")
 
 
-def _template_selection(values):
+@dataclass(frozen=True)
+class _AISelection:
+    template: object | None
+    spec: AIIntentSpec
+    period: str
+    prompt: str
+    title: str
+
+    @property
+    def form_fields(self):
+        if self.template is not None:
+            return {"template_id": self.template.id, "period": self.period}
+        return self.spec.as_query()
+
+    @property
+    def query(self):
+        if self.template is not None:
+            return {"template": self.template.id, "period": self.period}
+        return self.spec.as_query()
+
+
+def _selection(values):
     template_id = (values.get("template") or values.get("template_id") or "").strip()
-    if not template_id:
-        return None
+    if template_id:
+        try:
+            template, period, prompt = AITemplateRegistry().prepare(
+                template_id, values.get("period")
+            )
+            return _AISelection(
+                template,
+                template.intent_spec(period),
+                period,
+                prompt,
+                template.title,
+            )
+        except AITemplateError as error:
+            if error.status == 404:
+                abort(404)
+            abort(error.status, description=error.safe_message)
+    capability_registry = AICapabilityRegistry()
     try:
-        return AITemplateRegistry().prepare(template_id, values.get("period"))
-    except AITemplateError as error:
-        if error.status == 404:
-            abort(404)
+        spec = capability_registry.parse(values)
+        if spec is None:
+            return None
+        manifest = capability_registry.manifest(spec.domain)
+        title = f"{INTENT_LABELS[spec.intent]} · {manifest.label}"
+        prompt = AdaptivePromptComposer(capability_registry).compose(spec)
+        return _AISelection(None, spec, spec.period, prompt, title)
+    except CapabilityError as error:
         abort(error.status, description=error.safe_message)
 
 
@@ -62,21 +112,44 @@ def _followups(template, period):
 def _render_index():
     service = AIConversationService()
     registry = AITemplateRegistry()
-    selection = _template_selection(request.args)
-    selected_template = selection[0] if selection else None
-    selected_period = selection[1] if selection else None
-    prepared_prompt = selection[2] if selection else None
-    return render_template(
+    resolution_started = time.perf_counter()
+    selection = _selection(request.args)
+    resolution_ms = max(0, round((time.perf_counter() - resolution_started) * 1000))
+    catalog_started = time.perf_counter()
+    adaptive_catalog = AdaptiveTemplateComposer(
+        registry.capability_registry
+    ).build(current_user.id, period=request.args.get("period") or "30d")
+    catalog_ms = max(0, round((time.perf_counter() - catalog_started) * 1000))
+    render_started = time.perf_counter()
+    html = render_template(
         "ai/index.html",
         conversations=service.list(current_user.id),
         ai_status=service.status(current_user._get_current_object()),
         catalog=registry.templates,
         categories=registry.categories,
         period_labels=PERIOD_LABELS,
-        selected_template=selected_template,
-        selected_period=selected_period,
-        prepared_prompt=prepared_prompt,
+        intent_labels=INTENT_LABELS,
+        adaptive_catalog=adaptive_catalog,
+        selected_template=selection.template if selection else None,
+        selected_title=selection.title if selection else None,
+        selected_period=selection.period if selection else None,
+        selected_spec=selection.spec if selection else None,
+        selection_fields=selection.form_fields if selection else {},
+        prepared_prompt=selection.prompt if selection else None,
     )
+    render_ms = max(0, round((time.perf_counter() - render_started) * 1000))
+    current_app.logger.info(
+        (
+            "ai_catalog_timing catalog_ms=%s availability_ms=%s "
+            "recommendations_ms=%s intent_resolution_ms=%s render_ms=%s"
+        ),
+        catalog_ms,
+        adaptive_catalog.availability_ms,
+        adaptive_catalog.recommendations_ms,
+        resolution_ms,
+        render_ms,
+    )
+    return html
 
 
 @ai_bp.get("")
@@ -99,25 +172,28 @@ def create_conversation():
     if status["state"] != "available":
         flash(status["reason"] or "La función AI no está disponible.", "warning")
         return redirect(url_for("ai.index"))
-    selection = _template_selection(request.form)
-    template = selection[0] if selection else None
-    period = selection[1] if selection else None
-    default_prompt = selection[2] if selection else ""
+    selection = _selection(request.form)
+    template = selection.template if selection else None
+    period = selection.period if selection else None
+    default_prompt = selection.prompt if selection else ""
     prepared_prompt = (request.form.get("content") or default_prompt).strip()
     prepared_prompt = prepared_prompt[: current_app.config["AI_MAX_INPUT_CHARS"]]
     if selection and not prepared_prompt:
         flash("Escribe el mensaje que deseas preparar.", "warning")
-        return redirect(
-            url_for("ai.index", template=template.id, period=period)
-        )
+        return redirect(url_for("ai.index", **selection.query))
     try:
-        row = service.create(current_user.id, title=template.title if template else None)
+        row = service.create(current_user.id, title=selection.title if selection else None)
     except AIServiceError as error:
         _web_error(error)
         return redirect(url_for("ai.index"))
-    if template is not None:
+    if selection is not None:
         current_app.logger.info(
-            "ai_template_selected template=%s period=%s", template.id, period
+            "ai_capability_selected intent=%s domain=%s metric_ids=%s period=%s preset=%s",
+            selection.spec.intent.value,
+            selection.spec.domain,
+            ",".join(selection.spec.metrics) or "none",
+            selection.spec.period,
+            template.id if template else "none",
         )
         return render_template(
             "ai/conversation.html",
@@ -125,6 +201,9 @@ def create_conversation():
             ai_status=status,
             prepared_prompt=prepared_prompt,
             active_template=template,
+            active_spec=selection.spec,
+            selection_fields=selection.form_fields,
+            active_title=selection.title,
             template_period=period,
             template_followups=(),
         )
@@ -137,15 +216,15 @@ def create_conversation():
 @login_required
 def conversation(conversation_id: str):
     service = AIConversationService()
-    selection = _template_selection(request.args)
-    template = selection[0] if selection else None
-    period = selection[1] if selection else None
+    selection = _selection(request.args)
+    template = selection.template if selection else None
+    period = selection.period if selection else None
     try:
         row = service.get(current_user.id, conversation_id)
     except AIServiceError as error:
         _web_error(error)
         return redirect(url_for("ai.index"))
-    prepared_prompt = selection[2] if selection and not row.messages else ""
+    prepared_prompt = selection.prompt if selection and not row.messages else ""
     has_answer = bool(row.messages and row.messages[-1].role == "assistant")
     return render_template(
         "ai/conversation.html",
@@ -153,6 +232,9 @@ def conversation(conversation_id: str):
         ai_status=service.status(current_user._get_current_object()),
         prepared_prompt=prepared_prompt,
         active_template=template,
+        active_spec=selection.spec if selection else None,
+        selection_fields=selection.form_fields if selection else {},
+        active_title=selection.title if selection else None,
         template_period=period,
         template_followups=_followups(template, period) if has_answer else (),
     )
@@ -161,15 +243,16 @@ def conversation(conversation_id: str):
 @ai_bp.post("/conversations/<conversation_id>/messages")
 @login_required
 def send_message(conversation_id: str):
-    selection = _template_selection(request.form)
-    template = selection[0] if selection else None
-    period = selection[1] if selection else None
+    selection = _selection(request.form)
+    template = selection.template if selection else None
+    period = selection.period if selection else None
     try:
         AIConversationService().send_message(
             current_user._get_current_object(),
             conversation_id,
             request.form.get("content"),
             template_id=template.id if template else None,
+            intent_spec=selection.spec if selection else None,
         )
     except AIServiceError as error:
         _web_error(error)
@@ -177,7 +260,7 @@ def send_message(conversation_id: str):
         url_for(
             "ai.conversation",
             conversation_id=conversation_id,
-            **({"template": template.id, "period": period} if template else {}),
+            **(selection.query if selection else {}),
         )
     )
 
@@ -185,14 +268,15 @@ def send_message(conversation_id: str):
 @ai_bp.post("/conversations/<conversation_id>/retry")
 @login_required
 def retry_message(conversation_id: str):
-    selection = _template_selection(request.form)
-    template = selection[0] if selection else None
-    period = selection[1] if selection else None
+    selection = _selection(request.form)
+    template = selection.template if selection else None
+    period = selection.period if selection else None
     try:
         AIConversationService().retry_last_turn(
             current_user._get_current_object(),
             conversation_id,
             template_id=template.id if template else None,
+            intent_spec=selection.spec if selection else None,
         )
     except AIServiceError as error:
         _web_error(error)
@@ -200,7 +284,7 @@ def retry_message(conversation_id: str):
         url_for(
             "ai.conversation",
             conversation_id=conversation_id,
-            **({"template": template.id, "period": period} if template else {}),
+            **(selection.query if selection else {}),
         )
     )
 

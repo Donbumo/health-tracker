@@ -61,11 +61,25 @@ No salen perfil completo, email, username, `user_id`, ORM, SQL, raw payloads, pa
 ```text
 web session o API Bearer
   → AIConversationService
+  → AIIntentSpec validado
+  → AICapabilityRegistry / plan determinista
   → AIProvider
-  → AIToolRegistry allowlisted
+  → subconjunto de AIToolRegistry allowlisted para la intención
   → services/read models owner-only
   → MariaDB
 ```
+
+Los dominios declaran un `AICapabilityManifest` tipado con entidades, métricas,
+semántica de ausencia, agregaciones, comparaciones, periodos, lecturas y acciones.
+El catálogo visual y los prompts se componen desde esa metadata; no existe una
+plantilla estática por cada combinación. Los 41 IDs de AI Templates 2.0 se
+conservan como presets compatibles sobre el mismo motor.
+
+La URL estructurada admite únicamente `intent`, `domain`, `metric`, `period`,
+`comparison`, `action` y opciones enumeradas. No contiene cifras de salud. El
+resolver valida la combinación y calcula las tools exactas antes de inicializar
+el provider. Una tool que el modelo solicite fuera del plan se rechaza aunque
+pertenezca al registro global.
 
 El contexto se selecciona desde lo más reciente de forma determinista con `AI_MAX_HISTORY_MESSAGES`, `AI_MAX_HISTORY_CHARS` y `AI_MAX_HISTORY_TURNS`. Cada turno limita rondas/tools, output y usage total reportado. No se almacena chain-of-thought. Solo se guardan mensaje, modelo/provider, input/output tokens, auditoría reducida y evidencia.
 
@@ -73,7 +87,13 @@ La política temporal por defecto es coherente y estricta: llamada individual al
 
 Errores de timeout, deadline total, autenticación, quota/rate limit, modelo ausente, respuesta/tool call malformada y proveedor offline se convierten a códigos y mensajes seguros. El cuerpo crudo del provider y sus credenciales no se registran. El mensaje del usuario queda disponible para retry.
 
-Cada request AI emite un evento sanitizado `ai_turn_timing` con `total_ms`, rondas y milisegundos de provider, número/nombre/duración de tools, tiempo total de read models y outcome (`success`, `provider_timeout`, `overall_deadline`, `tool_error`, `provider_error` o `round_limit`). No incluye prompt, argumentos, resultados, API keys ni payloads de salud.
+Cada request AI emite un evento sanitizado `ai_turn_timing` con `intent`,
+`domain`, IDs de métricas, periodo, `total_ms`, rondas y milisegundos de
+provider, número/nombre/duración de tools, tiempo total de read models y outcome
+(`success`, `provider_timeout`, `overall_deadline`, `tool_error`,
+`provider_error` o `round_limit`). El catálogo registra solo tiempos de
+composición/resolución. Ningún evento incluye prompt, argumentos, resultados,
+API keys ni payloads de salud.
 
 ## Tools read-only
 
@@ -81,14 +101,24 @@ Cada request AI emite un evento sanitizado `ai_turn_timing` con `total_ms`, rond
 - `get_latest_body_measurement`
 - `get_weight_trend`
 - `get_nutrition_summary`
+- `get_food_patterns`
 - `get_training_summary`
 - `get_training_history`
+- `get_exercise_progress`
 - `get_activity_summary`
 - `get_steps_summary`
 - `get_goals_summary`
 - `get_data_sources_summary`
 
 `get_latest_body_measurement` consulta la última medición sin ventana temporal, la última hasta una fecha o la medición de una fecha local exacta; devuelve peso, grasa corporal, masa muscular, agua corporal, grasa visceral, BMR e IMC cuando existen. `get_weight_trend` permanece reservado para cambios, promedios y periodos.
+
+`get_food_patterns` describe frecuencia de días, distribución por tipo de
+comida, elementos repetidos, consistencia de métricas, cobertura y procedencia.
+El modelo actual no guarda hora separada de comida y la tool lo declara como no
+disponible; no infiere causalidad ni calidad clínica. `get_exercise_progress`
+reutiliza el read model móvil owner-only y solo publica carga, volumen y mejores
+marcas cuando el modo de carga es comparable; elimina IDs internos y no suma
+modos incompatibles.
 
 Los schemas son cerrados y nunca aceptan owner del modelo. No existen tools de SQL, shell, filesystem, browser, URL o medicina. Los payloads exponen `period`, `metrics`, `coverage`, fuentes y solo los puntos recientes necesarios. Null sigue significando ausencia, no cero.
 
@@ -104,7 +134,14 @@ El delete de conversación es hard delete y elimina mensajes, tool audit y draft
 
 ## Drafts y confirmación
 
-Los estados son `pending_confirmation`, `applied`, `rejected`, `expired` y `failed`. `body_measurement` y `food_entry` pueden confirmarse; `workout_entry` y `steps_entry` continúan preparados pero no habilitados.
+Los estados son `pending_confirmation`, `applied`, `rejected`, `expired` y
+`failed`. `body_measurement` y `food_entry` pueden confirmarse. Las capacidades
+de acción reutilizables declaran dominio, entidad, campos soportados, tipo de
+draft, servicio oficial y confirmación obligatoria. Registrar/corregir medición
+y registrar comida están disponibles. Entrenamiento queda bloqueado hasta
+resolver plan/versión y validación completa de ejercicios; cambios de meta
+quedan bloqueados hasta existir `goal_entry` y preview owner-bound.
+`workout_entry` y `steps_entry` continúan preparados pero no habilitados.
 
 ```text
 mensaje → draft → preview editable → confirmación explícita
@@ -129,3 +166,8 @@ Se omiten API keys, secretos, `provider_call_id`, argumentos internos, respuesta
 - No hay coach autónomo, diagnóstico, Strava, BLE ni acciones silenciosas.
 - No se calculan costos monetarios ni billing.
 - Confirmación de workout/steps queda para una iteración posterior.
+- El estado “capacidad soportada” es distinto de “el usuario tiene datos”: la
+  interfaz muestra sin datos o datos insuficientes sin ocultar la capacidad.
+
+Para extender el motor consulta
+[HOW_TO_ADD_AI_SUPPORT_FOR_A_NEW_DOMAIN.md](HOW_TO_ADD_AI_SUPPORT_FOR_A_NEW_DOMAIN.md).

@@ -22,6 +22,8 @@ from app.models import (
     WeighIn,
 )
 from app.services.ai.providers import AIProviderError, get_provider, provider_status
+from app.services.ai.capabilities.registry import AICapabilityRegistry
+from app.services.ai.capabilities.types import AIIntentSpec, CapabilityError
 from app.services.ai.template_registry import AITemplateError, AITemplateRegistry
 from app.services.ai.tools import AIToolError, AIToolRegistry, sanitize_untrusted_data
 from app.services.ai.types import (
@@ -280,6 +282,10 @@ class _AITurnTiming:
     tool_error: bool = False
     outcome: str = "provider_error"
     provider_name: str = "unknown"
+    intent: str = "freeform"
+    domain: str = "none"
+    metric_ids: tuple[str, ...] = ()
+    period: str = "none"
 
     def record_provider(self, started_at: float) -> None:
         self.provider_ms.append(max(0, round((time.monotonic() - started_at) * 1000)))
@@ -298,7 +304,8 @@ class _AITurnTiming:
             (
                 "ai_turn_timing outcome=%s total_ms=%s provider=%s "
                 "provider_round_count=%s provider_ms=%s tool_count=%s "
-                "tool_names=%s tool_ms=%s total_tool_ms=%s read_model_ms=%s"
+                "tool_names=%s tool_ms=%s total_tool_ms=%s read_model_ms=%s "
+                "intent=%s domain=%s metric_ids=%s period=%s"
             ),
             self.outcome,
             total_ms,
@@ -310,6 +317,13 @@ class _AITurnTiming:
             ",".join(str(value) for value in self.tool_ms) or "none",
             sum(self.tool_ms),
             sum(self.tool_ms),
+            re.sub(r"[^a-z0-9_-]", "_", self.intent.casefold())[:32] or "invalid",
+            re.sub(r"[^a-z0-9_-]", "_", self.domain.casefold())[:32] or "invalid",
+            ",".join(
+                re.sub(r"[^a-z0-9_-]", "_", item.casefold())[:48]
+                for item in self.metric_ids
+            ) or "none",
+            re.sub(r"[^a-z0-9_-]", "_", self.period.casefold())[:16] or "invalid",
         )
 
 
@@ -582,6 +596,7 @@ def serialize_conversation(row: AIConversation, *, detail: bool = False) -> dict
 class AIConversationService:
     def __init__(self, registry: AIToolRegistry | None = None):
         self.registry = registry or AIToolRegistry()
+        self.capability_registry = AICapabilityRegistry(tool_registry=self.registry)
 
     @staticmethod
     def status(user: User | None = None) -> dict:
@@ -650,9 +665,13 @@ class AIConversationService:
         *,
         attachments=None,
         template_id: str | None = None,
+        intent_spec: AIIntentSpec | None = None,
     ) -> tuple[AIMessage, list[AIActionDraft]]:
         self._ensure_available(user)
         clean_template_id = self._validated_template_id(template_id)
+        clean_intent_spec = self._validated_intent_spec(
+            intent_spec, clean_template_id
+        )
         if attachments not in (None, []):
             raise AIServiceError(
                 "attachments_not_supported",
@@ -678,6 +697,7 @@ class AIConversationService:
             conversation,
             message,
             template_id=clean_template_id,
+            intent_spec=clean_intent_spec,
         )
 
     def retry_last_turn(
@@ -686,9 +706,13 @@ class AIConversationService:
         conversation_id: str,
         *,
         template_id: str | None = None,
+        intent_spec: AIIntentSpec | None = None,
     ) -> tuple[AIMessage, list[AIActionDraft]]:
         self._ensure_available(user)
         clean_template_id = self._validated_template_id(template_id)
+        clean_intent_spec = self._validated_intent_spec(
+            intent_spec, clean_template_id
+        )
         conversation = self.get(user.id, conversation_id)
         if not conversation.messages or conversation.messages[-1].role != "user":
             raise AIServiceError(
@@ -701,6 +725,7 @@ class AIConversationService:
             conversation,
             conversation.messages[-1],
             template_id=clean_template_id,
+            intent_spec=clean_intent_spec,
         )
 
     @staticmethod
@@ -718,6 +743,31 @@ class AIConversationService:
                 409,
             )
         return availability.template.id
+
+    def _validated_intent_spec(
+        self,
+        intent_spec: AIIntentSpec | None,
+        template_id: str | None,
+    ) -> AIIntentSpec | None:
+        if intent_spec is None and template_id is None:
+            return None
+        if intent_spec is None:
+            availability = AITemplateRegistry(tool_registry=self.registry).get(template_id)
+            intent_spec = availability.template.intent_spec()
+        try:
+            self.capability_registry.resolve(intent_spec)
+        except CapabilityError as error:
+            raise AIServiceError(error.code, error.safe_message, error.status) from error
+        if template_id is not None:
+            availability = AITemplateRegistry(tool_registry=self.registry).get(template_id)
+            expected = availability.template.intent_spec(intent_spec.period)
+            if expected != intent_spec:
+                raise AIServiceError(
+                    "intent_template_mismatch",
+                    "La intención no corresponde al preset seleccionado.",
+                    409,
+                )
+        return intent_spec
 
     def _ensure_available(self, user: User) -> None:
         status = provider_status(user)
@@ -872,9 +922,15 @@ class AIConversationService:
         request_message: AIMessage,
         *,
         template_id: str | None = None,
+        intent_spec: AIIntentSpec | None = None,
     ) -> tuple[AIMessage, list[AIActionDraft]]:
         timing = _AITurnTiming()
         provider_name = "unknown"
+        if intent_spec is not None:
+            timing.intent = intent_spec.intent.value
+            timing.domain = intent_spec.domain
+            timing.metric_ids = intent_spec.metrics
+            timing.period = intent_spec.period
         try:
             result, provider_name = self._respond_timed(
                 user,
@@ -882,6 +938,7 @@ class AIConversationService:
                 request_message,
                 timing,
                 template_id=template_id,
+                intent_spec=intent_spec,
             )
             timing.outcome = "tool_error" if timing.tool_error else "success"
             return result
@@ -908,6 +965,7 @@ class AIConversationService:
         timing: _AITurnTiming,
         *,
         template_id: str | None = None,
+        intent_spec: AIIntentSpec | None = None,
     ) -> tuple[tuple[AIMessage, list[AIActionDraft]], str]:
         try:
             provider = get_provider()
@@ -927,9 +985,21 @@ class AIConversationService:
         max_rounds = _bounded_config("AI_MAX_TOOL_ROUNDS", 1, 10)
         history = self._history(conversation.id)
         model = str(current_app.config["AI_MODEL"])
-        tool_definitions = (
-            self.registry.definitions if provider.capabilities.supports_tools else ()
+        plan = self.capability_registry.resolve(intent_spec) if intent_spec else None
+        allowed_draft_types = (
+            None
+            if plan is None
+            else (plan.action.draft_type,) if plan.action is not None else ()
         )
+        tool_definitions = ()
+        if provider.capabilities.supports_tools:
+            tool_definitions = (
+                self.capability_registry.definitions_for(plan)
+                if plan is not None
+                else self.registry.definitions
+            )
+        allowed_tools = set(plan.tools) if plan is not None else None
+        require_tool = plan is not None and plan.action is None
         local_date = self._today_for_user(user).isoformat()
         timezone_name = user.timezone or current_app.config["APP_TIMEZONE"]
         instructions = (
@@ -942,8 +1012,17 @@ class AIConversationService:
             tools=tool_definitions,
             safety_instructions=instructions,
             timeout_seconds=timeout,
+            draft_types=allowed_draft_types,
+            require_tool=require_tool,
         )
         response = self._provider_call(provider, request, timing, deadline_at)
+        self._validate_allowed_drafts(response, allowed_draft_types)
+        if require_tool and not response.tool_calls:
+            raise AIServiceError(
+                "tool_required_for_intent",
+                "El proveedor no consultó la lectura necesaria para esta intención.",
+                502,
+            )
         total_input = response.usage.input_tokens or 0
         total_output = response.usage.output_tokens or 0
         self._enforce_usage_limit(total_input, total_output)
@@ -974,6 +1053,7 @@ class AIConversationService:
                         all_evidence,
                         timing,
                         deadline_at,
+                        allowed_tools,
                     )
                 )
                 self._check_deadline(deadline_at)
@@ -986,10 +1066,13 @@ class AIConversationService:
                 tool_results=tuple(accumulated_results),
                 safety_instructions=instructions,
                 timeout_seconds=timeout,
+                draft_types=allowed_draft_types,
+                require_tool=False,
             )
             response = self._provider_call(
                 provider, followup_request, timing, deadline_at
             )
+            self._validate_allowed_drafts(response, allowed_draft_types)
             total_input += response.usage.input_tokens or 0
             total_output += response.usage.output_tokens or 0
             self._enforce_usage_limit(total_input, total_output)
@@ -1083,6 +1166,18 @@ class AIConversationService:
         db.session.commit()
         return (assistant, drafts), provider.name
 
+    @staticmethod
+    def _validate_allowed_drafts(response, allowed_draft_types) -> None:
+        if allowed_draft_types is None:
+            return
+        allowed = set(allowed_draft_types)
+        if any(item.draft_type not in allowed for item in response.drafts):
+            raise AIServiceError(
+                "draft_not_allowed_for_intent",
+                "El proveedor intentó preparar una acción fuera del plan autorizado.",
+                502,
+            )
+
     def _execute_tool(
         self,
         user: User,
@@ -1094,6 +1189,7 @@ class AIConversationService:
         all_evidence: list[dict],
         timing: _AITurnTiming,
         deadline_at: float,
+        allowed_tools: set[str] | None,
     ) -> AIProviderToolResult:
         safe_name = str(name or "")[:96]
         safe_arguments = sanitize_untrusted_data(arguments if isinstance(arguments, dict) else {})
@@ -1110,6 +1206,12 @@ class AIConversationService:
         db.session.add(audit)
         started = time.monotonic()
         try:
+            if allowed_tools is not None and safe_name not in allowed_tools:
+                raise AIToolError(
+                    "tool_not_allowed_for_intent",
+                    "La herramienta no pertenece al plan de intención autorizado.",
+                    rejected=True,
+                )
             execution = self.registry.execute(user, safe_name, arguments)
         except AIToolError as error:
             audit.status = "rejected" if error.rejected else "failed"

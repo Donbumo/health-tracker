@@ -33,6 +33,7 @@ INTENT_LABELS = {
     AIIntent.PATTERNS: "Patrones",
     AIIntent.RECORD: "Registrar",
     AIIntent.CORRECT: "Corregir",
+    AIIntent.PROPOSE_CHANGES: "Proponer cambios",
 }
 
 
@@ -105,6 +106,12 @@ class AdaptivePromptComposer:
                     "Describe frecuencias y distribuciones registradas sin inferir causalidad, "
                     "adicción, metabolismo, intolerancias ni calidad clínica."
                 )
+            if spec.intent == AIIntent.PROPOSE_CHANGES:
+                blocks.append(
+                    "Separa OBSERVACIONES de CAMBIOS PROPUESTOS. Consulta datos actuales, "
+                    "prepara únicamente borradores confirmables y no presentes una propuesta "
+                    "como recomendación médica."
+                )
             blocks.append(
                 "Responde en español con resumen, hallazgos, cobertura de datos y fuentes. "
                 "Distingue registros, cálculos de Health Tracker e interpretación AI."
@@ -137,6 +144,7 @@ class AdaptivePromptComposer:
             AIIntent.PATTERNS: "Describe los patrones de",
             AIIntent.RECORD: "Quiero registrar",
             AIIntent.CORRECT: "Quiero corregir",
+            AIIntent.PROPOSE_CHANGES: "Propón cambios para",
         }
         return f"{verbs[spec.intent]} {target}"
 
@@ -234,7 +242,11 @@ class AdaptiveTemplateComposer:
             for action in manifest.action_capabilities:
                 if not action.available:
                     continue
-                intent = AIIntent.CORRECT if action.action_id.startswith("correct_") else AIIntent.RECORD
+                intent = (
+                    AIIntent.CORRECT
+                    if action.operation in {"correct", "update"}
+                    else AIIntent.RECORD
+                )
                 spec = AIIntentSpec(intent, manifest.domain_id, period="today", action=action.action_id)
                 result.append(
                     self._experience(spec, manifest, None, availability, ("today",))

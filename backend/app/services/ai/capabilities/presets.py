@@ -39,14 +39,14 @@ LEGACY_PRESETS = (
     _preset("data-quality", "coverage", "data"),
     _preset("data-sources", "sources", "data"),
     _preset("what-do-you-know", "summary", "data"),
-    _preset("log-food", "record", "nutrition", action="record_food"),
-    _preset("quick-breakfast", "record", "nutrition", action="record_food", options=(("meal_type", "breakfast"),)),
-    _preset("quick-lunch", "record", "nutrition", action="record_food", options=(("meal_type", "lunch"),)),
-    _preset("quick-dinner", "record", "nutrition", action="record_food", options=(("meal_type", "dinner"),)),
-    _preset("quick-snack", "record", "nutrition", action="record_food", options=(("meal_type", "snack"),)),
-    _preset("log-weight", "record", "body", ("weight",), action="record_measurement"),
-    _preset("log-body-composition", "record", "body", action="record_measurement"),
-    _preset("correct-body-measurement", "correct", "body", action="correct_measurement"),
+    _preset("log-food", "record", "nutrition", action="nutrition.food.create"),
+    _preset("quick-breakfast", "record", "nutrition", action="nutrition.food.create", options=(("meal_type", "breakfast"),)),
+    _preset("quick-lunch", "record", "nutrition", action="nutrition.food.create", options=(("meal_type", "lunch"),)),
+    _preset("quick-dinner", "record", "nutrition", action="nutrition.food.create", options=(("meal_type", "dinner"),)),
+    _preset("quick-snack", "record", "nutrition", action="nutrition.food.create", options=(("meal_type", "snack"),)),
+    _preset("log-weight", "record", "body", ("weight",), action="body.measurement.create"),
+    _preset("log-body-composition", "record", "body", action="body.measurement.create"),
+    _preset("correct-body-measurement", "correct", "body", action="body.measurement.correct"),
 )
 
 PRESETS_BY_ID = {item.template_id: item for item in LEGACY_PRESETS}

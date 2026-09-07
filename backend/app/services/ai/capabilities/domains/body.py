@@ -1,10 +1,10 @@
 from app.services.ai.capabilities.types import (
     AICapabilityManifest,
-    ActionCapability,
     AIIntent,
     MetricDefinition,
     ReadCapability,
 )
+from app.services.ai.capabilities.domains.body_actions import BODY_CORRECT, BODY_CREATE
 
 
 METRICS = (
@@ -15,11 +15,6 @@ METRICS = (
     MetricDefinition("visceral_fat", "Grasa visceral", "index", ("latest", "average"), True, True, False, 1, "device_reported"),
     MetricDefinition("bmi", "IMC", "kg/m2", ("latest", "average"), True, True, False, 1, "descriptive_not_diagnostic"),
     MetricDefinition("bmr", "BMR", "kcal/day", ("latest", "average"), True, True, False, 0, "device_or_source_reported"),
-)
-
-BODY_FIELDS = (
-    "weight", "unit", "recorded_at", "body_fat_percent", "muscle_mass_kg",
-    "water_percent", "visceral_fat", "bmr_kcal", "bmi", "notes",
 )
 
 MANIFEST = AICapabilityManifest(
@@ -35,18 +30,6 @@ MANIFEST = AICapabilityManifest(
         ReadCapability(AIIntent.COMPARE, ("get_weight_trend",), tuple(item.id for item in METRICS), ("7d", "30d", "90d"), 2),
         ReadCapability(AIIntent.COVERAGE, ("get_weight_trend",), tuple(item.id for item in METRICS)),
     ),
-    action_capabilities=(
-        ActionCapability("record_measurement", "body", "body_measurement", BODY_FIELDS, "body_measurement", True, "create_body_stat"),
-        ActionCapability(
-            "correct_measurement",
-            "body",
-            "body_measurement",
-            BODY_FIELDS,
-            "body_measurement",
-            True,
-            "patch_body_stat",
-            read_tools=("get_latest_body_measurement",),
-        ),
-    ),
+    action_capabilities=(BODY_CREATE, BODY_CORRECT),
     comparisons=True,
 )

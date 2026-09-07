@@ -33,6 +33,30 @@
   </div>
 </section>
 
+<section class="ai-actions-catalog" aria-labelledby="ai-actions-title">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Acciones</p>
+      <h2 id="ai-actions-title">Qué puedes hacer</h2>
+      <p>Se genera desde las capacidades de cada dominio, sin consultar al proveedor.</p>
+    </div>
+  </div>
+  <div class="ai-capability-grid">
+    {% for domain in adaptive_catalog.domains %}
+      {% for action in domain.action_capabilities if action.available %}
+        <a class="card ai-capability-card" href="{{ url_for('ai.index', intent='correct' if action.operation in ['correct', 'update'] else 'record', domain=action.domain, action=action.action_id, period='today') }}">
+          <span>
+            <span class="status status-muted">{{ domain.label }} · {{ action.operation }}</span>
+            <h3>{{ action.label }}</h3>
+            <p>{{ action.description }}</p>
+          </span>
+          <span aria-hidden="true">→</span>
+        </a>
+      {% endfor %}
+    {% endfor %}
+  </div>
+</section>
+
 <section class="ai-adaptive-workspace" aria-labelledby="ai-explore-title" data-ai-adaptive-catalog data-default-domain="nutrition">
   <div class="section-heading">
     <div>
@@ -233,7 +257,7 @@
     <h2 id="ai-status-title">Estado</h2>
     {% if ai_status.state == 'available' %}
       <p><span class="status status-success">Disponible</span></p>
-      <p class="muted">Proveedor {{ ai_status.provider }} · modelo {{ ai_status.model }}. Peso y comida solo se escriben tras confirmar un borrador.</p>
+      <p class="muted">Proveedor {{ ai_status.provider }} · modelo {{ ai_status.model }}. Ninguna acción se escribe hasta confirmar su preview.</p>
     {% elif ai_status.state == 'consent_required' %}
       <p><span class="status status-warning">Requiere consentimiento</span></p>
       <p>{{ ai_status.reason }}</p>

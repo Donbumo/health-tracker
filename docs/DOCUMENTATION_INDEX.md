@@ -43,7 +43,12 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 
 - Beta 1 Android: [BETA_1_ANDROID_STABILIZATION.md](BETA_1_ANDROID_STABILIZATION.md), [ANDROID_RELEASE_READINESS.md](ANDROID_RELEASE_READINESS.md), [BETA_RELEASE_CHECKLIST.md](BETA_RELEASE_CHECKLIST.md) y [BETA_1_PHYSICAL_QA_RUNBOOK.md](BETA_1_PHYSICAL_QA_RUNBOOK.md).
 
-- AI Foundation: [AI_FOUNDATION.md](AI_FOUNDATION.md) para feature flag, providers, capabilities, tools, evidencia, conversaciones, drafts y privacidad; [HOW_TO_ADD_AI_SUPPORT_FOR_A_NEW_DOMAIN.md](HOW_TO_ADD_AI_SUPPORT_FOR_A_NEW_DOMAIN.md) para extender un dominio sin crear una matriz de templates.
+- AI Foundation: [AI_FOUNDATION.md](AI_FOUNDATION.md) para feature flag,
+  providers, capabilities, tools, evidencia, conversaciones, planes/drafts y
+  privacidad; [HOW_TO_ADD_AI_SUPPORT_FOR_A_NEW_DOMAIN.md](HOW_TO_ADD_AI_SUPPORT_FOR_A_NEW_DOMAIN.md)
+  para extender lecturas de un dominio y
+  [HOW_TO_ADD_AN_AI_ACTION_CAPABILITY.md](HOW_TO_ADD_AN_AI_ACTION_CAPABILITY.md)
+  para añadir acciones confirmables sin modificar el orquestador central.
 
 - API v1: [project-rules/api-v1.md](project-rules/api-v1.md), [API_V1.md](API_V1.md), [API_AUTH.md](API_AUTH.md), [API_DEVICE_SESSIONS.md](API_DEVICE_SESSIONS.md), [API_SECURITY.md](API_SECURITY.md), [COMPANION_BOOTSTRAP.md](COMPANION_BOOTSTRAP.md).
 - Mobile Sync: [project-rules/mobile-sync.md](project-rules/mobile-sync.md), [MOBILE_SYNC.md](MOBILE_SYNC.md), [SYNC_PROTOCOL_1_0.md](SYNC_PROTOCOL_1_0.md), [SYNC_IDEMPOTENCY.md](SYNC_IDEMPOTENCY.md), [SYNC_CONFLICTS.md](SYNC_CONFLICTS.md), [PLANNED_WORKOUTS.md](PLANNED_WORKOUTS.md).

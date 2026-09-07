@@ -8,7 +8,11 @@ Para trabajo en curso consulta `ACTIVE_HANDOFF.md`. Para localizar contratos y g
 
 La base oficial es **Health Tracker Beta 1.0.1** en `master` (`64abf34b0c7082fc31c75b8a4bef62c5786e50d1`). Web, Android, API y MariaDB forman una sola base consolidada; Resumen longitudinal y Hoy están cerrados, Health Connect funciona en dispositivo físico y mobile sync/offline está operativo. Objetivos/recordatorios/adherencia, registros médicos, intercambio de actividades y portabilidad de datos también existen.
 
-La prioridad actual es **Beta 1.1 AI Foundation** y la segunda es **Beta 1.2 External Integrations**. Después siguen AI Actions/Assisted Logging y Device Bridge/BLE. IA e integraciones comparten el mismo modelo de procedencia. Ninguna feature nueva debe partir de ramas Alpha antiguas ni de `integration/alpha-1.5-dashboard`.
+La prioridad actual es evolucionar **Beta 1.1 AI Foundation** con el AI Operator
+seguro y mantener después **Beta 1.2 External Integrations**. Device Bridge/BLE
+continúa en una fase posterior. IA e integraciones comparten el mismo modelo de
+procedencia. Ninguna feature nueva debe partir de ramas Alpha antiguas ni de
+`integration/alpha-1.5-dashboard`.
 
 ## Visión
 
@@ -125,6 +129,22 @@ común. Las plantillas personalizadas por usuario son una posibilidad futura, no
 una capacidad actual: requerirán un contrato separado de validación, ownership,
 límites y seguridad, sin convertir prompts de usuario en instrucciones de
 sistema.
+
+AI Operator añade un contrato `ActionCapability` propiedad del dominio y un
+`AIPlanSpec` server-side. Siete acciones reales cubren registro de comida,
+creación/corrección corporal, creación/corrección de entrenamiento planificado y
+creación/actualización de metas. Una petición puede producir varios pasos,
+persistidos como `AIActionDraft` agrupados por metadata, con preview, edición
+local, confirmación/rechazo individual, confirmar todo y retry idempotente de
+fallos parciales. `PROPOSE_CHANGES` lee datos actuales antes de preparar cambios.
+
+El registro de capabilities alimenta el resolver, las definiciones del provider
+y las acciones rápidas de `/ai`; por eso un módulo puede añadir una acción a su
+manifest sin añadir ramas de dominio al orquestador central. Las escrituras sólo
+ocurren tras confirmación explícita mediante el handler oficial owner-only. No
+hay delete genérico, service names elegidos por browser/modelo ni SQL directo.
+Los contextos desde páginas de dominio usan tokens firmados ligados a owner y no
+incluyen valores de salud en la URL.
 
 ## Capacidades de producto
 

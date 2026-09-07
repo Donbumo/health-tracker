@@ -17,7 +17,10 @@ from flask import current_app
 
 from app.services.ai.types import (
     AIProviderCapabilities,
+    AIProviderActionDefinition,
     AIProviderDraft,
+    AIProviderPlanProposal,
+    AIProviderPlanStepProposal,
     AIProviderRequest,
     AIProviderResponse,
     AIProviderToolCall,
@@ -126,10 +129,40 @@ class FakeAIProvider(AIProvider):
 
     def respond(self, request: AIProviderRequest) -> AIProviderResponse:
         if request.tool_results:
-            return self._summarize(request)
+            summary = self._summarize(request)
+            action_plan = self._proposal_after_goal_read(request) or self._action_plan(
+                request
+            ) or self._single_selected_action_plan(request)
+            if action_plan is not None:
+                return AIProviderResponse(
+                    content=summary.content,
+                    plans=(action_plan,),
+                    usage=summary.usage,
+                )
+            return summary
 
         original = _last_user_text(request)
         text = _normalized(original)
+        action_plan = self._action_plan(request)
+        if action_plan is not None:
+            return AIProviderResponse(
+                content=(
+                    "Preparé un plan editable. No se guardó ningún cambio; revisa y "
+                    "confirma cada paso o usa Confirmar todo."
+                ),
+                plans=(action_plan,),
+                usage=self._usage(request, original),
+            )
+        selected_plan = self._single_selected_action_plan(request)
+        if selected_plan is not None:
+            return AIProviderResponse(
+                content=(
+                    "Preparé un plan editable con la información disponible. "
+                    "Completa cualquier dato faltante antes de confirmarlo."
+                ),
+                plans=(selected_plan,),
+                usage=self._usage(request, original),
+            )
         allowed_drafts = request.draft_types
         draft = (
             self._body_measurement_draft(request)
@@ -270,6 +303,168 @@ class FakeAIProvider(AIProvider):
                 ),
             ),
             usage=self._usage(request, original),
+        )
+
+    @classmethod
+    def _action_plan(cls, request: AIProviderRequest) -> AIProviderPlanProposal | None:
+        allowed = {item.action_capability_id for item in request.actions}
+        if not allowed:
+            return None
+        original = _last_user_text(request)
+        text = _normalized(original)
+        steps = []
+
+        body = cls._body_measurement_draft(request)
+        if body is not None:
+            candidates = [
+                item
+                for item in ("body.measurement.create", "body.measurement.correct")
+                if item in allowed
+            ]
+            if candidates:
+                action_id = (
+                    "body.measurement.correct"
+                    if "body.measurement.correct" in candidates
+                    and any(term in text for term in ("corrige", "correccion", "era ", "quise decir"))
+                    else candidates[0]
+                )
+                steps.append(
+                    AIProviderPlanStepProposal(
+                        f"step_{len(steps) + 1}", action_id, body.payload
+                    )
+                )
+
+        food = cls._food_entry_draft(request)
+        if food is not None and "nutrition.food.create" in allowed:
+            steps.append(
+                AIProviderPlanStepProposal(
+                    f"step_{len(steps) + 1}", "nutrition.food.create", food.payload
+                )
+            )
+
+        goal_match = re.search(
+            r"(?:meta|objetivo)(?:\s+de)?\s+(pasos|prote[ií]na|calor[ií]as|entrenamientos?)"
+            r"[^0-9]{0,40}(\d+(?:[.,]\d+)?)",
+            original,
+            flags=re.IGNORECASE,
+        )
+        if goal_match and any(
+            term in text
+            for term in ("cambia", "cambiar", "ajusta", "ajustar", "sera", "establece", "crea", "crear", "nueva")
+        ):
+            goal_types = {
+                "pasos": "daily_steps",
+                "proteina": "nutrition_protein",
+                "calorias": "nutrition_calories",
+                "entrenamiento": "training_sessions_per_week",
+                "entrenamientos": "training_sessions_per_week",
+            }
+            action_id = (
+                "goal.create"
+                if any(term in text for term in ("crea", "crear", "nueva"))
+                else "goal.update"
+            )
+            if action_id in allowed:
+                steps.append(
+                    AIProviderPlanStepProposal(
+                        f"step_{len(steps) + 1}",
+                        action_id,
+                        {
+                            "goal_type": goal_types[_normalized(goal_match.group(1))],
+                            "target_value": goal_match.group(2).replace(",", "."),
+                        },
+                    )
+                )
+
+        if (
+            "training.session.create" in allowed
+            and any(term in text for term in ("registra este entrenamiento", "registrar entrenamiento", "registre entrenamiento"))
+        ):
+            performed = re.search(r"\b(20\d{2}-\d{2}-\d{2}T[^\s,;]+)", original)
+            arguments = {"performed_at": performed.group(1)} if performed else {}
+            steps.append(
+                AIProviderPlanStepProposal(
+                    f"step_{len(steps) + 1}", "training.session.create", arguments
+                )
+            )
+
+        if not steps:
+            return None
+        intent = "hybrid" if len({item.action_capability_id.split(".", 1)[0] for item in steps}) > 1 else "record"
+        if all(item.action_capability_id.endswith((".correct", ".update")) for item in steps):
+            intent = "correct"
+        return AIProviderPlanProposal(
+            intent=intent,
+            summary=f"{len(steps)} cambio{'s' if len(steps) != 1 else ''} preparado{'s' if len(steps) != 1 else ''}",
+            steps=tuple(steps),
+        )
+
+    @staticmethod
+    def _single_selected_action_plan(
+        request: AIProviderRequest,
+    ) -> AIProviderPlanProposal | None:
+        if len(request.actions) != 1 or not (request.require_tool or request.tool_results):
+            return None
+        action = request.actions[0]
+        intent = "correct" if action.operation in {"correct", "update"} else "record"
+        return AIProviderPlanProposal(
+            intent=intent,
+            summary="1 cambio preparado",
+            steps=(
+                AIProviderPlanStepProposal(
+                    "step_1", action.action_capability_id, {}
+                ),
+            ),
+        )
+
+    @staticmethod
+    def _proposal_after_goal_read(
+        request: AIProviderRequest,
+    ) -> AIProviderPlanProposal | None:
+        if not request.tool_results or request.tool_results[-1].name != "get_goals_summary":
+            return None
+        text = _normalized(_last_user_text(request))
+        if not (
+            any(term in text for term in ("ajusta", "ajustar", "ajustes", "propon", "cambios"))
+            and any(term in text for term in ("meta", "objetivo"))
+        ):
+            return None
+        explicit = FakeAIProvider._action_plan(request)
+        if explicit is not None and all(
+            step.action_capability_id.startswith("goal.") for step in explicit.steps
+        ):
+            return AIProviderPlanProposal(
+                intent="propose_changes",
+                summary=explicit.summary,
+                steps=explicit.steps,
+            )
+        allowed = {item.action_capability_id for item in request.actions}
+        result = request.tool_results[-1]
+        items = (result.data or {}).get("items") if result.ok else None
+        arguments = {}
+        action_id = "goal.create" if "goal.create" in allowed else None
+        if isinstance(items, list) and "goal.update" in allowed:
+            for item in items:
+                goal = item.get("goal") if isinstance(item, dict) else None
+                if not isinstance(goal, dict):
+                    continue
+                goal_type = goal.get("goal_type")
+                target_value = goal.get("target_value")
+                if goal_type and target_value not in (None, ""):
+                    action_id = "goal.update"
+                    arguments = {
+                        "goal_type": goal_type,
+                        "target_value": target_value,
+                    }
+                    break
+        if action_id is None and "goal.update" in allowed:
+            action_id = "goal.update"
+        if action_id is None:
+            return None
+        return AIProviderPlanProposal(
+            intent="propose_changes",
+            summary="1 cambio de meta preparado para revisión",
+            steps=(AIProviderPlanStepProposal("step_1", action_id, arguments),),
         )
 
     @staticmethod
@@ -617,6 +812,110 @@ _DRAFT_TOOL_NAMES = {
     "prepare_body_measurement_draft": "body_measurement",
     "prepare_food_entry_draft": "food_entry",
 }
+_ACTION_PLAN_TOOL_NAME = "propose_action_plan"
+
+
+def _action_plan_tools(actions: tuple[AIProviderActionDefinition, ...]) -> list[dict]:
+    if not actions:
+        return []
+    step_variants = []
+    for action in actions:
+        schema = dict(action.input_schema)
+        # Missing required fields are allowed in proposals and become needs_input.
+        schema["required"] = []
+        step_variants.append(
+            {
+                "type": "object",
+                "properties": {
+                    "step_id": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,63}$"},
+                    "action_capability_id": {"const": action.action_capability_id},
+                    "arguments": schema,
+                    "dependencies": {
+                        "type": "array",
+                        "maxItems": 10,
+                        "items": {"type": "string"},
+                    },
+                },
+                "required": ["step_id", "action_capability_id", "arguments", "dependencies"],
+                "additionalProperties": False,
+            }
+        )
+    return [
+        {
+            "type": "function",
+            "name": _ACTION_PLAN_TOOL_NAME,
+            "description": (
+                "Propose one editable multi-step Health Tracker action plan. Never claim it was applied. "
+                "Use only the listed capability IDs and fields; omit unknown values."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "intent": {
+                        "type": "string",
+                        "enum": ["record", "correct", "propose_changes", "hybrid"],
+                    },
+                    "summary": {"type": "string", "minLength": 1, "maxLength": 500},
+                    "steps": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 10,
+                        "items": {"oneOf": step_variants},
+                    },
+                },
+                "required": ["intent", "summary", "steps"],
+                "additionalProperties": False,
+            },
+            "strict": False,
+        }
+    ]
+
+
+def _parse_action_plan(arguments: dict) -> AIProviderPlanProposal:
+    if set(arguments) != {"intent", "summary", "steps"}:
+        raise AIProviderError(
+            "provider_malformed_action_plan", "El proveedor AI devolvió un plan no válido.", 502
+        )
+    intent = arguments.get("intent")
+    summary = arguments.get("summary")
+    raw_steps = arguments.get("steps")
+    if (
+        intent not in {"record", "correct", "propose_changes", "hybrid"}
+        or not isinstance(summary, str)
+        or not summary.strip()
+        or not isinstance(raw_steps, list)
+        or not 1 <= len(raw_steps) <= 10
+    ):
+        raise AIProviderError(
+            "provider_malformed_action_plan", "El proveedor AI devolvió un plan no válido.", 502
+        )
+    steps = []
+    for raw in raw_steps:
+        if not isinstance(raw, dict) or set(raw) != {
+            "step_id", "action_capability_id", "arguments", "dependencies"
+        }:
+            raise AIProviderError(
+                "provider_malformed_action_plan", "El proveedor AI devolvió un plan no válido.", 502
+            )
+        if (
+            not isinstance(raw["step_id"], str)
+            or not isinstance(raw["action_capability_id"], str)
+            or not isinstance(raw["arguments"], dict)
+            or not isinstance(raw["dependencies"], list)
+            or any(not isinstance(item, str) for item in raw["dependencies"])
+        ):
+            raise AIProviderError(
+                "provider_malformed_action_plan", "El proveedor AI devolvió un plan no válido.", 502
+            )
+        steps.append(
+            AIProviderPlanStepProposal(
+                step_id=raw["step_id"],
+                action_capability_id=raw["action_capability_id"],
+                arguments=raw["arguments"],
+                dependencies=tuple(raw["dependencies"]),
+            )
+        )
+    return AIProviderPlanProposal(intent=intent, summary=summary.strip(), steps=tuple(steps))
 
 
 def _draft_tools(allowed_types: tuple[str, ...] | None = None) -> list[dict]:
@@ -866,7 +1165,9 @@ class OpenAIResponsesProvider(AIProvider):
             }
             for item in request.tools
         ]
-        tools.extend(_draft_tools(request.draft_types))
+        tools.extend(_action_plan_tools(request.actions))
+        if not request.actions:
+            tools.extend(_draft_tools(request.draft_types))
         input_items: list[dict] = [
             {"role": item.role, "content": item.content} for item in request.messages
         ]
@@ -909,7 +1210,7 @@ class OpenAIResponsesProvider(AIProvider):
             "store": False,
             "max_output_tokens": maximum,
         }
-        if request.require_tool and request.tools:
+        if request.require_tool and tools:
             payload["tool_choice"] = "required"
         try:
             transport_response = self._transport(
@@ -1016,6 +1317,7 @@ class OpenAIResponsesProvider(AIProvider):
         text_parts: list[str] = []
         calls = []
         drafts = []
+        plans = []
         for item in document["output"]:
             if not isinstance(item, dict):
                 raise AIProviderError(
@@ -1072,7 +1374,9 @@ class OpenAIResponsesProvider(AIProvider):
                         502,
                     )
                 draft_type = _DRAFT_TOOL_NAMES.get(name)
-                if draft_type:
+                if name == _ACTION_PLAN_TOOL_NAME:
+                    plans.append(_parse_action_plan(arguments))
+                elif draft_type:
                     drafts.append(
                         AIProviderDraft(
                             draft_type=draft_type,
@@ -1085,16 +1389,16 @@ class OpenAIResponsesProvider(AIProvider):
                     )
                 else:
                     calls.append(AIProviderToolCall(call_id, name, arguments))
-        if calls and drafts:
+        if (calls and (drafts or plans)) or (drafts and plans):
             raise AIProviderError(
                 "provider_malformed_response",
                 "El proveedor AI devolvió una respuesta ambigua.",
                 502,
             )
         content = "\n".join(part.strip() for part in text_parts if part.strip()) or None
-        if drafts and content is None:
-            content = "Preparé un borrador editable. Revísalo antes de confirmarlo."
-        if content is None and not calls and not drafts:
+        if (drafts or plans) and content is None:
+            content = "Preparé un plan editable. Revísalo antes de confirmarlo."
+        if content is None and not calls and not drafts and not plans:
             raise AIProviderError(
                 "provider_malformed_response",
                 "El proveedor AI no devolvió contenido utilizable.",
@@ -1121,11 +1425,18 @@ class OpenAIResponsesProvider(AIProvider):
             content=content,
             tool_calls=tuple(calls),
             drafts=tuple(drafts),
+            plans=tuple(plans),
             usage=AIUsage(
                 input_tokens=usage.get("input_tokens"),
                 output_tokens=usage.get("output_tokens"),
             ),
         )
+
+
+def _enabled_action_ids() -> list[str]:
+    from app.services.ai.capabilities.registry import AICapabilityRegistry
+
+    return [item.action_id for item in AICapabilityRegistry().action_capabilities]
 
 
 def provider_status(user=None) -> dict:
@@ -1145,7 +1456,7 @@ def provider_status(user=None) -> dict:
             },
             "remote": False,
             "remote_consent_enabled": False,
-            "write_actions_enabled": ["body_measurement", "food_entry"],
+            "write_actions_enabled": _enabled_action_ids(),
             "attachments_enabled": False,
         }
 
@@ -1202,7 +1513,7 @@ def provider_status(user=None) -> dict:
         },
         "remote": capabilities.remote,
         "remote_consent_enabled": consent_enabled,
-        "write_actions_enabled": ["body_measurement", "food_entry"],
+        "write_actions_enabled": _enabled_action_ids(),
         "attachments_enabled": False,
     }
 

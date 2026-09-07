@@ -170,6 +170,21 @@ def ai_confirm_draft(draft_id: str):
     return success(serialize_draft(row))
 
 
+@api_v1_bp.patch("/ai/drafts/<draft_id>")
+@bearer_required
+def ai_edit_draft(draft_id: str):
+    payload = json_body()
+    if set(payload) != {"payload"} or not isinstance(payload["payload"], dict):
+        raise ApiError("invalid_request", "La corrección del borrador no es válida.", 400)
+    try:
+        row = AIConversationService().edit_draft(
+            g.api_user, draft_id, payload["payload"]
+        )
+    except AIServiceError as error:
+        _service_error(error)
+    return success(serialize_draft(row))
+
+
 @api_v1_bp.post("/ai/drafts/<draft_id>/reject")
 @bearer_required
 def ai_reject_draft(draft_id: str):
@@ -180,3 +195,27 @@ def ai_reject_draft(draft_id: str):
     except AIServiceError as error:
         _service_error(error)
     return success(serialize_draft(row))
+
+
+@api_v1_bp.post("/ai/plans/<plan_id>/confirm")
+@bearer_required
+def ai_confirm_plan(plan_id: str):
+    if json_body():
+        raise ApiError("invalid_request", "La confirmación del plan no acepta campos.", 400)
+    try:
+        result = AIConversationService().confirm_plan(g.api_user, plan_id)
+    except AIServiceError as error:
+        _service_error(error)
+    return success(result)
+
+
+@api_v1_bp.post("/ai/plans/<plan_id>/retry")
+@bearer_required
+def ai_retry_plan(plan_id: str):
+    if json_body():
+        raise ApiError("invalid_request", "El reintento del plan no acepta campos.", 400)
+    try:
+        result = AIConversationService().retry_plan(g.api_user, plan_id)
+    except AIServiceError as error:
+        _service_error(error)
+    return success(result)

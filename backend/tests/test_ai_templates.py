@@ -132,7 +132,7 @@ def test_action_templates_expose_only_existing_draft_fields():
     }
     assert correction.required_capabilities == (
         "draft:body_measurement",
-        "action:correct_measurement",
+        "action:body.measurement.correct",
     )
 
 

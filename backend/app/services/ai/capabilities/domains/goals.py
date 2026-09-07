@@ -1,10 +1,10 @@
 from app.services.ai.capabilities.types import (
     AICapabilityManifest,
-    ActionCapability,
     AIIntent,
     MetricDefinition,
     ReadCapability,
 )
+from app.services.ai.capabilities.domains.goal_actions import GOAL_CREATE, GOAL_UPDATE
 
 
 METRICS = (
@@ -12,17 +12,7 @@ METRICS = (
     MetricDefinition("goals", "Metas configuradas", "goals", ("count",), True, True, False, 0, "no_goal_is_not_failure"),
 )
 
-GOAL_ACTION_FOUNDATION = ActionCapability(
-    "propose_goal_change",
-    "goals",
-    "user_goal",
-    ("goal_type", "target_value", "unit", "cadence", "start_date", "end_date"),
-    "goal_entry",
-    True,
-    "create_goal_or_patch_goal",
-    available=False,
-    blocker="AIActionDraft no admite goal_entry y falta un preview owner-bound específico.",
-)
+GOAL_ACTION_FOUNDATION = GOAL_UPDATE
 
 MANIFEST = AICapabilityManifest(
     domain_id="goals",
@@ -34,6 +24,8 @@ MANIFEST = AICapabilityManifest(
         ReadCapability(AIIntent.SUMMARY, ("get_goals_summary",), tuple(item.id for item in METRICS)),
         ReadCapability(AIIntent.PROGRESS, ("get_goals_summary",), tuple(item.id for item in METRICS), ("7d", "30d", "90d"), 1),
         ReadCapability(AIIntent.COVERAGE, ("get_goals_summary",), tuple(item.id for item in METRICS)),
+        ReadCapability(AIIntent.PROPOSE_CHANGES, ("get_goals_summary",), tuple(item.id for item in METRICS), ("7d", "30d", "90d")),
     ),
+    action_capabilities=(GOAL_CREATE, GOAL_UPDATE),
     comparisons=True,
 )

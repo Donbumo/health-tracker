@@ -23,13 +23,48 @@
         <header><strong>{{ 'Tú' if message.role == 'user' else 'Health Tracker AI' }}</strong></header>
         <div class="ai-message-content">{{ message.content }}</div>
         {% if message.drafts %}
+          {% set plan = message.drafts[0].provenance_json %}
+          {% set applied_count = message.drafts|selectattr('status', 'equalto', 'applied')|list|length %}
+          {% set rejected_count = message.drafts|selectattr('status', 'equalto', 'rejected')|list|length %}
+          {% set failed_count = message.drafts|selectattr('status', 'equalto', 'failed')|list|length %}
+          {% set pending_count = message.drafts|selectattr('status', 'equalto', 'pending_confirmation')|list|length %}
+          {% set status_labels = {'proposed': 'Pendiente', 'needs_input': 'Necesita información', 'ready': 'Pendiente', 'confirmed': 'Confirmado', 'applied': 'Aplicado', 'rejected': 'Rechazado', 'failed': 'Error', 'pending_confirmation': 'Pendiente', 'expired': 'Expirado'} %}
+          <section class="ai-plan" aria-label="Plan preparado">
+            <div class="ai-plan-heading">
+              <div>
+                <p class="eyebrow">Plan preparado</p>
+                <h3>{{ plan.plan_summary|default(message.drafts|length ~ ' cambios preparados', true) }}</h3>
+              </div>
+              <span class="status status-muted">{{ applied_count }} aplicados · {{ pending_count }} pendientes · {{ rejected_count }} rechazados · {{ failed_count }} con error</span>
+            </div>
+            {% if plan.plan_id and (pending_count or failed_count) %}
+              <div class="ai-plan-actions">
+                {% if pending_count %}
+                  <form action="{{ url_for('ai.confirm_plan', plan_id=plan.plan_id) }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="button" type="submit">Confirmar todo</button>
+                  </form>
+                {% endif %}
+                {% if failed_count %}
+                  <form action="{{ url_for('ai.retry_plan', plan_id=plan.plan_id) }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="button button-secondary" type="submit">Reintentar errores</button>
+                  </form>
+                {% endif %}
+              </div>
+            {% endif %}
           {% for draft in message.drafts %}
             <section class="ai-draft" aria-label="Borrador {{ draft.status }}">
               <div>
-                <span class="status {{ 'status-success' if draft.status == 'applied' else 'status-warning' }}">{{ draft.status|replace('_', ' ') }}</span>
-                <strong>{% if draft.provenance_json.correction_target %}Corrección de medición corporal{% else %}{{ draft.draft_type|replace('_', ' ') }}{% endif %}</strong>
+                <span class="ai-step-number" aria-hidden="true">{{ draft.provenance_json.step_index|default(loop.index) }}</span>
+                {% set step_status = draft.provenance_json.step_status|default(draft.status) %}
+                <span class="status {{ 'status-success' if step_status == 'applied' else 'status-danger' if step_status == 'failed' else 'status-muted' if step_status == 'rejected' else 'status-warning' }}">{{ status_labels.get(step_status, step_status|replace('_', ' ')) }}</span>
+                <strong>{{ draft.provenance_json.action_label|default(draft.draft_type|replace('_', ' ')) }}</strong>
               </div>
-              {% if draft.status == 'pending_confirmation' %}
+              {% if draft.provenance_json.preview.original %}
+                <details class="ai-original"><summary>Original antes del cambio</summary><pre>{{ draft.provenance_json.preview.original|tojson(indent=2) }}</pre></details>
+              {% endif %}
+              {% if draft.status in ['pending_confirmation', 'failed'] %}
                 <form action="{{ url_for('ai.confirm_draft', draft_id=draft.public_id) }}" method="post">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <input type="hidden" name="conversation_id" value="{{ conversation.public_id }}">
@@ -65,13 +100,29 @@
                       </fieldset>
                     {% endfor %}
                   {% else %}
-                    <p class="muted">La confirmación de este tipo todavía no está habilitada.</p>
+                    {% for field in draft.provenance_json.preview.fields|default([]) %}
+                      <label>{{ field.label }}
+                        {% if field.kind == 'json' or field.value is sequence and field.value is not string %}
+                          <textarea name="{{ field.name }}"{% if field.required %} required{% endif %}>{{ field.value|tojson }}</textarea>
+                        {% elif field.options %}
+                          <select name="{{ field.name }}"{% if field.required %} required{% endif %}>
+                            <option value="">Selecciona</option>
+                            {% for option in field.options %}<option value="{{ option }}"{% if option == field.value %} selected{% endif %}>{{ option }}</option>{% endfor %}
+                          </select>
+                        {% else %}
+                          <input type="{{ 'date' if field.kind == 'date' else 'number' if field.kind == 'number' else 'text' }}"{% if field.kind == 'number' %} step="any"{% endif %} name="{{ field.name }}" value="{{ field.value|default('', true) }}"{% if field.required %} required{% endif %}>
+                        {% endif %}
+                      </label>
+                    {% endfor %}
                   {% endif %}
                   {% if draft.payload_json.warnings %}<div class="alert alert-warning" role="status"><strong>Advertencias</strong><ul>{% for warning in draft.payload_json.warnings %}<li>{{ warning }}</li>{% endfor %}</ul></div>{% endif %}
                   {% if draft.payload_json.unsupported_fields %}<p class="muted"><strong>No soportado:</strong> {{ draft.payload_json.unsupported_fields|join(', ') }}</p>{% endif %}
                   {% if draft.payload_json.ambiguous_fields %}<p class="alert alert-warning"><strong>Requiere corrección:</strong> {{ draft.payload_json.ambiguous_fields|join(', ') }}</p>{% endif %}
                   {% if draft.payload_json.missing_fields %}<p class="muted"><strong>Sin dato:</strong> {{ draft.payload_json.missing_fields|join(', ') }}</p>{% endif %}
-                  {% if draft.draft_type in ['body_measurement', 'food_entry'] %}<button class="button" type="submit">Confirmar y guardar</button>{% endif %}
+                  <div class="ai-step-actions">
+                    <button class="button button-secondary" type="submit" formaction="{{ url_for('ai.edit_draft', draft_id=draft.public_id) }}">Editar</button>
+                    <button class="button" type="submit">Confirmar</button>
+                  </div>
                 </form>
                 <form action="{{ url_for('ai.reject_draft', draft_id=draft.public_id) }}" method="post">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -87,6 +138,7 @@
               {% endif %}
             </section>
           {% endfor %}
+          </section>
         {% endif %}
         {% if message.evidence_json %}
           <details class="ai-evidence">

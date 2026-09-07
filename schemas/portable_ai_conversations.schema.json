@@ -76,7 +76,7 @@
             "properties": {
               "public_id": {"type": "string", "format": "uuid"},
               "message_public_id": {"type": "string", "format": "uuid"},
-              "draft_type": {"type": "string", "enum": ["food_entry", "body_measurement", "workout_entry", "steps_entry"]},
+              "draft_type": {"type": "string", "enum": ["food_entry", "body_measurement", "workout_entry", "steps_entry", "capability_action"]},
               "payload": {"type": "object"},
               "status": {"type": "string", "enum": ["pending_confirmation", "applied", "rejected", "expired", "failed"]},
               "provenance": {"type": "object"},

@@ -14,7 +14,16 @@ Base URL: `/api/v1`. Éxito usa `data` y `meta` (`api_version`, `request_id`); e
 
 ## AI Foundation
 
-Beta 1.1 agrega `GET /ai/status`, `GET/PUT /ai/settings`, create/list/get/delete de `/ai/conversations`, message/retry y `POST /ai/drafts/<uuid>/{confirm,reject}`. Todos requieren Bearer, derivan el owner del token y usan IDs públicos. Settings controla consentimiento remoto; confirm/reject es idempotente, owner-only y solo habilita `body_measurement`/`food_entry` mediante servicios oficiales. La allowlist no acepta `user_id`, SQL, shell, filesystem o URLs. Ver [AI_FOUNDATION.md](AI_FOUNDATION.md).
+Beta 1.1 agrega `GET /ai/status`, `GET/PUT /ai/settings`, create/list/get/delete
+de `/ai/conversations`, message/retry, `PATCH /ai/drafts/<uuid>`,
+`POST /ai/drafts/<uuid>/{confirm,reject}` y
+`POST /ai/plans/<uuid>/{confirm,retry}`. Todos requieren Bearer, derivan el
+owner del token y usan IDs públicos. Settings controla consentimiento remoto;
+edición/confirmación/rechazo son owner-only y los planes multi-step reutilizan
+drafts existentes. Las escrituras confirmadas pasan por servicios oficiales de
+comida, cuerpo, entrenamiento o metas. La allowlist no acepta `user_id`, SQL,
+shell, filesystem, URLs ni nombres de servicios. Ver
+[AI_FOUNDATION.md](AI_FOUNDATION.md).
 
 Endpoints: `GET /health`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`, `POST /auth/logout-all`, `GET /me`, `GET /devices`, `DELETE /devices/<uuid>`, `GET /companion/bootstrap` y `GET /routines/active`.
 

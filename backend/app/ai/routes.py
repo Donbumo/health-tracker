@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import json
 import time
 
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
@@ -12,6 +13,7 @@ from app.services.ai.capabilities.composer import (
     AdaptiveTemplateComposer,
     INTENT_LABELS,
 )
+from app.services.ai.capabilities.context import load_action_context_token
 from app.services.ai.capabilities.registry import AICapabilityRegistry
 from app.services.ai.capabilities.types import AIIntentSpec, CapabilityError
 from app.services.ai.template_registry import (
@@ -34,6 +36,74 @@ def _web_error(error: AIServiceError):
     flash(error.safe_message, "danger" if error.status >= 500 else "warning")
 
 
+def _draft_form_edits(service: AIConversationService, draft) -> dict:
+    if draft.draft_type == "body_measurement":
+        edits = {"weight": request.form.get("weight"), "unit": request.form.get("unit")}
+        for field_name in (
+            "recorded_at", "body_fat_percent", "muscle_mass_kg", "water_percent",
+            "visceral_fat", "bmr_kcal", "bmi", "notes",
+        ):
+            if field_name in request.form:
+                edits[field_name] = request.form.get(field_name)
+        return edits
+    if draft.draft_type == "food_entry":
+        items = []
+        for index, original in enumerate((draft.payload_json or {}).get("items", [])):
+            item = dict(original)
+            item.update(
+                {
+                    "name": request.form.get(f"item_name_{index}"),
+                    "quantity": request.form.get(f"item_quantity_{index}") or None,
+                    "unit": request.form.get(f"item_unit_{index}") or None,
+                }
+            )
+            for field_name in (
+                "calories_kcal", "protein_g", "fat_g", "net_carbs_g",
+                "total_carbs_g", "fiber_g", "sugar_g", "sodium_mg", "notes",
+            ):
+                if f"item_{field_name}_{index}" in request.form:
+                    item[field_name] = request.form.get(f"item_{field_name}_{index}")
+            items.append(item)
+        return {
+            "date": request.form.get("date"),
+            "meal_type": request.form.get("meal_type"),
+            "meal_name": request.form.get("meal_name"),
+            "items": items,
+        }
+    capability = service._capability_for_draft(draft)
+    properties = capability.input_schema.get("properties", {})
+    edits = {}
+    for field_name in capability.supported_fields:
+        if field_name not in request.form or field_name.endswith("_fields") or field_name == "warnings":
+            continue
+        value = request.form.get(field_name)
+        if value in (None, "") and field_name not in capability.required_fields:
+            continue
+        field_schema = properties.get(field_name, {})
+        schema_type = field_schema.get("type")
+        types = set(schema_type if isinstance(schema_type, list) else [schema_type])
+        if "array" in types or "object" in types:
+            try:
+                parsed = json.loads(value or "null")
+                if parsed is None and field_name not in capability.required_fields:
+                    continue
+                edits[field_name] = parsed
+            except json.JSONDecodeError as error:
+                raise AIServiceError(
+                    "invalid_action_arguments", f"{field_name} debe usar JSON válido.", 422
+                ) from error
+        elif "integer" in types and value not in (None, ""):
+            try:
+                edits[field_name] = int(value)
+            except ValueError as error:
+                raise AIServiceError(
+                    "invalid_action_arguments", f"{field_name} debe ser entero.", 422
+                ) from error
+        else:
+            edits[field_name] = value
+    return edits
+
+
 @dataclass(frozen=True)
 class _AISelection:
     template: object | None
@@ -41,18 +111,28 @@ class _AISelection:
     period: str
     prompt: str
     title: str
+    action_context_token: str | None = None
+    action_context: dict | None = None
 
     @property
     def form_fields(self):
         if self.template is not None:
-            return {"template_id": self.template.id, "period": self.period}
-        return self.spec.as_query()
+            result = {"template_id": self.template.id, "period": self.period}
+        else:
+            result = self.spec.as_query()
+        if self.action_context_token:
+            result["action_context"] = self.action_context_token
+        return result
 
     @property
     def query(self):
         if self.template is not None:
-            return {"template": self.template.id, "period": self.period}
-        return self.spec.as_query()
+            result = {"template": self.template.id, "period": self.period}
+        else:
+            result = self.spec.as_query()
+        if self.action_context_token:
+            result["action_context"] = self.action_context_token
+        return result
 
 
 def _selection(values):
@@ -79,9 +159,33 @@ def _selection(values):
         if spec is None:
             return None
         manifest = capability_registry.manifest(spec.domain)
+        context_token = (values.get("action_context") or "").strip() or None
+        action_context = None
+        if context_token:
+            context = load_action_context_token(context_token, user_id=current_user.id)
+            resolved_action = capability_registry.resolve(spec).action
+            if (
+                resolved_action is None
+                or context.action_capability_id != resolved_action.action_id
+                or context.domain != resolved_action.domain
+            ):
+                raise CapabilityError(
+                    "invalid_action_context",
+                    "El contexto no corresponde a la acción seleccionada.",
+                    403,
+                )
+            action_context = context.as_mapping()
         title = f"{INTENT_LABELS[spec.intent]} · {manifest.label}"
         prompt = AdaptivePromptComposer(capability_registry).compose(spec)
-        return _AISelection(None, spec, spec.period, prompt, title)
+        return _AISelection(
+            None,
+            spec,
+            spec.period,
+            prompt,
+            title,
+            context_token,
+            action_context,
+        )
     except CapabilityError as error:
         abort(error.status, description=error.safe_message)
 
@@ -253,6 +357,7 @@ def send_message(conversation_id: str):
             request.form.get("content"),
             template_id=template.id if template else None,
             intent_spec=selection.spec if selection else None,
+            action_context=selection.action_context if selection else None,
         )
     except AIServiceError as error:
         _web_error(error)
@@ -277,6 +382,7 @@ def retry_message(conversation_id: str):
             conversation_id,
             template_id=template.id if template else None,
             intent_spec=selection.spec if selection else None,
+            action_context=selection.action_context if selection else None,
         )
     except AIServiceError as error:
         _web_error(error)
@@ -328,102 +434,26 @@ def confirm_draft(draft_id: str):
     service = AIConversationService()
     try:
         draft = service.get_draft(current_user.id, draft_id)
-        ambiguous_fields = [
-            str(value)
-            for value in (draft.payload_json or {}).get("ambiguous_fields", [])
-            if str(value)
-        ]
-        if draft.draft_type == "body_measurement":
-            edits = {
-                "weight": request.form.get("weight"),
-                "unit": request.form.get("unit"),
+        edits = _draft_form_edits(service, draft)
+        ambiguous_fields = (draft.payload_json or {}).get("ambiguous_fields") or []
+        if ambiguous_fields:
+            supplied = {
+                key for key, value in edits.items() if value not in (None, "", [])
             }
-            resolved_ambiguous = {
-                field_name
-                for field_name in ("weight", "unit")
-                if edits.get(field_name) not in (None, "")
-            }
-            for field_name in (
-                "recorded_at",
-                "body_fat_percent",
-                "muscle_mass_kg",
-                "water_percent",
-                "visceral_fat",
-                "bmr_kcal",
-                "bmi",
-                "notes",
-            ):
-                value = request.form.get(field_name)
-                if value not in (None, ""):
-                    edits[field_name] = value
-                    resolved_ambiguous.add(field_name)
-            edits["ambiguous_fields"] = [
-                field_name
-                for field_name in ambiguous_fields
-                if field_name not in resolved_ambiguous
-            ]
-        elif draft.draft_type == "food_entry":
-            items = []
-            for index, original in enumerate((draft.payload_json or {}).get("items", [])):
-                item = dict(original)
-                item.update(
-                    {
-                        "name": request.form.get(f"item_name_{index}"),
-                        "quantity": request.form.get(f"item_quantity_{index}") or None,
-                        "unit": request.form.get(f"item_unit_{index}") or None,
-                    }
-                )
+            if draft.draft_type == "food_entry":
                 for field_name in (
-                    "calories_kcal",
-                    "protein_g",
-                    "fat_g",
-                    "net_carbs_g",
-                    "total_carbs_g",
-                    "fiber_g",
-                    "sugar_g",
-                    "sodium_mg",
-                    "notes",
+                    "name", "quantity", "unit", "calories_kcal", "protein_g",
+                    "fat_g", "net_carbs_g", "total_carbs_g", "fiber_g",
+                    "sugar_g", "sodium_mg", "notes",
                 ):
-                    value = request.form.get(f"item_{field_name}_{index}")
-                    if value not in (None, ""):
-                        item[field_name] = value
-                items.append(item)
-            edits = {
-                "date": request.form.get("date") or None,
-                "meal_type": request.form.get("meal_type"),
-                "meal_name": request.form.get("meal_name") or None,
-                "items": items,
-            }
-            if edits["date"] is None:
-                edits.pop("date")
-            resolved_ambiguous = {
-                field_name
-                for field_name in ("date", "meal_type", "meal_name")
-                if edits.get(field_name) not in (None, "")
-            }
-            for field_name in (
-                "name",
-                "quantity",
-                "unit",
-                "calories_kcal",
-                "protein_g",
-                "fat_g",
-                "net_carbs_g",
-                "total_carbs_g",
-                "fiber_g",
-                "sugar_g",
-                "sodium_mg",
-                "notes",
-            ):
-                if any(item.get(field_name) not in (None, "") for item in items):
-                    resolved_ambiguous.add(field_name)
+                    if any(
+                        item.get(field_name) not in (None, "")
+                        for item in edits.get("items", [])
+                    ):
+                        supplied.add(field_name)
             edits["ambiguous_fields"] = [
-                field_name
-                for field_name in ambiguous_fields
-                if field_name not in resolved_ambiguous
+                field for field in ambiguous_fields if field not in supplied
             ]
-        else:
-            edits = None
         row = service.confirm_draft(
             current_user._get_current_object(), draft_id, edits=edits
         )
@@ -444,6 +474,63 @@ def confirm_draft(draft_id: str):
     return redirect(
         url_for("ai.conversation", conversation_id=row.conversation.public_id)
     )
+
+
+@ai_bp.post("/drafts/<draft_id>/edit")
+@login_required
+def edit_draft(draft_id: str):
+    service = AIConversationService()
+    try:
+        draft = service.get_draft(current_user.id, draft_id)
+        row = service.edit_draft(
+            current_user._get_current_object(),
+            draft_id,
+            _draft_form_edits(service, draft),
+        )
+    except AIServiceError as error:
+        _web_error(error)
+        return redirect(url_for("ai.index"))
+    flash("Borrador actualizado localmente; aún no se guardó ningún dato.", "success")
+    return redirect(url_for("ai.conversation", conversation_id=row.conversation.public_id))
+
+
+@ai_bp.post("/plans/<plan_id>/confirm")
+@login_required
+def confirm_plan(plan_id: str):
+    try:
+        result = AIConversationService().confirm_plan(
+            current_user._get_current_object(), plan_id
+        )
+    except AIServiceError as error:
+        _web_error(error)
+        return redirect(url_for("ai.index"))
+    counts = result["counts"]
+    flash(
+        f"Plan procesado: {counts['applied']} aplicados, "
+        f"{counts['pending_confirmation']} pendientes y {counts['failed']} con error.",
+        "success" if not counts["failed"] else "warning",
+    )
+    row = AIConversationService().get_draft(current_user.id, result["drafts"][0]["id"])
+    return redirect(url_for("ai.conversation", conversation_id=row.conversation.public_id))
+
+
+@ai_bp.post("/plans/<plan_id>/retry")
+@login_required
+def retry_plan(plan_id: str):
+    try:
+        result = AIConversationService().retry_plan(
+            current_user._get_current_object(), plan_id
+        )
+    except AIServiceError as error:
+        _web_error(error)
+        return redirect(url_for("ai.index"))
+    counts = result["counts"]
+    flash(
+        f"Reintento seguro: {counts['applied']} aplicados y {counts['failed']} con error.",
+        "success" if not counts["failed"] else "warning",
+    )
+    row = AIConversationService().get_draft(current_user.id, result["drafts"][0]["id"])
+    return redirect(url_for("ai.conversation", conversation_id=row.conversation.public_id))
 
 
 @ai_bp.post("/drafts/<draft_id>/reject")

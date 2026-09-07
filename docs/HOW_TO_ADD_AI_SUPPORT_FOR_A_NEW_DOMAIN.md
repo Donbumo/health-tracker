@@ -93,9 +93,16 @@ Declara `ActionCapability` solo cuando haya:
 - confirmación explícita;
 - idempotencia y pruebas de aislamiento.
 
-El modelo prepara el draft; nunca escribe directamente. Si falta cualquiera de
+El modelo prepara el plan y el draft; nunca escribe directamente. Registra la
+capability en `action_capabilities` del manifest del dominio. El resolver, el
+provider schema, el catálogo de acciones y el orquestador la descubrirán desde
+ese registro, sin una rama específica en AI central. Si falta cualquiera de
 esas piezas, conserva la metadata como foundation `available=False` con un
 blocker concreto y no la registres como capacidad ejecutable.
+
+La guía completa, incluida corrección owner-bound, idempotencia, provenance y
+el gate ficticio de extensión, está en
+[HOW_TO_ADD_AN_AI_ACTION_CAPABILITY.md](HOW_TO_ADD_AN_AI_ACTION_CAPABILITY.md).
 
 ## 6. Pruebas mínimas
 
@@ -109,6 +116,8 @@ Añade cobertura para:
 6. generación automática de experiencias sin templates nuevos;
 7. render responsive/teclado y preparación sin autoenvío;
 8. logs sin preguntas, argumentos ni valores de salud.
+9. plan multi-step, confirmación parcial y retry sin duplicados;
+10. registro adaptativo en catálogo/resolver sin editar el orquestador AI.
 
 Usa fixtures claramente ficticias. Las pruebas de provider real se ejecutan
 solo después de la suite determinística y nunca con datos personales.

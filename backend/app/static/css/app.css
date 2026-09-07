@@ -562,6 +562,18 @@ tbody tr:last-child td { border-bottom: 0; }
 .ai-evidence ul { padding-left: 1.25rem; }
 .ai-draft { display: grid; gap: .65rem; margin-top: 1rem; padding: .9rem; border: 1px solid #f59e0b; border-radius: var(--radius-sm); background: var(--warning-bg); }
 .ai-draft > div { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.ai-plan { display: grid; gap: .8rem; margin-top: 1rem; padding: .9rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.ai-plan-heading, .ai-plan-actions, .ai-step-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .65rem; }
+.ai-plan-heading h3, .ai-plan-heading p { margin: 0; }
+.ai-plan-actions, .ai-step-actions { justify-content: flex-end; }
+.ai-plan .ai-draft { margin-top: 0; min-width: 0; }
+.ai-step-number { display: inline-grid; place-items: center; min-width: 2rem; min-height: 2rem; border-radius: 999px; background: var(--surface-muted); font-weight: 800; }
+.ai-draft form, .ai-draft fieldset, .ai-draft form > label, .ai-draft fieldset label { display: grid; gap: .4rem; min-width: 0; }
+.ai-draft fieldset { margin: 0; padding: .75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.ai-draft input, .ai-draft select, .ai-draft textarea { min-width: 0; }
+.ai-original pre, .ai-draft textarea { max-width: 100%; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ai-draft, .ai-draft p, .ai-draft label { min-width: 0; overflow-wrap: anywhere; }
+.ai-draft textarea { min-height: 7rem; }
 .ai-composer { max-width: 52rem; margin: 0 auto 1.25rem; background: var(--surface); }
 .ai-composer textarea { min-height: 6rem; }
 .ai-composer-actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
@@ -592,6 +604,8 @@ tbody tr:last-child td { border-bottom: 0; }
   .ai-message { max-width: 96%; }
   .ai-composer-actions, .ai-retry-form { align-items: stretch; flex-direction: column; }
   .ai-composer-actions .button, .ai-retry-form .button { width: 100%; }
+  .ai-plan-heading, .ai-plan-actions, .ai-step-actions { align-items: stretch; flex-direction: column; }
+  .ai-plan-actions form, .ai-plan-actions .button, .ai-step-actions .button { width: 100%; }
 }
 
 @media print {

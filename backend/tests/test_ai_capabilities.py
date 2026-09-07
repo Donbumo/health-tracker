@@ -363,12 +363,20 @@ def test_exercise_progress_is_owner_only_and_does_not_compare_incompatible_loads
 
 def test_action_metadata_reports_real_actions_and_honest_future_blockers():
     actions = {item.action_id: item for item in AICapabilityRegistry().action_capabilities}
-    assert set(actions) == {"record_food", "record_measurement", "correct_measurement"}
+    assert set(actions) == {
+        "nutrition.food.create",
+        "body.measurement.create",
+        "body.measurement.correct",
+        "training.session.create",
+        "training.session.correct",
+        "goal.create",
+        "goal.update",
+    }
     assert all(item.confirmation_required for item in actions.values())
-    assert TRAINING_ACTION_FOUNDATION.available is False
-    assert "plan/version" in TRAINING_ACTION_FOUNDATION.blocker
-    assert GOAL_ACTION_FOUNDATION.available is False
-    assert "draft" in GOAL_ACTION_FOUNDATION.blocker.casefold()
+    assert TRAINING_ACTION_FOUNDATION.available is True
+    assert TRAINING_ACTION_FOUNDATION.service == "apply_training_create"
+    assert GOAL_ACTION_FOUNDATION.available is True
+    assert GOAL_ACTION_FOUNDATION.idempotency_policy == "owner_revision"
 
 
 def test_structured_web_flow_prepares_without_provider_and_rejects_tampering(

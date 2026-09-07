@@ -196,7 +196,7 @@ class AIActionDraft(db.Model):
     __tablename__ = "ai_action_drafts"
     __table_args__ = (
         db.CheckConstraint(
-            "draft_type IN ('food_entry','body_measurement','workout_entry','steps_entry')",
+            "draft_type IN ('food_entry','body_measurement','workout_entry','steps_entry','capability_action')",
             name="ck_ai_action_drafts_type",
         ),
         db.CheckConstraint(

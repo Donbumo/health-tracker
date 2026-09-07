@@ -1,10 +1,10 @@
 from app.services.ai.capabilities.types import (
     AICapabilityManifest,
-    ActionCapability,
     AIIntent,
     MetricDefinition,
     ReadCapability,
 )
+from app.services.ai.capabilities.domains.nutrition_actions import FOOD_CREATE
 
 
 METRICS = (
@@ -17,12 +17,6 @@ METRICS = (
     MetricDefinition("sugar", "Azúcar", "g", ("sum", "average"), True, True, False, 1, "unknown_not_zero"),
     MetricDefinition("sodium", "Sodio", "mg", ("sum", "average"), True, True, False, 0, "unknown_not_zero"),
     MetricDefinition("food_entries", "Alimentos registrados", "records", ("count",), True, True, False, 0, "no_record_is_not_zero_intake"),
-)
-
-FOOD_FIELDS = (
-    "date", "meal_type", "meal_name", "items", "name", "quantity", "unit",
-    "calories_kcal", "protein_g", "fat_g", "net_carbs_g", "total_carbs_g",
-    "fiber_g", "sugar_g", "sodium_mg", "notes",
 )
 
 MANIFEST = AICapabilityManifest(
@@ -40,8 +34,6 @@ MANIFEST = AICapabilityManifest(
         ReadCapability(AIIntent.PATTERNS, ("get_food_patterns",), ("food_entries",), ("7d", "30d", "90d"), 1),
         ReadCapability(AIIntent.SOURCES, ("get_data_sources_summary",), tuple(item.id for item in METRICS)),
     ),
-    action_capabilities=(
-        ActionCapability("record_food", "nutrition", "food_entry", FOOD_FIELDS, "food_entry", True, "create_nutrition_item"),
-    ),
+    action_capabilities=(FOOD_CREATE,),
     comparisons=True,
 )

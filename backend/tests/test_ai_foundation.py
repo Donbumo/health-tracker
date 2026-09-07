@@ -270,7 +270,15 @@ def test_ai_disabled_is_safe_and_does_not_break_global_health(app, client, user)
         },
         "remote": False,
         "remote_consent_enabled": False,
-        "write_actions_enabled": ["body_measurement", "food_entry"],
+        "write_actions_enabled": [
+            "nutrition.food.create",
+            "body.measurement.create",
+            "body.measurement.correct",
+            "training.session.create",
+            "training.session.correct",
+            "goal.create",
+            "goal.update",
+        ],
         "attachments_enabled": False,
     }
     configurations = (
@@ -828,7 +836,8 @@ def test_web_draft_preview_confirm_and_remote_privacy_controls(app, client, user
         follow_redirects=True,
     )
     html = sent.get_data(as_text=True)
-    assert "Confirmar y guardar" in html
+    assert "Plan preparado" in html
+    assert "Confirmar" in html
     assert "reportado por ti" in html
     with app.app_context():
         draft = db.session.execute(db.select(AIActionDraft)).scalar_one()

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import StrEnum
-from typing import Mapping
+from typing import Any, Callable, Mapping
+
+from jsonschema import Draft202012Validator, FormatChecker
 
 
 PERIODS = ("today", "7d", "30d", "90d")
@@ -20,6 +23,7 @@ class AIIntent(StrEnum):
     PATTERNS = "patterns"
     RECORD = "record"
     CORRECT = "correct"
+    PROPOSE_CHANGES = "propose_changes"
 
 
 class CapabilityError(ValueError):
@@ -53,18 +57,228 @@ class ReadCapability:
     description: str = ""
 
 
+class AIPlanStepStatus(StrEnum):
+    PROPOSED = "proposed"
+    NEEDS_INPUT = "needs_input"
+    READY = "ready"
+    CONFIRMED = "confirmed"
+    REJECTED = "rejected"
+    APPLIED = "applied"
+    FAILED = "failed"
+
+
+@dataclass(frozen=True)
+class ActionApplyResult:
+    resource_type: str
+    resource_public_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ActionDraftSpec:
+    arguments: dict[str, Any]
+    status: AIPlanStepStatus
+    preview: dict[str, Any]
+    context: dict[str, Any] = field(default_factory=dict)
+
+
+ActionNormalizer = Callable[[Any, dict[str, Any]], dict[str, Any]]
+ActionOwnerResolver = Callable[
+    [Any, dict[str, Any], Mapping[str, Any] | None], dict[str, Any]
+]
+ActionPreviewer = Callable[[Any, dict[str, Any], Mapping[str, Any]], dict[str, Any]]
+ActionApplier = Callable[
+    [Any, Any, dict[str, Any], Mapping[str, Any], datetime], ActionApplyResult
+]
+
+
+def _identity_normalizer(_user, arguments: dict[str, Any]) -> dict[str, Any]:
+    return arguments
+
+
+def _empty_owner_context(
+    _user, _arguments: dict[str, Any], _resource_context: Mapping[str, Any] | None
+) -> dict[str, Any]:
+    return {}
+
+
+def _default_preview(
+    _user, arguments: dict[str, Any], _context: Mapping[str, Any]
+) -> dict[str, Any]:
+    return {"fields": [{"name": key, "value": value} for key, value in arguments.items()]}
+
+
 @dataclass(frozen=True)
 class ActionCapability:
+    """Domain-owned, server-resolved contract for one confirmable write action."""
+
     action_id: str
     domain: str
     entity: str
+    operation: str
+    label: str
+    description: str
     supported_fields: tuple[str, ...]
-    draft_type: str
-    confirmation_required: bool
-    service: str
-    read_tools: tuple[str, ...] = ()
+    required_fields: tuple[str, ...]
+    optional_fields: tuple[str, ...]
+    input_schema: Mapping[str, Any]
+    apply_handler: ActionApplier
+    draft_type: str = "capability_action"
+    confirmation_required: bool = True
+    ownership_policy: str = "effective_server_user"
+    idempotency_policy: str = "draft_uuid"
+    required_read_capabilities: tuple[str, ...] = ()
+    normalizer: ActionNormalizer = _identity_normalizer
+    owner_resolver: ActionOwnerResolver = _empty_owner_context
+    previewer: ActionPreviewer = _default_preview
     available: bool = True
     blocker: str | None = None
+
+    @property
+    def service(self) -> str:
+        """Human-readable audit metadata; never selected by the provider or browser."""
+        return getattr(self.apply_handler, "__name__", "domain_handler")
+
+    @property
+    def read_tools(self) -> tuple[str, ...]:
+        return self.required_read_capabilities
+
+    def validate(
+        self, user, arguments: Mapping[str, Any], *, allow_incomplete: bool
+    ) -> dict[str, Any]:
+        if not isinstance(arguments, Mapping):
+            raise CapabilityError("invalid_action_arguments", "Los argumentos de la acción no son válidos.")
+        raw = dict(arguments)
+        unknown = set(raw) - set(self.supported_fields)
+        if unknown:
+            raise CapabilityError(
+                "unsupported_action_field",
+                "La propuesta contiene campos no permitidos para esta acción.",
+                422,
+            )
+        normalized = self.normalizer(user, raw)
+        if not isinstance(normalized, dict) or set(normalized) - set(self.supported_fields):
+            raise CapabilityError(
+                "invalid_action_arguments", "La acción no pudo normalizarse de forma segura.", 422
+            )
+        schema = dict(self.input_schema)
+        schema["required"] = [] if allow_incomplete else list(self.required_fields)
+        errors = sorted(
+            Draft202012Validator(schema, format_checker=FormatChecker()).iter_errors(normalized),
+            key=lambda item: list(item.path),
+        )
+        if errors:
+            raise CapabilityError(
+                "invalid_action_arguments", "Los argumentos no cumplen el contrato de la acción.", 422
+            )
+        return normalized
+
+    def create_draft(
+        self,
+        user,
+        arguments: Mapping[str, Any],
+        *,
+        resource_context: Mapping[str, Any] | None = None,
+    ) -> ActionDraftSpec:
+        clean = self.validate(user, arguments, allow_incomplete=True)
+        if resource_context is not None and not isinstance(resource_context, Mapping):
+            raise CapabilityError(
+                "invalid_action_context", "El contexto de la acción no es válido.", 403
+            )
+        context = self.owner_resolver(user, clean, resource_context)
+        if not isinstance(context, dict):
+            raise CapabilityError(
+                "invalid_action_context", "La acción no pudo resolver un contexto seguro.", 422
+            )
+        argument_defaults = context.pop("argument_defaults", {})
+        if argument_defaults:
+            if (
+                not isinstance(argument_defaults, Mapping)
+                or set(argument_defaults) - set(self.supported_fields)
+            ):
+                raise CapabilityError(
+                    "invalid_action_context", "La acción no pudo resolver un contexto seguro.", 422
+                )
+            clean = self.validate(
+                user,
+                {**dict(argument_defaults), **clean},
+                allow_incomplete=True,
+            )
+        missing = tuple(field for field in self.required_fields if clean.get(field) in (None, "", []))
+        retained_missing = [
+            str(name)
+            for name in (clean.get("missing_fields") or ())
+            if name not in self.required_fields or name in missing
+        ]
+        if retained_missing or missing:
+            clean["missing_fields"] = list(
+                dict.fromkeys([*retained_missing, *missing])
+            )
+        else:
+            clean.pop("missing_fields", None)
+        ambiguous = tuple(clean.get("ambiguous_fields") or ())
+        status = (
+            AIPlanStepStatus.NEEDS_INPUT
+            if missing or ambiguous or context.get("needs_input") is True
+            else AIPlanStepStatus.READY
+        )
+        return ActionDraftSpec(
+            arguments=clean,
+            status=status,
+            preview=self.previewer(user, clean, context),
+            context=context,
+        )
+
+    def apply(
+        self,
+        user,
+        draft,
+        arguments: Mapping[str, Any],
+        context: Mapping[str, Any],
+        now: datetime,
+    ) -> ActionApplyResult:
+        if not self.confirmation_required:
+            raise CapabilityError(
+                "unsafe_action_contract", "La acción no exige confirmación explícita.", 409
+            )
+        clean = self.validate(user, arguments, allow_incomplete=False)
+        if clean.get("ambiguous_fields"):
+            raise CapabilityError(
+                "action_needs_input", "Corrige los campos ambiguos antes de confirmar.", 422
+            )
+        if context.get("needs_input") is True:
+            raise CapabilityError(
+                "action_needs_input",
+                "Completa o corrige el contexto requerido antes de confirmar.",
+                422,
+            )
+        # The domain handler must re-check the persisted server-owned context through
+        # its official owner-scoped service at confirmation time.
+        return self.apply_handler(user, draft, clean, context, now)
+
+    def cancel(self, _user, _draft) -> None:
+        return None
+
+
+@dataclass(frozen=True)
+class AIPlanStep:
+    step_id: str
+    action_capability_id: str
+    domain: str
+    entity: str
+    operation: str
+    arguments: dict[str, Any]
+    dependencies: tuple[str, ...]
+    status: AIPlanStepStatus
+    preview: dict[str, Any] = field(default_factory=dict)
+    context: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class AIPlanSpec:
+    plan_id: str
+    intent: str
+    summary: str
+    steps: tuple[AIPlanStep, ...]
 
 
 @dataclass(frozen=True)
@@ -116,6 +330,7 @@ class AIIntentPlan:
     spec: AIIntentSpec
     tools: tuple[str, ...]
     action: ActionCapability | None = None
+    actions: tuple[ActionCapability, ...] = ()
 
 
 @dataclass(frozen=True)

@@ -56,6 +56,32 @@ class AIProviderDraft:
 
 
 @dataclass(frozen=True)
+class AIProviderActionDefinition:
+    action_capability_id: str
+    domain: str
+    entity: str
+    operation: str
+    label: str
+    description: str
+    input_schema: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class AIProviderPlanStepProposal:
+    step_id: str
+    action_capability_id: str
+    arguments: dict[str, Any]
+    dependencies: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class AIProviderPlanProposal:
+    intent: str
+    summary: str
+    steps: tuple[AIProviderPlanStepProposal, ...]
+
+
+@dataclass(frozen=True)
 class AIProviderToolResult:
     call_id: str
     name: str
@@ -75,6 +101,7 @@ class AIProviderRequest:
     safety_instructions: str = ""
     timeout_seconds: float = 20
     draft_types: tuple[str, ...] | None = None
+    actions: tuple[AIProviderActionDefinition, ...] = ()
     require_tool: bool = False
 
 
@@ -83,6 +110,7 @@ class AIProviderResponse:
     content: str | None = None
     tool_calls: tuple[AIProviderToolCall, ...] = ()
     drafts: tuple[AIProviderDraft, ...] = ()
+    plans: tuple[AIProviderPlanProposal, ...] = ()
     usage: AIUsage = field(default_factory=AIUsage)
 
 

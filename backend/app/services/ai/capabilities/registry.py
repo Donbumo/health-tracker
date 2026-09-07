@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import uuid
 from collections.abc import Iterable, Mapping
 
 from app.services.ai.capabilities.domains import load_manifests
@@ -9,13 +10,29 @@ from app.services.ai.capabilities.types import (
     ActionCapability,
     AIIntent,
     AIIntentPlan,
+    AIPlanSpec,
+    AIPlanStep,
     AIIntentSpec,
     CapabilityError,
     MetricDefinition,
 )
+from app.services.ai.types import (
+    AIProviderActionDefinition,
+    AIProviderPlanProposal,
+    AIProviderPlanStepProposal,
+)
 
 
 _ID = re.compile(r"[a-z][a-z0-9]*(?:_[a-z0-9]+)*\Z")
+_ACTION_ID = re.compile(r"[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+\Z")
+_STEP_ID = re.compile(r"[a-z][a-z0-9_-]{0,63}\Z")
+_ACTION_ALIASES = {
+    "record_food": "nutrition.food.create",
+    "record_measurement": "body.measurement.create",
+    "correct_measurement": "body.measurement.correct",
+    "record_training_session": "training.session.create",
+    "propose_goal_change": "goal.update",
+}
 _OPTION_VALUES = {
     "focus": {"deficit", "surplus", "goals", "history"},
     "meal_type": {"breakfast", "lunch", "dinner", "snack", "extra", "other"},
@@ -53,6 +70,155 @@ class AICapabilityRegistry:
             for manifest in self._manifests
             for action in manifest.action_capabilities
             if action.available
+        )
+
+    @property
+    def actions_by_id(self) -> dict[str, ActionCapability]:
+        return {item.action_id: item for item in self.action_capabilities}
+
+    def action(self, action_id: str) -> ActionCapability:
+        capability = self.actions_by_id.get(str(action_id or "").strip())
+        if capability is None:
+            raise CapabilityError(
+                "unsupported_action", "La acción AI solicitada no está disponible.", 409
+            )
+        return capability
+
+    def provider_action_definitions(
+        self, allowed_action_ids: Iterable[str] | None = None
+    ) -> tuple[AIProviderActionDefinition, ...]:
+        allowed = None if allowed_action_ids is None else set(allowed_action_ids)
+        return tuple(
+            AIProviderActionDefinition(
+                action_capability_id=item.action_id,
+                domain=item.domain,
+                entity=item.entity,
+                operation=item.operation,
+                label=item.label,
+                description=item.description,
+                input_schema=dict(item.input_schema),
+            )
+            for item in self.action_capabilities
+            if allowed is None or item.action_id in allowed
+        )
+
+    def resolve_action_proposal(
+        self,
+        user,
+        proposal: AIProviderPlanProposal,
+        *,
+        allowed_action_ids: Iterable[str] | None = None,
+        resource_context: Mapping[str, str] | None = None,
+    ) -> AIPlanSpec:
+        if not isinstance(proposal, AIProviderPlanProposal):
+            raise CapabilityError("invalid_plan", "La propuesta AI no tiene un formato válido.", 502)
+        if proposal.intent not in {"record", "correct", "propose_changes", "hybrid"}:
+            raise CapabilityError("invalid_plan_intent", "La intención del plan no está permitida.", 502)
+        if not isinstance(proposal.summary, str):
+            raise CapabilityError("invalid_plan", "La propuesta AI no tiene un formato válido.", 502)
+        summary = proposal.summary.strip()
+        if not summary or len(summary) > 500 or not 1 <= len(proposal.steps) <= 10:
+            raise CapabilityError("invalid_plan", "La propuesta AI no tiene un formato válido.", 502)
+        if not isinstance(proposal.steps, tuple) or any(
+            not isinstance(item, AIProviderPlanStepProposal) for item in proposal.steps
+        ):
+            raise CapabilityError("invalid_plan", "La propuesta AI no tiene un formato válido.", 502)
+        allowed = None if allowed_action_ids is None else set(allowed_action_ids)
+        step_ids = [item.step_id for item in proposal.steps]
+        if (
+            len(step_ids) != len(set(step_ids))
+            or any(not _STEP_ID.fullmatch(item) for item in step_ids)
+        ):
+            raise CapabilityError("invalid_plan_steps", "Los pasos del plan no son válidos.", 502)
+        known_steps = set(step_ids)
+        graph = {}
+        resolved_steps = []
+        for item in proposal.steps:
+            if not isinstance(item.dependencies, tuple) or any(
+                dependency not in known_steps or dependency == item.step_id
+                for dependency in item.dependencies
+            ):
+                raise CapabilityError("invalid_plan_dependencies", "Las dependencias del plan no son válidas.", 502)
+            if len(item.dependencies) != len(set(item.dependencies)):
+                raise CapabilityError("invalid_plan_dependencies", "Las dependencias del plan no son válidas.", 502)
+            graph[item.step_id] = item.dependencies
+            try:
+                capability = self.action(item.action_capability_id)
+            except CapabilityError as error:
+                raise CapabilityError(
+                    "unknown_action", "La propuesta contiene una acción no permitida.", 502
+                ) from error
+            if allowed is not None and capability.action_id not in allowed:
+                raise CapabilityError(
+                    "action_not_allowed_for_intent",
+                    "La propuesta contiene una acción fuera del plan autorizado.",
+                    502,
+                )
+            if proposal.intent == "record" and capability.operation != "create":
+                raise CapabilityError(
+                    "invalid_plan_operation",
+                    "La operación propuesta no corresponde a la intención del plan.",
+                    502,
+                )
+            if proposal.intent == "correct" and capability.operation not in {"correct", "update"}:
+                raise CapabilityError(
+                    "invalid_plan_operation",
+                    "La operación propuesta no corresponde a la intención del plan.",
+                    502,
+                )
+            step_context = None
+            if resource_context is not None:
+                if (
+                    resource_context.get("action_capability_id")
+                    == capability.action_id
+                    and resource_context.get("domain") == capability.domain
+                ):
+                    step_context = resource_context
+                elif len(proposal.steps) == 1:
+                    raise CapabilityError(
+                        "invalid_action_context",
+                        "El contexto no corresponde a la acción propuesta.",
+                        403,
+                    )
+            draft = capability.create_draft(
+                user, item.arguments, resource_context=step_context
+            )
+            resolved_steps.append(
+                AIPlanStep(
+                    step_id=item.step_id,
+                    action_capability_id=capability.action_id,
+                    domain=capability.domain,
+                    entity=capability.entity,
+                    operation=capability.operation,
+                    arguments=draft.arguments,
+                    dependencies=item.dependencies,
+                    status=draft.status,
+                    preview=draft.preview,
+                    context=draft.context,
+                )
+            )
+
+        visiting: set[str] = set()
+        visited: set[str] = set()
+
+        def visit(step_id: str) -> None:
+            if step_id in visiting:
+                raise CapabilityError("invalid_plan_dependencies", "El plan contiene dependencias cíclicas.", 502)
+            if step_id in visited:
+                return
+            visiting.add(step_id)
+            for dependency in graph[step_id]:
+                visit(dependency)
+            visiting.remove(step_id)
+            visited.add(step_id)
+
+        for step_id in step_ids:
+            visit(step_id)
+        return AIPlanSpec(
+            plan_id=str(uuid.uuid4()),
+            intent=proposal.intent,
+            summary=summary,
+            steps=tuple(resolved_steps),
         )
 
     @property
@@ -110,12 +276,32 @@ class AICapabilityRegistry:
     def resolve(self, spec: AIIntentSpec) -> AIIntentPlan:
         manifest = self.manifest(spec.domain)
         self._validate_spec(spec, manifest)
+        if spec.intent == AIIntent.PROPOSE_CHANGES:
+            if manifest.domain_id != "goals":
+                raise CapabilityError(
+                    "unsupported_combination",
+                    "La propuesta de cambios sólo está habilitada para metas.",
+                    409,
+                )
+            actions = tuple(
+                item
+                for item in manifest.action_capabilities
+                if item.available and item.operation in {"create", "update"}
+            )
+            if not actions:
+                raise CapabilityError(
+                    "capability_not_implemented",
+                    "No hay acciones de metas disponibles.",
+                    409,
+                )
+            return AIIntentPlan(spec, ("get_goals_summary",), actions=actions)
         if spec.intent in {AIIntent.RECORD, AIIntent.CORRECT}:
+            requested_action = _ACTION_ALIASES.get(spec.action, spec.action)
             action = next(
                 (
                     item
                     for item in manifest.action_capabilities
-                    if item.action_id == spec.action and item.available
+                    if item.action_id == requested_action and item.available
                 ),
                 None,
             )
@@ -123,6 +309,17 @@ class AICapabilityRegistry:
                 raise CapabilityError(
                     "unsupported_action",
                     "La acción AI solicitada no está disponible.",
+                    409,
+                )
+            expected_intent = (
+                AIIntent.CORRECT
+                if action.operation in {"correct", "update"}
+                else AIIntent.RECORD
+            )
+            if spec.intent != expected_intent:
+                raise CapabilityError(
+                    "invalid_action_operation",
+                    "La intención no corresponde a la operación de la acción.",
                     409,
                 )
             if any(name not in self._tools for name in action.read_tools):
@@ -164,6 +361,8 @@ class AICapabilityRegistry:
         return tuple(item for item in self.tool_registry.definitions if item.name in allowed)
 
     def minimum_records(self, spec: AIIntentSpec) -> int:
+        if spec.intent == AIIntent.PROPOSE_CHANGES:
+            return 0
         if spec.intent in {AIIntent.RECORD, AIIntent.CORRECT}:
             return 0 if spec.intent == AIIntent.RECORD else 1
         plan = self.resolve(spec)
@@ -232,6 +431,13 @@ class AICapabilityRegistry:
     def _validate(self) -> None:
         if len(self._by_domain) != len(self._manifests):
             raise RuntimeError("AI capability domain ids must be unique.")
+        all_action_ids = [
+            action.action_id
+            for manifest in self._manifests
+            for action in manifest.action_capabilities
+        ]
+        if len(all_action_ids) != len(set(all_action_ids)):
+            raise RuntimeError("AI action ids must be globally unique.")
         for manifest in self._manifests:
             if not _ID.fullmatch(manifest.domain_id):
                 raise RuntimeError(f"Invalid AI capability domain: {manifest.domain_id}")
@@ -267,10 +473,34 @@ class AICapabilityRegistry:
                         raise RuntimeError(
                             f"AI tool/domain mismatch: {tool_name}/{manifest.domain_id}"
                         )
-                    if capability.intent.value not in metadata.operations:
+                    if (
+                        capability.intent != AIIntent.PROPOSE_CHANGES
+                        and capability.intent.value not in metadata.operations
+                    ):
                         raise RuntimeError(
                             f"AI tool/intent mismatch: {tool_name}/{capability.intent.value}"
                         )
             action_ids = [item.action_id for item in manifest.action_capabilities]
             if len(action_ids) != len(set(action_ids)):
                 raise RuntimeError(f"Duplicate action in AI capability domain: {manifest.domain_id}")
+            for action in manifest.action_capabilities:
+                if not _ACTION_ID.fullmatch(action.action_id):
+                    raise RuntimeError(f"Invalid AI action id: {action.action_id}")
+                if action.domain != manifest.domain_id or action.entity not in manifest.entities:
+                    raise RuntimeError(f"AI action/domain mismatch: {action.action_id}")
+                if action.operation not in {"create", "correct", "update"}:
+                    raise RuntimeError(f"Invalid AI action operation: {action.action_id}")
+                if not action.confirmation_required:
+                    raise RuntimeError(f"AI write action must require confirmation: {action.action_id}")
+                if set(action.required_fields) - set(action.supported_fields):
+                    raise RuntimeError(f"AI action has unknown required fields: {action.action_id}")
+                if set(action.optional_fields) - set(action.supported_fields):
+                    raise RuntimeError(f"AI action has unknown optional fields: {action.action_id}")
+                if set(action.required_fields) & set(action.optional_fields):
+                    raise RuntimeError(f"AI action fields overlap: {action.action_id}")
+                if set(action.required_fields) | set(action.optional_fields) != set(action.supported_fields):
+                    raise RuntimeError(f"AI action fields are not fully classified: {action.action_id}")
+                if set(action.input_schema.get("properties", {})) != set(action.supported_fields):
+                    raise RuntimeError(f"AI action schema/fields mismatch: {action.action_id}")
+                if any(name not in self._tools for name in action.required_read_capabilities):
+                    raise RuntimeError(f"AI action has unknown read capability: {action.action_id}")

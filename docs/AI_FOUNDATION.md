@@ -61,11 +61,13 @@ No salen perfil completo, email, username, `user_id`, ORM, SQL, raw payloads, pa
 ```text
 web session o API Bearer
   → AIConversationService
-  → AIIntentSpec validado
-  → AICapabilityRegistry / plan determinista
+  → AIIntentSpec o propuesta estructurada validada
+  → AICapabilityRegistry / AIPlanSpec
   → AIProvider
-  → subconjunto de AIToolRegistry allowlisted para la intención
-  → services/read models owner-only
+  → lecturas allowlisted, si son necesarias
+  → AIActionDrafts agrupados por plan
+  → confirmación explícita
+  → services/read models owner-only del dominio
   → MariaDB
 ```
 
@@ -132,27 +134,72 @@ La web vive en `/ai` con Flask-Login/CSRF. API v1 usa Bearer y UUID públicos. R
 
 El delete de conversación es hard delete y elimina mensajes, tool audit y drafts; no revierte recursos de salud que el usuario ya confirmó. El delete de cuenta elimina toda la jerarquía AI por FK `ON DELETE CASCADE`.
 
-## Drafts y confirmación
+## Operator, planes y confirmación
 
-Los estados son `pending_confirmation`, `applied`, `rejected`, `expired` y
-`failed`. `body_measurement` y `food_entry` pueden confirmarse. Las capacidades
-de acción reutilizables declaran dominio, entidad, campos soportados, tipo de
-draft, servicio oficial y confirmación obligatoria. Registrar/corregir medición
-y registrar comida están disponibles. Entrenamiento queda bloqueado hasta
-resolver plan/versión y validación completa de ejercicios; cambios de meta
-quedan bloqueados hasta existir `goal_entry` y preview owner-bound.
-`workout_entry` y `steps_entry` continúan preparados pero no habilitados.
+`ActionCapability` es el contrato estable, provider-neutral y propiedad de cada
+dominio. Declara `action_id`, dominio, entidad, operación, campos soportados,
+schema cerrado, lecturas previas, resolución owner-only, preview, handler del
+servicio oficial, confirmación e idempotencia. El proveedor recibe únicamente
+la definición declarativa: nunca selecciona una función Python, un nombre de
+servicio o un ID de usuario.
+
+Las siete acciones disponibles son `nutrition.food.create`,
+`body.measurement.create`, `body.measurement.correct`,
+`training.session.create`, `training.session.correct`, `goal.create` y
+`goal.update`. Entrenamiento exige una versión y día reales del plan; si no se
+pueden resolver queda `needs_input`. Crear o modificar metas sólo admite tipos
+ya soportados por el servicio de objetivos.
+
+Una propuesta del provider cruza un parser estricto y se convierte en
+`AIPlanSpec`: `plan_id`, intención, resumen y uno o más pasos con capability,
+dominio, entidad, operación, argumentos, dependencias y estado. Acciones
+desconocidas, campos adicionales, operaciones incompatibles, ciclos y recursos
+fuera del owner se rechazan en servidor. Los estados lógicos son `proposed`,
+`needs_input`, `ready`, `confirmed`, `rejected`, `applied` y `failed`.
+
+Cada paso se persiste en un `AIActionDraft` existente. `provenance_json`
+mantiene la identidad del plan, orden/dependencias, capability, estado y
+contexto owner-bound; no existe una segunda tabla de workflows. Los estados de
+persistencia continúan siendo `pending_confirmation`, `applied`, `rejected`,
+`expired` y `failed`.
 
 ```text
-mensaje → draft → preview editable → confirmación explícita
-        → service oficial del dominio → recurso → applied
+mensaje → lecturas necesarias → plan validado → drafts → preview editable
+        → confirmación explícita por paso o del plan
+        → services oficiales del dominio → recursos → applied
 ```
 
-Peso reutiliza `create_body_stat` y las correcciones explícitas de un registro ya aplicado reutilizan `patch_body_stat`; comida reutiliza `create_nutrition_item`. El modelo nunca escribe. El draft corporal conserva `weight`, unidad, fecha/hora opcional, grasa corporal, masa muscular, agua corporal, grasa visceral, BMR, IMC y notas. El draft de comida conserva calorías, proteína, grasa, carbohidratos netos y totales sin equipararlos, fibra, azúcar, sodio y notas. Los nutrientes desconocidos quedan null con warnings/missing fields, no se inventan.
+Peso reutiliza `create_body_stat` y las correcciones explícitas reutilizan
+`patch_body_stat`; comida reutiliza `create_nutrition_item`; entrenamiento usa
+los servicios de sesión y corrección vinculados a la versión inmutable del
+plan; metas usa `create_goal`/`patch_goal`. El modelo nunca escribe. Los campos
+desconocidos permanecen ausentes o null con warnings/missing fields: no se
+inventan valores para completar el schema.
 
 Una continuación marcada como corrección o ampliación reemplaza de forma owner-only el contenido del draft pendiente en vez de crear silenciosamente otro registro. Si el draft corporal ya fue aplicado, se crea un nuevo preview de corrección ligado a la revisión del recurso y se exige otra confirmación. Todo campo explícito soportado debe conservarse; los no soportados generan warning visible y los ambiguos bloquean confirmación hasta corregirse.
 
-Confirmación y rechazo son owner-only. La confirmación bloquea la fila, ejecuta una transacción y usa `client_event_id` determinista derivado del draft por recurso. Repeticiones y confirmaciones concurrentes devuelven el mismo resultado sin duplicar. El draft enlaza tipo e IDs públicos creados.
+Confirmación, edición y rechazo son owner-only. Una edición simple se valida y
+renderiza localmente sin llamar al provider. Confirmar todo ignora pasos ya
+aplicados o rechazados y respeta dependencias; un fallo no revierte recursos ya
+aplicados. El retry sólo reintenta pasos fallidos seguros. Cada confirmación
+bloquea la fila y usa la idempotencia del draft/servicio, de modo que repetición
+y concurrencia devuelven el resultado existente sin duplicar.
+
+`PROPOSE_CHANGES` ejecuta primero las lecturas actuales, separa
+`OBSERVACIONES` de `CAMBIOS PROPUESTOS` y produce únicamente previews. Una
+continuación conversacional vuelve a consultar las tools requeridas en lugar de
+tratar el texto histórico como fuente de verdad. Ninguna propuesta es una
+recomendación médica ni se aplica automáticamente.
+
+Las páginas de dominio pueden emitir un token de contexto firmado, breve y
+ligado a owner/capability/recurso después de resolver el recurso en servidor.
+La URL transporta el token opaco, no valores de salud. La capability vuelve a
+comprobar ownership y revisión al preparar y confirmar la corrección.
+
+Los logs de Operator contienen únicamente IDs técnicos, action IDs, estados,
+conteos y timings; nunca prompts completos, argumentos, drafts ni valores de
+salud. Un recurso aplicado se marca como
+`ai_assisted_user_confirmed`, no como escritura autónoma.
 
 ## Portabilidad
 
@@ -165,9 +212,12 @@ Se omiten API keys, secretos, `provider_call_id`, argumentos internos, respuesta
 - Attachments y food vision siguen rechazados hasta existir storage privado owner-only con lifecycle completo.
 - No hay coach autónomo, diagnóstico, Strava, BLE ni acciones silenciosas.
 - No se calculan costos monetarios ni billing.
-- Confirmación de workout/steps queda para una iteración posterior.
+- No existen acciones genéricas de delete; cada corrección es opt-in del dominio.
+- Workout/steps legacy siguen sin habilitarse como drafts genéricos; la acción
+  de entrenamiento disponible usa el contrato real de sesiones planificadas.
 - El estado “capacidad soportada” es distinto de “el usuario tiene datos”: la
   interfaz muestra sin datos o datos insuficientes sin ocultar la capacidad.
 
 Para extender el motor consulta
-[HOW_TO_ADD_AI_SUPPORT_FOR_A_NEW_DOMAIN.md](HOW_TO_ADD_AI_SUPPORT_FOR_A_NEW_DOMAIN.md).
+[HOW_TO_ADD_AI_SUPPORT_FOR_A_NEW_DOMAIN.md](HOW_TO_ADD_AI_SUPPORT_FOR_A_NEW_DOMAIN.md)
+y [HOW_TO_ADD_AN_AI_ACTION_CAPABILITY.md](HOW_TO_ADD_AN_AI_ACTION_CAPABILITY.md).

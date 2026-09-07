@@ -1,10 +1,10 @@
 from app.services.ai.capabilities.types import (
     AICapabilityManifest,
-    ActionCapability,
     AIIntent,
     MetricDefinition,
     ReadCapability,
 )
+from app.services.ai.capabilities.domains.training_actions import TRAINING_CORRECT, TRAINING_CREATE
 
 
 METRICS = (
@@ -15,17 +15,7 @@ METRICS = (
     MetricDefinition("reps", "Repeticiones", "reps", ("sum", "max"), True, True, False, 0, "compare_with_context"),
 )
 
-TRAINING_ACTION_FOUNDATION = ActionCapability(
-    "record_training_session",
-    "training",
-    "training_session",
-    ("performed_at", "plan", "exercises", "sets", "reps", "load", "notes"),
-    "workout_entry",
-    True,
-    "create_manual_training_session",
-    available=False,
-    blocker="Requiere resolver plan/version y validación completa de ejercicios antes de confirmar.",
-)
+TRAINING_ACTION_FOUNDATION = TRAINING_CREATE
 
 MANIFEST = AICapabilityManifest(
     domain_id="training",
@@ -43,5 +33,6 @@ MANIFEST = AICapabilityManifest(
         ReadCapability(AIIntent.COVERAGE, ("get_training_summary",), tuple(item.id for item in METRICS)),
         ReadCapability(AIIntent.SOURCES, ("get_data_sources_summary",), tuple(item.id for item in METRICS)),
     ),
+    action_capabilities=(TRAINING_CREATE, TRAINING_CORRECT),
     comparisons=True,
 )

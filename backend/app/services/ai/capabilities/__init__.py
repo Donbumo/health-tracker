@@ -2,6 +2,11 @@ from app.services.ai.capabilities.composer import (
     AdaptivePromptComposer,
     AdaptiveTemplateComposer,
 )
+from app.services.ai.capabilities.context import (
+    AIActionContext,
+    issue_action_context_token,
+    load_action_context_token,
+)
 from app.services.ai.capabilities.registry import AICapabilityRegistry
 from app.services.ai.capabilities.types import (
     AICapabilityManifest,
@@ -21,6 +26,7 @@ from app.services.ai.capabilities.types import (
 __all__ = [
     "AICapabilityManifest",
     "AICapabilityRegistry",
+    "AIActionContext",
     "ActionCapability",
     "AdaptiveCatalog",
     "AdaptivePromptComposer",
@@ -34,4 +40,6 @@ __all__ = [
     "DataAvailability",
     "MetricDefinition",
     "ReadCapability",
+    "issue_action_context_token",
+    "load_action_context_token",
 ]

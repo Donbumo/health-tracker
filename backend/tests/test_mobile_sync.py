@@ -478,7 +478,9 @@ def test_mobile_sync_schemas_status_cli_web_and_persistence(app, client, user):
         schema = json.loads((schema_root / f"{name}.schema.json").read_text(encoding="utf-8"))
         Draft202012Validator(schema, format_checker=FormatChecker()).validate(document)
     client.post("/login", data={"username": "test-user", "password": "test-password"})
-    web = client.get("/planned-workouts")
+    web = client.get(
+        "/planned-workouts?date_from=2026-08-01&date_to=2026-08-01"
+    )
     assert web.status_code == 200
     assert b"planned-workouts/new" in web.data
     assert planned["id"].encode() in web.data

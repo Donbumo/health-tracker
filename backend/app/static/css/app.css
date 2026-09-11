@@ -361,7 +361,7 @@ button:disabled, .button[aria-disabled="true"] { cursor: not-allowed; opacity: .
 .alert-warning, .notice.warning { border-color: #f59e0b; background: var(--warning-bg); color: var(--warning-text); }
 .alert-danger { border-color: #fca5a5; background: var(--danger-bg); color: var(--danger-text); }
 .alert-info { border-color: #7dd3fc; background: var(--info-bg); color: var(--info-text); }
-.status { display: inline-flex; gap: .35rem; align-items: center; min-height: 28px; padding: .18rem .55rem; font-size: .82rem; font-weight: 800; }
+.status { display: inline-flex; gap: .35rem; align-items: center; min-height: 28px; padding: .18rem .55rem; font-size: .82rem; font-weight: 800; transition: background-color 150ms ease, color 150ms ease; }
 .status::before { content: ""; width: .5rem; height: .5rem; border: 2px solid currentColor; border-radius: 50%; }
 .status-success { background: var(--success-bg); color: var(--success-text); }
 .status-warning { background: var(--warning-bg); color: var(--warning-text); }

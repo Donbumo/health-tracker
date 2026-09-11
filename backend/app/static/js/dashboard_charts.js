@@ -399,9 +399,22 @@
     }
   };
 
+  const CHART_FADE_MS = 150; // must match the `transition: opacity 150ms ease-out;` on .dashboard-chart in app.css
+  const fadeTimers = new WeakMap();
+  const fadeSwap = (container, redraw) => {
+    window.clearTimeout(fadeTimers.get(container));
+    container.style.opacity = "0";
+    const timer = window.setTimeout(() => {
+      redraw();
+      container.style.opacity = "1";
+      fadeTimers.delete(container);
+    }, CHART_FADE_MS);
+    fadeTimers.set(container, timer);
+  };
+
   const renderEnergy = () => {
     const index = containers.findIndex((container) => container.dataset.dashboardChart === "energy");
-    if (index >= 0) render(containers[index], "energy", index);
+    if (index >= 0) fadeSwap(containers[index], () => render(containers[index], "energy", index));
   };
 
   energyControls?.querySelectorAll("[data-energy-series-toggle]").forEach((button) => {
@@ -445,10 +458,16 @@
     containers.forEach((container, index) => render(container, container.dataset.dashboardChart, index));
     updateBodySummary();
   };
+  const renderAllAnimated = () => {
+    containers.forEach((container, index) => {
+      fadeSwap(container, () => render(container, container.dataset.dashboardChart, index));
+    });
+    updateBodySummary();
+  };
   updateEnergyControls();
   renderAll();
 
-  bodyMetricSelect?.addEventListener("change", renderAll);
+  bodyMetricSelect?.addEventListener("change", renderAllAnimated);
   let resizeFrame = null;
   window.addEventListener("resize", () => {
     if (resizeFrame !== null) window.cancelAnimationFrame(resizeFrame);

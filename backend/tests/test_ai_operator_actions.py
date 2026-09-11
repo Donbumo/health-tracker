@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
+from decimal import Decimal
+from html import unescape
 import json
 import logging
 import os
 from pathlib import Path
+import re
 import time
 from urllib.parse import parse_qs, urlencode, urlparse
 import uuid
@@ -47,6 +50,7 @@ from app.services.ai.conversations import AIConversationService, AIServiceError
 from app.services.ai.providers import AIProvider, AIProviderError, OpenAIResponsesProvider
 from app.services.ai.tools import AIToolRegistry
 from app.services.ai.types import (
+    AIProviderCapabilities,
     AIProviderPlanProposal,
     AIProviderPlanStepProposal,
     AIProviderResponse,
@@ -184,6 +188,94 @@ class FailOnCallProvider(AIProvider):
         raise AssertionError("A local draft edit must not call the provider")
 
 
+class PlainPlanConversationProvider(AIProvider):
+    name = "plain-plan-conversation-test"
+    capabilities = AIProviderCapabilities(supports_tools=True)
+
+    def __init__(self):
+        self.requests = []
+
+    def respond(self, request):
+        self.requests.append(request)
+        return AIProviderResponse(content="Indica los datos que faltan para completar el plan.")
+
+
+class ProductionGoalShapeProvider(AIProvider):
+    name = "production-goal-shape-test"
+    capabilities = AIProviderCapabilities(supports_tools=True)
+
+    def __init__(self):
+        self.requests = []
+
+    def respond(self, request):
+        self.requests.append(request)
+        assert request.tools == ()
+        assert [item.name for item in request.tool_results] == ["get_goals_summary"]
+        return AIProviderResponse(
+            content="Cambio de meta preparado.",
+            plans=(
+                AIProviderPlanProposal(
+                    "record",
+                    "Actualizar meta de pasos",
+                    (
+                        AIProviderPlanStepProposal(
+                            "Goal Update",
+                            "goal.update",
+                            {
+                                "goal_type": "steps",
+                                "target_value": "10000",
+                                "unit": "count",
+                            },
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+
+class RequiredReadProposalProvider(AIProvider):
+    name = "required-read-proposal-test"
+    capabilities = AIProviderCapabilities(supports_tools=True)
+
+    def __init__(self, error_code: str | None = None):
+        self.error_code = error_code
+        self.requests = []
+
+    def respond(self, request):
+        self.requests.append(request)
+        assert request.phase == "proposal"
+        assert request.intent == "propose_changes"
+        assert request.tools == ()
+        assert [item.name for item in request.tool_results] == ["get_goals_summary"]
+        completed = db.session.execute(
+            db.select(AIToolCall).where(AIToolCall.status == "completed")
+        ).scalars().all()
+        assert completed
+        if self.error_code:
+            status = 504 if self.error_code == "provider_timeout" else 502
+            raise AIProviderError(self.error_code, "Fallo provider QA.", status)
+        return AIProviderResponse(
+            content="La lectura sugiere conservar una meta revisable.",
+            plans=(
+                AIProviderPlanProposal(
+                    "propose_changes",
+                    "1 cambio de meta preparado",
+                    (
+                        AIProviderPlanStepProposal(
+                            "goal_1",
+                            "goal.update",
+                            {
+                                "goal_type": "nutrition_protein",
+                                "target_value": "145",
+                                "unit": "g",
+                            },
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+
 def test_action_contract_and_plan_resolver_are_strict_and_server_owned(app, user):
     with app.app_context():
         account = _account(user)
@@ -253,12 +345,230 @@ def test_action_contract_and_plan_resolver_are_strict_and_server_owned(app, user
         assert update.status == AIPlanStepStatus.READY
         assert update.arguments["unit"] == "step"
         assert update.context["public_id"] == goal.public_id
+        production_alias = GOAL_UPDATE.create_draft(
+            account,
+            {"goal_type": "steps", "target_value": "10000", "unit": "count"},
+        )
+        assert production_alias.status == AIPlanStepStatus.READY
+        assert production_alias.arguments["goal_type"] == "daily_steps"
+        assert production_alias.arguments["unit"] == "step"
+        assert production_alias.context["public_id"] == goal.public_id
         with pytest.raises(CapabilityError) as incompatible_unit:
             GOAL_UPDATE.create_draft(
                 account,
                 {"goal_type": "daily_steps", "target_value": "10000", "unit": "g"},
             )
         assert incompatible_unit.value.code == "invalid_goal_contract"
+
+
+def test_goal_update_normalizes_production_shape_and_applies_owner_target_once(
+    app, user, caplog
+):
+    provider = ProductionGoalShapeProvider()
+    _enable_ai(app, provider)
+    with app.app_context(), caplog.at_level(logging.INFO):
+        account = _account(user)
+        goal = _goal(user, goal_type="daily_steps", target="9000")
+        conversation = AIConversationService().create(user)
+        _message, drafts = AIConversationService().send_message(
+            account,
+            conversation.public_id,
+            "Cambia mi meta de pasos a 10000",
+        )
+
+        assert len(provider.requests) == 1
+        assert len(drafts) == 1
+        draft = drafts[0]
+        assert draft.provenance_json["action_capability_id"] == "goal.update"
+        assert draft.provenance_json["step_id"] == "step_1"
+        assert draft.provenance_json["plan_intent"] == "correct"
+        assert draft.provenance_json["step_status"] == "ready"
+        assert draft.payload_json["goal_type"] == "daily_steps"
+        assert draft.payload_json["unit"] == "step"
+        assert draft.provenance_json["action_context"]["public_id"] == goal.public_id
+        assert db.session.get(UserGoal, goal.id).revision == 1
+
+        first = AIConversationService().confirm_draft(account, draft.public_id)
+        second = AIConversationService().confirm_draft(account, draft.public_id)
+        assert first.public_id == second.public_id
+        assert str(db.session.get(UserGoal, goal.id).target_value) == "10000.000"
+        assert db.session.get(UserGoal, goal.id).revision == 2
+        phase_logs = [
+            record.getMessage()
+            for record in caplog.records
+            if "ai_operator_phase" in record.getMessage()
+        ]
+        assert any("phase=read" in item and "outcome=success" in item for item in phase_logs)
+        assert any("phase=proposal" in item and "outcome=success" in item for item in phase_logs)
+        assert "10000" not in " ".join(phase_logs)
+
+
+def test_goal_update_validation_rejection_log_is_sanitized(app, user, caplog):
+    provider = PlanProvider(
+        AIProviderPlanProposal(
+            "correct",
+            "Meta incompatible QA",
+            (
+                AIProviderPlanStepProposal(
+                    "goal_qa",
+                    "goal.update",
+                    {
+                        "goal_type": "steps",
+                        "target_value": "9876",
+                        "unit": "g",
+                    },
+                ),
+            ),
+        )
+    )
+    _enable_ai(app, provider)
+    with app.app_context(), caplog.at_level(logging.WARNING):
+        account = _account(user)
+        _goal(user, goal_type="daily_steps", target="9000")
+        conversation = AIConversationService().create(user)
+        with pytest.raises(AIServiceError) as rejected:
+            AIConversationService().send_message(
+                account, conversation.public_id, "Cambia mi meta de pasos a 9876"
+            )
+        assert rejected.value.code == "invalid_goal_contract"
+        audit = next(
+            record.getMessage()
+            for record in caplog.records
+            if "ai_plan_validation_rejected" in record.getMessage()
+        )
+        assert "intent=correct" in audit
+        assert "goal_type=daily_steps" in audit
+        assert "operation=update" in audit
+        assert "metric_id=none" in audit
+        assert "unit_id=g" in audit
+        assert "action_capability=goal.update" in audit
+        assert "9876" not in audit
+
+
+def test_goal_update_target_resolution_is_owner_only_and_ambiguous_is_needs_input(
+    app, user
+):
+    with app.app_context():
+        account = _account(user)
+        first = _goal(user, goal_type="daily_steps", target="9000")
+        other = User(username="goal-resolution-other", role="user", timezone="UTC")
+        other.set_password("fictional-goal-resolution-password")
+        db.session.add(other)
+        db.session.commit()
+        _goal(other.id, goal_type="daily_steps", target="7000")
+
+        owner_draft = GOAL_UPDATE.create_draft(
+            account, {"goal_type": "daily_steps", "target_value": "10000"}
+        )
+        assert owner_draft.context["public_id"] == first.public_id
+
+        _goal(user, goal_type="daily_steps", target="9500")
+        ambiguous = GOAL_UPDATE.create_draft(
+            account, {"goal_type": "daily_steps", "target_value": "10000"}
+        )
+        assert ambiguous.status == AIPlanStepStatus.NEEDS_INPUT
+        assert ambiguous.context["resolution_code"] == "ambiguous_goal_target"
+        assert "public_id" not in ambiguous.context
+
+        missing = GOAL_UPDATE.create_draft(
+            account,
+            {"goal_type": "nutrition_calories", "target_value": "2000"},
+        )
+        assert missing.status == AIPlanStepStatus.NEEDS_INPUT
+        assert missing.context["resolution_code"] == "goal_not_found"
+
+
+def test_multi_action_slot_filling_preserves_two_steps_and_creates_zero_writes(
+    app, user
+):
+    provider = PlainPlanConversationProvider()
+    _enable_ai(app, provider)
+    with app.app_context():
+        account = _account(user)
+        goal = _goal(user, goal_type="daily_steps", target="9000")
+        conversation = AIConversationService().create(user)
+        _first_message, first = AIConversationService().send_message(
+            account,
+            conversation.public_id,
+            "Registra mi peso y cambia mi meta de pasos",
+        )
+        assert [row.provenance_json["action_capability_id"] for row in first] == [
+            "body.measurement.create",
+            "goal.update",
+        ]
+        assert [row.provenance_json["step_status"] for row in first] == [
+            "needs_input",
+            "needs_input",
+        ]
+        original_ids = [row.public_id for row in first]
+        original_plan_id = first[0].provenance_json["plan_id"]
+        original_step_ids = [row.provenance_json["step_id"] for row in first]
+
+        _second_message, completed = AIConversationService().send_message(
+            account, conversation.public_id, "82.5 kg y 10000"
+        )
+        assert [row.public_id for row in completed] == original_ids
+        assert {row.provenance_json["plan_id"] for row in completed} == {
+            original_plan_id
+        }
+        assert [row.provenance_json["step_id"] for row in completed] == original_step_ids
+        assert [row.provenance_json["step_status"] for row in completed] == [
+            "ready",
+            "ready",
+        ]
+        assert len(
+            db.session.execute(
+                db.select(AIActionDraft).where(
+                    AIActionDraft.conversation_id == conversation.id
+                )
+            ).scalars().all()
+        ) == 2
+        assert db.session.execute(db.select(WeighIn)).scalars().all() == []
+        assert db.session.get(UserGoal, goal.id).revision == 1
+        assert all(request.tool_results for request in provider.requests)
+
+
+def test_multi_action_partial_slots_complete_in_three_turns_without_duplicates(
+    app, user
+):
+    provider = PlainPlanConversationProvider()
+    _enable_ai(app, provider)
+    with app.app_context():
+        account = _account(user)
+        goal = _goal(user, goal_type="daily_steps", target="9000")
+        service = AIConversationService()
+        conversation = service.create(user)
+        _message, initial = service.send_message(
+            account,
+            conversation.public_id,
+            "Registra mi peso y cambia mi meta de pasos",
+        )
+        initial_ids = [row.public_id for row in initial]
+
+        _message, partial = service.send_message(
+            account, conversation.public_id, "82.5 kg"
+        )
+        assert [row.public_id for row in partial] == initial_ids
+        assert [row.provenance_json["step_status"] for row in partial] == [
+            "ready",
+            "needs_input",
+        ]
+
+        _message, complete = service.send_message(
+            account, conversation.public_id, "10000"
+        )
+        assert [row.public_id for row in complete] == initial_ids
+        assert [row.provenance_json["step_status"] for row in complete] == [
+            "ready",
+            "ready",
+        ]
+        assert db.session.execute(
+            db.select(db.func.count(AIActionDraft.id)).where(
+                AIActionDraft.conversation_id == conversation.id
+            )
+        ).scalar_one() == 2
+        assert db.session.execute(db.select(WeighIn)).scalars().all() == []
+        assert db.session.get(UserGoal, goal.id).revision == 1
 
 
 def test_natural_multi_action_plan_has_zero_writes_then_supports_partial_workflow(
@@ -454,10 +764,74 @@ def test_proposal_mode_and_conversation_continuation_re_read_current_goals(app, 
         assert str(db.session.get(UserGoal, goal.id).target_value) == "145.000"
 
 
+def test_proposal_required_read_runs_before_provider_and_safe_retry(app, user):
+    provider = RequiredReadProposalProvider("provider_malformed_response")
+    _enable_ai(app, provider)
+    with app.app_context():
+        account = _account(user)
+        goal = _goal(user, target="140")
+        service = AIConversationService()
+        conversation = service.create(user)
+        with pytest.raises(AIServiceError) as failed:
+            service.send_message(
+                account, conversation.public_id, "Propón cambios a mis metas"
+            )
+        assert failed.value.code == "provider_malformed_response"
+        assert failed.value.safe_message == (
+            "Los datos fueron consultados correctamente, pero no pude preparar una "
+            "propuesta en este intento."
+        )
+        tool_calls = db.session.execute(
+            db.select(AIToolCall).where(AIToolCall.user_id == user)
+        ).scalars().all()
+        assert len(tool_calls) == 1
+        assert tool_calls[0].tool_name == "get_goals_summary"
+        assert tool_calls[0].status == "completed"
+        assert db.session.execute(db.select(AIActionDraft)).scalars().all() == []
+        assert db.session.get(UserGoal, goal.id).revision == 1
+
+        retry_provider = RequiredReadProposalProvider()
+        app.config["AI_PROVIDER_INSTANCE"] = retry_provider
+        message, drafts = service.retry_last_turn(account, conversation.public_id)
+        assert message.content.startswith("OBSERVACIONES")
+        assert len(drafts) == 1
+        assert drafts[0].provenance_json["step_status"] == "ready"
+        assert db.session.get(UserGoal, goal.id).revision == 1
+
+
+def test_proposal_timeout_after_required_read_is_safe_and_has_no_partial_draft(
+    app, user
+):
+    provider = RequiredReadProposalProvider("provider_timeout")
+    _enable_ai(app, provider)
+    with app.app_context():
+        account = _account(user)
+        goal = _goal(user, target="140")
+        conversation = AIConversationService().create(user)
+        with pytest.raises(AIServiceError) as failed:
+            AIConversationService().send_message(
+                account, conversation.public_id, "Propón cambios a mis metas"
+            )
+        assert failed.value.code == "provider_timeout"
+        assert "consultados correctamente" in failed.value.safe_message
+        assert db.session.execute(db.select(AIActionDraft)).scalars().all() == []
+        assert db.session.get(UserGoal, goal.id).revision == 1
+        assert provider.requests[0].tool_results[0].ok is True
+
+
 def test_context_token_is_valid_owner_bound_tamper_proof_and_expiring(
     app, client, user, monkeypatch
 ):
     with app.app_context():
+        weigh_in = WeighIn(
+            user_id=user,
+            recorded_at=datetime(2026, 9, 6, 8, tzinfo=timezone.utc),
+            weight_kg=Decimal("74.8"),
+            source="fictional-context-qa",
+        )
+        db.session.add(weigh_in)
+        db.session.commit()
+        weigh_in_id = weigh_in.id
         goal = _goal(user)
         token = issue_action_context_token(
             user_id=user,
@@ -484,9 +858,51 @@ def test_context_token_is_valid_owner_bound_tamper_proof_and_expiring(
         assert "140" not in route
         login(client)
         assert client.get(route).status_code == 200
+        detail = client.get(f"/weigh-ins/{weigh_in_id}")
+        assert detail.status_code == 200
+        match = re.search(
+            r'<a class="button" href="([^"]+)">Corregir con IA</a>',
+            detail.get_data(as_text=True),
+        )
+        assert match is not None
+        correction_url = unescape(match.group(1))
+        correction_query = parse_qs(urlparse(correction_url).query)
+        assert set(correction_query) == {
+            "intent",
+            "domain",
+            "action",
+            "period",
+            "action_context",
+        }
+        assert "74.8" not in correction_url
+        body_context = load_action_context_token(
+            correction_query["action_context"][0], user_id=user
+        )
+        assert body_context.resource_type == "body_stat"
+        assert body_context.resource_public_id == weigh_in.public_id
+        assert client.get(correction_url).status_code == 200
         assert client.get(
             "/ai?intent=record&domain=body&action=arbitrary.service&period=today"
         ).status_code == 409
+
+        wrong_type = issue_action_context_token(
+            user_id=user,
+            action_capability_id="body.measurement.correct",
+            domain="body",
+            resource_type="user_goal",
+            resource_public_id=goal.public_id,
+        )
+        assert client.get(
+            "/ai?" + urlencode(
+                {
+                    "intent": "correct",
+                    "domain": "body",
+                    "action": "body.measurement.correct",
+                    "period": "today",
+                    "action_context": wrong_type,
+                }
+            )
+        ).status_code == 403
 
         tampered = token[:-1] + ("a" if token[-1] != "a" else "b")
         with pytest.raises(CapabilityError) as invalid_signature:
@@ -681,7 +1097,7 @@ def test_fake_sleep_action_is_discovered_resolved_previewed_and_persisted(app, u
 
 
 def test_plan_parser_and_web_routes_reject_malformed_or_unconfirmed_writes(
-    app, client, user
+    app, client, user, caplog
 ):
     with pytest.raises(AIProviderError) as malformed:
         OpenAIResponsesProvider._parse_document(
@@ -704,6 +1120,31 @@ def test_plan_parser_and_web_routes_reject_malformed_or_unconfirmed_writes(
             }
         )
     assert malformed.value.code == "provider_malformed_action_plan"
+    with caplog.at_level(logging.WARNING), pytest.raises(AIProviderError) as reasoning_only:
+        OpenAIResponsesProvider._parse(
+            {
+                "id": "resp_qa",
+                "model": "qa-model",
+                "output": [{"type": "reasoning"}],
+            },
+            http_status=200,
+            content_type="application/json",
+            model="qa-model",
+            phase="proposal",
+            intent="propose_changes",
+        )
+    assert reasoning_only.value.code == "provider_malformed_response"
+    diagnostic = next(
+        record.getMessage()
+        for record in caplog.records
+        if "ai_provider_response_rejected" in record.getMessage()
+    )
+    assert "http_status=200" in diagnostic
+    assert "content_type=application/json" in diagnostic
+    assert "output_item_types=reasoning" in diagnostic
+    assert "model=qa-model" in diagnostic
+    assert "phase=proposal" in diagnostic
+    assert "intent=propose_changes" in diagnostic
 
     _enable_ai(app)
     with app.app_context():
@@ -805,6 +1246,48 @@ def test_mariadb_operator_multistep_goal_training_and_partial_retry(app, tmp_pat
             ) == 1
             assert str(db.session.get(UserGoal, goal.id).target_value) == "150.000"
             assert db.session.get(UserGoal, goal.id).revision == 2
+
+            steps_goal = _goal(
+                account_id, goal_type="daily_steps", target="9000"
+            )
+            mariadb_app.config["AI_PROVIDER_INSTANCE"] = PlainPlanConversationProvider()
+            slot_conversation = service.create(account_id)
+            existing_weigh_ins = db.session.execute(
+                db.select(db.func.count(WeighIn.id)).where(
+                    WeighIn.user_id == account_id
+                )
+            ).scalar_one()
+            _message, pending_slots = service.send_message(
+                account,
+                slot_conversation.public_id,
+                "Registra mi peso y cambia mi meta de pasos",
+            )
+            pending_ids = [row.public_id for row in pending_slots]
+            _message, partial_slots = service.send_message(
+                account, slot_conversation.public_id, "79.8 kg"
+            )
+            assert [row.public_id for row in partial_slots] == pending_ids
+            assert [
+                row.provenance_json["step_status"] for row in partial_slots
+            ] == ["ready", "needs_input"]
+            _message, completed_slots = service.send_message(
+                account, slot_conversation.public_id, "10000"
+            )
+            assert [row.public_id for row in completed_slots] == pending_ids
+            assert [
+                row.provenance_json["step_status"] for row in completed_slots
+            ] == ["ready", "ready"]
+            assert db.session.execute(
+                db.select(db.func.count(AIActionDraft.id)).where(
+                    AIActionDraft.conversation_id == slot_conversation.id
+                )
+            ).scalar_one() == 2
+            assert db.session.execute(
+                db.select(db.func.count(WeighIn.id)).where(
+                    WeighIn.user_id == account_id
+                )
+            ).scalar_one() == existing_weigh_ins
+            assert db.session.get(UserGoal, steps_goal.id).revision == 1
 
             mariadb_app.config["AI_PROVIDER_INSTANCE"] = PlanProvider(
                 AIProviderPlanProposal(

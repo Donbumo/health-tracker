@@ -12,16 +12,16 @@
   </section>
   <section class="card">
     <div class="table-wrap">
-      <table>
+      <table class="stack-table">
         <thead><tr><th>Fecha y hora</th><th>Peso</th><th>Grasa</th><th>Músculo</th><th>Fuente</th></tr></thead>
         <tbody>
           {% for record in records %}
             <tr>
-              <td><a href="{{ url_for('body.weigh_in_detail', record_id=record.id) }}">{{ record.recorded_at.isoformat(sep=' ', timespec='minutes') }}</a></td>
-              <td>{{ record.weight_kg }} kg</td>
-              <td>{% if record.body_fat_percentage is not none %}{{ record.body_fat_percentage }} %{% else %}—{% endif %}</td>
-              <td>{% if record.muscle_mass_kg is not none %}{{ record.muscle_mass_kg }} kg{% else %}—{% endif %}</td>
-              <td>{{ record.source }}</td>
+              <td data-label="Fecha y hora"><a href="{{ url_for('body.weigh_in_detail', record_id=record.id) }}">{{ record.recorded_at.isoformat(sep=' ', timespec='minutes') }}</a></td>
+              <td data-label="Peso">{{ record.weight_kg }} kg</td>
+              <td data-label="Grasa">{% if record.body_fat_percentage is not none %}{{ record.body_fat_percentage }} %{% else %}—{% endif %}</td>
+              <td data-label="Músculo">{% if record.muscle_mass_kg is not none %}{{ record.muscle_mass_kg }} kg{% else %}—{% endif %}</td>
+              <td data-label="Fuente">{{ record.source }}</td>
             </tr>
           {% else %}
             <tr><td colspan="5"><p>No hay pesajes registrados.</p><a class="button" href="{{ url_for('main.manual_weigh_in') }}">Capturar nuevo</a> <a class="button button-secondary" href="{{ url_for('body.import_weigh_in') }}">Importar JSON</a></td></tr>

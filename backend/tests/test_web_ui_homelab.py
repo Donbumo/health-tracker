@@ -161,4 +161,4 @@ def test_import_tables_use_responsive_wrappers(client, user):
         / "imports"
         / "history.html"
     ).read_text(encoding="utf-8")
-    assert '<div class="table-wrap"><table>' in history_template
+    assert '<div class="table-wrap"><table class="stack-table">' in history_template

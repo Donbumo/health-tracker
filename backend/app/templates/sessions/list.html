@@ -12,8 +12,9 @@
     </div>
   </section>
 
-  <section class="card filter-card" aria-labelledby="session-filters-title">
-    <h2 id="session-filters-title">Filtrar historial</h2>
+  {% set has_active_filters = filters.date_from or filters.date_to or filters.plan_id or filters.exercise %}
+  <details class="filter-disclosure" aria-labelledby="session-filters-title" open>
+    <summary id="session-filters-title">Filtrar historial{% if has_active_filters %} <span class="status status-muted">Filtros activos</span>{% endif %}</summary>
     <form method="get" class="filter-form">
       <div class="form-group">
         <label for="date_from">Desde</label>
@@ -41,24 +42,24 @@
         <a class="button button-secondary" href="{{ url_for('sessions.list_sessions') }}">Limpiar</a>
       </div>
     </form>
-  </section>
+  </details>
 
   <section class="card">
     <p class="muted-text">{{ total }} sesión{% if total != 1 %}es{% endif %} encontrada{% if total != 1 %}s{% endif %}.</p>
     {% set session_list = sessions|list %}
     {% if session_list %}
       <div class="table-wrap">
-        <table>
+        <table class="stack-table">
           <thead>
             <tr><th>Fecha</th><th>Rutina</th><th>Versión</th><th>Semana/día</th><th></th></tr>
           </thead>
           <tbody>
             {% for session in session_list %}
               <tr>
-                <td>{{ session.performed_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                <td>{{ session.training_plan.name }}</td>
-                <td>{{ session.training_plan_version.version_number }}</td>
-                <td>{{ session.planned_week_number }}/{{ session.planned_day_number }}</td>
+                <td data-label="Fecha">{{ session.performed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td data-label="Rutina">{{ session.training_plan.name }}</td>
+                <td data-label="Versión">{{ session.training_plan_version.version_number }}</td>
+                <td data-label="Semana/día">{{ session.planned_week_number }}/{{ session.planned_day_number }}</td>
                 <td><a href="{{ url_for('sessions.detail', session_id=session.id) }}">Ver detalle</a></td>
               </tr>
             {% endfor %}
@@ -76,6 +77,12 @@
           {% endif %}
         </nav>
       {% endif %}
+    {% elif has_active_filters %}
+      <div class="empty-state">
+        <h3>Ningún resultado con estos filtros</h3>
+        <p>Ajusta el rango de fechas, la rutina o el ejercicio buscado.</p>
+        <a class="button button-secondary" href="{{ url_for('sessions.list_sessions') }}">Limpiar filtros</a>
+      </div>
     {% else %}
       <p>Todavía no has registrado sesiones.</p>
       <div class="page-actions">

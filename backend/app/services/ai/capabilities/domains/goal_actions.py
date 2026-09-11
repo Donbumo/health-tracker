@@ -41,6 +41,29 @@ GOAL_DEFAULTS = {
     "nutrition_fat": ("g", "daily"),
     "weight_logging_frequency": ("log", "weekly"),
 }
+GOAL_TYPE_ALIASES = {
+    "steps": "daily_steps",
+    "step": "daily_steps",
+    "step_goal": "daily_steps",
+    "step goal": "daily_steps",
+    "pasos": "daily_steps",
+    "meta_pasos": "daily_steps",
+    "meta pasos": "daily_steps",
+    "protein": "nutrition_protein",
+    "protein_goal": "nutrition_protein",
+    "protein goal": "nutrition_protein",
+    "proteína": "nutrition_protein",
+    "proteina": "nutrition_protein",
+    "calories": "nutrition_calories",
+    "calorías": "nutrition_calories",
+    "calorias": "nutrition_calories",
+    "carbohydrates": "nutrition_carbohydrates",
+    "carbohidratos": "nutrition_carbohydrates",
+    "fat": "nutrition_fat",
+    "grasa": "nutrition_fat",
+    "weight logging": "weight_logging_frequency",
+    "registro de peso": "weight_logging_frequency",
+}
 GOAL_UNIT_ALIASES = {
     "sessions": "session",
     "sesiones": "session",
@@ -53,7 +76,9 @@ GOAL_UNIT_ALIASES = {
     "calorías": "kcal",
     "calorias": "kcal",
     "grams": "g",
+    "gram": "g",
     "gramos": "g",
+    "gramo": "g",
     "logs": "log",
     "registros": "log",
 }
@@ -100,10 +125,20 @@ GOAL_SCHEMA = action_schema(
 
 def _normalize_common(_user, payload: dict) -> dict:
     clean = clean_optional_strings(payload, ("unit", "period", "timezone", "start_date", "end_date", "state"))
+    if isinstance(clean.get("goal_type"), str) and clean["goal_type"]:
+        goal_type_key = clean["goal_type"].strip().lower()
+        clean["goal_type"] = GOAL_TYPE_ALIASES.get(goal_type_key, goal_type_key)
+    goal_type = clean.get("goal_type")
     if clean.get("unit"):
         unit_key = clean["unit"].strip().lower()
-        clean["unit"] = GOAL_UNIT_ALIASES.get(unit_key, unit_key)
-    goal_type = clean.get("goal_type")
+        if (
+            unit_key in {"count", "counts", "conteo"}
+            and goal_type in GOAL_DEFAULTS
+            and GOAL_DEFAULTS[goal_type][0] in {"session", "day", "step", "log"}
+        ):
+            clean["unit"] = GOAL_DEFAULTS[goal_type][0]
+        else:
+            clean["unit"] = GOAL_UNIT_ALIASES.get(unit_key, unit_key)
     if goal_type in GOAL_DEFAULTS:
         unit, period = GOAL_DEFAULTS[goal_type]
         if "unit" in clean and clean["unit"] != unit:
@@ -169,9 +204,9 @@ def _goal_context(user, payload: dict, resource_context=None) -> dict:
     else:
         statement = statement.where(UserGoal.goal_type == goal_type).order_by(
             UserGoal.start_date.desc(), UserGoal.id.desc()
-        ).limit(1)
-    row = db.session.execute(statement).scalar_one_or_none()
-    if row is None:
+        ).limit(2)
+    rows = db.session.execute(statement).scalars().all()
+    if not rows:
         if resource_context:
             raise CapabilityError(
                 "action_context_not_found",
@@ -179,6 +214,12 @@ def _goal_context(user, payload: dict, resource_context=None) -> dict:
                 404,
             )
         return {"needs_input": True, "resolution_code": "goal_not_found"}
+    if not resource_context and len(rows) > 1:
+        return {
+            "needs_input": True,
+            "resolution_code": "ambiguous_goal_target",
+        }
+    row = rows[0]
     if goal_type and goal_type != row.goal_type:
         raise CapabilityError(
             "invalid_action_context", "La meta propuesta no coincide con el contexto seguro.", 422

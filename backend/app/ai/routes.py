@@ -175,6 +175,7 @@ def _selection(values):
                     403,
                 )
             action_context = context.as_mapping()
+            resolved_action.owner_resolver(current_user, {}, action_context)
         title = f"{INTENT_LABELS[spec.intent]} · {manifest.label}"
         prompt = AdaptivePromptComposer(capability_registry).compose(spec)
         return _AISelection(

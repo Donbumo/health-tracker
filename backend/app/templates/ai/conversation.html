@@ -203,6 +203,14 @@
       <input type="hidden" name="{{ name }}" value="{{ value }}">
     {% endif %}
   {% endfor %}
+  {% set context_labels = {'intent': 'Intención', 'domain': 'Dominio', 'period': 'Periodo', 'metric': 'Métrica', 'comparison': 'Comparación', 'action': 'Acción', 'template_id': 'Plantilla'} %}
+  {% set ns = namespace(items=[]) %}
+  {% for key, value in selection_fields.items() %}
+    {% if key in context_labels and value %}{% set _ = ns.items.append((key, value)) %}{% endif %}
+  {% endfor %}
+  {% if ns.items %}
+    <p class="muted ai-context-preview">Contexto que se enviará: {% for key, value in ns.items %}<strong>{{ context_labels[key] }}</strong> {{ value if value is string else value|join(', ') }}{% if not loop.last %} · {% endif %}{% endfor %}</p>
+  {% endif %}
   <label for="ai-content">Tu mensaje</label>
   <textarea id="ai-content" name="content" maxlength="{{ config.AI_MAX_INPUT_CHARS }}" required placeholder="Pregunta por tus tendencias, actividad, pasos u objetivos..."{% if ai_status.state != 'available' %} disabled{% endif %}>{{ prepared_prompt }}</textarea>
   <div class="ai-composer-actions">

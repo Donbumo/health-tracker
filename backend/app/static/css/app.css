@@ -148,7 +148,7 @@ code { overflow-wrap: anywhere; }
 .formula { padding: .8rem 1rem; border-left: 4px solid var(--primary); background: var(--surface-muted); }
 .dashboard-charts { margin-top: 1.5rem; }
 .chart-card h3 { margin-top: 0; }
-.dashboard-chart { min-height: 17rem; width: 100%; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-muted); }
+.dashboard-chart { min-height: 17rem; width: 100%; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-muted); transition: opacity 150ms ease-out; }
 .dashboard-chart.compact-chart { min-height: 13rem; }
 .trend-svg { display: block; width: 100%; height: auto; min-height: 13rem; color: var(--text-muted); }
 .chart-grid-line { stroke: var(--border); stroke-width: 1; }

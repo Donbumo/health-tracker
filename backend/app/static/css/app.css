@@ -127,8 +127,9 @@ code { overflow-wrap: anywhere; }
 .filter-disclosure { margin-bottom: 1.25rem; border: 1px solid var(--border); background: var(--surface); }
 .filter-disclosure > summary { min-height: 44px; padding: .75rem 1rem; cursor: pointer; font-weight: 800; list-style: none; }
 .filter-disclosure > summary::-webkit-details-marker { display: none; }
-.filter-disclosure > summary::after { content: "▾"; float: right; }
+.filter-disclosure > summary::after { content: "▾"; float: right; transition: transform .15s ease; }
 .filter-disclosure[open] > summary { border-bottom: 1px solid var(--border); }
+.filter-disclosure[open] > summary::after { transform: rotate(180deg); }
 .filter-disclosure > .filter-form { padding: 1rem; }
 .filter-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1rem; align-items: end; }
 .filter-form .page-actions { grid-column: 1 / -1; }
@@ -193,6 +194,8 @@ code { overflow-wrap: anywhere; }
 .period-custom { position: relative; margin-left: auto; }
 .period-custom > summary { list-style: none; }
 .period-custom > summary::-webkit-details-marker { display: none; }
+.period-custom > summary::after { content: "▾"; margin-left: .4rem; transition: transform .15s ease; }
+.period-custom[open] > summary::after { transform: rotate(180deg); }
 .custom-period-form { position: absolute; z-index: 30; top: calc(100% + .5rem); right: 0; display: grid; grid-template-columns: repeat(2, minmax(9rem, 1fr)); gap: .65rem; width: min(32rem, 90vw); padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-raised); box-shadow: var(--shadow); }
 .custom-period-form label { display: grid; gap: .25rem; color: var(--text-muted); font-size: .82rem; font-weight: 800; }
 .custom-period-form .button { grid-column: 1 / -1; }

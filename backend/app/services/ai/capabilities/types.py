@@ -108,6 +108,28 @@ def _default_preview(
 
 
 @dataclass(frozen=True)
+class ActionNumericSlot:
+    """Opt-in language metadata. Paths address existing schema properties only."""
+
+    path: str
+    aliases: tuple[str, ...] = ()
+    units: tuple[tuple[str, str], ...] = ()
+    unit_field: str | None = None
+    default_unit: str | None = None
+    primary: bool = False
+
+
+@dataclass(frozen=True)
+class ActionLanguage:
+    verbs: tuple[str, ...]
+    entities: tuple[str, ...]
+    slots: tuple[ActionNumericSlot, ...]
+    bindings: tuple[tuple[str, Any], ...] = ()
+    statement_verbs: tuple[str, ...] = ()
+    implicit_entity_verbs: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class ActionCapability:
     """Domain-owned, server-resolved contract for one confirmable write action."""
 
@@ -132,6 +154,7 @@ class ActionCapability:
     previewer: ActionPreviewer = _default_preview
     available: bool = True
     blocker: str | None = None
+    language: tuple[ActionLanguage, ...] = ()
 
     @property
     def service(self) -> str:
@@ -209,7 +232,7 @@ class ActionCapability:
             for name in (clean.get("missing_fields") or ())
             if name not in self.required_fields or name in missing
         ]
-        if retained_missing or missing:
+        if (retained_missing or missing) and "missing_fields" in self.supported_fields:
             clean["missing_fields"] = list(
                 dict.fromkeys([*retained_missing, *missing])
             )

@@ -373,7 +373,7 @@ def test_goal_update_normalizes_production_shape_and_applies_owner_target_once(
         _message, drafts = AIConversationService().send_message(
             account,
             conversation.public_id,
-            "Cambia mi meta de pasos a 10000",
+            "Cambia mi meta de pasos a 10000, por favor",
         )
 
         assert len(provider.requests) == 1
@@ -428,7 +428,7 @@ def test_goal_update_validation_rejection_log_is_sanitized(app, user, caplog):
         conversation = AIConversationService().create(user)
         with pytest.raises(AIServiceError) as rejected:
             AIConversationService().send_message(
-                account, conversation.public_id, "Cambia mi meta de pasos a 9876"
+                account, conversation.public_id, "Cambia mi meta de pasos a 9876, por favor"
             )
         assert rejected.value.code == "invalid_goal_contract"
         audit = next(

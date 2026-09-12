@@ -17,7 +17,7 @@ from app.services.ai.capabilities.domains.action_support import (
     preview_field,
     today_for_user,
 )
-from app.services.ai.capabilities.types import ActionApplyResult, ActionCapability, CapabilityError
+from app.services.ai.capabilities.types import ActionApplyResult, ActionCapability, CapabilityError, ActionLanguage, ActionNumericSlot
 from app.services.engagement import create_goal, patch_goal
 
 
@@ -324,4 +324,24 @@ GOAL_UPDATE = ActionCapability(
     previewer=_preview,
     required_read_capabilities=("get_goals_summary",),
     idempotency_policy="owner_revision",
+    language=tuple(
+        ActionLanguage(
+            verbs=("cambia", "cambiar", "pon", "poner"),
+            entities=tuple(f"{entity} de {alias}"
+                           for entity in ("meta", "objetivo")
+                           for alias, canonical in GOAL_TYPE_ALIASES.items()
+                           if canonical == goal_type),
+            statement_verbs=("será",),
+            bindings=(("goal_type", goal_type),),
+            slots=(ActionNumericSlot(
+                "target_value", aliases=tuple(alias for alias, canonical in GOAL_TYPE_ALIASES.items()
+                                               if canonical == goal_type),
+                units=((unit, unit), *tuple((alias, unit) for alias, canonical in GOAL_UNIT_ALIASES.items()
+                                           if canonical == unit)),
+                unit_field="unit", primary=True,
+            ),),
+        )
+        for goal_type, (unit, _period) in GOAL_DEFAULTS.items()
+        if goal_type in GOAL_TYPE_ALIASES.values()
+    ),
 )

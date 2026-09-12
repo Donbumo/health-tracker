@@ -221,7 +221,7 @@ def test_malformed_provider_plan_is_not_hidden_by_server_slot_plan(app, user, ma
 
         with pytest.raises(AIServiceError):
             service.send_message(
-                account, conversation.public_id, "Registra mi peso y cambia mi meta de pasos"
+                account, conversation.public_id, "Registra mi peso y cambia mi meta de pasos, por favor"
             )
 
         assert db.session.execute(db.select(AIActionDraft)).scalars().all() == []
@@ -255,7 +255,7 @@ def test_selected_action_rejects_hybrid_plan_intent(app, user):
             service.send_message(
                 account,
                 conversation.public_id,
-                "Cambia mi meta de pasos a 10000",
+                "Cambia mi meta de pasos a 10000, por favor",
                 intent_spec=AIIntentSpec(
                     AIIntent.CORRECT,
                     "goals",
@@ -368,7 +368,7 @@ def test_incompatible_unit_in_pending_goal_reply_is_rejected_without_mutation(ap
         with pytest.raises(AIServiceError) as rejected:
             service.send_message(account, conversation.public_id, "10000 g")
 
-        assert rejected.value.code == "invalid_goal_contract"
+        assert rejected.value.code == "invalid_action_unit"
         assert _draft_snapshot(rows) == original
         assert db.session.execute(db.select(db.func.count(AIActionDraft.id))).scalar_one() == 2
         assert db.session.execute(db.select(WeighIn)).scalars().all() == []

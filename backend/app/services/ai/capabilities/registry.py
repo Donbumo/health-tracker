@@ -109,6 +109,7 @@ class AICapabilityRegistry:
         *,
         allowed_action_ids: Iterable[str] | None = None,
         resource_context: Mapping[str, str] | None = None,
+        step_contexts: Mapping[str, Mapping[str, str] | None] | None = None,
     ) -> AIPlanSpec:
         if not isinstance(proposal, AIProviderPlanProposal):
             raise CapabilityError("invalid_plan", "La propuesta AI no tiene un formato válido.", 502)
@@ -167,14 +168,15 @@ class AICapabilityRegistry:
                     502,
                 )
             step_context = None
-            if resource_context is not None:
+            effective_context = step_contexts.get(item.step_id) if step_contexts is not None else resource_context
+            if effective_context is not None:
                 if (
-                    resource_context.get("action_capability_id")
+                    effective_context.get("action_capability_id")
                     == capability.action_id
-                    and resource_context.get("domain") == capability.domain
+                    and effective_context.get("domain") == capability.domain
                 ):
-                    step_context = resource_context
-                elif len(proposal.steps) == 1:
+                    step_context = effective_context
+                elif step_contexts is not None or len(proposal.steps) == 1:
                     raise CapabilityError(
                         "invalid_action_context",
                         "El contexto no corresponde a la acción propuesta.",
@@ -504,3 +506,25 @@ class AICapabilityRegistry:
                     raise RuntimeError(f"AI action schema/fields mismatch: {action.action_id}")
                 if any(name not in self._tools for name in action.required_read_capabilities):
                     raise RuntimeError(f"AI action has unknown read capability: {action.action_id}")
+                self._validate_language(action)
+
+    @staticmethod
+    def _validate_language(action: ActionCapability) -> None:
+        for language in action.language:
+            if not language.verbs or not language.entities or not language.slots:
+                raise RuntimeError("AI action language requires verbs, entities and slots.")
+            paths = [slot.path for slot in language.slots]
+            if len(paths) != len(set(paths)) or sum(slot.primary for slot in language.slots) > 1:
+                raise RuntimeError("AI action language has ambiguous slots.")
+            for slot in language.slots:
+                units = dict(slot.units)
+                if len(units) != len(slot.units) or (slot.default_unit and slot.default_unit not in units.values()):
+                    raise RuntimeError("AI action language has invalid unit semantics.")
+            paths.extend(path for path, _ in language.bindings)
+            paths.extend(slot.unit_field for slot in language.slots if slot.unit_field)
+            for path in paths:
+                schema = action.input_schema
+                for part in path.split("."):
+                    schema = schema.get("items", {}) if part == "0" else schema.get("properties", {}).get(part, {})
+                    if not schema:
+                        raise RuntimeError("AI action language references an unsupported schema field.")

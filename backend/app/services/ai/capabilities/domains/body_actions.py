@@ -13,7 +13,7 @@ from app.services.ai.capabilities.domains.action_support import (
     idempotency_uuid,
     preview_field,
 )
-from app.services.ai.capabilities.types import ActionApplyResult, ActionCapability, CapabilityError
+from app.services.ai.capabilities.types import ActionApplyResult, ActionCapability, CapabilityError, ActionLanguage, ActionNumericSlot
 from app.services.mobile_health import create_body_stat, patch_body_stat
 
 
@@ -215,6 +215,18 @@ BODY_CREATE = ActionCapability(
     draft_type="body_measurement",
     normalizer=_normalize,
     previewer=_preview,
+    language=(ActionLanguage(
+        verbs=("registra", "registrar", "anota", "anotar"),
+        entities=("peso",),
+        statement_verbs=("fue", "es"),
+        implicit_entity_verbs=("pesé",),
+        bindings=(("unit", "kg"),),
+        slots=(ActionNumericSlot(
+            "weight", aliases=("peso",),
+            units=(("kg", "kg"), ("kilogramos", "kg"), ("lb", "lb"), ("lbs", "lb")),
+            unit_field="unit", default_unit="kg", primary=True,
+        ),),
+    ),),
 )
 
 BODY_CORRECT = ActionCapability(

@@ -24,6 +24,7 @@ from app.models import (
 )
 from app.services.ai.providers import AIProviderError, get_provider, provider_status
 from app.services.ai.capabilities.registry import AICapabilityRegistry
+from app.services.ai.capabilities.interpreter import DeterministicActionInterpreter
 from app.services.ai.capabilities.domains.goal_actions import (
     GOAL_TYPES, GOAL_TYPE_ALIASES, GOAL_DEFAULTS, GOAL_UNIT_ALIASES,
 )
@@ -537,40 +538,6 @@ def _looks_like_draft_continuation(text: str) -> bool:
             r"^(?:y\s+|tambi[eé]n\b|adem[aá]s\b|falt[oó]\b|faltaba\b|corrige\b|correcci[oó]n\b|era\b|quise decir\b|agrega\b|a[nñ]ade\b|fue\b)",
             normalized,
         )
-    )
-
-
-def _inferred_multi_action_proposal(text: str) -> AIProviderPlanProposal | None:
-    normalized = re.sub(r"\s+", " ", text.casefold()).strip()
-    body_requested = bool(
-        re.search(r"\b(registra|registrar|anota|anotar|guarda|guardar)\b", normalized)
-        and re.search(r"\b(peso|pesaje)\b", normalized)
-    )
-    goal_requested = bool(
-        re.search(
-            r"\b(cambia|cambiar|ajusta|ajustar|establece|establecer|actualiza|actualizar|modifica|modificar)\b",
-            normalized,
-        )
-        and re.search(r"\b(meta|objetivo)\b", normalized)
-        and re.search(r"\b(pasos?|steps?)\b", normalized)
-    )
-    if not body_requested or not goal_requested:
-        return None
-    body_arguments = _explicit_body_fields(text)
-    goal_arguments = _explicit_goal_fields(text)
-    if {"weight", "unit"}.issubset(body_arguments) or "target_value" in goal_arguments:
-        return None
-    return AIProviderPlanProposal(
-        intent="hybrid",
-        summary="2 cambios preparados",
-        steps=(
-            AIProviderPlanStepProposal(
-                "body_measurement", "body.measurement.create", body_arguments
-            ),
-            AIProviderPlanStepProposal(
-                "daily_steps_goal", "goal.update", goal_arguments
-            ),
-        ),
     )
 
 
@@ -1097,6 +1064,11 @@ class AIConversationService:
         intent_spec: AIIntentSpec | None = None,
         action_context: Mapping[str, str] | None = None,
     ) -> tuple[AIMessage, list[AIActionDraft]]:
+        local = self._deterministic_response(
+            user, conversation, request_message, intent_spec, action_context
+        )
+        if local is not None:
+            return local
         if intent_spec is None:
             if action_context is not None:
                 raise AIServiceError(
@@ -1105,12 +1077,11 @@ class AIConversationService:
                     403,
                 )
             # Explicit numeric changes take precedence over exploratory proposals.
-            if _inferred_multi_action_proposal(request_message.content) is None:
-                intent_spec = _inferred_goal_action_spec(request_message.content)
-                if intent_spec is None:
-                    intent_spec = _inferred_goal_proposal_spec(
-                        request_message.content, self._history(conversation.id)
-                    )
+            intent_spec = _inferred_goal_action_spec(request_message.content)
+            if intent_spec is None:
+                intent_spec = _inferred_goal_proposal_spec(
+                    request_message.content, self._history(conversation.id)
+                )
         timing = _AITurnTiming()
         provider_name = "unknown"
         if intent_spec is not None:
@@ -1151,6 +1122,106 @@ class AIConversationService:
         finally:
             timing.emit(timing.provider_name or provider_name)
 
+    def _deterministic_response(
+        self, user, conversation, request_message, intent_spec, action_context
+    ):
+        # Explicit read/proposal selections cannot become actions through text.
+        if intent_spec is not None and intent_spec.intent not in {AIIntent.RECORD, AIIntent.CORRECT}:
+            return None
+        if action_context is not None and intent_spec is None:
+            raise AIServiceError("invalid_action_context", "El contexto requiere una acción seleccionada explícitamente.", 403)
+        started = time.perf_counter()
+        interpreter = DeterministicActionInterpreter(self.capability_registry)
+        selection = self.capability_registry.resolve(intent_spec) if intent_spec else None
+        allowed = (selection.action.action_id,) if selection and selection.action else None
+        match = interpreter.interpret(request_message.content, allowed_action_ids=allowed)
+        pending_rows = []
+        proposal = match.proposal if match.high_confidence else None
+        if proposal is None and intent_spec is None:
+            pending_rows = self._pending_plan_rows(user.id, conversation.id)
+            try:
+                updates = interpreter.slot_updates(pending_rows, request_message.content)
+            except CapabilityError as error:
+                raise AIServiceError(error.code, error.safe_message, error.status) from error
+            if updates:
+                proposal = self._pending_plan_proposal(pending_rows, updates)
+        if proposal is None:
+            current_app.logger.info(
+                "ai_action_resolution action_resolution=provider capability_ids=none step_count=0 missing_field_ids=none outcome=delegated timing_ms=%s",
+                round((time.perf_counter() - started) * 1000),
+            )
+            return None
+        allowed = tuple(step.action_capability_id for step in proposal.steps)
+        try:
+            # Resolve all steps before persisting a draft. Each pending step uses
+            # its own saved context, never another step's target.
+            if pending_rows:
+                resolved = self.capability_registry.resolve_action_proposal(
+                    user, proposal, allowed_action_ids=allowed,
+                    step_contexts={row.provenance_json["step_id"]: self._persisted_resource_context(row)
+                                   for row in pending_rows},
+                )
+                prior = pending_rows[0].provenance_json
+                plan = replace(resolved, plan_id=prior["plan_id"])
+            else:
+                plan = self.capability_registry.resolve_action_proposal(
+                    user, proposal, allowed_action_ids=allowed, resource_context=action_context,
+                )
+            timing = _AITurnTiming()
+            deadline_at = timing.started_at + _deadline_policy()[1]
+            evidence = []
+            required_reads = tuple(dict.fromkeys(
+                name for action_id in allowed
+                for name in self.capability_registry.action(action_id).read_tools
+            ))
+            if len(required_reads) > _bounded_config("AI_MAX_TOOL_CALLS", 1, 20):
+                raise AIServiceError("tool_loop_limit", "La consulta excedió el límite seguro de herramientas.", 502)
+            for index, name in enumerate(required_reads):
+                result = self._execute_tool(
+                    user, conversation, request_message, f"server-read-{index}-{uuid.uuid4()}",
+                    name, self._deterministic_tool_arguments(name, intent_spec, request_message.content),
+                    evidence, timing, deadline_at, set(required_reads),
+                )
+                if not result.ok:
+                    raise AIServiceError("required_read_failed", "No pude consultar los datos necesarios.", 502)
+            missing = sorted({
+                field for step in plan.steps
+                for field in self.capability_registry.action(step.action_capability_id).required_fields
+                if step.arguments.get(field) in (None, "", [])
+            })
+            needs_input = any(step.status == AIPlanStepStatus.NEEDS_INPUT for step in plan.steps)
+            assistant = AIMessage(
+                conversation_id=conversation.id, user_id=user.id, role="assistant",
+                content=("Plan preparado. Completa los campos pendientes en el preview. Ningún cambio se aplicó."
+                         if needs_input else "Plan preparado con todos sus pasos listos para revisión. Ningún cambio se aplicó."),
+                attachments_json=[], evidence_json=sanitize_untrusted_data(evidence),
+                provider="deterministic", model=None, input_tokens=0, output_tokens=0,
+            )
+            db.session.add(assistant)
+            db.session.flush()
+            drafts = self._persist_plan(
+                user, conversation.id, assistant.id, plan,
+                user_text=request_message.content, provider="deterministic", model="",
+            )
+            conversation.updated_at = datetime.now(timezone.utc)
+            db.session.commit()
+        except CapabilityError as error:
+            db.session.rollback()
+            current_app.logger.info(
+                "ai_action_resolution action_resolution=deterministic capability_ids=%s step_count=%s missing_field_ids=none outcome=rejected timing_ms=%s",
+                ",".join(allowed), len(proposal.steps), round((time.perf_counter() - started) * 1000),
+            )
+            raise AIServiceError(error.code, error.safe_message, error.status) from error
+        except Exception:
+            db.session.rollback()
+            raise
+        current_app.logger.info(
+            "ai_action_resolution action_resolution=deterministic capability_ids=%s step_count=%s missing_field_ids=%s outcome=%s timing_ms=%s",
+            ",".join(allowed), len(plan.steps), ",".join(missing) or "none",
+            "needs_input" if needs_input else "ready", round((time.perf_counter() - started) * 1000),
+        )
+        return assistant, drafts
+
     def _respond_timed(
         self,
         user: User,
@@ -1181,51 +1252,20 @@ class AIConversationService:
         history = self._history(conversation.id)
         model = str(current_app.config["AI_MODEL"])
         plan = self.capability_registry.resolve(intent_spec) if intent_spec else None
-        pending_rows = self._pending_plan_rows(user.id, conversation.id)
-        pending_updates = self._pending_slot_updates(
-            pending_rows, request_message.content
+        allowed_action_ids = (
+            None if plan is None
+            else (plan.action.action_id,) if plan.action is not None
+            else tuple(item.action_id for item in plan.actions)
         )
-        pending_proposal = (
-            self._pending_plan_proposal(pending_rows, pending_updates)
-            if pending_updates
-            else None
-        )
-        server_proposal = pending_proposal or (
-            _inferred_multi_action_proposal(request_message.content)
-            if intent_spec is None
-            else None
-        )
-        if server_proposal is not None:
-            allowed_action_ids = tuple(
-                step.action_capability_id for step in server_proposal.steps
-            )
-            timing.intent = server_proposal.intent
-            timing.domain = "multi"
-        else:
-            allowed_action_ids = (
-                None
-                if plan is None
-                else (plan.action.action_id,)
-                if plan.action is not None
-                else tuple(item.action_id for item in plan.actions)
-            )
         action_definitions = self.capability_registry.provider_action_definitions(
             allowed_action_ids
         )
-        allowed_draft_types = None if plan is None and server_proposal is None else ()
+        allowed_draft_types = None if plan is None else ()
         require_action_plan = bool(
             plan is not None and (plan.action is not None or plan.actions)
         )
         required_provider_read = bool(plan and plan.tools and not require_action_plan)
         required_reads = tuple(plan.tools) if require_action_plan else ()
-        if server_proposal is not None:
-            required_reads = tuple(
-                dict.fromkeys(
-                    name
-                    for action_id in allowed_action_ids or ()
-                    for name in self.capability_registry.action(action_id).read_tools
-                )
-            )
         tool_definitions = ()
         if provider.capabilities.supports_tools and not required_reads:
             tool_definitions = (
@@ -1233,13 +1273,7 @@ class AIConversationService:
                 if plan is not None
                 else self.registry.definitions
             )
-        allowed_tools = (
-            set(plan.tools)
-            if plan is not None
-            else set(required_reads)
-            if server_proposal is not None
-            else None
-        )
+        allowed_tools = set(plan.tools) if plan is not None else None
         local_date = self._today_for_user(user).isoformat()
         timezone_name = user.timezone or current_app.config["APP_TIMEZONE"]
         instructions = (
@@ -1306,8 +1340,8 @@ class AIConversationService:
             timeout_seconds=timeout,
             draft_types=allowed_draft_types,
             actions=action_definitions,
-            require_tool=bool(required_provider_read or (require_action_plan and server_proposal is None)),
-            phase="proposal" if require_action_plan or server_proposal else "response",
+            require_tool=bool(required_provider_read or require_action_plan),
+            phase="proposal" if require_action_plan else "response",
             intent=timing.intent,
         )
         current_app.logger.info(
@@ -1317,13 +1351,7 @@ class AIConversationService:
             ",".join(item.name for item in request.tools) or "none",
         )
         try:
-            # A recognized slot reply is merged locally; the model cannot replace
-            # the saved action/step identity or invent extra values on this path.
-            response = (
-                AIProviderResponse(content="Plan pendiente actualizado para revisión.")
-                if pending_proposal is not None
-                else self._provider_call(provider, request, timing, deadline_at)
-            )
+            response = self._provider_call(provider, request, timing, deadline_at)
         except AIServiceError as error:
             if (
                 request.phase == "proposal"
@@ -1404,7 +1432,7 @@ class AIConversationService:
             total_output += response.usage.output_tokens or 0
             self._enforce_usage_limit(total_input, total_output)
 
-        if require_action_plan and server_proposal is None and not response.plans:
+        if require_action_plan and not response.plans:
             raise AIServiceError(
                 "action_plan_required_for_intent",
                 "El proveedor no preparó el plan requerido para esta acción.",
@@ -1461,21 +1489,10 @@ class AIConversationService:
                 502,
             )
         resolved_plan = None
-        if server_proposal is not None and response.plans:
-            # A deterministic scaffold must never turn a malformed model plan
-            # into success. Validate the complete returned contract before use.
-            try:
-                self.capability_registry.resolve_action_proposal(
-                    user, response.plans[0], allowed_action_ids=allowed_action_ids
-                )
-            except CapabilityError as error:
-                self._log_plan_validation_rejection(response.plans[0], error)
-                raise AIServiceError(error.code, error.safe_message, error.status) from error
-        proposal = server_proposal or (response.plans[0] if response.plans else None)
+        proposal = response.plans[0] if response.plans else None
         if proposal is not None:
             if (
-                server_proposal is None
-                and intent_spec is not None
+                intent_spec is not None
                 and intent_spec.intent == AIIntent.PROPOSE_CHANGES
                 and proposal.intent != "propose_changes"
             ):
@@ -1485,8 +1502,7 @@ class AIConversationService:
                     502,
                 )
             if (
-                server_proposal is None
-                and intent_spec is not None
+                intent_spec is not None
                 and intent_spec.intent in {AIIntent.RECORD, AIIntent.CORRECT}
                 and allowed_action_ids is not None
                 and len(allowed_action_ids) == 1
@@ -1502,19 +1518,7 @@ class AIConversationService:
                 proposal, intent_spec, allowed_action_ids
             )
             resource_context = action_context
-            if pending_proposal is not None:
-                resource_context = next(
-                    (
-                        self._persisted_resource_context(row)
-                        for row in pending_rows
-                        if self._persisted_resource_context(row) is not None
-                    ),
-                    resource_context,
-                )
-            prepared_proposal = (
-                proposal if pending_proposal is not None
-                else self._preserve_plan_explicit_fields(proposal, draft_source_text)
-            )
+            prepared_proposal = self._preserve_plan_explicit_fields(proposal, draft_source_text)
             try:
                 resolved_plan = self.capability_registry.resolve_action_proposal(
                     user,
@@ -1525,39 +1529,12 @@ class AIConversationService:
             except CapabilityError as error:
                 self._log_plan_validation_rejection(prepared_proposal, error)
                 raise AIServiceError(error.code, error.safe_message, error.status) from error
-            if pending_proposal is not None:
-                provenance = pending_rows[0].provenance_json or {}
-                resolved_plan = AIPlanSpec(
-                    plan_id=str(provenance.get("plan_id")),
-                    intent=str(provenance.get("plan_intent") or resolved_plan.intent),
-                    summary=str(provenance.get("plan_summary") or resolved_plan.summary),
-                    steps=tuple(
-                        replace(step, status=AIPlanStepStatus(row.status),
-                                arguments=row.payload_json,
-                                preview=(row.provenance_json or {}).get("preview", {}),
-                                context=(row.provenance_json or {}).get("action_context", {}))
-                        if row.status != "pending_confirmation" else step
-                        for step, row in zip(resolved_plan.steps, pending_rows)
-                    ),
-                )
             if intent_spec is not None and intent_spec.intent == AIIntent.PROPOSE_CHANGES:
                 content = (
                     f"OBSERVACIONES\n{content}\n\nCAMBIOS PROPUESTOS\n"
                     f"{resolved_plan.summary}. Revisa cada paso; ninguno se aplicó."
                 )
                 assistant.content = content[:12_000]
-            elif server_proposal is not None:
-                needs_input = [
-                    step for step in resolved_plan.steps
-                    if step.status == AIPlanStepStatus.NEEDS_INPUT
-                ]
-                content = (
-                    "Conservé el plan original y actualicé los datos disponibles. "
-                    "Aún falta información en uno o más pasos; ninguno se aplicó."
-                    if needs_input
-                    else "Plan preparado con todos sus pasos listos para revisión. Ningún cambio se aplicó."
-                )
-                assistant.content = content
 
         fallback_body = _explicit_body_draft(draft_source_text) if resolved_plan is None else None
         prepared_drafts = []
@@ -1703,87 +1680,6 @@ class AIConversationService:
                 row.id,
             ),
         )
-
-    @staticmethod
-    def _pending_slot_updates(
-        rows: list[AIActionDraft], text: str
-    ) -> dict[str, dict]:
-        if not rows:
-            return {}
-        # Bare slots are accepted only as a short, unambiguous answer. Questions,
-        # new intents and arbitrary prose must go through normal intent handling.
-        normalized = text.casefold().strip().rstrip(".")
-        slot = r"\d+(?:[.,]\d+)?\s*(?:kg|lbs?|pasos?|steps?|g|gramos?|kcal|sesiones?)?"
-        if not re.fullmatch(rf"{slot}(?:\s*(?:y|,)\s*{slot})?", normalized):
-            return {}
-        updates: dict[str, dict] = {}
-        body_match = re.search(
-            rf"{_NUMBER}\s*(kg|lb|lbs)\b", text, flags=re.IGNORECASE
-        )
-        body_rows = [
-            row
-            for row in rows
-            if (row.provenance_json or {}).get("action_capability_id")
-            == "body.measurement.create"
-            and row.status == "pending_confirmation"
-            and (row.provenance_json or {}).get("step_status") == "needs_input"
-        ]
-        if body_match is not None and len(body_rows) == 1:
-            provenance = body_rows[0].provenance_json or {}
-            updates[str(provenance.get("step_id"))] = {
-                "weight": body_match.group(1).replace(",", "."),
-                "unit": "lb"
-                if body_match.group(2).casefold() in {"lb", "lbs"}
-                else "kg",
-            }
-
-        goal_rows = [
-            row
-            for row in rows
-            if (row.provenance_json or {}).get("action_capability_id")
-            == "goal.update"
-            and row.status == "pending_confirmation"
-            and (row.provenance_json or {}).get("step_status") == "needs_input"
-        ]
-        if len(goal_rows) == 1:
-            target = None
-            if target is None:
-                candidates = [
-                    match.group(0).replace(",", ".")
-                    for match in re.finditer(_NUMBER, text)
-                    if body_match is None
-                    or not (
-                        body_match.start() <= match.start()
-                        and match.end() <= body_match.end()
-                    )
-                ]
-                body_complete = all(
-                    merged_payload.get("weight")
-                    not in (None, "")
-                    and merged_payload.get("unit") not in (None, "")
-                    for merged_payload in (
-                        {
-                            **(row.payload_json or {}),
-                            **updates.get(
-                                str((row.provenance_json or {}).get("step_id")),
-                                {},
-                            ),
-                        }
-                        for row in body_rows
-                    )
-                )
-                if len(candidates) == 1 and (not body_rows or body_complete):
-                    target = candidates[0]
-            if target is not None:
-                provenance = goal_rows[0].provenance_json or {}
-                goal_update = {"target_value": target}
-                # Explicit units remain subject to canonical goal compatibility.
-                remainder = text[:body_match.start()] + text[body_match.end():] if body_match else text
-                unit_match = re.search(r"\d\s*(pasos?|steps?|g|gramos?|kcal|sesiones?)\b", remainder, re.IGNORECASE)
-                if unit_match:
-                    goal_update["unit"] = unit_match.group(1).casefold()
-                updates[str(provenance.get("step_id"))] = goal_update
-        return {key: value for key, value in updates.items() if key and value}
 
     @staticmethod
     def _pending_plan_proposal(
@@ -2003,7 +1899,7 @@ class AIConversationService:
             provenance = sanitize_untrusted_data(
                 {
                     "value_origin": "reported_by_user",
-                    "interpretation": "parsed_by_ai",
+                    "interpretation": "parsed_deterministically" if provider == "deterministic" else "parsed_by_ai",
                     "write_provenance": "ai_assisted_user_confirmed",
                     "plan_id": plan.plan_id,
                     "plan_intent": plan.intent,

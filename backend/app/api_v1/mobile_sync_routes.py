@@ -244,7 +244,7 @@ def completed_workouts_list():
         db.select(TrainingSession)
         .where(
             TrainingSession.user_id == g.api_user.id,
-            TrainingSession.deleted_at.is_(None),
+            TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed",
         )
         .order_by(TrainingSession.performed_at.desc(), TrainingSession.public_id)
         .limit(limit)
@@ -271,7 +271,7 @@ def sync_bootstrap():
     planned = PlannedWorkoutService.list_range(g.api_user.id, start, end)
     completed = db.session.execute(
         db.select(TrainingSession)
-        .where(TrainingSession.user_id == g.api_user.id, TrainingSession.deleted_at.is_(None))
+        .where(TrainingSession.user_id == g.api_user.id, TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed")
         .order_by(TrainingSession.performed_at.desc())
         .limit(25)
     ).scalars().all()

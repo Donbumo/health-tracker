@@ -80,7 +80,7 @@ class TrainingTrendService:
             db.select(TrainingSession)
             .where(
                 TrainingSession.user_id == user_id,
-                TrainingSession.deleted_at.is_(None),
+                TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed",
                 TrainingSession.performed_at >= start_at,
                 TrainingSession.performed_at < end_at,
             )
@@ -118,7 +118,7 @@ class TrainingTrendService:
                 )
                 .where(
                     TrainingSession.user_id == user_id,
-                    TrainingSession.deleted_at.is_(None),
+                    TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed",
                     PlannedWorkout.user_id == user_id,
                     PlannedWorkout.deleted_at.is_(None),
                     PlannedWorkout.scheduled_for_date.between(

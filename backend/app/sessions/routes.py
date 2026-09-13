@@ -196,7 +196,7 @@ def list_sessions():
     per_page = 20
     statement = db.select(TrainingSession).where(
         TrainingSession.user_id == current_user.id,
-        TrainingSession.deleted_at.is_(None),
+        TrainingSession.deleted_at.is_(None), TrainingSession.status.in_(["completed", "abandoned"]),
     )
     date_from = _filter_date(request.args.get("date_from"), "fecha inicial")
     date_to = _filter_date(request.args.get("date_to"), "fecha final")

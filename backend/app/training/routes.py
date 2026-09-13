@@ -72,16 +72,8 @@ def _user_version_or_404(
 @training_bp.get("")
 @login_required
 def list_plans():
-    plans = db.session.execute(
-        db.select(TrainingPlan)
-        .where(TrainingPlan.user_id == current_user.id)
-        .order_by(TrainingPlan.updated_at.desc())
-    ).scalars().all()
-    return render_template(
-        "training/list.html",
-        plans=plans,
-        plan_summaries={plan.id: _plan_summary(plan) for plan in plans},
-    )
+    from app.gym.routes import program_home
+    return program_home()
 
 
 @training_bp.route("/new", methods=["GET", "POST"])

@@ -180,7 +180,7 @@ def history_page(
         raise MobileSyncError("invalid_range", "date_from no puede ser posterior a date_to.")
     query = db.select(TrainingSession).where(
         TrainingSession.user_id == user_id,
-        TrainingSession.deleted_at.is_(None),
+        TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed",
     )
     if date_from:
         query = query.where(TrainingSession.performed_at >= _date_boundary(date_from))
@@ -251,7 +251,7 @@ def history_detail(user_id: int, public_id: str) -> dict:
         .where(
             TrainingSession.user_id == user_id,
             TrainingSession.public_id == public_id,
-            TrainingSession.deleted_at.is_(None),
+            TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed",
         )
         .options(*_session_options())
     ).scalar_one_or_none()
@@ -322,7 +322,7 @@ def _period(value: str, now: datetime | None = None) -> tuple[datetime | None, d
 def _sessions_in_period(user_id: int, start: datetime | None, end: datetime) -> list[TrainingSession]:
     query = db.select(TrainingSession).where(
         TrainingSession.user_id == user_id,
-        TrainingSession.deleted_at.is_(None),
+        TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed",
         TrainingSession.performed_at < end,
     )
     if start is not None:

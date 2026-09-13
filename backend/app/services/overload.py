@@ -351,6 +351,8 @@ def exercise_history(user_id: int, exercise_name: str) -> list[dict[str, Any]]:
         for exercise in exercises
         if normalize_exercise_name(exercise.name) in matching_names
         and exercise.training_session.user_id == user_id
+        and exercise.training_session.status == "completed"
+        and exercise.training_session.deleted_at is None
     ]
     matching.sort(
         key=lambda exercise: (

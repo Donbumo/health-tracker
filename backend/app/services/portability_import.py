@@ -241,7 +241,7 @@ def _existing_data(section: str, row) -> dict:
             "preferred_unit": row.load_profile.preferred_unit, "configuration": row.load_profile.configuration_json or {},
             "quick_increments": row.load_profile.quick_increments_json or []}}
     if section == "plans":
-        return {"name": row.name, "description": row.description, "status": row.status,
+        return {"name": row.name, "description": row.description, "status": row.status, "gym_active": row.gym_active,
             "active_version_number": row.active_version_number, "archived_at": row.archived_at,
             "versions": [{"public_id": item.public_id, "version_number": item.version_number,
                 "schema_version": item.schema_version, "content": item.content,
@@ -257,7 +257,7 @@ def _existing_data(section: str, row) -> dict:
     if section == "sessions":
         return {"plan_public_id": row.training_plan.public_id, "plan_version_public_id": row.training_plan_version.public_id,
             "schedule_public_id": row.planned_workout.public_id if row.planned_workout else None,
-            "timezone": row.timezone, "started_at": row.started_at, "completed_at": row.completed_at,
+            "timezone": row.timezone, "started_at": row.started_at, "completed_at": row.completed_at, "status": row.status,
             "performed_at": row.performed_at, "planned_week_number": row.planned_week_number,
             "planned_day_number": row.planned_day_number, "duration_seconds": row.duration_seconds,
             "average_heart_rate_bpm": row.average_heart_rate_bpm, "calories_burned": row.calories_burned, "notes": row.notes}
@@ -972,6 +972,9 @@ def _apply_record(job, section, record, strategy, maps, created_paths):
             active_version_number=max(1, int(data.get("active_version_number", 1))),
             archived_at=_datetime(data.get("archived_at")), revision=max(1, int(record.get("revision", 1))))
         db.session.add(row); db.session.flush(); _add_mapping(job, section, source_id, destination, collision, maps)
+        if data.get("gym_active") is True:
+            from app.services.gym_programs import activate_program
+            activate_program(user_id, row.public_id)
         for version in data.get("versions", []):
             version_source = str(uuid.UUID(version["public_id"])); version_dest, version_collision = _destination_uuid(TrainingPlanVersion, version_source, user_id, False)
             content = version.get("content") or {}
@@ -1009,7 +1012,7 @@ def _apply_record(job, section, record, strategy, maps, created_paths):
         schedule = _resolve(PlannedWorkout, user_id, data.get("schedule_public_id"), maps, "schedules") if data.get("schedule_public_id") else None
         if plan is None or version is None: raise PortabilityImportError("broken_reference", "No se pudo remapear una sesión.", 409)
         destination, collision = _destination_uuid(TrainingSession, source_id, user_id, force_new)
-        db.session.add(TrainingSession(public_id=destination, user_id=user_id, training_plan_id=plan.id,
+        db.session.add(TrainingSession(public_id=destination, user_id=user_id, training_plan_id=plan.id, status=data.get("status", "completed"),
             training_plan_version_id=version.id, planned_workout_id=schedule.id if schedule else None,
             timezone=data.get("timezone"), started_at=_datetime(data.get("started_at")), completed_at=_datetime(data.get("completed_at")),
             performed_at=_datetime(data.get("performed_at"), required=True), planned_week_number=max(1, int(data.get("planned_week_number", 1))),

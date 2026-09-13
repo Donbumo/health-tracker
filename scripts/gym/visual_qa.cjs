@@ -1,0 +1,101 @@
+/* Run against scripts/gym/qa_app.py; fictional local account only. */
+const {chromium} = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const os = require('node:os');
+
+(async () => {
+  const output = process.argv[2] || fs.mkdtempSync(path.join(os.tmpdir(), 'gym-visual-qa-'));
+  fs.mkdirSync(output, {recursive: true});
+  const browser = await chromium.launch({channel:'msedge', headless:true});
+  const context = await browser.newContext({viewport:{width:390,height:844}});
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  const base = 'http://127.0.0.1:8011';
+  await page.goto(base + '/login');
+  await page.locator('[name=username]').fill('gym-qa');
+  await page.locator('[name=password]').fill('fictional-gym-qa-password');
+  await page.locator('button[type=submit],input[type=submit]').first().click();
+  await page.waitForURL(url => !url.pathname.includes('login'));
+  const measures = [];
+  async function inspect(name, url) {
+    for (const width of [360,390,430,768,1024,1366]) {
+      await page.setViewportSize({width,height:844});
+      if (url) await page.goto(base + url);
+      const metrics = await page.evaluate(() => ({width:innerWidth, scroll:document.documentElement.scrollWidth,
+        smallInputs:[...document.querySelectorAll('.gym input:not([type=hidden]),.gym select')].filter(el => el.getBoundingClientRect().height && (parseFloat(getComputedStyle(el).fontSize)<16 || el.getBoundingClientRect().height < 44)).length,
+        smallTargets:[...document.querySelectorAll('.gym button,.gym .button')].filter(el => el.getBoundingClientRect().height && el.getBoundingClientRect().height < 44).length}));
+      assert.ok(metrics.scroll <= width + 1, `${name} overflow at ${width}: ${JSON.stringify(metrics)}`);
+      assert.equal(metrics.smallInputs, 0, `${name}: input sizing`);
+      assert.equal(metrics.smallTargets, 0, `${name}: target sizing`);
+      measures.push({page:name,...metrics});
+      if ([390,1366].includes(width)) await page.screenshot({path:path.join(output,`${name}-${width}.png`),fullPage:true});
+    }
+  }
+  await inspect('program','/training-plans');
+  await inspect('wizard','/gym/programs/new');
+  await page.setViewportSize({width:390,height:844});
+  await page.goto(base + '/training-plans');
+  await page.getByRole('button',{name:'Entrenar D1',exact:true}).first().click();
+  await page.waitForURL(/\/gym\/sessions\//);
+  const workout = new URL(page.url()).pathname;
+  await inspect('workout',workout);
+  await page.setViewportSize({width:390,height:844});
+  const first = page.locator('.gym-set').first();
+  assert.equal(await first.locator('[name=load]').inputValue(),'');
+  await first.getByRole('button',{name:'Usar sugerencia',exact:true}).click();
+  assert.equal(await first.locator('[name=load]').inputValue(),'80.00');
+  await first.locator('[name=load]').fill('81.25');
+  await page.reload();
+  assert.equal(await first.locator('[name=load]').inputValue(),'81.25');
+  assert.equal(await page.locator('.gym-set.is-completed').count(),0);
+  await first.locator('[name=load]').fill('80');
+  await first.locator('[name=load]').press('Enter');
+  assert.equal(await page.locator(':focus').getAttribute('name'),'reps');
+  await first.locator('[name=reps]').fill('8');
+  await first.locator('[name=reps]').press('Enter');
+  assert.equal(await page.locator(':focus').getAttribute('name'),'rir');
+  await first.locator('[name=rir]').press('Enter');
+  await page.waitForFunction(() => document.querySelector('.gym-set').classList.contains('is-completed'));
+  const second = page.locator('.gym-set').nth(1);
+  await second.getByRole('button',{name:'Repetir',exact:true}).click();
+  assert.equal(Number(await second.locator('[name=load]').inputValue()),80);
+  await second.getByRole('button',{name:'✓ Completar serie',exact:true}).click();
+  await page.waitForFunction(() => document.querySelectorAll('.gym-set.is-completed').length === 2);
+  await page.reload();
+  assert.equal(await page.locator('.gym-set.is-completed').count(),2);
+  await page.goto(base+'/training-plans');
+  await page.getByRole('link',{name:'Reanudar',exact:true}).first().click();
+  assert.equal(new URL(page.url()).pathname,workout);
+  await page.getByRole('button',{name:'Finalizar entrenamiento',exact:true}).click();
+  await page.getByRole('heading',{name:'Resumen del entrenamiento'}).waitFor();
+  await page.screenshot({path:path.join(output,'finished-390.png'),fullPage:true});
+  await page.goto(base+'/training-plans');
+  await page.getByRole('button',{name:'Entrenar D1',exact:true}).first().click();
+  await page.waitForURL(/\/gym\/sessions\//);
+  assert.equal(await page.locator('.gym-set.is-completed').count(),0);
+  assert.equal(await page.locator('.gym-set').first().locator('[name=load]').getAttribute('placeholder'),'80.00');
+  assert.match(await page.locator('.gym-reference').first().textContent(),/80.00 kg/);
+  const progress = await page.getByRole('link',{name:'Progreso',exact:true}).first().getAttribute('href');
+  await inspect('progress',progress);
+  assert.match(await page.locator('.gym').textContent(), /Mejor carga comparable: 80/);
+  assert.match(await page.locator('.gym').textContent(), /RIR promedio: 2/);
+  await inspect('history','/training-sessions');
+  await page.goto(base+'/gym/programs/new');
+  await page.locator('#import').evaluate(el => {el.open=true;});
+  await page.locator('#import-name').fill('QA Import visual');
+  await page.locator('#routine-file').setInputFiles(path.resolve(__dirname,'../../backend/tests/fixtures/gym_qa/routine.xlsx'));
+  await page.getByRole('button',{name:'Preparar preview',exact:true}).click();
+  await page.getByRole('heading',{name:'Revisar QA Import visual',exact:true}).waitFor();
+  await inspect('mapping');
+  await page.getByRole('button',{name:'Confirmar programa',exact:true}).click();
+  await page.waitForURL(/training-plans/);
+  assert.ok(await page.getByRole('heading',{name:'QA Import visual',exact:true}).count());
+  assert.deepEqual(errors,[]);
+  fs.writeFileSync(path.join(output,'report.json'),JSON.stringify({status:'passed',journey:'start, confirm sets, keyboard, repeat, reload, resume, finish, previous performance, XLSX preview/confirm',consoleErrors:errors,measures},null,2));
+  console.log(JSON.stringify({status:'passed',output,checks:measures.length}));
+  await browser.close();
+})().catch(error => {console.error(error); process.exit(1);});

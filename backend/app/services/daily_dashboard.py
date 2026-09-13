@@ -86,7 +86,7 @@ def _session_summaries(
         db.select(TrainingSession)
         .where(
             TrainingSession.user_id == user_id,
-            TrainingSession.deleted_at.is_(None),
+            TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed",
             TrainingSession.performed_at >= start_at,
             TrainingSession.performed_at < end_at,
         )
@@ -268,7 +268,7 @@ def _latest_draft(user_id: int) -> WorkoutSessionDraft | None:
 def _recent_session(user_id: int) -> dict | None:
     record = db.session.execute(
         db.select(TrainingSession)
-        .where(TrainingSession.user_id == user_id)
+        .where(TrainingSession.user_id == user_id, TrainingSession.status == "completed", TrainingSession.deleted_at.is_(None))
         .options(
             selectinload(TrainingSession.training_plan),
             selectinload(TrainingSession.exercises).selectinload(

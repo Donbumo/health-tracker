@@ -339,6 +339,10 @@ def import_completed_workout(
 
     performed_at = datetime.fromisoformat(data["performed_at"])
     session = TrainingSession(
+        status=data.get("status", "completed"),
+        started_at=datetime.fromisoformat(data["started_at"]) if data.get("started_at") else None,
+        completed_at=datetime.fromisoformat(data["completed_at"]) if data.get("completed_at") else None,
+        timezone=data.get("timezone"),
         user_id=user_id,
         training_plan_id=planned_day.plan.id,
         training_plan_version_id=planned_day.version.id,

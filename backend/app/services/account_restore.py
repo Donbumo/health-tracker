@@ -674,6 +674,11 @@ class AccountRestoreService:
             ).scalar_one_or_none()
         if section == "training_sessions":
             data = item["data"]
+            if data.get("client_submission_id"):
+                return db.session.execute(db.select(TrainingSession).where(
+                    TrainingSession.user_id == user_id,
+                    TrainingSession.client_submission_id == data["client_submission_id"],
+                )).scalar_one_or_none()
             performed_at = datetime.fromisoformat(data["performed_at"].replace("Z", "+00:00"))
             return db.session.execute(
                 db.select(TrainingSession).where(
@@ -1080,6 +1085,9 @@ class AccountRestoreService:
             )
             db.session.add(plan)
             db.session.flush()
+        if item.get("gym_active") is True:
+            from app.services.gym_programs import activate_program
+            activate_program(user_id, plan.public_id)
         version_map: dict[int, int] = {}
         active_document = None
         existing_hashes = {version.sha256: version for version in plan.versions}
@@ -1164,6 +1172,10 @@ class AccountRestoreService:
         if existing is not None:
             return existing
         session = TrainingSession(
+            status=data.get("status", "completed"),
+            started_at=datetime.fromisoformat(data["started_at"]) if data.get("started_at") else None,
+            completed_at=datetime.fromisoformat(data["completed_at"]) if data.get("completed_at") else None,
+            timezone=data.get("timezone"),
             user_id=user_id,
             training_plan_id=data["training_plan_id"],
             training_plan_version_id=data["training_plan_version_id"],

@@ -232,7 +232,7 @@ class AIProvenanceService:
                     TrainingSession.source_device_id,
                 ).where(
                     TrainingSession.user_id == user_id,
-                    TrainingSession.deleted_at.is_(None),
+                    TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed",
                     TrainingSession.performed_at >= start_at,
                     TrainingSession.performed_at < end_at,
                 )
@@ -682,9 +682,35 @@ def _data_sources(user: User, arguments: dict) -> AIToolExecution:
     return AIToolExecution(sanitize_untrusted_data(data), tuple(evidence))
 
 
+def _gym_program(user, arguments):
+    from app.services.gym_capabilities import read_program
+    from app.services.gym_programs import GymError
+    try:
+        data = read_program(user.id, arguments.get("program_id"), arguments.get("week"), arguments.get("day"))
+    except GymError as error:
+        raise AIToolError("not_found", str(error)) from error
+    return AIToolExecution(sanitize_untrusted_data(data), ())
+
+
+def _gym_session(user, arguments):
+    from app.services.gym_capabilities import read_session
+    from app.services.gym_programs import GymError
+    try:
+        data = read_session(user.id, arguments["session_id"])
+    except GymError as error:
+        raise AIToolError("not_found", str(error)) from error
+    return AIToolExecution(sanitize_untrusted_data(data), ())
+
+
 class AIToolRegistry:
     def __init__(self):
         self._handlers: dict[str, tuple[AIToolDefinition, Callable[[User, dict], AIToolExecution]]] = {}
+        self._register("get_training_program", "Programa activo o indicado y objetivos de sus días; no son resultados realizados.",
+            {"type": "object", "properties": {"program_id": {"type": "string", "format": "uuid"}, "week": {"type": "integer", "minimum": 1, "maximum": 104}, "day": {"type": "integer", "minimum": 1, "maximum": 7}}, "additionalProperties": False},
+            _gym_program, _metadata(("training",), ("training_program", "program_day"), (), ("summary", "latest")))
+        self._register("get_training_session", "Estado y series confirmadas de una sesión propia, con su versión histórica.",
+            {"type": "object", "properties": {"session_id": {"type": "string", "format": "uuid"}}, "required": ["session_id"], "additionalProperties": False},
+            _gym_session, _metadata(("training",), ("training_session",), ("sessions",), ("latest",)))
         self._register(
             "get_dashboard_summary",
             "Resumen longitudinal de energía, proteína, peso y entrenamiento.",

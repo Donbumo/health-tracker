@@ -2,7 +2,7 @@ import csv
 from io import StringIO
 
 from app.models import TrainingPlan
-from app.services.exporters.base import BaseExporter, ExportArtifact, serialize_json
+from app.services.exporters.base import BaseExporter, ExportArtifact, SafeCsvDictWriter, serialize_json
 from app.services.training_plans import get_active_version
 from app.services.validation import validate_json_document
 
@@ -46,6 +46,13 @@ class TrainingPlanCsvExporter(BaseExporter):
         "distance_m",
         "target",
         "rest_seconds",
+        "weight_kg",
+        "load_value",
+        "load_unit",
+        "load_mode",
+        "rir",
+        "rpe",
+        "set_notes",
     )
 
     def export(self, resource: TrainingPlan, user_id: int) -> ExportArtifact:
@@ -54,7 +61,7 @@ class TrainingPlanCsvExporter(BaseExporter):
         validate_json_document(version.content, "training_plan")
 
         output = StringIO(newline="")
-        writer = csv.DictWriter(output, fieldnames=self.fieldnames)
+        writer = SafeCsvDictWriter(output, fieldnames=self.fieldnames)
         writer.writeheader()
         document = version.content
         for week in document["data"]["weeks"]:
@@ -94,6 +101,13 @@ class TrainingPlanCsvExporter(BaseExporter):
                                 "distance_m": planned_set.get("distance_m", ""),
                                 "target": planned_set.get("target", ""),
                                 "rest_seconds": planned_set.get("rest_seconds", ""),
+                                "weight_kg": planned_set.get("weight_kg", ""),
+                                "load_value": planned_set.get("load_value", ""),
+                                "load_unit": planned_set.get("load_unit", ""),
+                                "load_mode": planned_set.get("load_mode", ""),
+                                "rir": planned_set.get("rir", ""),
+                                "rpe": planned_set.get("rpe", ""),
+                                "set_notes": planned_set.get("notes", ""),
                             }
                         )
 

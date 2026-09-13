@@ -21,7 +21,7 @@ MANIFEST = AICapabilityManifest(
     domain_id="training",
     label="Entrenamiento",
     description="Sesiones, historial y progreso con cargas comparables.",
-    entities=("training_session", "exercise", "training_set"),
+    entities=("training_program", "program_day", "training_session", "exercise", "training_set"),
     metrics=METRICS,
     read_capabilities=(
         ReadCapability(AIIntent.SUMMARY, ("get_training_summary",), tuple(item.id for item in METRICS)),
@@ -32,6 +32,8 @@ MANIFEST = AICapabilityManifest(
         ReadCapability(AIIntent.PROGRESS, ("get_exercise_progress",), ("exercise_load", "volume", "reps"), ("7d", "30d", "90d"), 2),
         ReadCapability(AIIntent.COVERAGE, ("get_training_summary",), tuple(item.id for item in METRICS)),
         ReadCapability(AIIntent.SOURCES, ("get_data_sources_summary",), tuple(item.id for item in METRICS)),
+        ReadCapability(AIIntent.SUMMARY, ("get_training_program",), description="training.program / training.program_day: objetivos, nunca performance."),
+        ReadCapability(AIIntent.LATEST, ("get_training_session",), ("sessions",), description="training.session: series confirmadas y estado."),
     ),
     action_capabilities=(TRAINING_CREATE, TRAINING_CORRECT),
     comparisons=True,

@@ -43,7 +43,7 @@ def _user_exercise_or_404(exercise_id: int) -> TrainingSessionExercise:
 def overview():
     sessions = db.session.execute(
         db.select(TrainingSession)
-        .where(TrainingSession.user_id == current_user.id)
+        .where(TrainingSession.user_id == current_user.id, TrainingSession.status == "completed", TrainingSession.deleted_at.is_(None))
         .order_by(TrainingSession.performed_at.desc(), TrainingSession.id.desc())
         .limit(20)
     ).scalars()

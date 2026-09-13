@@ -150,6 +150,7 @@ def _validate_set(value: dict, position: int) -> dict:
         "load_components",
         "load_details",
         "rir",
+        "target",
         "rpe",
         "rest_seconds",
         "duration_seconds",
@@ -231,6 +232,7 @@ def _validate_set(value: dict, position: int) -> dict:
     except WorkoutLoadError as error:
         raise MobileSyncError("invalid_request", "La prescripción de carga no es válida.") from error
     result["notes"] = _text(value.get("notes"), field="notes", maximum=2000)
+    result["target"] = _text(value.get("target"), field="target", maximum=200)
     has_reps = any(field in result for field in ("reps", "reps_min"))
     has_timed = "duration_seconds" in result or "distance_m" in result
     if mode == "duration_distance" and not has_timed:

@@ -47,23 +47,16 @@
     <p class="muted-text">{{ total }} sesión{% if total != 1 %}es{% endif %} encontrada{% if total != 1 %}s{% endif %}.</p>
     {% set session_list = sessions|list %}
     {% if session_list %}
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Fecha</th><th>Rutina</th><th>Versión</th><th>Semana/día</th><th></th></tr>
-          </thead>
-          <tbody>
-            {% for session in session_list %}
-              <tr>
-                <td>{{ session.performed_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                <td>{{ session.training_plan.name }}</td>
-                <td>{{ session.training_plan_version.version_number }}</td>
-                <td>{{ session.planned_week_number }}/{{ session.planned_day_number }}</td>
-                <td><a href="{{ url_for('sessions.detail', session_id=session.id) }}">Ver detalle</a></td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/gym.css') }}">
+      <div class="gym gym-days">
+        {% for session in session_list %}
+          <article class="gym-day">
+            <h2>{{ session.training_plan.name }}</h2>
+            <p>{{ session.performed_at.strftime('%Y-%m-%d %H:%M') }} · Revisión {{ session.training_plan_version.version_number }}</p>
+            <p>{{ 'Incompleto' if session.status == 'abandoned' else 'Finalizado' }}</p>
+            <a class="button button-secondary" href="{{ url_for('gym.workout', public_id=session.public_id) if session.started_at else url_for('sessions.detail', session_id=session.id) }}">Ver detalle</a>
+          </article>
+        {% endfor %}
       </div>
       {% if has_previous or has_next %}
         <nav class="pagination" aria-label="Páginas del historial">

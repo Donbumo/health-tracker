@@ -28,7 +28,7 @@ class AICapabilityAvailabilityService:
             "training": self._count(
                 TrainingSession,
                 TrainingSession.user_id == user_id,
-                TrainingSession.deleted_at.is_(None),
+                TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed",
             ),
             "goals": sum(goal_counts.values()),
             "steps": self._count(

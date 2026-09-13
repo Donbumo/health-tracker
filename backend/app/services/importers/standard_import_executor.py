@@ -981,6 +981,10 @@ class StandardImportExecutor:
         if version is None or version.training_plan_id != data["training_plan_id"]:
             raise StandardImportError("Training plan version does not belong to this user")
         session = TrainingSession(
+            status=data.get("status", "completed"),
+            started_at=datetime.fromisoformat(data["started_at"]) if data.get("started_at") else None,
+            completed_at=datetime.fromisoformat(data["completed_at"]) if data.get("completed_at") else None,
+            timezone=data.get("timezone"),
             user_id=user_id,
             training_plan_id=data["training_plan_id"],
             training_plan_version_id=data["training_plan_version_id"],

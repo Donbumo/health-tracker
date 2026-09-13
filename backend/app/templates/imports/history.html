@@ -9,7 +9,7 @@
 
   <section class="card">
     {% if runs %}
-      <div class="table-wrap"><table>
+      <div class="table-wrap"><table class="stack-table">
         <thead>
           <tr>
             <th>Fecha</th>
@@ -27,21 +27,21 @@
         <tbody>
           {% for run in runs %}
             <tr>
-              <td>{{ run.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
-              <td>{{ run.target_type }}</td>
-              <td>{{ run.status }}</td>
-              <td>{{ run.total_count }}</td>
-              <td>{{ run.insert_count }}</td>
-              <td>{{ run.update_count }}</td>
-              <td>{{ run.skip_count }}</td>
-              <td>{{ run.conflict_count }}</td>
-              <td>{{ run.invalid_count }}</td>
+              <td data-label="Fecha">{{ run.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td data-label="Target">{{ run.target_type }}</td>
+              <td data-label="Status"><span class="status {{ 'status-success' if run.status == 'succeeded' else 'status-danger' if run.status in ['failed', 'blocked'] else 'status-muted' }}">{{ run.status }}</span></td>
+              <td data-label="Total">{{ run.total_count }}</td>
+              <td data-label="Insert">{{ run.insert_count }}</td>
+              <td data-label="Update">{{ run.update_count }}</td>
+              <td data-label="Skip">{{ run.skip_count }}</td>
+              <td data-label="Conflict">{{ run.conflict_count }}</td>
+              <td data-label="Invalid">{{ run.invalid_count }}</td>
               <td><a href="{{ url_for('main.import_history_detail', run_id=run.id) }}">Ver</a></td>
             </tr>
           {% endfor %}
         </tbody>
       </table></div>
-      <nav aria-label="Paginación">
+      <nav class="pagination" aria-label="Paginación">
         {% if has_previous %}
           <a class="button button-secondary" href="{{ url_for('main.import_history', page=page-1) }}">Anterior</a>
         {% endif %}

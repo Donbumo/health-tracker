@@ -904,7 +904,10 @@ def test_context_token_is_valid_owner_bound_tamper_proof_and_expiring(
             )
         ).status_code == 403
 
-        tampered = token[:-1] + ("a" if token[-1] != "a" else "b")
+        # Changing only the last base64 character can alter ignored padding
+        # bits while leaving the signature bytes intact. Change its first byte.
+        signed, signature = token.rsplit(".", 1)
+        tampered = signed + "." + ("a" if signature[0] != "a" else "b") + signature[1:]
         with pytest.raises(CapabilityError) as invalid_signature:
             load_action_context_token(tampered, user_id=user)
         assert invalid_signature.value.code == "invalid_action_context"

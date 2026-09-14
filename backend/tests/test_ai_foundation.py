@@ -465,6 +465,8 @@ def test_tool_registry_is_allowlisted_and_excludes_medical_shell_sql_and_urls(ap
         "get_nutrition_summary",
         "get_training_summary",
         "get_training_history",
+        "get_training_program",
+        "get_training_session",
         "get_activity_summary",
         "get_steps_summary",
         "get_goals_summary",

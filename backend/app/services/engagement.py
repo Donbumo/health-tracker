@@ -685,7 +685,7 @@ def _load_adherence_data(user_id: int, start: date, end: date) -> dict:
     end_at = datetime.combine(end + timedelta(days=2), time.min, timezone.utc)
     return {
         "sessions": db.session.execute(db.select(TrainingSession).options(selectinload(TrainingSession.training_plan)).where(
-            TrainingSession.user_id == user_id, TrainingSession.deleted_at.is_(None),
+            TrainingSession.user_id == user_id, TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed",
             TrainingSession.performed_at >= start_at, TrainingSession.performed_at < end_at,
         )).scalars().all(),
         "planned": db.session.execute(db.select(PlannedWorkout).options(selectinload(PlannedWorkout.completed_session)).where(

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Mi programa · Health Tracker{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/gym.css') }}">
+<div class="gym">
+  <header class="page-heading"><div><p class="gym-eyebrow">ENTRENAMIENTO DE FUERZA</p><h1>Mi programa</h1><p>Tu rutina, el contexto anterior y la siguiente serie.</p></div></header>
+  <nav class="gym-actions" aria-label="Rutinas"><a class="button" href="{{ url_for('gym.editor') }}">Crear rutina</a><a class="button button-secondary" href="{{ url_for('gym.editor') }}#import">Importar rutina</a><a class="button button-secondary" href="{{ url_for('sessions.list_sessions') }}">Historial</a><a class="button button-secondary" href="{{ url_for('progress.overview') }}">Progreso</a></nav>
+  {% for session in ongoing %}<section class="card gym-resume"><div><strong>Entrenamiento en curso</strong><p>Las series confirmadas están guardadas.</p></div><a class="button" href="{{ url_for('gym.workout', public_id=session.public_id) }}">Reanudar</a></section>{% endfor %}
+  {% for card in cards %}
+  <section class="card gym-program">
+    <div class="gym-section-heading"><div><p class="gym-eyebrow">{{ 'RUTINA ACTIVA' if card.plan.gym_active else ('ARCHIVADA' if card.plan.status == 'archived' else 'RUTINA GUARDADA') }}</p><h2>{{ card.plan.name }}</h2><p>{{ card.days|length }} días · Revisión {{ card.plan.active_version_number }}</p></div>
+      {% if not card.plan.gym_active %}<form method="post" action="{{ url_for('gym.activate', public_id=card.plan.public_id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button-secondary">Usar como activa</button></form>{% endif %}</div>
+    <div class="gym-days">{% for item in card.days %}<article class="gym-day"><div><h3>{{ item.day.name }}</h3><p>{{ item.day.exercises|length }} ejercicios</p><p>{{ 'Última vez: ' ~ item.last.strftime('%Y-%m-%d') if item.last else 'Todavía sin sesiones en esta revisión' }}</p></div>
+      {% if item.day.exercises %}<form method="post" action="{{ url_for('gym.start', public_id=card.plan.public_id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="version_id" value="{{ card.version.public_id }}"><input type="hidden" name="week" value="{{ item.week }}"><input type="hidden" name="day" value="{{ item.day.day_number }}"><input type="hidden" name="submission_id" value="{{ item.submission }}"><button class="button">Entrenar {{ item.day.name }}</button></form>{% endif %}
+      <details><summary>Ver ejercicios</summary>{% for exercise in item.day.exercises %}<p>{% set identity = identities.get(normalize_name(exercise.name)) %}{% if identity %}<a href="{{ url_for('gym.exercise_progress', public_id=identity) }}">{{ exercise.name }}</a>{% else %}{{ exercise.name }}{% endif %} · {{ exercise.sets|length }} series</p>{% endfor %}</details>
+    </article>{% endfor %}</div>
+    <nav class="gym-actions"><a class="button button-secondary" href="{{ url_for('training.detail', plan_id=card.plan.id) }}">Ver rutina</a><a class="button button-secondary" href="{{ url_for('gym.editor', public_id=card.plan.public_id) }}">Editar</a><a class="button button-secondary" href="{{ url_for('training.version_history', plan_id=card.plan.id) }}">Versiones</a><a class="button button-secondary" href="{{ url_for('training.export_active', plan_id=card.plan.id) }}">Exportar JSON</a></nav>
+    {% if card.plan.status != 'archived' %}<details><summary>Archivar rutina</summary><p>Se conserva la rutina y todo su historial.</p><form method="post" action="{{ url_for('gym.archive', public_id=card.plan.public_id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button button-secondary">Confirmar archivo de rutina</button></form></details>{% endif %}
+  </section>
+  {% else %}<section class="card empty-state"><h2>Aún no tienes rutinas</h2><p>Crea una rutina, elige un template editable o importa tus días. Las sesiones comienzan cuando pulses Entrenar.</p></section>{% endfor %}
+</div>
+{% endblock %}

@@ -685,7 +685,7 @@ def completed_workout_by_public_id(user_id: int, public_id: str) -> TrainingSess
         db.select(TrainingSession).where(
             TrainingSession.user_id == user_id,
             TrainingSession.public_id == public_id,
-            TrainingSession.deleted_at.is_(None),
+            TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed",
         )
     ).scalar_one_or_none()
     if record is None:

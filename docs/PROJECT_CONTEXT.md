@@ -54,6 +54,14 @@ planear → exportar/entregar → ejecutar → importar resultado → comparar �
 
 El cliente móvil materializa ese ciclo con planificación offline por identidad estable, packages versionados e inmutables durante una ejecución, y reconciliación idempotente hacia una única sesión histórica. El servidor conserva la autoridad y el aislamiento por usuario; la caché local nunca crea un segundo contrato ni un segundo motor de sesiones.
 
+Gym Training separa programa y revisión de la sesión realizada y su historial.
+La rutina contiene objetivos; cada serie cuenta únicamente al confirmarla.
+La experiencia cotidiana parte del programa activo, recupera resultados anteriores
+y permite guardar/reanudar durante el gimnasio. El asistente de rutinas es
+determinístico y revisable; un futuro Coach comparte esos contratos y nunca
+modifica objetivos silenciosamente. Arquitectura y alcance:
+[GYM_TRAINING_2.md](GYM_TRAINING_2.md).
+
 ## Principios permanentes
 
 1. Cada usuario tiene login y datos separados.

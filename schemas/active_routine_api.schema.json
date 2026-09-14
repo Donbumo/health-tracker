@@ -37,7 +37,7 @@
         },
         "version_created_at": {"type": "string", "format": "date-time"},
         "plan_updated_at": {"type": "string", "format": "date-time"},
-        "selection_policy": {"const": "most_recent_plan_active_version"},
+        "selection_policy": {"enum": ["most_recent_plan_active_version", "user_selected_active_program"]},
         "etag": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
       }
     }

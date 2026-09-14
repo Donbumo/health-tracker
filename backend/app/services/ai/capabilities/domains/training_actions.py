@@ -193,7 +193,7 @@ def _session_exercises(row: TrainingSession) -> list[dict]:
 def _latest_session(user) -> TrainingSession:
     row = db.session.execute(
         db.select(TrainingSession)
-        .where(TrainingSession.user_id == user.id, TrainingSession.deleted_at.is_(None))
+        .where(TrainingSession.user_id == user.id, TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed")
         .order_by(TrainingSession.performed_at.desc(), TrainingSession.id.desc())
         .limit(1)
     ).scalar_one_or_none()
@@ -214,7 +214,7 @@ def _correction_context(user, _payload: dict, resource_context=None) -> dict:
             db.select(TrainingSession).where(
                 TrainingSession.user_id == user.id,
                 TrainingSession.public_id == resource_context.get("resource_public_id"),
-                TrainingSession.deleted_at.is_(None),
+                TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed",
             )
         ).scalar_one_or_none()
         if row is None:
@@ -332,7 +332,7 @@ def apply_training_correct(user, _draft, payload: dict, context, _now) -> Action
         db.select(TrainingSession).where(
             TrainingSession.user_id == user.id,
             TrainingSession.public_id == context.get("public_id"),
-            TrainingSession.deleted_at.is_(None),
+            TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed",
         ).with_for_update()
     ).scalar_one_or_none()
     if row is None:

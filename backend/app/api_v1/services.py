@@ -47,8 +47,7 @@ def rfc3339(value: datetime | None) -> str | None:
 
 
 def active_routine(user_id: int) -> dict | None:
-    # There is one active version per plan but no account-wide active-plan flag.
-    # API v1 deterministically exposes the most recently updated owned plan.
+    # Explicit gym selection wins; legacy accounts retain the deterministic fallback.
     plan = db.session.execute(
         db.select(TrainingPlan)
         .join(
@@ -59,7 +58,7 @@ def active_routine(user_id: int) -> dict | None:
             ),
         )
         .where(TrainingPlan.user_id == user_id, TrainingPlan.status == "active")
-        .order_by(TrainingPlan.updated_at.desc(), TrainingPlan.id.desc())
+        .order_by(TrainingPlan.gym_active.desc(), TrainingPlan.updated_at.desc(), TrainingPlan.id.desc())
         .limit(1)
     ).scalar_one_or_none()
     if plan is None:
@@ -87,7 +86,7 @@ def active_routine(user_id: int) -> dict | None:
         ],
         "version_created_at": rfc3339(version.created_at),
         "plan_updated_at": rfc3339(plan.updated_at),
-        "selection_policy": "most_recent_plan_active_version",
+        "selection_policy": "user_selected_active_program" if plan.gym_active else "most_recent_plan_active_version",
     }
     encoded = json.dumps(snapshot, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
     snapshot["etag"] = hashlib.sha256(encoded).hexdigest()

@@ -385,7 +385,7 @@ def _serialize_records(
         rows = _query(TrainingPlan, user.id, TrainingPlan.created_at, TrainingPlan.public_id,
             loaders=(selectinload(TrainingPlan.versions),))
         output["plans"] = [_record("plans", row.public_id, {
-            "name": row.name, "description": row.description, "status": row.status,
+            "name": row.name, "description": row.description, "status": row.status, "gym_active": row.gym_active,
             "active_version_number": row.active_version_number, "archived_at": row.archived_at,
             "versions": [{
                 "public_id": version.public_id, "version_number": version.version_number,
@@ -425,7 +425,7 @@ def _serialize_records(
                 "plan_public_id": row.training_plan.public_id,
                 "plan_version_public_id": row.training_plan_version.public_id,
                 "schedule_public_id": row.planned_workout.public_id if row.planned_workout else None,
-                "timezone": row.timezone, "started_at": row.started_at, "completed_at": row.completed_at,
+                "timezone": row.timezone, "started_at": row.started_at, "completed_at": row.completed_at, "status": row.status,
                 "performed_at": row.performed_at, "planned_week_number": row.planned_week_number,
                 "planned_day_number": row.planned_day_number, "duration_seconds": row.duration_seconds,
                 "average_heart_rate_bpm": row.average_heart_rate_bpm,

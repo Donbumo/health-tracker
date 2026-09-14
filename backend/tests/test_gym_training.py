@@ -186,6 +186,33 @@ def test_four_file_formats_equivalent(app, user):
     assert 'weight_kg' not in document['data']['weeks'][0]['days'][0]['exercises'][1]['sets'][0]
 
 
+def test_xlsx_empty_inline_cells_preserve_optional_blank_values():
+    from pathlib import Path
+    from xml.etree import ElementTree as ET
+    raw = (Path(__file__).parent / 'fixtures/gym_qa/routine.xlsx').read_bytes()
+    with zipfile.ZipFile(io.BytesIO(raw)) as original:
+        entries = {name: original.read(name) for name in original.namelist()}
+    sheet = 'xl/worksheets/sheet1.xml'
+    ns = {'s': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
+    root = ET.fromstring(entries[sheet])
+    empty_cells = 0
+    for cell in root.findall('s:sheetData/s:row/s:c', ns):
+        inline = cell.find('s:is', ns)
+        if inline is not None and not ''.join(inline.itertext()):
+            cell.remove(inline)
+            empty_cells += 1
+    assert empty_cells > 0
+    entries[sheet] = ET.tostring(root)
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as output:
+        for name, value in entries.items():
+            output.writestr(name, value)
+    parser = DeterministicParser()
+    expected = parser.parse(raw, 'routine.xlsx', 'QA')
+    actual = parser.parse(buffer.getvalue(), 'empty-cells.xlsx', 'QA')
+    assert actual.days == expected.days
+
+
 @pytest.mark.parametrize('attack', ['formula', 'macro', 'external', 'entity', 'oversize', 'columns', 'multiple_sheets'])
 def test_xlsx_rejects_executable_or_unbounded_content(attack):
     from pathlib import Path

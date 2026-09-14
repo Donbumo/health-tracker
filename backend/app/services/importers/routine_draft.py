@@ -130,7 +130,8 @@ def _xlsx(content):
                     if cell.get("t") == "s":
                         value = strings[int(value)]
                     elif cell.get("t") == "inlineStr":
-                        value = "".join(cell.find("s:is", ns).itertext())
+                        inline = cell.find("s:is", ns)
+                        value = "".join(inline.itertext()) if inline is not None else ""
                     values[column - 1] = value
                 rows.append(values)
                 if len(rows) > MAX_ROWS + 1:

@@ -1,10 +1,10 @@
 {
-  "version": 1,
+  "version": 2,
   "kind": "presentation-only",
   "entries": [
     {
       "source": "Wikimedia Commons / Everkinetic",
-      "external_exercise_id": "Bench-press-2.png",
+      "external_exercise_id": "",
       "name": "Press banca",
       "aliases": [
         "Bench Press",
@@ -12,7 +12,7 @@
       ],
       "primary_muscles": [
         "Pecho",
-        "Tríceps"
+        "TrÃ­ceps"
       ],
       "secondary_muscles": [],
       "equipment": [
@@ -20,7 +20,7 @@
         "Banco"
       ],
       "instructions": [
-        "Ilustración estática de referencia. Comprueba que la variante coincide con la de tu programa."
+        "IlustraciÃ³n estÃ¡tica de referencia. Comprueba que la variante coincide con la de tu programa."
       ],
       "thumbnail_url": "/static/images/gym/bench-press.png",
       "media_url": "/static/images/gym/bench-press.png",
@@ -36,26 +36,27 @@
       "source_url": "https://commons.wikimedia.org/wiki/File:Bench-press-2.png",
       "license": "CC BY-SA 3.0",
       "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
-      "changes": "Archivo original, sin modificaciones."
+      "changes": "Archivo original, sin modificaciones.",
+      "media_asset_id": "everkinetic:bench-press"
     },
     {
       "source": "Wikimedia Commons / Everkinetic",
-      "external_exercise_id": "Squats.svg",
+      "external_exercise_id": "",
       "name": "Sentadilla",
       "aliases": [
         "Squat",
         "QA Sentadilla"
       ],
       "primary_muscles": [
-        "Cuádriceps",
-        "Glúteos"
+        "CuÃ¡driceps",
+        "GlÃºteos"
       ],
       "secondary_muscles": [],
       "equipment": [
         "Barra"
       ],
       "instructions": [
-        "Ilustración estática de referencia. Comprueba que la variante coincide con la de tu programa."
+        "IlustraciÃ³n estÃ¡tica de referencia. Comprueba que la variante coincide con la de tu programa."
       ],
       "thumbnail_url": "/static/images/gym/squats.svg",
       "media_url": "/static/images/gym/squats.svg",
@@ -71,11 +72,12 @@
       "source_url": "https://commons.wikimedia.org/wiki/File:Squats.svg",
       "license": "CC BY-SA 3.0",
       "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
-      "changes": "Archivo original, sin modificaciones."
+      "changes": "Archivo original, sin modificaciones.",
+      "media_asset_id": "everkinetic:barbell-back-squat"
     },
     {
       "source": "Wikimedia Commons / Everkinetic",
-      "external_exercise_id": "Reverse-grip-bent-over-rows-2.png",
+      "external_exercise_id": "",
       "name": "Remo con barra supino",
       "aliases": [
         "Reverse grip barbell row",
@@ -89,14 +91,14 @@
         "Barra"
       ],
       "instructions": [
-        "Ilustración de remo con barra y agarre supino. No representa todas las variantes de remo."
+        "IlustraciÃ³n de remo con barra y agarre supino. No representa todas las variantes de remo."
       ],
       "thumbnail_url": "/static/images/gym/barbell-row.png",
       "media_url": "/static/images/gym/barbell-row.png",
       "media_type": "image",
       "tags": [
         "Compuesto",
-        "Tracción"
+        "TracciÃ³n"
       ],
       "difficulty": "",
       "force": "",
@@ -105,7 +107,8 @@
       "source_url": "https://commons.wikimedia.org/wiki/File:Reverse-grip-bent-over-rows-2.png",
       "license": "CC BY-SA 3.0",
       "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
-      "changes": "Archivo original, sin modificaciones."
+      "changes": "Archivo original, sin modificaciones.",
+      "media_asset_id": "everkinetic:supinated-barbell-row"
     }
   ]
 }

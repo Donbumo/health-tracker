@@ -153,7 +153,7 @@ def test_web_journey(app, client, user):
     login(client)
     plan = program(user)
     home = client.get('/training-plans')
-    assert home.status_code == 200 and 'Mi programa' in home.text
+    assert home.status_code == 200 and 'Mi entrenamiento' in home.text
     assert client.get('/gym/programs/new').status_code == 200
     row = start(user, plan)
     url = f'/gym/sessions/{row.public_id}'

@@ -1,5 +1,9 @@
 # Gym Training 2.0 — rediseño visual
 
+La resolución de medios por identidad y su cobertura actual se documentan en
+[GYM_EXERCISE_MEDIA.md](GYM_EXERCISE_MEDIA.md). Los detalles del resolver por nombre
+de esta entrega original son históricos.
+
 2026-09-17 · rama `codex/gym-visual-redesign`, sobre `ef49b20`.
 Esta fase cambia exclusivamente presentación, templates y QA. No añade rutas,
 modelos, migraciones, contratos persistentes ni dependencias de ejecución.

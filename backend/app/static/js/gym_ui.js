@@ -3,7 +3,11 @@
   'use strict';
   const view = window.GymView;
   if (!view) return;
-  const entries = new Map();
+  let entries = [];
+  function entryFor(element) {
+    try { return view.resolveMedia(JSON.parse(element.dataset.mediaBinding || '{}'), entries); }
+    catch (_) { return null; }
+  }
   let opener;
   function openDialog(dialog, source) {
     if (!dialog || typeof dialog.showModal !== 'function') return;
@@ -32,15 +36,16 @@
   function loadImage(wrapper, url) {
     const image = wrapper.querySelector('img');
     image.hidden = false;
+    wrapper.dataset.mediaState = 'loading';
     wrapper.classList.add('is-loading');
-    image.addEventListener('load', () => { wrapper.classList.remove('is-loading'); wrapper.classList.add('has-media'); image.hidden = false; }, {once:true});
-    image.addEventListener('error', () => { wrapper.classList.remove('is-loading','has-media'); image.hidden = true; }, {once:true});
+    image.addEventListener('load', () => { wrapper.classList.remove('is-loading'); wrapper.classList.add('has-media'); wrapper.dataset.mediaState = 'loaded'; image.hidden = false; }, {once:true});
+    image.addEventListener('error', () => { wrapper.classList.remove('is-loading','has-media'); wrapper.dataset.mediaState = 'asset_error'; image.hidden = true; }, {once:true});
     image.src = url;
-    if (image.complete && image.naturalWidth) { wrapper.classList.remove('is-loading'); wrapper.classList.add('has-media'); image.hidden = false; }
+    if (image.complete && image.naturalWidth) { wrapper.classList.remove('is-loading'); wrapper.classList.add('has-media'); wrapper.dataset.mediaState = 'loaded'; image.hidden = false; }
   }
   function decorate() {
     document.querySelectorAll('[data-exercise-name]').forEach(card => {
-      const entry = entries.get(view.nameKey(card.dataset.exerciseName));
+      const entry = entryFor(card);
       if (!entry) return;
       card.dataset.mediaSource = entry.source;
       card.dataset.externalExerciseId = entry.external_exercise_id;
@@ -50,13 +55,13 @@
       if (tags) tags.replaceChildren(...entry.tags.slice(0, 2).map(tag => text('span', tag, 'gym-tag')));
     });
     document.querySelectorAll('[data-media-name]').forEach(wrapper => {
-      const entry = entries.get(view.nameKey(wrapper.dataset.mediaName));
+      const entry = entryFor(wrapper);
       const media = view.safeMedia(entry?.thumbnail_url, location.origin);
       if (media && !media.external) loadImage(wrapper, media.url);
     });
     document.querySelectorAll('[data-day-panel]').forEach(panel => {
       const cards = [...panel.querySelectorAll('[data-exercise-name]')];
-      const found = cards.map(card => entries.get(view.nameKey(card.dataset.exerciseName)));
+      const found = cards.map(card => entryFor(card));
       const muscles = new Set(found.flatMap(entry => entry?.primary_muscles || []));
       const label = panel.querySelector('[data-day-muscles]');
       if (label) { label.textContent = muscles.size ? `${muscles.size}${found.some(entry => !entry) ? '+' : ''}` : '—'; label.title = [...muscles].join(', ') || 'Sin metadatos disponibles'; }
@@ -65,7 +70,7 @@
   const dialog = document.getElementById('gym-media-dialog');
   document.querySelectorAll('[data-open-media]').forEach(button => button.addEventListener('click', () => {
     if (!dialog) return;
-    const name = button.dataset.openMedia, entry = entries.get(view.nameKey(name));
+    const name = button.dataset.openMedia, entry = entryFor(button);
     dialog.querySelector('#gym-media-title').textContent = name;
     const content = dialog.querySelector('#gym-media-content'); content.replaceChildren(); content.classList.remove('is-loading'); content.setAttribute('aria-busy', 'false');
     const caption = dialog.querySelector('#gym-media-caption');
@@ -84,7 +89,7 @@
     instructions.replaceChildren(...(entry?.instructions || []).map(value => text('li', value)));
     const media = view.safeMedia(entry?.media_url || entry?.thumbnail_url, location.origin);
     function show() {
-      if (!media) { content.replaceChildren(text('p', 'Medio pendiente. Tu ejercicio y tus series siguen disponibles.', 'gym-media-unavailable')); return; }
+      if (!media) { content.replaceChildren(text('p', 'No hay una imagen verificada para esta variante. Tu entrenamiento sigue disponible.', 'gym-media-unavailable')); return; }
       const element = document.createElement(entry?.media_type === 'video' && media ? 'video' : 'img');
       content.classList.add('is-loading'); content.setAttribute('aria-busy', 'true');
       function loaded() { content.classList.remove('is-loading'); content.setAttribute('aria-busy', 'false'); }
@@ -105,7 +110,7 @@
   const catalogURL = document.querySelector('script[data-gym-catalog]')?.dataset.gymCatalog;
   if (catalogURL) fetch(catalogURL, {credentials:'same-origin'}).then(response => response.ok ? response.json() : null).then(data => {
     if (!Array.isArray(data?.entries)) return;
-    data.entries.slice(0, 500).map(view.catalogEntry).filter(Boolean).forEach(entry => [entry.name, ...entry.aliases].forEach(name => { const key = view.nameKey(name); if (!entries.has(key)) entries.set(key, entry); }));
+    entries = data.entries.slice(0, 500).map(view.catalogEntry).filter(Boolean);
     decorate();
   }).catch(() => { /* The default visual is sufficient when the catalog is unavailable. */ });
 })();

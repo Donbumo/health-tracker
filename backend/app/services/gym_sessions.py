@@ -126,7 +126,7 @@ def workout_context(record, user_id, unit):
                 "suggestion": {"load": recent.get("load") if recent.get("load") is not None else target_load,
                     "reps": target.get("reps", recent.get("reps", target.get("reps_min"))), "rir": target.get("rir"), "rpe": target.get("rpe")},
                 "actual": _performance(actual, unit) if actual else None})
-        exercises.append({"name": exercise["name"], "order": exercise["exercise_order"], "notes": exercise.get("notes"), "identity": name_key.get(normalize_exercise_name(exercise["name"])), "previous": last, "sets": sets})
+        exercises.append({"exercise_id": exercise.get("exercise_id"), "name": exercise["name"], "order": exercise["exercise_order"], "notes": exercise.get("notes"), "identity": name_key.get(normalize_exercise_name(exercise["name"])), "previous": last, "sets": sets})
     return {"day": day["name"], "exercises": exercises, "completed_sets": len(completed), "total_sets": sum(len(item["sets"]) for item in exercises), "unit": unit}
 
 

@@ -484,3 +484,11 @@
   .gym-programs .gym-planned-exercise { grid-template-columns: 132px minmax(0,1fr); gap: .85rem; }
   .gym-programs .gym-day-intro { grid-template-columns: minmax(0,1fr) 116px; padding: 1.05rem; }
 }
+
+/* Missing media remains a compact reference, never an unrelated illustration. */
+.gym-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.gym-thumb:not(.has-media):not(.is-loading) { max-width: 48px; max-height: 48px; aspect-ratio: 1; border-style: dashed; }
+.gym-thumb-fallback > span[aria-hidden] { font-size: 1.5rem; }
+.gym-upcoming-media:not(:has(.has-media)):not(:has(.is-loading)) { display: none; }
+.gym-day-intro:not(:has(.has-media)):not(:has(.is-loading)) .gym-upcoming-copy { grid-column: 1 / -1; }
+.gym-planned-exercise:not(:has(.has-media)):not(:has(.is-loading)) { grid-template-columns: 48px minmax(0, 1fr); }

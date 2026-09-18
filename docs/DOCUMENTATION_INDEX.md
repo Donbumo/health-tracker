@@ -74,3 +74,5 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 - [history/PHASE_5B_ORIGINAL_PROPOSAL.md](history/PHASE_5B_ORIGINAL_PROPOSAL.md): propuesta original; contiene ejemplos superados.
 
 No leas `history/` para una tarea normal. Si un archivo histórico contradice schemas, pruebas, reglas o código vigente, pierde prioridad.
+
+- Medios de Gym por identidad, cobertura y QA: [GYM_EXERCISE_MEDIA.md](GYM_EXERCISE_MEDIA.md).

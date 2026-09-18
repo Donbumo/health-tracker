@@ -18,6 +18,19 @@ from app.services.exercise_identity import normalize_exercise_name
 from app.services.gym_sessions import utc
 
 
+@gym_bp.app_context_processor
+def exercise_media_context():
+    # Lazy: only Gym templates request the owner-scoped presentation projection.
+    projection = None
+    def binding(exercise):
+        nonlocal projection
+        if projection is None:
+            from app.services.gym_media import media_catalog, media_projection
+            projection = media_projection(catalog(current_user.id), media_catalog())
+        return projection(exercise)
+    return {"media_binding": binding}
+
+
 @gym_bp.errorhandler(GymError)
 def handle_gym_error(error):
     db.session.rollback()

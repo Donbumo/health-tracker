@@ -71,12 +71,17 @@
     if (!raw || typeof raw !== 'object' || typeof raw.name !== 'string') return null;
     const text = value => typeof value === 'string' ? value.slice(0, 500) : '';
     const list = value => Array.isArray(value) ? value.filter(item => typeof item === 'string').slice(0, 12).map(text) : [];
-    return {source:text(raw.source), author:text(raw.author), source_url:text(raw.source_url), license:text(raw.license), license_url:text(raw.license_url), changes:text(raw.changes), external_exercise_id:text(raw.external_exercise_id), name:text(raw.name),
+    return {media_asset_id:text(raw.media_asset_id), source:text(raw.source), author:text(raw.author), source_url:text(raw.source_url), license:text(raw.license), license_url:text(raw.license_url), changes:text(raw.changes), external_exercise_id:text(raw.external_exercise_id), name:text(raw.name),
       aliases:list(raw.aliases), primary_muscles:list(raw.primary_muscles), secondary_muscles:list(raw.secondary_muscles),
       equipment:list(raw.equipment), instructions:list(raw.instructions), media_url:text(raw.media_url),
       thumbnail_url:text(raw.thumbnail_url), tags:list(raw.tags), difficulty:text(raw.difficulty),
       force:text(raw.force), mechanic:text(raw.mechanic), media_type:['image','video'].includes(raw.media_type) ? raw.media_type : 'image'};
   }
   const nameKey = name => String(name).normalize('NFKC').trim().toLocaleLowerCase('es').replace(/\s+/g,' ');
-  return {number, bounds, range, session, safeMedia, catalogEntry, nameKey};
+  function resolveMedia(binding, entries) {
+    if (!binding?.internal_exercise_id || binding.status !== 'available' || !binding.media_asset_id) return null;
+    const matches = entries.filter(entry => entry.media_asset_id === binding.media_asset_id);
+    return matches.length === 1 ? matches[0] : null;
+  }
+  return {number, bounds, range, session, safeMedia, catalogEntry, nameKey, resolveMedia};
 });

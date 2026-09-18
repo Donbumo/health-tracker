@@ -5,8 +5,8 @@
   {% if target.rest_seconds is defined %}<span>{{ target.rest_seconds }} s descanso</span>{% endif %}
 {%- endmacro %}
 
-{% macro thumbnail(name) -%}
-  <span class="gym-thumb" data-media-name="{{ name }}"><img width="240" height="240" alt="" loading="lazy" decoding="async" hidden><span class="gym-thumb-fallback">Medio<br>pendiente</span><span class="gym-media-skeleton" aria-hidden="true"></span></span>
+{% macro thumbnail(exercise) -%}
+  <span class="gym-thumb" data-media-name="{{ exercise.name }}" data-media-binding='{{ media_binding(exercise)|tojson }}'><img width="240" height="240" alt="" loading="lazy" decoding="async" hidden><span class="gym-thumb-fallback"><span aria-hidden="true">◇</span><span class="gym-visually-hidden">Sin imagen de referencia</span></span><span class="gym-media-skeleton" aria-hidden="true"></span></span>
 {%- endmacro %}
 
 {% macro coach() -%}
@@ -26,9 +26,9 @@
 {%- endmacro %}
 
 {% macro scripts(workout=false) -%}
-<script src="{{ url_for('static', filename='js/gym_core.js', v='visual-3') }}" defer></script>
-<script src="{{ url_for('static', filename='js/gym_ui.js', v='visual-3') }}" data-gym-catalog="{{ url_for('static', filename='media/gym-catalog.json', v='visual-3') }}" defer></script>
-{% if workout %}<script src="{{ url_for('static', filename='js/gym_workout.js', v='visual-3') }}" defer></script>{% endif %}
+<script src="{{ url_for('static', filename='js/gym_core.js', v='media-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/gym_ui.js', v='media-1') }}" data-gym-catalog="{{ url_for('static', filename='media/gym-catalog.json', v='media-1') }}" defer></script>
+{% if workout %}<script src="{{ url_for('static', filename='js/gym_workout.js', v='media-1') }}" defer></script>{% endif %}
 {%- endmacro %}
 
 {% macro set_form(series, exercise, record, unit) -%}

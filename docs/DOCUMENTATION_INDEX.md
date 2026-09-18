@@ -14,7 +14,7 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 
 ## Uso diario y web
 
-- Gym Training: [GYM_TRAINING_2.md](GYM_TRAINING_2.md), arquitectura, importación, captura por serie y contratos futuros; [GYM_TRAINING_2_QA.md](GYM_TRAINING_2_QA.md), resultados de validación.
+- Gym Training: [GYM_TRAINING_2.md](GYM_TRAINING_2.md), arquitectura, importación, captura por serie y contratos futuros; [GYM_TRAINING_2_QA.md](GYM_TRAINING_2_QA.md), resultados de validación; [GYM_VISUAL_REDESIGN.md](GYM_VISUAL_REDESIGN.md), composición visual, medios neutrales, rango y QA de presentación.
 
 - Reglas: [project-rules/web-ui.md](project-rules/web-ui.md), [project-rules/web-daily-driver.md](project-rules/web-daily-driver.md).
 - Resumen longitudinal: [DASHBOARD_TRENDS.md](DASHBOARD_TRENDS.md).

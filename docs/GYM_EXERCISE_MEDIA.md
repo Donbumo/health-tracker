@@ -1,6 +1,6 @@
 # Medios de ejercicios: identidad, cobertura y verificación
 
-Rama `fix/gym-exercise-media`, base `39d6f1f`. No desplegada en NAS.
+Corrección desarrollada en `fix/gym-exercise-media`, base `39d6f1f`.
 
 ## Causa comprobada
 
@@ -111,5 +111,13 @@ después `node scripts/gym/media_qa.cjs` (Playwright y Edge). La app crea almace
 temporal nuevo. No usa `.env`, `/data` ni volúmenes productivos. El runner imprime el
 directorio de PNG y `report.json`. Cachebuster de Gym: `media-1`.
 
-La rama se publica para revisión; la aceptación del caso real de prensa permanece
-pendiente. No merge ni deploy.
+## Cierre del alcance del resolver
+
+El usuario autorizó integrar y desplegar el fix tras sus checks focales. La falta
+de variante de prensa no bloquea esta corrección. El resolver y el fallback se
+cierran por separado de la cobertura: hay tres movimientos con ilustraciones,
+los movimientos sin un medio compatible siguen pendientes y no se presentan como
+resueltos. No se cambian ejercicios personales ni se añaden migraciones o assets.
+
+La ampliación se propone en [GYM_EXTERNAL_CATALOG_PROPOSAL.md](GYM_EXTERNAL_CATALOG_PROPOSAL.md),
+sin seleccionar proveedor, descargar catálogos ni modificar datos productivos.

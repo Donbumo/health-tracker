@@ -76,3 +76,5 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 No leas `history/` para una tarea normal. Si un archivo histórico contradice schemas, pruebas, reglas o código vigente, pierde prioridad.
 
 - Medios de Gym por identidad, cobertura y QA: [GYM_EXERCISE_MEDIA.md](GYM_EXERCISE_MEDIA.md).
+
+- Propuesta futura de catálogo externo y mappings: [GYM_EXTERNAL_CATALOG_PROPOSAL.md](GYM_EXTERNAL_CATALOG_PROPOSAL.md).

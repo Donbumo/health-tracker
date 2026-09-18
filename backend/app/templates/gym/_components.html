@@ -1,0 +1,50 @@
+{% macro target_line(target, unit='kg') -%}
+  {% if target.reps is defined %}{{ target.reps }} reps{% elif target.reps_min is defined %}{{ target.reps_min }}–{{ target.reps_max }} reps{% elif target.duration_seconds is defined %}{{ target.duration_seconds }} s{% else %}Objetivo libre{% endif %}
+  {% if target.load_value is defined %}<span>{{ target.load_value }} {{ target.load_unit }}</span>{% elif target.weight_kg is defined %}<span>{{ target.weight_kg }} kg</span>{% endif %}
+  {% if target.rir is defined %}<span>RIR {{ target.rir }}</span>{% endif %}{% if target.rpe is defined %}<span>RPE {{ target.rpe }}</span>{% endif %}
+  {% if target.rest_seconds is defined %}<span>{{ target.rest_seconds }} s descanso</span>{% endif %}
+{%- endmacro %}
+
+{% macro thumbnail(name) -%}
+  <span class="gym-thumb" data-media-name="{{ name }}"><img width="240" height="240" alt="" loading="lazy" decoding="async" hidden><span class="gym-thumb-fallback">Medio<br>pendiente</span><span class="gym-media-skeleton" aria-hidden="true"></span></span>
+{%- endmacro %}
+
+{% macro coach() -%}
+<section class="gym-panel gym-coach"><span class="gym-label">EL SIGUIENTE PASO</span><span class="gym-badge">Próximamente</span><h3>Tu esfuerzo.<br>Más contexto.</h3><p>Coach AI reunirá tus referencias y propuestas de progresión para que tú decidas.</p><div class="gym-coach-orbit" aria-hidden="true">✦</div><p class="gym-small">Sin ajustes automáticos activos.</p></section>
+{%- endmacro %}
+
+{% macro coach_compact() -%}
+<section class="gym-coach-compact"><div><strong>Coach AI</strong><span class="gym-badge">Próximamente</span></div><p>Un lugar para futuras sugerencias. Sin ajustes automáticos.</p></section>
+{%- endmacro %}
+
+{% macro trends() -%}
+<section class="gym-panel"><div class="gym-section-heading"><h3>Más allá de hoy</h3><span class="gym-label">TENDENCIAS</span></div><p class="gym-muted">Consulta tu historial de volumen y cargas. Las tendencias de adherencia y estancamiento llegarán con una integración posterior.</p><a class="gym-text-link" href="{{ url_for('main.dashboard') }}">Abrir resumen de entrenamiento <span aria-hidden="true">↗</span></a><a class="gym-text-link" href="{{ url_for('progress.overview') }}">Ver evolución por ejercicio <span aria-hidden="true">↗</span></a></section>
+{%- endmacro %}
+
+{% macro media_dialog() -%}
+<dialog id="gym-media-dialog" class="gym-dialog" aria-labelledby="gym-media-title"><div class="gym-dialog-head"><div><span class="gym-label">BIBLIOTECA VISUAL</span><h2 id="gym-media-title">Ejercicio</h2></div><button type="button" class="gym-icon-button" data-close-dialog aria-label="Cerrar medio">×</button></div><div id="gym-media-content"></div><p id="gym-media-caption" class="gym-muted"></p><p id="gym-media-credit" class="gym-small"></p><div id="gym-media-tags" class="gym-tags"></div><ol id="gym-media-instructions"></ol></dialog>
+{%- endmacro %}
+
+{% macro scripts(workout=false) -%}
+<script src="{{ url_for('static', filename='js/gym_core.js', v='visual-3') }}" defer></script>
+<script src="{{ url_for('static', filename='js/gym_ui.js', v='visual-3') }}" data-gym-catalog="{{ url_for('static', filename='media/gym-catalog.json', v='visual-3') }}" defer></script>
+{% if workout %}<script src="{{ url_for('static', filename='js/gym_workout.js', v='visual-3') }}" defer></script>{% endif %}
+{%- endmacro %}
+
+{% macro set_form(series, exercise, record, unit) -%}
+{% set effort = 'rpe' if series.target.rpe is defined and series.target.rir is not defined else 'rir' %}
+{% set advanced = series.target.get('load_mode') in ['bodyweight','bodyweight_plus','assistance','duration_distance'] or (series.target.reps is not defined and series.target.reps_min is not defined) %}
+<form method="post" action="{{ url_for('gym.save_set', public_id=record.public_id, exercise_order=exercise.order, set_number=series.number) }}" class="gym-set{{ ' is-completed' if series.actual else '' }}" data-previous='{{ series.previous|tojson }}' data-suggestion='{{ series.suggestion|tojson }}' data-target='{{ series.target|tojson }}' data-actual='{{ series.actual|tojson }}'>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="unit" value="{{ unit }}">
+  <div class="gym-set-heading"><strong><span class="gym-set-number">{{ series.number }}</span> Serie {{ series.number }}</strong><span class="set-status" role="status">{{ '✓ Confirmada hoy' if series.actual else 'Sin confirmar' }}</span></div>
+  <div class="gym-set-context"><span>Objetivo <b>{{ target_line(series.target, unit) }}</b></span><span>Anterior <b>{% if series.previous %}{{ series.previous.load }} {{ unit }} × {{ series.previous.reps }}{% else %}—{% endif %}</b></span></div>
+  {% if advanced %}<p>Registra los componentes de esta modalidad en <a href="{{ url_for('sessions.new_session') }}">captura avanzada</a>.</p>{% else %}
+  {% if series.target.get('load_mode', 'direct_total') != 'direct_total' %}<p class="gym-small">Confirma la carga total real, incluidos ambos lados o ambas mancuernas si corresponde.</p>{% endif %}
+  <p class="gym-capture-label">Tu resultado de hoy</p><div class="gym-inputs">{% for field,label in [('load', 'Peso · ' ~ unit),('reps','Reps'),(effort,effort|upper)] %}<div><label for="{{ exercise.order }}-{{ series.number }}-{{ field }}">{{ label }}</label><input id="{{ exercise.order }}-{{ series.number }}-{{ field }}" name="{{ field }}" type="number" inputmode="{{ 'numeric' if field == 'reps' else 'decimal' }}" step="{{ '1' if field == 'reps' else '0.1' if field in ['rir','rpe'] else '0.01' }}" min="{{ '1' if field in ['reps','rpe'] else '0' }}"{% if field in ['rir','rpe'] %} max="10"{% endif %} value="{{ series.actual[field] if series.actual and series.actual[field] is not none else '' }}" placeholder="{{ series.suggestion[field] if series.suggestion[field] is not none else '—' }}"{% if field in ['load','reps'] %} required{% endif %}{% if series.actual or record.status != 'in_progress' %} disabled{% endif %} enterkeyhint="{{ 'done' if loop.last else 'next' }}"></div>{% endfor %}</div>
+  {% if not series.actual and record.status == 'in_progress' %}
+    <div class="gym-quick"><button type="button" data-copy="suggestion">Usar sugerencia</button><button type="button" data-copy="repeat">Repetir</button><button type="button" data-adjust="load" data-delta="{{ 2.5 if unit == 'kg' else 5 }}">+ {{ 2.5 if unit == 'kg' else 5 }} {{ unit }}</button><button type="button" data-adjust="reps" data-delta="1">+ 1 rep</button></div>
+    <div class="gym-set-controls"><button class="button gym-complete" type="submit">✓ Completar serie</button><details class="gym-set-more"><summary aria-label="Más acciones de la serie {{ series.number }}">•••</summary><div class="gym-more-panel"><button type="button" data-copy="previous"{% if not series.previous %} disabled{% endif %}>Última sesión</button>{% for amount in ([1.25,5] if unit == 'kg' else [2.5,10]) %}<button type="button" data-adjust="load" data-delta="{{ amount }}">+ {{ amount }} {{ unit }}</button>{% endfor %}<button type="button" data-adjust="load" data-delta="{{ -2.5 if unit == 'kg' else -5 }}">− {{ 2.5 if unit == 'kg' else 5 }} {{ unit }}</button><button type="button" data-adjust="reps" data-delta="-1">− 1 rep</button><button type="button" data-clear-set>Limpiar campos</button></div></details></div>
+  {% endif %}{% endif %}
+  <p class="gym-saved-note"{% if not series.actual %} hidden{% endif %}>Resultado confirmado. {% if record.status != 'in_progress' %}<a href="{{ url_for('sessions.edit_session', session_id=record.id) }}">Editar o quitar en el registro</a>{% else %}Podrás corregirlo en el registro al finalizar.{% endif %}</p>
+</form>
+{%- endmacro %}

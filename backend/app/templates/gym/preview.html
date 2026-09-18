@@ -2,7 +2,7 @@
 {% from "gym/_components.html" import thumbnail, target_line, media_dialog, scripts with context %}
 {% block title %}Revisar programa · Health Tracker{% endblock %}
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/gym.css', v='visual-2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/gym.css', v='visual-3') }}">
 <div class="gym gym-preview"><header class="gym-hero gym-hero-text"><div class="gym-hero-copy"><div class="gym-overline"><span>PREVIEW DE TU PROGRAMA</span><span>SIN GUARDAR</span></div><h1>Revisar {{ draft.program.name }}</h1><p class="gym-hero-subtitle">{{ draft.days|length }} días · {{ draft.days|sum(attribute='exercises', start=[])|length }} ejercicios · {{ 'Actualizar rutina con una nueva revisión' if plan else 'Crear nueva rutina' }}</p><p class="gym-muted">Son objetivos de la rutina. Todavía no has registrado un entrenamiento.</p></div></header><ol class="gym-wizard-steps" aria-label="Importación de rutina"><li><span>✓</span> Preparar</li><li aria-current="step"><span>2</span> Revisar y mapear</li><li><span>3</span> Confirmar</li></ol><div class="gym-preview-summary" aria-label="Días detectados">{% for day in draft.days %}<a class="button button-secondary" href="#preview-day-{{ loop.index }}">{{ day.name }} · {{ day.exercises|length }} ejercicios</a>{% endfor %}</div>
 {% for warning in draft.warnings %}<p role="status">{{ warning }}</p>{% endfor %}
 {% if draft.unresolved %}<p role="status">{{ draft.unresolved|length }} ejercicios necesitan mapping. Selecciona una identidad o confirma que quieres crear un ejercicio nuevo.</p>{% endif %}

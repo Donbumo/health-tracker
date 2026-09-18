@@ -2,7 +2,7 @@
 {% from "gym/_components.html" import scripts with context %}
 {% block title %}{{ 'Editar programa' if plan else 'Crear programa' }} · Health Tracker{% endblock %}
 {% block content %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/gym.css', v='visual-2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/gym.css', v='visual-3') }}">
 <div class="gym gym-editor">
 <header class="gym-hero gym-hero-text"><div class="gym-hero-copy"><div class="gym-overline"><span>TU PROGRAMA, A TU MEDIDA</span><span>IMPORTAR / CREAR</span></div><h1>{{ 'Editar programa' if plan else 'Prepara tu rutina' }}<span class="gym-accent">.</span></h1><p class="gym-hero-subtitle">Del archivo a tu próxima sesión.</p><p class="gym-muted">Revisa cada día y objetivo antes de guardar la base de tu programa.</p><a class="gym-text-link" href="{{ url_for('training.list_plans') }}">← Volver a mi programa</a></div></header>
 <ol class="gym-wizard-steps" aria-label="Importación de rutina"><li aria-current="step"><span>1</span> Preparar</li><li><span>2</span> Revisar y mapear</li><li><span>3</span> Confirmar</li></ol>

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Eliminar rutina · Health Tracker{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>Eliminar rutina</h1>
+  <h2>{{ plan.name }}</h2>
+  {% if blocker %}
+  <p role="status">{{ blocker }}</p>
+  {% else %}
+  <p>Se eliminarán esta rutina, sus días y todas sus versiones. Esta acción no se puede deshacer.</p>
+  <p>Solo se permite si no tiene sesiones, agenda ni borradores vinculados. Los ejercicios de tu catálogo y los archivos importados se conservan.</p>
+  <form method="post" action="{{ url_for('gym.delete', public_id=plan.public_id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="base_revision" value="{{ plan.revision }}">
+    <label for="delete-confirmation">Escribe ELIMINAR para confirmar</label>
+    <input type="text" id="delete-confirmation" name="confirmation" required pattern="ELIMINAR" autocomplete="off" maxlength="8">
+    <button class="button button-danger" type="submit">Eliminar rutina definitivamente</button>
+  </form>
+  {% endif %}
+  <a class="button button-secondary" href="{{ url_for('training.list_plans') }}">{{ 'Volver a mi programa' if blocker else 'Cancelar' }}</a>
+</section>
+{% endblock %}

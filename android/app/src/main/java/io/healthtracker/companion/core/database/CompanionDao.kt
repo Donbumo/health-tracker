@@ -976,6 +976,48 @@ interface CompanionDao {
     @Query("DELETE FROM mobile_plans WHERE accountScope=:scope")
     suspend fun deletePlansForAccount(scope: String)
 
+    @Query("DELETE FROM mobile_plans WHERE accountScope=:scope AND publicId=:planId")
+    suspend fun deletePlanCache(scope: String, planId: String)
+
+    @Query("SELECT * FROM pending_actions WHERE accountScope=:scope AND actionType LIKE 'planning_%' AND (entityId=:planId OR entityId IN (SELECT publicId FROM mobile_plan_workouts WHERE accountScope=:scope AND planPublicId=:planId) OR entityId IN (SELECT id FROM planned_workouts WHERE accountScope=:scope AND planId=:planId))")
+    suspend fun planPendingActions(scope: String, planId: String): List<PendingActionEntity>
+
+    @Transaction
+    suspend fun applyPlanDeletion(scope: String, planId: String, revision: Int, changedAt: String) {
+        val local = plan(scope, planId) ?: return
+        val pending = planPendingActions(scope, planId)
+        val protected = local.syncStatus in setOf("pending", "conflict") || pending.isNotEmpty() ||
+            planWorkouts(scope, planId).any { it.syncStatus in setOf("pending", "conflict") }
+        if (protected) {
+            // Keep offline prescriptions and queued payloads until an explicit choice.
+            upsertPlans(listOf(local.copy(syncStatus = "conflict")))
+            pending.forEach { updatePending(it.localId, "conflict", "remote_deleted", 0) }
+            upsertPlanningConflict(PlanningConflictEntity(
+                scope, planId, "plan", local.revision, revision, "remote_deleted",
+                local.name, "Rutina eliminada", changedAt,
+            ))
+        } else {
+            deletePlanCache(scope, planId)
+            deletePlanningConflict(scope, planId)
+        }
+    }
+
+    @Transaction
+    suspend fun acceptPlanDeletion(scope: String, planId: String) {
+        planPendingActions(scope, planId).forEach {
+            // Agenda snapshots, session drafts and completed history are retained.
+            deletePending(it.localId)
+            if (it.actionType == "planning_schedule") {
+                planned(scope, it.entityId)?.let { row ->
+                    upsertPlanned(listOf(row.copy(status = "cancelled")))
+                }
+            }
+            deletePlanningConflict(scope, it.entityId)
+        }
+        deletePlanCache(scope, planId)
+        deletePlanningConflict(scope, planId)
+    }
+
     @Query("DELETE FROM planning_conflicts WHERE accountScope=:scope")
     suspend fun deletePlanningConflictsForAccount(scope: String)
 

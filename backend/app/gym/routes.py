@@ -176,6 +176,28 @@ def archive(public_id):
     return redirect(url_for("training.list_plans"))
 
 
+@gym_bp.route("/programs/<public_id>/delete", methods=["GET", "POST"])
+@login_required
+def delete(public_id):
+    from app.services.gym_delete import delete_program, deletion_blocker
+    if request.method == "GET":
+        plan = owned_plan(current_user.id, public_id)
+        return render_template("gym/delete.html", plan=plan, blocker=deletion_blocker(plan))
+    try:
+        revision = int(request.form.get("base_revision", ""))
+    except (ValueError, TypeError):
+        raise GymError("Revisión inválida.", 400)
+    try:
+        deleted = delete_program(current_user.id, public_id, base_revision=revision,
+                                 confirmation=request.form.get("confirmation"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+    flash("Rutina eliminada." if deleted else "La rutina ya estaba eliminada.", "success")
+    return redirect(url_for("training.list_plans"), code=303)
+
+
 @gym_bp.post("/programs/<public_id>/start")
 @login_required
 def start(public_id):

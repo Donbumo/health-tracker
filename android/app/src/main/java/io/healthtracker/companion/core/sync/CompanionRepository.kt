@@ -1006,6 +1006,10 @@ class CompanionRepository(
 
     suspend fun resolvePlanningConflictKeepRemote(scope: String, entityId: String) {
         val conflict = dao.planningConflict(scope, entityId)
+        if (conflict?.changedFields == "remote_deleted") {
+            dao.acceptPlanDeletion(scope, entityId)
+            return
+        }
         if (conflict?.entityType == "schedule" || conflict?.entityType == "package") {
             val remote = try {
                 api.plannedWorkout(entityId)
@@ -2658,6 +2662,9 @@ class CompanionRepository(
     private suspend fun applyChange(scope: String, change: SyncChangeDto) {
         if (change.operation == "delete") {
             if (change.entityType == "planned_workout") dao.deletePlanned(scope, change.entityId)
+            if (change.entityType == "training_plan") {
+                dao.applyPlanDeletion(scope, change.entityId, change.revision, change.changedAt)
+            }
             return
         }
         val payload = change.payload ?: return

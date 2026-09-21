@@ -57,6 +57,8 @@ def import_training_plan_file(
 ) -> tuple[TrainingPlan, bool]:
     existing = _existing_plan(source_file.id, user_id)
     if existing:
+        if existing.deleted_at is not None:
+            raise TrainingPlanImportError("La rutina de este archivo fue eliminada. Importa una nueva copia con identidad nueva.")
         return existing, True
 
     document = load_training_plan_document(source_file, user_id)

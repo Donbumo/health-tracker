@@ -96,3 +96,32 @@ def test_mariadb_rollback_restores_cascaded_children(maria, monkeypatch):
         assert db.session.query(TrainingPlanVersion).filter_by(user_id=owner).count() == 1
         assert db.session.query(TrainingPlanWorkout).filter_by(user_id=owner).count() == 3
         assert db.session.query(SyncChange).filter_by(user_id=owner, operation='delete').count() == 0
+
+
+def test_mariadb_historical_removal_rollback_and_replay(maria, monkeypatch):
+    from app.services.gym_sessions import complete_set, finish_session
+    from app.services.exporters.training_session import build_completed_workout_document
+    application, (owner, public_id, revision, version_id) = maria
+    with application.app_context():
+        row = start_session(owner, public_id, version_id, 1, 1, str(uuid.uuid4()))
+        complete_set(owner, row.public_id, 1, 1, {'load':'42.5','unit':'kg','reps':'7','rir':'2'})
+        finish_session(owner, row.public_id, 'completed')
+        db.session.commit()
+        snapshot = build_completed_workout_document(row, owner)
+        with monkeypatch.context() as patch:
+            def fail(**kwargs):
+                raise RuntimeError('fictional historical rollback gate')
+            patch.setattr('app.services.gym_delete.record_sync_change', fail)
+            with pytest.raises(RuntimeError):
+                delete_program(owner, public_id, base_revision=revision, confirmation='ELIMINAR')
+            db.session.rollback()
+        plan = db.session.query(TrainingPlan).filter_by(user_id=owner).one()
+        assert plan.deleted_at is None
+        assert db.session.query(TrainingPlanWorkout).filter_by(user_id=owner).count() == 3
+        for expected in (True, False):
+            assert delete_program(owner, public_id, base_revision=revision, confirmation='ELIMINAR') is expected
+            db.session.commit()
+        assert build_completed_workout_document(row, owner) == snapshot
+        assert plan.deleted_at is not None
+        assert db.session.query(TrainingPlanWorkout).filter_by(user_id=owner).count() == 0
+        assert db.session.query(SyncChange).filter_by(user_id=owner, operation='delete').count() == 1

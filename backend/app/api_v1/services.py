@@ -57,7 +57,7 @@ def active_routine(user_id: int) -> dict | None:
                 TrainingPlanVersion.version_number == TrainingPlan.active_version_number,
             ),
         )
-        .where(TrainingPlan.user_id == user_id, TrainingPlan.status == "active")
+        .where(TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == user_id, TrainingPlan.status == "active")
         .order_by(TrainingPlan.gym_active.desc(), TrainingPlan.updated_at.desc(), TrainingPlan.id.desc())
         .limit(1)
     ).scalar_one_or_none()

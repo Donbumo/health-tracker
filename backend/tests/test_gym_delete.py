@@ -78,13 +78,22 @@ def test_every_session_preserved_including_soft_deleted(app, user, status):
         session.deleted_at = datetime.now(timezone.utc)
     db.session.commit()
     identifiers = session.id, session.training_plan_id, session.training_plan_version_id
-    with pytest.raises(GymError) as error:
-        remove(user, plan.public_id, plan.revision)
-    assert error.value.status == 409
-    db.session.rollback()
+    if status == 'in_progress':
+        with pytest.raises(GymError) as error:
+            remove(user, plan.public_id, plan.revision)
+        assert error.value.status == 409
+        db.session.rollback()
+    else:
+        public_id, revision = plan.public_id, plan.revision
+        assert remove(user, public_id, revision)
+        db.session.commit()
+        assert plan.deleted_at is not None and not plan.gym_active
+        assert not remove(user, public_id, revision)
+        db.session.commit()
+        assert db.session.query(TrainingPlanWorkout).count() == 0
     assert db.session.query(TrainingSet).filter_by(user_id=user).count() == 1
     assert (session.id, session.training_plan_id, session.training_plan_version_id) == identifiers
-    assert db.session.query(SyncChange).filter_by(operation='delete').count() == 0
+    assert db.session.query(SyncChange).filter_by(operation='delete').count() == int(status != 'in_progress')
     if status != 'deleted':
         assert read_session(user, session.public_id)['session_id'] == session.public_id
 
@@ -98,11 +107,20 @@ def test_agenda_references_preserved(app, user, status):
     if status == 'deleted':
         row.deleted_at = datetime.now(timezone.utc)
     db.session.commit()
-    with pytest.raises(GymError) as error:
-        remove(user, plan.public_id, plan.revision)
-    assert error.value.status == 409
-    db.session.rollback()
+    if status in ('planned', 'in_progress'):
+        with pytest.raises(GymError) as error:
+            remove(user, plan.public_id, plan.revision)
+        assert error.value.status == 409
+        db.session.rollback()
+    else:
+        assert remove(user, plan.public_id, plan.revision)
+        db.session.commit()
+        assert plan.deleted_at is not None
     assert db.session.query(PlannedWorkout).filter_by(id=row.id).count() == 1
+    if status == 'skipped':
+        from app.services.mobile_sync import MobileSyncError
+        with pytest.raises(MobileSyncError):
+            PlannedWorkoutService.transition(row, 'planned', base_revision=row.revision, device_id=None)
 
 
 def test_draft_version_only_reference_and_foreign_owner_guard(app, user):
@@ -217,3 +235,91 @@ def test_mobile_tombstone_and_no_resurrection(app, client, user):
     source_id = fresh.get_json()['data']['public_id']
     assert client.post(f'/api/v1/mobile/plans/{source_id}/duplicate', json={'public_id':public_id},
                        headers=_headers(token, 'duplicate-deleted-qa')).status_code == 409
+
+
+def test_removed_history_is_immutable_and_absent_from_all_planning(app, client, user):
+    from app.services.exporters.training_session import build_completed_workout_document
+    from app.services.workout_sessions import list_planned_days, resolve_planned_day, TrainingSessionError
+    from app.services.mobile_planning import list_plans, patch_plan
+    from app.services.mobile_sync import MobileSyncError
+    plan = program(user)
+    row = start(user, plan)
+    complete_set(user, row.public_id, 1, 1, {'load':'42.5','unit':'kg','reps':'7','rir':'2'})
+    finish_session(user, row.public_id, 'completed')
+    db.session.commit()
+    snapshot = build_completed_workout_document(row, user)
+    public_id, revision, plan_id = plan.public_id, plan.revision, plan.id
+    key = f'{row.training_plan_version_id}:0:0'
+    assert remove(user, public_id, revision)
+    db.session.commit()
+    assert build_completed_workout_document(row, user) == snapshot
+    assert list_planned_days(user) == [] and list_plans(user_id=user) == []
+    assert read_program(user)['status'] == 'no_active_program'
+    assert read_session(user, row.public_id)['session_id'] == row.public_id
+    with pytest.raises(TrainingSessionError):
+        resolve_planned_day(key, user)
+    with pytest.raises(MobileSyncError):
+        patch_plan(user_id=user, public_id=public_id, payload={'base_revision':revision+1, 'status':'active'}, device_id=None)
+    login(client)
+    assert public_id not in client.get('/training-plans').text
+    from app.planned.routes import _options
+    assert _options(user) == []
+    for route in (f'/training-plans/{plan_id}', f'/gym/programs/{public_id}/edit', f'/gym/programs/{public_id}/delete'):
+        assert client.get(route).status_code == 404
+    for route in ('/dashboard', '/ai', '/training-sessions', f'/training-sessions/{row.id}'):
+        assert client.get(route).status_code == 200
+    assert snapshot == build_completed_workout_document(row, user)
+
+
+def test_deleted_history_survives_account_restore_without_resurrection(app, user):
+    from app.services.exporters.user_data import build_user_data_document
+    from tests.test_account_restore import _restore_payload_to_user
+    plan = program(user)
+    row = start(user, plan)
+    complete_set(user, row.public_id, 1, 1, {'load':'42','unit':'kg','reps':'7','rir':'2'})
+    finish_session(user, row.public_id, 'completed')
+    db.session.commit()
+    remove(user, plan.public_id, plan.revision)
+    db.session.commit()
+    payload = build_user_data_document(db.session.get(User, user), user)
+    target = User(username='restore-deleted-qa', role='user')
+    target.set_password('fictional-only')
+    db.session.add(target)
+    db.session.commit()
+    _restore_payload_to_user(payload, target.id)
+    restored = db.session.query(TrainingPlan).filter_by(user_id=target.id).one()
+    assert restored.deleted_at is not None and not restored.gym_active
+    assert db.session.query(TrainingSession).filter_by(user_id=target.id).count() == 1
+    assert db.session.query(TrainingSet).filter_by(user_id=target.id).one().weight_kg == 42
+
+
+def test_deleted_history_portable_roundtrip_and_mobile_tombstone(app, client, user):
+    from tests.test_data_portability import _export, _package, _inspect, _second_user, _headers
+    plan = program(user)
+    row = start(user, plan)
+    complete_set(user, row.public_id, 1, 1, {'load':'42','unit':'kg','reps':'7','rir':'2'})
+    finish_session(user, row.public_id, 'completed')
+    db.session.commit()
+    token = _api_login(client)['access_token']
+    cursor = client.get('/api/v1/sync/bootstrap', headers=_auth(token)).get_json()['data']['cursor']
+    public_id = plan.public_id
+    remove(user, public_id, plan.revision)
+    db.session.commit()
+    changes = client.get(f'/api/v1/sync/pull?cursor={cursor}&entity_types=training_plan', headers=_auth(token)).get_json()['data']['changes']
+    assert changes[-1]['operation'] == 'delete' and changes[-1]['payload'] is None
+    assert client.get(f'/api/v1/mobile/plans/{public_id}', headers=_auth(token)).status_code == 404
+    sections = ['plans','sessions','session_exercises','sets']
+    exported = _export(client, token, key='deleted-history', sections=sections)
+    assert exported.status_code == 201
+    content = _package(client, token, exported.get_json()['data']['export_id'])
+    target, target_token = _second_user(app, client)
+    preview = _inspect(client, target_token, content, sections=sections)
+    assert preview.status_code == 201
+    job = preview.get_json()['data']
+    response = client.post(f"/api/v1/mobile/portability/imports/{job['import_id']}/apply",
+        json={'confirmed':True,'plan_revision':1,'decisions':[]}, headers=_headers(target_token,'deleted-restore'))
+    assert response.status_code == 200, response.get_json()
+    restored = db.session.query(TrainingPlan).filter_by(user_id=target).one()
+    assert restored.deleted_at is not None and not restored.gym_active
+    assert db.session.query(TrainingSession).filter_by(user_id=target).count() == 1
+    assert db.session.query(TrainingSet).filter_by(user_id=target).one().weight_kg == 42

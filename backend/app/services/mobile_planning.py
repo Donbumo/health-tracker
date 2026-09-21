@@ -94,7 +94,7 @@ def _owned_plan(user_id: int, public_id: str, *, lock: bool = False) -> Training
     public_id = _uuid(public_id, "El ID de rutina")
     statement = (
         db.select(TrainingPlan)
-        .where(TrainingPlan.user_id == user_id, TrainingPlan.public_id == public_id)
+        .where(TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == user_id, TrainingPlan.public_id == public_id)
         .options(selectinload(TrainingPlan.workouts))
     )
     if lock:
@@ -486,7 +486,7 @@ def _record_plan(plan: TrainingPlan, device_id: int | None) -> None:
 def list_plans(user_id: int, status: str | None = "active") -> list[dict]:
     statement = (
         db.select(TrainingPlan)
-        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == user_id)
         .options(selectinload(TrainingPlan.workouts))
         .order_by(TrainingPlan.updated_at.desc(), TrainingPlan.public_id)
     )

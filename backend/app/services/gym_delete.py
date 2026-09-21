@@ -1,14 +1,11 @@
-"""Physical deletion only when no session, agenda or draft can be cascaded away.
-
-Caller commits deletion and the existing sync tombstone together. Historical
-programs remain intact and can be archived instead. No files are removed.
-"""
+"""Remove planning without deleting historical facts. Caller owns transaction."""
+from datetime import datetime, timezone
 from sqlalchemy import or_
 
 from app.extensions import db
 from app.models import (
     PlannedWorkout, SyncChange, TrainingPlan, TrainingPlanVersion,
-    TrainingSession, WorkoutSessionDraft,
+    TrainingSession, WorkoutSessionDraft, TrainingPlanWorkout,
 )
 from app.services.gym_programs import GymError, lock_user
 from app.services.mobile_sync import record_sync_change
@@ -24,10 +21,8 @@ def deletion_blocker(plan, *, lock=False):
          'Esta rutina tiene una sesión en curso y no se puede eliminar.'),
         (PlannedWorkout, PlannedWorkout.status == 'in_progress',
          'Hay un entrenamiento de agenda en curso.'),
-        (TrainingSession, None,
-         'Esta rutina tiene historial. No se puede eliminar sin perder sus referencias; puedes archivarla.'),
-        (PlannedWorkout, None,
-         'Esta rutina tiene entrenamientos vinculados en la agenda. Se conservan sus referencias; puedes archivarla.'),
+        (PlannedWorkout, PlannedWorkout.status.in_(('planned', 'in_progress')) & PlannedWorkout.deleted_at.is_(None),
+         'Esta rutina tiene entrenamientos pendientes en la agenda. Resuélvelos antes de eliminarla.'),
         (WorkoutSessionDraft, None,
          'Esta rutina tiene un borrador de sesión guardado. Resuélvelo antes de eliminarla.'),
     ]
@@ -51,7 +46,7 @@ def delete_program(user_id, public_id, *, base_revision, confirmation):
     plan = db.session.execute(db.select(TrainingPlan).where(
         TrainingPlan.user_id == user_id, TrainingPlan.public_id == public_id,
     ).with_for_update().execution_options(populate_existing=True)).scalar_one_or_none()
-    if plan is None:
+    if plan is None or plan.deleted_at is not None:
         prior = db.session.execute(db.select(SyncChange.sequence).where(
             SyncChange.user_id == user_id, SyncChange.entity_type == 'training_plan',
             SyncChange.entity_public_id == public_id, SyncChange.operation == 'delete',
@@ -65,6 +60,12 @@ def delete_program(user_id, public_id, *, base_revision, confirmation):
     reason = deletion_blocker(plan, lock=True)
     if reason:
         raise GymError(reason, 409)
+    # Any cross-owner child is an integrity problem, not permission to cascade.
+    for model in (TrainingPlanVersion, TrainingPlanWorkout, TrainingSession, PlannedWorkout, WorkoutSessionDraft):
+        if db.session.execute(db.select(model.id).where(
+            model.training_plan_id == plan.id, model.user_id != user_id,
+        ).limit(1).with_for_update()).first():
+            raise GymError('La rutina tiene referencias que deben conservarse.', 409)
     # Defensive integrity check: even inconsistent foreign-owner references must
     # not cascade. Query existence only; never expose another owner's data.
     versions = db.select(TrainingPlanVersion.id).where(TrainingPlanVersion.training_plan_id == plan.id)
@@ -75,7 +76,20 @@ def delete_program(user_id, public_id, *, base_revision, confirmation):
         TrainingPlan.id == plan.id, TrainingPlan.user_id == user_id, *guards,
     ).execution_options(synchronize_session='fetch'))
     if result.rowcount != 1:
-        raise GymError('La rutina tiene referencias que deben conservarse.', 409)
+        # Historical sessions/closed agenda keep their immutable versions and FKs.
+        # Never change status to archived: deleted is not an editable archive.
+        # Recheck foreign version-only references before retaining the anchor.
+        for model in (TrainingSession, PlannedWorkout, WorkoutSessionDraft):
+            if db.session.execute(db.select(model.id).where(
+                model.training_plan_version_id.in_(versions), model.user_id != user_id,
+            ).limit(1)).first():
+                raise GymError('La rutina tiene referencias que deben conservarse.', 409)
+        plan.deleted_at = datetime.now(timezone.utc)
+        plan.gym_active = False
+        plan.revision = base_revision + 1
+        db.session.execute(db.delete(TrainingPlanWorkout).where(
+            TrainingPlanWorkout.training_plan_id == plan.id, TrainingPlanWorkout.user_id == user_id,
+        ))
     record_sync_change(user_id=user_id, entity_type='training_plan',
                        entity_public_id=public_id, operation='delete',
                        revision=base_revision + 1, payload=None, device_id=None)

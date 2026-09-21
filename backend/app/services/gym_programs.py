@@ -35,7 +35,7 @@ def lock_user(user_id):
 
 
 def owned_plan(user_id, public_id, lock=False):
-    query = db.select(TrainingPlan).where(TrainingPlan.user_id == user_id, TrainingPlan.public_id == public_id)
+    query = db.select(TrainingPlan).where(TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == user_id, TrainingPlan.public_id == public_id)
     if lock:
         query = query.with_for_update().execution_options(populate_existing=True)
     plan = db.session.execute(query).scalar_one_or_none()
@@ -178,7 +178,7 @@ def publish_program_document(document, user_id, *, plan_id=None, base_revision=N
     digest = hashlib.sha256(serialize_training_plan(document)).hexdigest()
     plan = owned_plan(user_id, plan_id, lock=True) if plan_id else None
     if plan is None:
-        duplicates = db.session.execute(db.select(TrainingPlanVersion).join(TrainingPlan).where(TrainingPlanVersion.user_id == user_id, TrainingPlan.user_id == user_id, TrainingPlanVersion.sha256 == digest)).scalars().all()
+        duplicates = db.session.execute(db.select(TrainingPlanVersion).join(TrainingPlan).where(TrainingPlanVersion.user_id == user_id, TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == user_id, TrainingPlanVersion.sha256 == digest)).scalars().all()
         if duplicates:
             return duplicates[0].training_plan, True
         plan = TrainingPlan(user_id=user_id, name=document["data"]["name"])
@@ -202,7 +202,7 @@ def publish_program_document(document, user_id, *, plan_id=None, base_revision=N
     plan.description = document["data"].get("description")
     plan.revision += 1
     replace_mobile_workouts_from_document(plan, document, user_id)
-    if not db.session.execute(db.select(TrainingPlan.id).where(TrainingPlan.user_id == user_id, TrainingPlan.gym_active.is_(True))).first():
+    if not db.session.execute(db.select(TrainingPlan.id).where(TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == user_id, TrainingPlan.gym_active.is_(True))).first():
         plan.gym_active = True
     db.session.flush()
     db.session.expire(plan, ["workouts", "versions"])
@@ -214,7 +214,7 @@ def publish_program_document(document, user_id, *, plan_id=None, base_revision=N
 def activate_program(user_id, public_id):
     lock_user(user_id)
     plan = owned_plan(user_id, public_id, lock=True)
-    db.session.execute(db.update(TrainingPlan).where(TrainingPlan.user_id == user_id).values(gym_active=False))
+    db.session.execute(db.update(TrainingPlan).where(TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == user_id).values(gym_active=False))
     plan.gym_active = True
     plan.status = "active"
     return plan

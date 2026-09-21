@@ -213,7 +213,7 @@ def create_goal(user_id: int, payload: dict) -> UserGoal:
         raise MobileSyncError("conflict", "El identificador ya existe.", 409)
     if values.get("related_public_id"):
         plan = db.session.execute(db.select(TrainingPlan.id).where(
-            TrainingPlan.user_id == user_id, TrainingPlan.public_id == values["related_public_id"]
+            TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == user_id, TrainingPlan.public_id == values["related_public_id"]
         )).scalar_one_or_none()
         if plan is None:
             raise MobileSyncError("not_found", "Rutina no encontrada.", 404)

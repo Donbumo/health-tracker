@@ -23,7 +23,7 @@ def read_program(user_id, public_id=None, week=None, day=None):
     if public_id:
         plan = owned_plan(user_id, public_id)
     else:
-        plan = db.session.execute(db.select(TrainingPlan).where(TrainingPlan.user_id == user_id, TrainingPlan.gym_active.is_(True))).scalar_one_or_none()
+        plan = db.session.execute(db.select(TrainingPlan).where(TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == user_id, TrainingPlan.gym_active.is_(True))).scalar_one_or_none()
     if plan is None:
         return {"status": "no_active_program", "days": []}
     version = get_active_version(plan, user_id)

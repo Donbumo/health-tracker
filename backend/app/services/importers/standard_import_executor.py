@@ -617,7 +617,7 @@ class StandardImportExecutor:
             name = document["data"]["name"].strip()
             return db.session.execute(
                 db.select(TrainingPlan).where(
-                    TrainingPlan.user_id == user_id,
+                    TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == user_id,
                     TrainingPlan.name == name,
                 )
             ).scalar_one_or_none()
@@ -936,7 +936,7 @@ class StandardImportExecutor:
         content_sha256 = hashlib.sha256(serialize_training_plan(document)).hexdigest()
         if existing_id:
             plan = db.session.get(TrainingPlan, existing_id)
-            if plan is None or plan.user_id != user_id:
+            if plan is None or plan.user_id != user_id or plan.deleted_at is not None:
                 raise StandardImportError("Training plan target does not belong to this user")
             latest = max((version.version_number for version in plan.versions), default=0)
             version_number = latest + 1 if operation == "update" else 1

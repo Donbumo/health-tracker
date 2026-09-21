@@ -46,7 +46,7 @@ def bounded_request():
 
 
 def program_home():
-    plans = db.session.execute(db.select(TrainingPlan).where(TrainingPlan.user_id == current_user.id).options(selectinload(TrainingPlan.versions)).order_by(TrainingPlan.gym_active.desc(), TrainingPlan.updated_at.desc())).scalars().all()
+    plans = db.session.execute(db.select(TrainingPlan).where(TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == current_user.id).options(selectinload(TrainingPlan.versions)).order_by(TrainingPlan.gym_active.desc(), TrainingPlan.updated_at.desc())).scalars().all()
     ongoing = db.session.execute(db.select(TrainingSession).where(TrainingSession.user_id == current_user.id, TrainingSession.status == "in_progress", TrainingSession.deleted_at.is_(None)).order_by(TrainingSession.started_at.desc())).scalars().all()
     last_rows = db.session.execute(db.select(TrainingSession.training_plan_version_id, TrainingSession.planned_week_number, TrainingSession.planned_day_number, db.func.max(TrainingSession.performed_at)).where(TrainingSession.user_id == current_user.id, TrainingSession.status == "completed", TrainingSession.deleted_at.is_(None)).group_by(TrainingSession.training_plan_version_id, TrainingSession.planned_week_number, TrainingSession.planned_day_number)).all()
     local_zone = ZoneInfo(current_user.timezone or "UTC")

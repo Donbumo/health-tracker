@@ -408,7 +408,7 @@ def test_companion_web_summary_and_prepare_are_owner_only_and_csrf_post(app, cli
     assert _negotiate(client, headers).status_code == 201
     planned = _planned(client, headers, plan_id, version_id)
     client.post("/login", data={"username": "test-user", "password": "test-password"})
-    listing = client.get("/planned-workouts")
+    listing = client.get("/planned-workouts?date_from=2026-08-01&date_to=2026-08-31")
     assert listing.status_code == 200
     assert b"prepare-delivery" in listing.data
     assert b"Preparar para este dispositivo" in listing.data

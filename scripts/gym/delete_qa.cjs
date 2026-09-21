@@ -16,7 +16,7 @@ const fs = require('node:fs'), path = require('node:path'), os = require('node:o
     await page.locator('[name=password]').fill('fictional-gym-qa-password');
     await page.locator('[type=submit]').first().click();
     await page.waitForURL(u => !u.pathname.includes('login'));
-    for (const [name, blocked] of [['QA historial','historial'], ['QA en curso','en curso'], ['QA sin uso',null]]) {
+    for (const [name, blocked] of [['QA historial',null], ['QA en curso','en curso'], ['QA sin uso',null]]) {
       await page.goto(base + '/training-plans');
       const card = page.locator('[data-program]').filter({has:page.getByRole('heading',{name,exact:true})});
       await card.getByText('Gestionar mi programa', {exact:false}).click();
@@ -49,13 +49,27 @@ const fs = require('node:fs'), path = require('node:path'), os = require('node:o
     await page.waitForURL('**/training-plans');
     assert.equal(await page.getByRole('heading',{name:'QA sin uso',exact:true}).count(),0);
     assert.equal(await page.getByRole('heading',{name:'QA historial',exact:true}).count(),1);
+    const historyCard = page.locator('[data-program]').filter({has:page.getByRole('heading',{name:'QA historial',exact:true})});
+    await historyCard.getByText('Gestionar mi programa',{exact:false}).click();
+    await historyCard.getByRole('link',{name:'Eliminar rutina',exact:true}).click();
+    await page.locator('#delete-confirmation').fill('ELIMINAR');
+    await page.getByRole('button',{name:'Eliminar rutina definitivamente'}).click();
+    await page.waitForURL('**/training-plans');
+    assert.equal(await page.getByRole('heading',{name:'QA historial',exact:true}).count(),0);
+    const gate = await (await context.request.get(base+'/__qa/delete-gate')).json();
+    assert.equal(gate.unused_removed,true);
+    assert.equal(gate.unused_versions,0);
+    assert.equal(gate.unused_workouts,0);
+    for(const field of ['historical_removed','historical_intact','ai_history_intact','references_valid']) assert.equal(gate[field],true,field);
+    assert.equal((await page.goto(base+gate.history_path)).status(),200);
+    await page.getByText('QA historial',{exact:false}).first().waitFor();
     for(const route of ['/dashboard','/ai','/training-sessions']) {
       const response = await page.goto(base + route);
       assert.equal(response.status(),200);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),false);
     }
     assert.deepEqual(errors,[]);
-    fs.writeFileSync(path.join(output,'report.json'),JSON.stringify({passed:true,fictionalData:true,measures,errors},null,2));
-    console.log(JSON.stringify({passed:true,responsive:measures.length,output}));
+    fs.writeFileSync(path.join(output,'report.json'),JSON.stringify({passed:true,fictionalData:true,gate,measures,errors},null,2));
+    console.log(JSON.stringify({passed:true,responsive:measures.length,gate,output}));
   } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});

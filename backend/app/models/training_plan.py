@@ -35,6 +35,8 @@ class TrainingPlan(db.Model):
     )
     revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")
     archived_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    # Irreversible removal from planning; retained only to anchor historical FKs.
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
     active_version_number = db.Column(
         db.Integer,
         nullable=False,

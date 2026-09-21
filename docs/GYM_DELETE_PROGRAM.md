@@ -1,116 +1,69 @@
-# Eliminar rutina
+# Eliminar rutina — gate final
 
-Rama `feature/gym-delete-program`, basada en master
-`ff8d02a77fec4477a29aaf8c5210f287ba83b400`. Sin merge ni despliegue NAS.
+Rama `feature/gym-delete-program`, base master `ff8d02a77fec4477a29aaf8c5210f287ba83b400`.
+Este gate sustituye la limitación del commit `886c9d8`: **tener historial ya no bloquea eliminar una rutina**. Sin merge ni NAS.
 
-## Comportamiento
+## Semántica definitiva
 
-En **Mi entrenamiento → Gestionar mi programa → Eliminar rutina**, independiente
-de **Archivar**, se abre una confirmación con el nombre y las consecuencias.
-El usuario debe escribir `ELIMINAR`. Visitar o cancelar esa página no escribe datos.
+**Mi entrenamiento → Gestionar mi programa → Eliminar rutina** es independiente de Archivar. Muestra nombre, consecuencias y confirmación exacta `ELIMINAR`. GET y Cancelar no escriben. La acción es irreversible desde la app.
 
-El borrado físico elimina la rutina, sus versiones y sus días editables solamente
-si no tiene ninguna sesión, entrada de agenda ni borrador guardado. Se aplica tanto
-a rutinas activas como archivadas. No selecciona automáticamente otra rutina activa.
+| Situación | Resultado |
+| --- | --- |
+| Nunca utilizada, sin referencias | Borrado físico de rutina, versiones y días editables |
+| Sesiones completadas/abandonadas, incluso marcadas como eliminadas | Desaparece de Mis rutinas; identidad histórica y revisiones conservadas con `deleted_at`; días editables retirados |
+| Sesión en curso | HTTP 409, sin modificaciones |
+| Agenda pendiente `planned` no eliminada, o `in_progress` | HTTP 409; resolverla explícitamente primero |
+| Agenda completada, omitida, cancelada o eliminada | No bloquea; snapshots y referencias intactos. Una entrada omitida no puede reactivarse contra una rutina eliminada |
+| Borrador guardado, incluso caducado o enlazado solo a versión | HTTP 409; nunca se elimina automáticamente |
 
-Se bloquean explícitamente las sesiones en curso. También bloquean el borrado las
-sesiones completadas, abandonadas o marcadas como eliminadas; la agenda cancelada,
-omitida o eliminada; y los borradores caducados. Es deliberadamente conservador:
-finalizar una sesión no habilita el borrado, porque deja historial. En ese caso se
-puede archivar. No se purgan referencias ni registros históricos para desbloquearlo.
+No es otro archivado: no cambia `status` a `archived`, no aparece en listas activas ni archivadas, no puede editarse, activarse, programarse ni iniciar sesiones; enlaces operativos responden 404. No se elige otra rutina activa automáticamente. Sus registros internos solo sostienen el historial y las exportaciones.
 
-No se eliminan ejercicios personales, aliases, archivos importados, auditorías,
-series realizadas ni históricos. No es un borrado de cuenta o de datos personales.
+Sesiones, ejercicios realizados, series, pesos, repeticiones y fechas permanecen intactos. Se conservan catálogo personal, aliases, archivos fuente y auditorías. En el caso sin uso no quedan versiones/días de planificación; permanecen auditorías y el aviso de eliminación necesarios para sincronización e idempotencia.
 
-## Auditoría de relaciones
+## Relaciones y migración
 
-| Referencia | FK actual | Tratamiento |
-| --- | --- | --- |
-| `training_plan_versions.training_plan_id` | CASCADE | Eliminar solo versiones sin referencias protegidas |
-| `training_plan_workouts.training_plan_id` | CASCADE | Eliminar prescripciones editables |
-| `training_sessions.training_plan_id` / `training_plan_version_id` | CASCADE, no nulas | Bloquear; la cascada destruiría también ejercicios y series realizados |
-| `planned_workouts.training_plan_id` / `training_plan_version_id` | CASCADE, no nulas | Bloquear en todos los estados |
-| `workout_session_drafts.training_plan_id` / `training_plan_version_id` | CASCADE; la segunda no nula | Bloquear incluso referencias solo a una versión |
-| `training_plan_versions.source_file_id` | SET NULL al borrar archivo | Borrar una versión no elimina su archivo fuente |
-| `sync_changes.entity_public_id` | Sin FK a rutina | Conservar aviso de eliminación e idempotencia |
+| Relación existente | Política |
+| --- | --- |
+| Plan → versiones / días editables | CASCADE; borrado físico solo sin referencias protegidas |
+| Sesión → plan / versión | CASCADE, no nulas; conservar el plan histórico evita esas cascadas |
+| Agenda → plan / versión | CASCADE, no nulas; referencias y snapshots conservados |
+| Borrador → plan / versión | CASCADE; versión no nullable; cualquier borrador bloquea |
+| Versión → archivo fuente | SET NULL al borrar archivo; borrar versión no borra archivo |
+| `SyncChange.entity_public_id` | Sin FK al plan; conserva tombstone y reintentos |
 
-No cambian modelos, contratos JSON, constraints ni heads. **No hay migración**, ni
-en MariaDB ni en Room. El head continúa siendo `20260913_0040`.
+Migración aditiva **`20260920_0041`**, desde `20260913_0040`: añade únicamente `training_plans.deleted_at` nullable. No modifica FK ni copia sesiones a tablas nuevas. Los registros existentes siguen con valor nulo. El downgrade se permite sin rutinas eliminadas retenidas; si existen, se rechaza antes de modificar la tabla para impedir su resurrección silenciosa.
 
-## Seguridad y concurrencia
+El estado de eliminación se conserva en registros abiertos del export de cuenta/backup ZIP y paquetes portables mediante el campo opcional `deleted_at`. Los backups anteriores siguen admitidos. Los round-trips nuevos preservan historial y eliminación. No cambia el schema de entrenamiento ni la forma de las respuestas Mobile Planning/Sync.
 
-GET/POST autenticados y owner-only; un ID ajeno responde 404. POST requiere CSRF,
-confirmación exacta y revisión vigente. El servidor toma el usuario de la sesión.
-Una revisión obsoleta responde 409 y exige revisar nuevamente la operación.
+## Seguridad y transacción
 
-El servicio bloquea usuario y rutina en el orden del inicio/importación Gym,
-comprueba referencias con lecturas bloqueantes y ejecuta un DELETE condicionado a
-que no existan referencias protegidas, incluso si pertenecieran por inconsistencia
-a otro propietario. No expone el contenido de esas referencias. Las FK de InnoDB
-protegen también inserciones concurrentes. El caller confirma borrado y aviso de
-Mobile Sync en una transacción; cualquier fallo revierte también las cascadas.
+Usuario efectivo de sesión/Bearer, IDs ajenos 404, POST con CSRF, confirmación y revisión vigente. Una revisión obsoleta devuelve 409. Locks usuario → plan, lecturas bloqueantes y guardas de referencias evitan perder datos en carreras. Referencias inconsistentes de otro propietario bloquean sin exponerlas.
 
-El aviso `training_plan/delete` usa la revisión anterior + 1 y payload nulo en el
-contrato existente. Un reintento del mismo propietario y revisión devuelve éxito
-sin volver a borrar ni duplicar el aviso. Otro ID o propietario devuelve 404.
-Crear o duplicar desde móvil con un UUID ya eliminado del mismo propietario devuelve
-409. No se introduce una política de purga de estos avisos.
+Borrado físico o marca histórica, retirada de prescripciones editables y tombstone se confirman en una transacción. Un fallo revierte todo. Tombstone `training_plan/delete`, revisión anterior + 1, payload nulo. Repetir la misma confirmación devuelve éxito sin duplicar efectos. Crear/duplicar con UUID eliminado del mismo usuario se rechaza; una copia nueva usa identidad nueva.
 
-## Móvil y AI
+## Android
 
-Android antes ignoraba `training_plan/delete`. Ahora lo aplica al caché de
-prescripciones dentro de transacciones Room con `accountScope`. Las sesiones,
-paquetes, borradores e historial locales no se eliminan con ese caché.
+Esta corrección histórica no añade campos a Mobile Planning/Sync ni cambia Room. Usa el mismo tombstone del commit anterior. El código Android incluido en la rama retira caché sincronizado de prescripciones y conserva sesiones, paquetes, borradores e historial. Ante trabajo pendiente, conserva copia y muestra conflicto para duplicarla o aceptar el borrado; no reintenta el ID eliminado.
 
-Si hay edición o acciones de planificación pendientes, mantiene la copia local y
-los payloads, muestra conflicto y detiene esos envíos. El usuario puede duplicar la
-copia con un ID nuevo o aceptar el borrado con **Usar servidor**. Esta última acción
-descarta las operaciones de planificación vinculadas; las programaciones locales
-todavía no enviadas quedan canceladas, conservando su snapshot. No ofrece reintentar
-contra el mismo ID eliminado. Requiere una app compilada con este cambio: APKs
-anteriores pueden seguir mostrando una rutina borrada en su caché.
+La prueba `CompanionDatabaseTest#deletedPlanRemovesOnlySyncedPrescriptionCacheAndPreservesOfflineConflict` se **ejecutó y pasó** en `GymDeleteQA`, AVD separado API 36. Cubre aislamiento, eliminación de caché, idempotencia, historial y conflictos. No queda pendiente esa prueba Room. No equivale a validar todos los dispositivos físicos. APKs anteriores que ignoraban tombstones requieren la actualización ya incluida en esta rama. No se instaló nada en un teléfono real ni se usó el AVD habitual.
 
-Las lecturas de programa usadas por las capacidades AI pasan al estado sin programa
-activo cuando corresponde; el historial bloqueado sigue siendo legible. No se añade
-ninguna acción AI de eliminación ni se invoca un proveedor externo durante QA.
+## Evidencia y pruebas
 
-## Validación reproducible
+- UI Playwright a 390 × 844 y 36 combinaciones responsive/tema sobre MariaDB 11.4 desechable, tmpfs y fixtures ficticias.
+- Caso A: borrado desde UI; plan ausente, cero versiones y días exclusivos.
+- Caso B: borrado desde UI; desaparece del listado; documento completo de sesión idéntico antes/después; detalle histórico HTTP 200; FK válidas; consulta histórica AI preservada; Dashboard y página AI HTTP 200. Sin proveedor AI externo.
+- MariaDB: concurrencia DELETE/DELETE y DELETE/inicio; rollback físico e histórico; replay y tombstone único. Upgrade y `db check` sin diferencias al nuevo head.
+- Focales de seguridad, agenda, borradores, historial, rutas operativas, Mobile Sync, backup/restore y portabilidad con aislamiento.
+- Regresión transversal por cambio de modelo. Una prueba de agenda usaba fecha fija fuera del rango por defecto: se hizo explícito agosto de 2026 en el test, sin cambiar producto.
+- `compileall`, `git diff --check` y Compose con variables ficticias. Sin leer `.env`, tocar contenedores persistentes ni datos reales.
 
-Solo fixtures ficticias. MariaDB 11.4 en contenedor exclusivo, puerto loopback y
-`tmpfs`, separado del stack local persistente. Nunca se usa `.env` ni producción.
+Scripts: `scripts/gym/delete_qa_app.py` (con `GYM_QA_MARIADB` solo admite loopback:33079 y esquema QA permitido) y `scripts/gym/delete_qa.cjs`. Capturas y JSON en el temporal indicado. `__qa/delete-gate` solo existe en el servidor QA de loopback, nunca en la app productiva.
 
-- `backend/tests/test_gym_delete.py`: cascadas limitadas, originales conservados,
-  sesiones y agenda en todos los estados, borrador sin plan directo, referencia
-  inconsistente de otro propietario, ownership HTTP/servicio, CSRF, revisión,
-  rollback, idempotencia, Dashboard/AI/historial y tombstone móvil sin resurrección.
-- `backend/tests/test_gym_delete_mariadb.py`: carreras DELETE/DELETE y DELETE/inicio,
-  FK reales y rollback de cascadas. Opt-in `GYM_QA_MARIADB`, restringido al esquema
-  ficticio `gym_training_2_qa_20260913`, previamente migrado en un contenedor aislado.
-- `scripts/gym/delete_qa_app.py` y `scripts/gym/delete_qa.cjs`: servidor desechable
-  `127.0.0.1:8013`, datos temporales, cancelación, confirmación inválida/válida,
-  bloqueo por historial/en curso, Dashboard/AI/historial y 36 combinaciones
-  360/390/430/768/1024/1366 × dark/light × tres estados. Evidencias en el directorio
-  temporal indicado por el script, nunca datos personales en Git.
-- Android: lint, JVM, APK debug y compilación de instrumentación. La prueba Room
-  añadida cubre aislamiento, cascada del caché, reintento, preservación de historial
-  y conflicto offline. **Compilarla no equivale a ejecutarla**: queda pendiente en
-  un AVD separado; no se ejecuta `connectedDebugAndroidTest` sobre el dispositivo
-  habitual conforme a `ANDROID_TESTING.md`.
+### Resultado final (2026-09-20)
 
-La publicación de esta rama no constituye aprobación de merge ni despliegue.
-
-### Resultado del gate local
-
-- Focal backend final: **17 PASS**. Focal integrado Gym/Mobile previo: **61 PASS,
-  1 omitido** (el caso adicional de ownership HTTP se añadió después).
-- Suite backend: **1053 PASS, 19 omitidos**, una advertencia de fixture ZIP duplicada.
-  El focal final valida también los cambios de prueba posteriores a esa ejecución.
-- MariaDB: **4 PASS** (tres nuevos y gate Gym existente); upgrade desde vacío,
-  `db current` = `20260913_0040 (head)`, `db check` sin operaciones nuevas.
-- HTTP/Playwright: **36 PASS**, cancelación y eliminación reales sobre fixtures;
-  Dashboard, AI e historial HTTP 200; cero errores de consola y sin overflow.
-- Android: **172 JVM PASS**, segunda ejecución forzada **172 PASS**, `lintDebug`,
-  `assembleDebug` y `compileDebugAndroidTestKotlin` PASS. Instrumentación Room
-  compilada, **no ejecutada**; QA de dispositivo pendiente.
-- `compileall`, `git diff --check` y `docker compose config --quiet` PASS. Compose
-  se validó con un archivo temporal de variables ficticias, sin leer `.env`.
+- Backend completo: **1057 PASS, 20 omitidos**, advertencia conocida de fixture ZIP duplicada.
+- Focal historial/restore/Companion: **63 PASS, 1 omitido**; gate combinado MariaDB/eliminación/sync: **33 PASS, 1 omitido**, incluidos **5 casos MariaDB**.
+- UI MariaDB A/B y **36 combinaciones responsive PASS**, sin errores de consola ni overflow.
+- Android: **1 prueba Room instrumentada PASS**, cero fallos, AVD QA API 36 separado.
+- Migración: upgrade/downgrade/re-upgrade PASS en esquema vacío; rechazo de downgrade con referencias históricas PASS. Head `20260920_0041`, `db check` PASS.
+- Compilación Python, Compose y diff-check PASS. Contenedor y AVD QA retirados después del gate.

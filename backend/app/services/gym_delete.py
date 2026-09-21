@@ -8,34 +8,179 @@ from app.models import (
     TrainingSession, WorkoutSessionDraft, TrainingPlanWorkout,
 )
 from app.services.gym_programs import GymError, lock_user
-from app.services.mobile_sync import record_sync_change
+from app.services.mobile_sync import (
+    MobileSyncError,
+    PlannedWorkoutService,
+    record_sync_change,
+)
 
 
-def deletion_blocker(plan, *, lock=False):
-    versions = db.select(TrainingPlanVersion.id).where(
+PENDING_DISCARD_CONFIRMATION = "DESCARTAR"
+
+
+def _version_ids(plan):
+    return db.select(TrainingPlanVersion.id).where(
         TrainingPlanVersion.training_plan_id == plan.id,
         TrainingPlanVersion.user_id == plan.user_id,
     )
-    checks = [
-        (TrainingSession, TrainingSession.status == 'in_progress',
-         'Esta rutina tiene una sesión en curso y no se puede eliminar.'),
-        (PlannedWorkout, PlannedWorkout.status == 'in_progress',
-         'Hay un entrenamiento de agenda en curso.'),
-        (PlannedWorkout, PlannedWorkout.status.in_(('planned', 'in_progress')) & PlannedWorkout.deleted_at.is_(None),
-         'Esta rutina tiene entrenamientos pendientes en la agenda. Resuélvelos antes de eliminarla.'),
-        (WorkoutSessionDraft, None,
-         'Esta rutina tiene un borrador de sesión guardado. Resuélvelo antes de eliminarla.'),
-    ]
-    for model, condition, reason in checks:
-        statement = db.select(model.id).where(model.user_id == plan.user_id, or_(
-            model.training_plan_id == plan.id, model.training_plan_version_id.in_(versions),
-        )).limit(1)
-        if condition is not None:
-            statement = statement.where(condition)
+
+
+def pending_artifacts(plan, *, lock=False):
+    """Return owner-scoped artifacts that prevent routine deletion.
+
+    The result deliberately excludes completed/abandoned sessions and terminal
+    agenda rows.  Those records are historical facts or snapshots and remain
+    valid references after the plan is removed from planning.
+    """
+    versions = _version_ids(plan)
+    scope = lambda model: or_(
+        model.training_plan_id == plan.id,
+        model.training_plan_version_id.in_(versions),
+    )
+
+    def run(statement):
         if lock:
             statement = statement.with_for_update()
-        if db.session.execute(statement).first():
-            return reason
+        return db.session.execute(statement).scalars().all()
+
+    sessions = run(
+        db.select(TrainingSession)
+        .where(
+            TrainingSession.user_id == plan.user_id,
+            scope(TrainingSession),
+            TrainingSession.status == "in_progress",
+            TrainingSession.deleted_at.is_(None),
+        )
+        .order_by(TrainingSession.started_at.desc(), TrainingSession.id.desc())
+    )
+    planned = run(
+        db.select(PlannedWorkout)
+        .where(
+            PlannedWorkout.user_id == plan.user_id,
+            scope(PlannedWorkout),
+            PlannedWorkout.status.in_(("planned", "in_progress")),
+            PlannedWorkout.deleted_at.is_(None),
+        )
+        .order_by(PlannedWorkout.scheduled_for_date, PlannedWorkout.id)
+    )
+    drafts = run(
+        db.select(WorkoutSessionDraft)
+        .where(
+            WorkoutSessionDraft.user_id == plan.user_id,
+            scope(WorkoutSessionDraft),
+        )
+        .order_by(WorkoutSessionDraft.updated_at.desc(), WorkoutSessionDraft.id.desc())
+    )
+    return {"sessions": sessions, "planned": planned, "drafts": drafts}
+
+
+def _require_discard_confirmation(confirmation):
+    if confirmation != PENDING_DISCARD_CONFIRMATION:
+        raise GymError(
+            "Escribe DESCARTAR para confirmar la eliminación de este pendiente.",
+            400,
+        )
+
+
+def _locked_plan(user_id, public_id):
+    plan = db.session.execute(
+        db.select(TrainingPlan)
+        .where(
+            TrainingPlan.user_id == user_id,
+            TrainingPlan.public_id == public_id,
+            TrainingPlan.deleted_at.is_(None),
+        )
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    ).scalar_one_or_none()
+    if plan is None:
+        raise GymError("Rutina no encontrada.", 404)
+    return plan
+
+
+def discard_pending_session(user_id, plan_public_id, session_public_id, *, confirmation):
+    """Discard one in-progress session and its unfinalized sets."""
+    _require_discard_confirmation(confirmation)
+    lock_user(user_id)
+    plan = _locked_plan(user_id, plan_public_id)
+    session = db.session.execute(
+        db.select(TrainingSession)
+        .where(
+            TrainingSession.user_id == user_id,
+            TrainingSession.public_id == session_public_id,
+            TrainingSession.training_plan_id == plan.id,
+            TrainingSession.deleted_at.is_(None),
+            TrainingSession.status == "in_progress",
+        )
+        .with_for_update()
+    ).scalar_one_or_none()
+    if session is None:
+        raise GymError("Sesión pendiente no encontrada.", 404)
+    db.session.delete(session)
+    db.session.flush()
+    return True
+
+
+def discard_pending_draft(user_id, plan_public_id, draft_public_id, *, confirmation):
+    _require_discard_confirmation(confirmation)
+    lock_user(user_id)
+    plan = _locked_plan(user_id, plan_public_id)
+    versions = _version_ids(plan)
+    draft = db.session.execute(
+        db.select(WorkoutSessionDraft)
+        .where(
+            WorkoutSessionDraft.user_id == user_id,
+            WorkoutSessionDraft.public_id == draft_public_id,
+            or_(
+                WorkoutSessionDraft.training_plan_id == plan.id,
+                WorkoutSessionDraft.training_plan_version_id.in_(versions),
+            ),
+        )
+        .with_for_update()
+    ).scalar_one_or_none()
+    if draft is None:
+        raise GymError("Borrador pendiente no encontrado.", 404)
+    db.session.delete(draft)
+    db.session.flush()
+    return True
+
+
+def discard_pending_planned(user_id, plan_public_id, planned_public_id, *, confirmation):
+    _require_discard_confirmation(confirmation)
+    lock_user(user_id)
+    plan = _locked_plan(user_id, plan_public_id)
+    planned = db.session.execute(
+        db.select(PlannedWorkout)
+        .where(
+            PlannedWorkout.user_id == user_id,
+            PlannedWorkout.public_id == planned_public_id,
+            PlannedWorkout.training_plan_id == plan.id,
+            PlannedWorkout.deleted_at.is_(None),
+            PlannedWorkout.status.in_(("planned", "in_progress")),
+        )
+        .with_for_update()
+    ).scalar_one_or_none()
+    if planned is None:
+        raise GymError("Entrada de agenda pendiente no encontrada.", 404)
+    try:
+        PlannedWorkoutService.tombstone(
+            planned, base_revision=planned.revision, device_id=None
+        )
+    except MobileSyncError as error:
+        raise GymError(str(error), error.status) from error
+    return True
+
+
+def deletion_blocker(plan, *, lock=False):
+    pending = pending_artifacts(plan, lock=lock)
+    if pending["sessions"]:
+        return "Esta rutina tiene una sesión pendiente. Revísala y descártala o ciérrala antes de eliminarla."
+    if any(item.status == "in_progress" for item in pending["planned"]):
+        return "Hay un entrenamiento de agenda en curso. Resuélvelo antes de eliminar la rutina."
+    if pending["planned"]:
+        return "Esta rutina tiene entrenamientos pendientes en la agenda. Resuélvelos antes de eliminarla."
+    if pending["drafts"]:
+        return "Esta rutina tiene borradores de sesión guardados. Revísalos y descártalos antes de eliminarla."
     return None
 
 

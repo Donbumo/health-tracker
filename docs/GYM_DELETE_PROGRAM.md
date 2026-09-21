@@ -11,14 +11,18 @@ Este gate sustituye la limitación del commit `886c9d8`: **tener historial ya no
 | --- | --- |
 | Nunca utilizada, sin referencias | Borrado físico de rutina, versiones y días editables |
 | Sesiones completadas/abandonadas, incluso marcadas como eliminadas | Desaparece de Mis rutinas; identidad histórica y revisiones conservadas con `deleted_at`; días editables retirados |
-| Sesión en curso | HTTP 409, sin modificaciones |
-| Agenda pendiente `planned` no eliminada, o `in_progress` | HTTP 409; resolverla explícitamente primero |
+| Sesión en curso | HTTP 409 hasta revisarla en `Pendientes`; se puede descartar individualmente con confirmación explícita |
+| Agenda pendiente `planned` no eliminada, o `in_progress` | HTTP 409 hasta descartarla individualmente; el tombstone queda para sincronización |
 | Agenda completada, omitida, cancelada o eliminada | No bloquea; snapshots y referencias intactos. Una entrada omitida no puede reactivarse contra una rutina eliminada |
-| Borrador guardado, incluso caducado o enlazado solo a versión | HTTP 409; nunca se elimina automáticamente |
+| Borrador guardado, incluso caducado o enlazado solo a versión | HTTP 409 hasta descartarlo individualmente; nunca se elimina automáticamente |
 
 No es otro archivado: no cambia `status` a `archived`, no aparece en listas activas ni archivadas, no puede editarse, activarse, programarse ni iniciar sesiones; enlaces operativos responden 404. No se elige otra rutina activa automáticamente. Sus registros internos solo sostienen el historial y las exportaciones.
 
 Sesiones, ejercicios realizados, series, pesos, repeticiones y fechas permanecen intactos. Se conservan catálogo personal, aliases, archivos fuente y auditorías. En el caso sin uso no quedan versiones/días de planificación; permanecen auditorías y el aviso de eliminación necesarios para sincronización e idempotencia.
+
+## Pendientes antes de eliminar
+
+Si la rutina tiene una sesión `in_progress`, una agenda `planned`/`in_progress` o un borrador servidor, la pantalla de eliminación enlaza a **Revisar pendientes**. Cada fila se resuelve por separado mediante POST con CSRF y exige escribir `DESCARTAR`. La sesión pendiente se elimina junto con su actividad parcial y series; la agenda se tombstonea como cancelada; el borrador se elimina. Las sesiones completadas o abandonadas no se muestran ni se descartan desde este flujo. Tras resolver todos los pendientes, la confirmación `ELIMINAR` sigue siendo necesaria para quitar la rutina.
 
 ## Relaciones y migración
 

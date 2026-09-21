@@ -4,16 +4,25 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Barrier
 import uuid
+from datetime import date, datetime, timezone
 
 import pytest
 from sqlalchemy.engine import make_url
 
 from app import create_app
 from app.extensions import db
-from app.models import TrainingPlan, TrainingPlanVersion, TrainingPlanWorkout, TrainingSession, SyncChange, User
-from app.services.gym_delete import delete_program
+from app.models import (TrainingPlan, TrainingPlanVersion, TrainingPlanWorkout,
+                        TrainingSession, SyncChange, User, PlannedWorkout,
+                        WorkoutSessionDraft, TrainingSet)
+from app.services.gym_delete import (
+    delete_program,
+    discard_pending_draft,
+    discard_pending_planned,
+    discard_pending_session,
+)
 from app.services.gym_programs import GymError
 from app.services.gym_sessions import start_session
+from app.services.mobile_sync import PlannedWorkoutService
 from app.services.training_plans import get_active_version
 from tests.test_gym_training import program
 
@@ -23,7 +32,11 @@ def maria(tmp_path):
     uri = os.environ.get('GYM_QA_MARIADB')
     if not uri:
         pytest.skip('Explicit isolated MariaDB QA schema required')
-    assert make_url(uri).database == 'gym_training_2_qa_20260913'
+    qa_url = make_url(uri)
+    assert qa_url.database == 'gym_training_2_qa_20260913'
+    expected_host = os.environ.get('GYM_QA_MARIADB_EXPECTED_HOST', '127.0.0.1')
+    expected_port = int(os.environ.get('GYM_QA_MARIADB_EXPECTED_PORT', '33079'))
+    assert qa_url.host == expected_host and qa_url.port == expected_port
     application = create_app({'TESTING':True, 'SECRET_KEY':'fictional-delete-mariadb-qa-secret',
         'SQLALCHEMY_DATABASE_URI':uri, 'DATA_ROOT':tmp_path,
         'UPLOAD_ROOT':tmp_path/'uploads/raw', 'GENERATED_UPLOAD_ROOT':tmp_path/'uploads/generated',
@@ -125,3 +138,53 @@ def test_mariadb_historical_removal_rollback_and_replay(maria, monkeypatch):
         assert plan.deleted_at is not None
         assert db.session.query(TrainingPlanWorkout).filter_by(user_id=owner).count() == 0
         assert db.session.query(SyncChange).filter_by(user_id=owner, operation='delete').count() == 1
+
+
+def test_mariadb_pending_artifacts_are_resolved_individually(maria):
+    from app.services.gym_sessions import complete_set
+
+    application, (owner, public_id, revision, version_id) = maria
+    with application.app_context():
+        plan = db.session.query(TrainingPlan).filter_by(public_id=public_id).one()
+        draft = WorkoutSessionDraft(
+            user_id=owner,
+            training_plan_id=plan.id,
+            training_plan_version_id=plan.versions[0].id,
+            client_submission_id=str(uuid.uuid4()),
+            payload_json={"fictional": "mariadb pending draft"},
+            payload_hash="0" * 64,
+            expires_at=datetime.now(timezone.utc),
+        )
+        db.session.add(draft)
+        session = start_session(owner, public_id, version_id, 1, 1, str(uuid.uuid4()))
+        complete_set(owner, session.public_id, 1, 1,
+                    {"load": "35", "unit": "kg", "reps": "8", "rir": "2"})
+        agenda = PlannedWorkoutService.schedule_from_plan_version(
+            user_id=owner,
+            plan_public_id=public_id,
+            version_public_id=None,
+            scheduled_for_date=date(2026, 9, 18),
+            timezone_name="UTC",
+            week_number=1,
+            day_number=1,
+        )
+        db.session.commit()
+        with pytest.raises(GymError, match="sesi\u00f3n pendiente"):
+            delete_program(owner, public_id, base_revision=revision, confirmation="ELIMINAR")
+        db.session.rollback()
+
+        with pytest.raises(GymError, match="DESCARTAR"):
+            discard_pending_session(owner, public_id, session.public_id, confirmation="NO")
+        db.session.rollback()
+        discard_pending_draft(owner, public_id, draft.public_id, confirmation="DESCARTAR")
+        db.session.commit()
+        discard_pending_session(owner, public_id, session.public_id, confirmation="DESCARTAR")
+        db.session.commit()
+        discard_pending_planned(owner, public_id, agenda.public_id, confirmation="DESCARTAR")
+        db.session.commit()
+        assert db.session.query(TrainingSet).count() == 0
+        assert db.session.query(WorkoutSessionDraft).count() == 0
+        assert db.session.query(PlannedWorkout).filter_by(deleted_at=None).count() == 0
+        assert delete_program(owner, public_id, base_revision=revision, confirmation="ELIMINAR")
+        db.session.commit()
+        assert db.session.query(TrainingPlan).filter_by(public_id=public_id).one().deleted_at is not None

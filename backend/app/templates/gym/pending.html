@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Pendientes de {{ plan.name }} · Health Tracker{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div>
+    <p class="eyebrow">Eliminar rutina</p>
+    <h1>Pendientes de {{ plan.name }}</h1>
+    <p>Revisa cada elemento antes de quitar la rutina. Las sesiones completadas no aparecen aquí y permanecen en tu historial.</p>
+  </div>
+</section>
+
+{% if pending.sessions or pending.planned or pending.drafts %}
+  <section class="card" aria-labelledby="pending-session-title">
+    <h2 id="pending-session-title">Sesiones en curso</h2>
+    {% if pending.sessions %}
+      <p>Descartar una sesión elimina su actividad parcial y sus series. Escribe <strong>DESCARTAR</strong> para confirmar cada acción.</p>
+      {% for item in pending.sessions %}
+        <article class="pending-item">
+          <div>
+            <h3>Sesión del {{ item.performed_at.strftime('%d/%m/%Y') }}</h3>
+            <p class="help">Iniciada {{ item.started_at.strftime('%d/%m/%Y %H:%M') if item.started_at else 'sin hora' }} · estado en curso</p>
+          </div>
+          <form method="post" action="{{ url_for('gym.discard_pending', public_id=plan.public_id, kind='session', artifact_id=item.public_id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label for="discard-session-{{ item.public_id }}">Escribe DESCARTAR</label>
+            <input id="discard-session-{{ item.public_id }}" name="confirmation" required pattern="DESCARTAR" autocomplete="off" maxlength="9">
+            <button class="button button-danger" type="submit">Descartar sesión y series</button>
+          </form>
+        </article>
+      {% endfor %}
+    {% else %}<p>No hay sesiones en curso.</p>{% endif %}
+  </section>
+
+  <section class="card" aria-labelledby="pending-planned-title">
+    <h2 id="pending-planned-title">Agenda pendiente</h2>
+    {% if pending.planned %}
+      <p>Descartar una entrada la marca como eliminada de la agenda y conserva el tombstone necesario para sincronización.</p>
+      {% for item in pending.planned %}
+        <article class="pending-item">
+          <div>
+            <h3>{{ item.title_snapshot }}</h3>
+            <p class="help">{{ item.scheduled_for_date }} · {{ 'En curso' if item.status == 'in_progress' else 'Planificado' }}</p>
+          </div>
+          <form method="post" action="{{ url_for('gym.discard_pending', public_id=plan.public_id, kind='planned', artifact_id=item.public_id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label for="discard-planned-{{ item.public_id }}">Escribe DESCARTAR</label>
+            <input id="discard-planned-{{ item.public_id }}" name="confirmation" required pattern="DESCARTAR" autocomplete="off" maxlength="9">
+            <button class="button button-danger" type="submit">Descartar agenda</button>
+          </form>
+        </article>
+      {% endfor %}
+    {% else %}<p>No hay agendas pendientes.</p>{% endif %}
+  </section>
+
+  <section class="card" aria-labelledby="pending-draft-title">
+    <h2 id="pending-draft-title">Borradores de sesión</h2>
+    {% if pending.drafts %}
+      <p>Un borrador todavía no es un entrenamiento realizado. Descártalo solo si ya no necesitas recuperar sus campos.</p>
+      {% for item in pending.drafts %}
+        <article class="pending-item">
+          <div>
+            <h3>Borrador guardado</h3>
+            <p class="help">Actualizado {{ item.updated_at.strftime('%d/%m/%Y %H:%M') }} · revisión {{ item.revision }}</p>
+          </div>
+          <form method="post" action="{{ url_for('gym.discard_pending', public_id=plan.public_id, kind='draft', artifact_id=item.public_id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label for="discard-draft-{{ item.public_id }}">Escribe DESCARTAR</label>
+            <input id="discard-draft-{{ item.public_id }}" name="confirmation" required pattern="DESCARTAR" autocomplete="off" maxlength="9">
+            <button class="button button-danger" type="submit">Descartar borrador</button>
+          </form>
+        </article>
+      {% endfor %}
+    {% else %}<p>No hay borradores pendientes.</p>{% endif %}
+  </section>
+{% else %}
+  <section class="card">
+    <h2>No quedan pendientes</h2>
+    <p>Ahora puedes volver a la confirmación y eliminar la rutina. El historial completado se conservará.</p>
+  </section>
+{% endif %}
+
+<nav class="page-actions">
+  <a class="button" href="{{ url_for('gym.delete', public_id=plan.public_id) }}">Volver a eliminar rutina</a>
+  <a class="button button-secondary" href="{{ url_for('training.list_plans') }}">Volver a Mi entrenamiento</a>
+</nav>
+{% endblock %}

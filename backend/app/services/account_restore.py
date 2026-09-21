@@ -521,6 +521,11 @@ class AccountRestoreService:
     ) -> dict[str, Any]:
         document = deepcopy(item)
         if section == "training_plans":
+            if document.get("deleted_at") is not None:
+                try:
+                    datetime.fromisoformat(document["deleted_at"].replace("Z", "+00:00"))
+                except (ValueError, TypeError, AttributeError) as error:
+                    raise AccountRestoreError("Invalid training plan deletion timestamp") from error
             return document
         if section == "exercise_load_profiles":
             from app.services.workout_loads import SUPPORTED_MODES, calculate_workout_load
@@ -666,12 +671,20 @@ class AccountRestoreService:
             query = query.where(MedicalLabReport.laboratory_name.is_(None) if lab is None else MedicalLabReport.laboratory_name == lab)
             return db.session.execute(query).scalar_one_or_none()
         if section == "training_plans":
-            return db.session.execute(
+            candidates = db.session.execute(
                 db.select(TrainingPlan).where(
                     TrainingPlan.user_id == user_id,
                     TrainingPlan.name == item["name"].strip(),
+                    TrainingPlan.deleted_at.is_not(None) if item.get("deleted_at") else TrainingPlan.deleted_at.is_(None),
                 )
-            ).scalar_one_or_none()
+            ).scalars().all()
+            if item.get("deleted_at"):
+                # Multiple removed routines may share a name after re-import.
+                hashes = {_training_version_sha(v["document"], user_id) for v in item.get("versions", [])}
+                return next((p for p in candidates if hashes == {v.sha256 for v in p.versions}), None)
+            if len(candidates) > 1:
+                raise AccountRestoreError("Ambiguous training plan name")
+            return candidates[0] if candidates else None
         if section == "training_sessions":
             data = item["data"]
             if data.get("client_submission_id"):
@@ -1085,7 +1098,7 @@ class AccountRestoreService:
             )
             db.session.add(plan)
             db.session.flush()
-        if item.get("gym_active") is True:
+        if item.get("gym_active") is True and not item.get("deleted_at"):
             from app.services.gym_programs import activate_program
             activate_program(user_id, plan.public_id)
         version_map: dict[int, int] = {}
@@ -1124,10 +1137,15 @@ class AccountRestoreService:
                 plan.name = document["data"]["name"].strip()
                 if "description" in document["data"]:
                     plan.description = _optional_text(document["data"].get("description"))
-        if active_document is not None:
+        if active_document is not None and not item.get("deleted_at"):
             from app.services.training_plans import replace_mobile_workouts_from_document
 
             replace_mobile_workouts_from_document(plan, active_document, user_id)
+        if item.get("deleted_at"):
+            plan.deleted_at = datetime.fromisoformat(item["deleted_at"].replace("Z", "+00:00"))
+            plan.gym_active = False
+            from app.models import TrainingPlanWorkout
+            db.session.execute(db.delete(TrainingPlanWorkout).where(TrainingPlanWorkout.training_plan_id == plan.id, TrainingPlanWorkout.user_id == user_id))
         return plan, version_map
 
     def _extend_existing_training_maps(

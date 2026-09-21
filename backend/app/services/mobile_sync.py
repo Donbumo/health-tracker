@@ -80,7 +80,7 @@ def validate_timezone(value: str) -> str:
 def _owned_plan(user_id: int, public_id: str) -> TrainingPlan:
     plan = db.session.execute(
         db.select(TrainingPlan).where(
-            TrainingPlan.user_id == user_id, TrainingPlan.public_id == public_id
+            TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == user_id, TrainingPlan.public_id == public_id
         )
     ).scalar_one_or_none()
     if plan is None:
@@ -326,6 +326,8 @@ class PlannedWorkoutService:
         PlannedWorkoutService._check_revision(record, base_revision)
         if record.status in {"completed", "cancelled"}:
             raise MobileSyncError("invalid_transition", "El estado ya es final.", 409)
+        if record.training_plan.deleted_at is not None:
+            raise MobileSyncError("not_found", "La rutina fue eliminada.", 404)
         validate_timezone(timezone_name)
         record.scheduled_for_date = scheduled_for_date
         record.timezone = timezone_name
@@ -348,6 +350,8 @@ class PlannedWorkoutService:
             "completed": set(),
             "cancelled": set(),
         }
+        if status in {"planned", "in_progress"} and record.training_plan.deleted_at is not None:
+            raise MobileSyncError("not_found", "La rutina fue eliminada.", 404)
         if status not in allowed.get(record.status, set()):
             raise MobileSyncError("invalid_transition", "Transición de estado no válida.", 409)
         record.status = status

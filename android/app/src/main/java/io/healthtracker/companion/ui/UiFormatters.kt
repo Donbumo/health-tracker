@@ -83,6 +83,7 @@ internal fun humanWorkoutStatus(status: String): String = when (status) {
 }
 
 internal fun humanPlanningConflict(value: String): String = when (value.substringBefore(':')) {
+    "remote_deleted" -> "La rutina se eliminó en el servidor. Tu copia local está conservada: puedes duplicarla o aceptar la eliminación con Usar servidor."
     "revision_conflict", "revision", "remote_revision" -> "La revisión cambió en el servidor"
     "archived_remote" -> "La rutina fue archivada en el servidor"
     "deleted_or_unavailable" -> "El recurso ya no está disponible"

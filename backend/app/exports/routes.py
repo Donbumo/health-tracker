@@ -121,7 +121,7 @@ def _resource_or_404(domain: str, source_id: int):
     resource = db.session.execute(
         db.select(model).where(model.id == source_id, model.user_id == current_user.id)
     ).scalar_one_or_none()
-    if resource is None:
+    if resource is None or (isinstance(resource, TrainingPlan) and resource.deleted_at is not None):
         abort(404)
     return resource
 

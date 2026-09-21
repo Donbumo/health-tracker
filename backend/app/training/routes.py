@@ -45,7 +45,7 @@ def _user_plan_or_404(plan_id: int) -> TrainingPlan:
     plan = db.session.execute(
         db.select(TrainingPlan).where(
             TrainingPlan.id == plan_id,
-            TrainingPlan.user_id == current_user.id,
+            TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == current_user.id,
         )
     ).scalar_one_or_none()
     if plan is None:
@@ -84,7 +84,7 @@ def create_plan():
         name = form.name.data.strip()
         existing = db.session.execute(
             db.select(TrainingPlan).where(
-                TrainingPlan.user_id == current_user.id,
+                TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == current_user.id,
                 TrainingPlan.name == name,
             )
         ).scalar_one_or_none()
@@ -111,7 +111,7 @@ def create_plan():
                 if result["committed"]:
                     plan = db.session.execute(
                         db.select(TrainingPlan).where(
-                            TrainingPlan.user_id == current_user.id,
+                            TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == current_user.id,
                             TrainingPlan.name == name,
                         )
                     ).scalar_one()
@@ -132,7 +132,7 @@ def duplicate_plan(plan_id: int):
     name = form.name.data.strip()
     if db.session.execute(
         db.select(TrainingPlan.id).where(
-            TrainingPlan.user_id == current_user.id,
+            TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == current_user.id,
             TrainingPlan.name == name,
         )
     ).scalar_one_or_none() is not None:
@@ -164,7 +164,7 @@ def duplicate_plan(plan_id: int):
         return redirect(url_for("training.detail", plan_id=plan.id))
     duplicate = db.session.execute(
         db.select(TrainingPlan).where(
-            TrainingPlan.user_id == current_user.id,
+            TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == current_user.id,
             TrainingPlan.name == name,
         )
     ).scalar_one()

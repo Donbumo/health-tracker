@@ -104,6 +104,7 @@ def _training_plan_document(plan: TrainingPlan, user_id: int) -> dict[str, Any]:
         "description": plan.description,
         "active_version_number": plan.active_version_number,
         "gym_active": plan.gym_active,
+        "deleted_at": _iso(plan.deleted_at),
         "created_at": _iso(plan.created_at),
         "updated_at": _iso(plan.updated_at),
         "versions": versions,

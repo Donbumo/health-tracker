@@ -387,6 +387,7 @@ def _serialize_records(
         output["plans"] = [_record("plans", row.public_id, {
             "name": row.name, "description": row.description, "status": row.status, "gym_active": row.gym_active,
             "active_version_number": row.active_version_number, "archived_at": row.archived_at,
+            "deleted_at": row.deleted_at,
             "versions": [{
                 "public_id": version.public_id, "version_number": version.version_number,
                 "schema_version": version.schema_version, "content": version.content,

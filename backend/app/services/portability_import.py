@@ -970,9 +970,9 @@ def _apply_record(job, section, record, strategy, maps, created_paths):
         row = TrainingPlan(public_id=destination, user_id=user_id, name=str(data["name"])[:200],
             description=data.get("description"), status=data.get("status", "active"),
             active_version_number=max(1, int(data.get("active_version_number", 1))),
-            archived_at=_datetime(data.get("archived_at")), revision=max(1, int(record.get("revision", 1))))
+            deleted_at=_datetime(data.get("deleted_at")), archived_at=_datetime(data.get("archived_at")), revision=max(1, int(record.get("revision", 1))))
         db.session.add(row); db.session.flush(); _add_mapping(job, section, source_id, destination, collision, maps)
-        if data.get("gym_active") is True:
+        if data.get("gym_active") is True and row.deleted_at is None:
             from app.services.gym_programs import activate_program
             activate_program(user_id, row.public_id)
         for version in data.get("versions", []):

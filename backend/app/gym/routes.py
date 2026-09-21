@@ -46,7 +46,7 @@ def bounded_request():
 
 
 def program_home():
-    plans = db.session.execute(db.select(TrainingPlan).where(TrainingPlan.user_id == current_user.id).options(selectinload(TrainingPlan.versions)).order_by(TrainingPlan.gym_active.desc(), TrainingPlan.updated_at.desc())).scalars().all()
+    plans = db.session.execute(db.select(TrainingPlan).where(TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == current_user.id).options(selectinload(TrainingPlan.versions)).order_by(TrainingPlan.gym_active.desc(), TrainingPlan.updated_at.desc())).scalars().all()
     ongoing = db.session.execute(db.select(TrainingSession).where(TrainingSession.user_id == current_user.id, TrainingSession.status == "in_progress", TrainingSession.deleted_at.is_(None)).order_by(TrainingSession.started_at.desc())).scalars().all()
     last_rows = db.session.execute(db.select(TrainingSession.training_plan_version_id, TrainingSession.planned_week_number, TrainingSession.planned_day_number, db.func.max(TrainingSession.performed_at)).where(TrainingSession.user_id == current_user.id, TrainingSession.status == "completed", TrainingSession.deleted_at.is_(None)).group_by(TrainingSession.training_plan_version_id, TrainingSession.planned_week_number, TrainingSession.planned_day_number)).all()
     local_zone = ZoneInfo(current_user.timezone or "UTC")
@@ -174,6 +174,28 @@ def archive(public_id):
     plan.gym_active = False
     db.session.commit()
     return redirect(url_for("training.list_plans"))
+
+
+@gym_bp.route("/programs/<public_id>/delete", methods=["GET", "POST"])
+@login_required
+def delete(public_id):
+    from app.services.gym_delete import delete_program, deletion_blocker
+    if request.method == "GET":
+        plan = owned_plan(current_user.id, public_id)
+        return render_template("gym/delete.html", plan=plan, blocker=deletion_blocker(plan))
+    try:
+        revision = int(request.form.get("base_revision", ""))
+    except (ValueError, TypeError):
+        raise GymError("Revisión inválida.", 400)
+    try:
+        deleted = delete_program(current_user.id, public_id, base_revision=revision,
+                                 confirmation=request.form.get("confirmation"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+    flash("Rutina eliminada." if deleted else "La rutina ya estaba eliminada.", "success")
+    return redirect(url_for("training.list_plans"), code=303)
 
 
 @gym_bp.post("/programs/<public_id>/start")

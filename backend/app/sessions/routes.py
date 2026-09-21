@@ -232,7 +232,7 @@ def list_sessions():
     ).scalars().all()
     plans = db.session.execute(
         db.select(TrainingPlan)
-        .where(TrainingPlan.user_id == current_user.id)
+        .where(TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == current_user.id)
         .order_by(TrainingPlan.name)
     ).scalars().all()
     return render_template(

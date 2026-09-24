@@ -15,6 +15,7 @@ from app.services.gym_delete import (
     discard_pending_planned,
     discard_pending_session,
     pending_artifacts,
+    deletion_preview,
 )
 from app.services.mobile_sync import MobileSyncError
 from app.services.gym_sessions import complete_set, finish_session, owned_session, start_session, workout_context
@@ -186,17 +187,20 @@ def archive(public_id):
 @gym_bp.route("/programs/<public_id>/delete", methods=["GET", "POST"])
 @login_required
 def delete(public_id):
-    from app.services.gym_delete import delete_program, deletion_blocker
+    from app.services.gym_delete import delete_program
     if request.method == "GET":
         plan = owned_plan(current_user.id, public_id)
-        return render_template("gym/delete.html", plan=plan, blocker=deletion_blocker(plan), pending=pending_artifacts(plan))
+        return render_template("gym/delete.html", plan=plan, preview=deletion_preview(plan))
     try:
         revision = int(request.form.get("base_revision", ""))
     except (ValueError, TypeError):
         raise GymError("Revisión inválida.", 400)
     try:
         deleted = delete_program(current_user.id, public_id, base_revision=revision,
-                                 confirmation=request.form.get("confirmation"))
+                                 confirmation=request.form.get("confirmation"),
+                                 pending_token=request.form.get("pending_token"),
+                                 partial_action=request.form.get("partial_action"),
+                                 partial_confirmation=request.form.get("partial_confirmation"))
         db.session.commit()
     except Exception:
         db.session.rollback()

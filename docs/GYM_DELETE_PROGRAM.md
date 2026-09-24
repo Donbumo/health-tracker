@@ -11,18 +11,26 @@ Este gate sustituye la limitación del commit `886c9d8`: **tener historial ya no
 | --- | --- |
 | Nunca utilizada, sin referencias | Borrado físico de rutina, versiones y días editables |
 | Sesiones completadas/abandonadas, incluso marcadas como eliminadas | Desaparece de Mis rutinas; identidad histórica y revisiones conservadas con `deleted_at`; días editables retirados |
-| Sesión en curso | HTTP 409 hasta revisarla en `Pendientes`; se puede descartar individualmente con confirmación explícita |
-| Agenda pendiente `planned` no eliminada, o `in_progress` | HTTP 409 hasta descartarla individualmente; el tombstone queda para sincronización |
+| Sesión en curso | Se resuelve en la confirmación integral; con series exige conservar como incompleta o confirmar `DESCARTAR` |
+| Agenda pendiente `planned` no eliminada, o `in_progress` | Cancelada en la operación integral; el tombstone queda para sincronización |
 | Agenda completada, omitida, cancelada o eliminada | No bloquea; snapshots y referencias intactos. Una entrada omitida no puede reactivarse contra una rutina eliminada |
-| Borrador guardado, incluso caducado o enlazado solo a versión | HTTP 409 hasta descartarlo individualmente; nunca se elimina automáticamente |
+| Borrador guardado, incluso caducado o enlazado solo a versión | Incluido en el inventario confirmado de la operación integral |
 
 No es otro archivado: no cambia `status` a `archived`, no aparece en listas activas ni archivadas, no puede editarse, activarse, programarse ni iniciar sesiones; enlaces operativos responden 404. No se elige otra rutina activa automáticamente. Sus registros internos solo sostienen el historial y las exportaciones.
 
-Sesiones, ejercicios realizados, series, pesos, repeticiones y fechas permanecen intactos. Se conservan catálogo personal, aliases, archivos fuente y auditorías. En el caso sin uso no quedan versiones/días de planificación; permanecen auditorías y el aviso de eliminación necesarios para sincronización e idempotencia.
+Las sesiones finalizadas o abandonadas, sus ejercicios, series, pesos, repeticiones y fechas permanecen intactos. Se conservan catálogo personal, aliases, archivos fuente y auditorías. En el caso sin uso no quedan versiones/días de planificación; permanecen auditorías y el aviso de eliminación necesarios para sincronización e idempotencia.
 
-## Pendientes antes de eliminar
+## Eliminación integral y pendientes (gate final)
 
-Si la rutina tiene una sesión `in_progress`, una agenda `planned`/`in_progress` o un borrador servidor, la pantalla de eliminación enlaza a **Revisar pendientes**. Cada fila se resuelve por separado mediante POST con CSRF y exige escribir `DESCARTAR`. La sesión pendiente se elimina junto con su actividad parcial y series; la agenda se tombstonea como cancelada; el borrador se elimina. Las sesiones completadas o abandonadas no se muestran ni se descartan desde este flujo. Tras resolver todos los pendientes, la confirmación `ELIMINAR` sigue siendo necesaria para quitar la rutina.
+Desde **Mi entrenamiento → Gestionar mi programa → Eliminar rutina**, una única confirmación modal enumera borradores, sesiones sin series, agendas pendientes e historial protegido. Al escribir `ELIMINAR`, un solo POST con CSRF resuelve los pendientes y elimina la rutina dentro de una transacción. No se requiere limpieza manual.
+
+Cuando existen series parciales, el modal muestra su cantidad y permite cancelar, conservarlas como historial incompleto (`abandoned`) o descartarlas. Conservar es la opción inicial y mantiene ejercicios, series y referencias; descartar exige además escribir `DESCARTAR`. Las sesiones ya completadas o abandonadas nunca forman parte del descarte. La agenda se cancela con tombstone y evento de sincronización; una sesión incompleta conservada mantiene su FK a esa agenda.
+
+La confirmación firmada dura 30 minutos y está vinculada al usuario, rutina, revisión e inventario de pendientes/series. Si cambia el inventario o una revisión, se rechaza con 409 antes de borrar. Los bloqueos y el commit único protegen la operación; cualquier fallo revierte borradores, sesiones, agendas y rutina. Un reintento confirmado tras el éxito devuelve la misma salida sin duplicar tombstones.
+
+**Gestionar pendientes individualmente** sigue disponible como opción. Cada POST exige CSRF y `DESCARTAR`, y solo modifica el elemento del propietario y de esa rutina. Una agenda enlazada a una sesión todavía en curso exige resolver primero esa sesión en el flujo individual; el flujo integral se encarga del orden. Los clientes que llamen al servicio sin la nueva confirmación de inventario siguen recibiendo 409 ante pendientes: ningún contrato móvil obtiene autorización implícita para descartarlos.
+
+Pruebas reproducibles: `backend/tests/test_gym_delete_integral.py` comparte el gate por ruta real con `test_gym_delete_mariadb.py`; `scripts/gym/delete_pending_qa_app.py` y `delete_pending_qa.cjs` ejecutan el recorrido de navegador con fixtures ficticias. No hay cambios de modelos ni migraciones; el head sigue en `20260920_0041`.
 
 ## Relaciones y migración
 
@@ -31,7 +39,7 @@ Si la rutina tiene una sesión `in_progress`, una agenda `planned`/`in_progress`
 | Plan → versiones / días editables | CASCADE; borrado físico solo sin referencias protegidas |
 | Sesión → plan / versión | CASCADE, no nulas; conservar el plan histórico evita esas cascadas |
 | Agenda → plan / versión | CASCADE, no nulas; referencias y snapshots conservados |
-| Borrador → plan / versión | CASCADE; versión no nullable; cualquier borrador bloquea |
+| Borrador → plan / versión | CASCADE; versión no nullable; descarte dentro del inventario confirmado |
 | Versión → archivo fuente | SET NULL al borrar archivo; borrar versión no borra archivo |
 | `SyncChange.entity_public_id` | Sin FK al plan; conserva tombstone y reintentos |
 
@@ -71,3 +79,13 @@ Scripts: `scripts/gym/delete_qa_app.py` (con `GYM_QA_MARIADB` solo admite loopba
 - Android: **1 prueba Room instrumentada PASS**, cero fallos, AVD QA API 36 separado.
 - Migración: upgrade/downgrade/re-upgrade PASS en esquema vacío; rechazo de downgrade con referencias históricas PASS. Head `20260920_0041`, `db check` PASS.
 - Compilación Python, Compose y diff-check PASS. Contenedor y AVD QA retirados después del gate.
+
+
+### Gate de eliminación integral (2026-09-24)
+
+- Focales de eliminación, entrenamiento, recuperación y Mobile Sync/Planning: **87 passed, 2 skipped, 0 failed**. Los dos omitidos corresponden a contratos de concurrencia generales reservados a Docker; no se reportan como aprobados.
+- MariaDB 11.4 aislada: **9 passed, 0 skipped, 0 failed**, incluida carrera de eliminación integral simultánea, POST real, rollback después de descartar pendientes, conservación/descarte de series y replay.
+- Navegador sobre MariaDB: eliminación desde Mi entrenamiento en una operación, Cancelar sin cambios, confirmación adicional de descarte, conservación incompleta y gestión individual: **PASS**.
+- Modal integral, modal con series y Pendientes: **36 combinaciones** (360/390/430/768/1024/1366 px × dark/light), altura 844 px, sin overflow, inputs de 16 px y 44 px de altura; cero errores de consola. Capturas completas de la página y viewport móvil para inspección visual.
+- Sin migraciones nuevas; único head **20260920_0041**, `db current` y `db check` PASS. Compilación, Compose y `git diff --check` PASS.
+- No se repitió la suite backend completa ni instrumentación Android: no hay cambios de modelos ni contratos públicos de sincronización.

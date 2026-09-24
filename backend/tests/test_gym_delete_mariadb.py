@@ -182,9 +182,42 @@ def test_mariadb_pending_artifacts_are_resolved_individually(maria):
         db.session.commit()
         discard_pending_planned(owner, public_id, agenda.public_id, confirmation="DESCARTAR")
         db.session.commit()
-        assert db.session.query(TrainingSet).count() == 0
-        assert db.session.query(WorkoutSessionDraft).count() == 0
-        assert db.session.query(PlannedWorkout).filter_by(deleted_at=None).count() == 0
+        assert db.session.query(TrainingSet).filter_by(user_id=owner).count() == 0
+        assert db.session.query(WorkoutSessionDraft).filter_by(user_id=owner).count() == 0
+        assert db.session.query(PlannedWorkout).filter_by(user_id=owner, deleted_at=None).count() == 0
         assert delete_program(owner, public_id, base_revision=revision, confirmation="ELIMINAR")
         db.session.commit()
         assert db.session.query(TrainingPlan).filter_by(public_id=public_id).one().deleted_at is not None
+
+
+@pytest.mark.parametrize('action', [None, 'preserve', 'discard'])
+def test_mariadb_integral_real_route(maria, monkeypatch, action):
+    from tests.test_gym_delete_integral import integral_gate
+    application, (owner, _, _, _) = maria
+    with application.app_context():
+        integral_gate(application, owner, partial=action is not None,
+                      action=action, rollback_patch=monkeypatch)
+
+
+def test_mariadb_integral_concurrent_retry(maria):
+    from tests.test_gym_delete_integral import seed
+    from app.services.gym_delete import deletion_preview
+    application, (owner, _, _, _) = maria
+    with application.app_context():
+        plan, _, _, _, _, _ = seed(owner)
+        public_id, revision = plan.public_id, plan.revision
+        token = deletion_preview(plan)['token']
+    barrier = Barrier(2)
+    def operation(_):
+        with application.app_context():
+            barrier.wait(timeout=10)
+            result = delete_program(owner, public_id, base_revision=revision,
+                                    confirmation='ELIMINAR', pending_token=token)
+            db.session.commit()
+            return result
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        assert sorted(executor.map(operation, [0, 1])) == [False, True]
+    with application.app_context():
+        assert db.session.query(TrainingSession).filter_by(user_id=owner).count() == 1
+        assert db.session.query(WorkoutSessionDraft).filter_by(user_id=owner).count() == 0
+        assert db.session.query(SyncChange).filter_by(user_id=owner, operation='delete').count() == 2

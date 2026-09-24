@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Pendientes de {{ plan.name }} · Health Tracker{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/gym_delete.css') }}">
 <section class="page-heading">
   <div>
     <p class="eyebrow">Eliminar rutina</p>
@@ -23,7 +24,7 @@
           <form method="post" action="{{ url_for('gym.discard_pending', public_id=plan.public_id, kind='session', artifact_id=item.public_id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label for="discard-session-{{ item.public_id }}">Escribe DESCARTAR</label>
-            <input id="discard-session-{{ item.public_id }}" name="confirmation" required pattern="DESCARTAR" autocomplete="off" maxlength="9">
+            <input type="text" id="discard-session-{{ item.public_id }}" name="confirmation" required pattern="DESCARTAR" autocomplete="off" maxlength="9">
             <button class="button button-danger" type="submit">Descartar sesión y series</button>
           </form>
         </article>
@@ -34,7 +35,7 @@
   <section class="card" aria-labelledby="pending-planned-title">
     <h2 id="pending-planned-title">Agenda pendiente</h2>
     {% if pending.planned %}
-      <p>Descartar una entrada la marca como eliminada de la agenda y conserva el tombstone necesario para sincronización.</p>
+      <p>Descartar una entrada la cancela y evita que reaparezca al sincronizar.</p>
       {% for item in pending.planned %}
         <article class="pending-item">
           <div>
@@ -44,7 +45,7 @@
           <form method="post" action="{{ url_for('gym.discard_pending', public_id=plan.public_id, kind='planned', artifact_id=item.public_id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label for="discard-planned-{{ item.public_id }}">Escribe DESCARTAR</label>
-            <input id="discard-planned-{{ item.public_id }}" name="confirmation" required pattern="DESCARTAR" autocomplete="off" maxlength="9">
+            <input type="text" id="discard-planned-{{ item.public_id }}" name="confirmation" required pattern="DESCARTAR" autocomplete="off" maxlength="9">
             <button class="button button-danger" type="submit">Descartar agenda</button>
           </form>
         </article>
@@ -65,7 +66,7 @@
           <form method="post" action="{{ url_for('gym.discard_pending', public_id=plan.public_id, kind='draft', artifact_id=item.public_id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label for="discard-draft-{{ item.public_id }}">Escribe DESCARTAR</label>
-            <input id="discard-draft-{{ item.public_id }}" name="confirmation" required pattern="DESCARTAR" autocomplete="off" maxlength="9">
+            <input type="text" id="discard-draft-{{ item.public_id }}" name="confirmation" required pattern="DESCARTAR" autocomplete="off" maxlength="9">
             <button class="button button-danger" type="submit">Descartar borrador</button>
           </form>
         </article>

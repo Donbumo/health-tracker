@@ -216,6 +216,136 @@ def test_web_rejects_foreign_owner_and_stale_revision(app, client, user):
     assert db.session.query(TrainingPlan).count() == 2
 
 
+def _csrf_token(page):
+    return re.search(r'name="csrf_token" value="([^"]+)"', page.text).group(1)
+
+
+def test_pending_draft_blocker_can_be_reviewed_and_discarded_individually(
+    app, client, user
+):
+    plan = program(user)
+    version = get_active_version(plan, user)
+    draft = WorkoutSessionDraft(
+        user_id=user,
+        training_plan_id=plan.id,
+        training_plan_version_id=version.id,
+        client_submission_id=str(uuid.uuid4()),
+        payload_json={"fictional": "pending draft"},
+        payload_hash="0" * 64,
+        expires_at=datetime.now(timezone.utc),
+    )
+    db.session.add(draft)
+    db.session.commit()
+    draft_id = draft.public_id
+    with pytest.raises(GymError, match="borradores"):
+        remove(user, plan.public_id, plan.revision)
+    db.session.rollback()
+
+    login(client)
+    app.config["WTF_CSRF_ENABLED"] = True
+    pending_url = f"/gym/programs/{plan.public_id}/pending"
+    page = client.get(pending_url)
+    assert page.status_code == 200
+    assert "Borradores de sesión" in page.text
+    token = _csrf_token(page)
+    discard_url = f"{pending_url}/draft/{draft_id}/discard"
+    rejected = client.post(
+        discard_url,
+        data={"csrf_token": token, "confirmation": "NO"},
+    )
+    assert rejected.status_code == 400
+    assert db.session.get(WorkoutSessionDraft, draft.id) is not None
+    discarded = client.post(
+        discard_url,
+        data={"csrf_token": token, "confirmation": "DESCARTAR"},
+    )
+    assert discarded.status_code == 303
+    assert db.session.get(WorkoutSessionDraft, draft.id) is None
+    assert client.post(
+        f"/gym/programs/{plan.public_id}/delete",
+        data={
+            "csrf_token": token,
+            "base_revision": plan.revision,
+            "confirmation": "ELIMINAR",
+        },
+    ).status_code == 303
+
+
+def test_pending_session_and_agenda_are_resolved_individually_with_confirmation(
+    app, client, user
+):
+    plan = program(user)
+    session = start(user, plan)
+    complete_set(
+        user,
+        session.public_id,
+        1,
+        1,
+        {"load": "35", "unit": "kg", "reps": "8", "rir": "2"},
+    )
+    agenda = PlannedWorkoutService.schedule_from_plan_version(
+        user_id=user,
+        plan_public_id=plan.public_id,
+        version_public_id=None,
+        scheduled_for_date=date(2026, 9, 18),
+        timezone_name="UTC",
+        week_number=1,
+        day_number=1,
+    )
+    db.session.commit()
+    session_id, agenda_id, plan_id, plan_revision = (
+        session.public_id,
+        agenda.public_id,
+        plan.id,
+        plan.revision,
+    )
+    with pytest.raises(GymError, match="sesión pendiente"):
+        remove(user, plan.public_id, plan.revision)
+    db.session.rollback()
+
+    login(client)
+    app.config["WTF_CSRF_ENABLED"] = True
+    pending_url = f"/gym/programs/{plan.public_id}/pending"
+    page = client.get(pending_url)
+    token = _csrf_token(page)
+    assert session_id in page.text and agenda_id in page.text
+
+    discard_session_url = f"{pending_url}/session/{session_id}/discard"
+    rejected = client.post(
+        discard_session_url,
+        data={"csrf_token": token, "confirmation": "NO"},
+    )
+    assert rejected.status_code == 400
+    assert db.session.query(TrainingSession).filter_by(public_id=session_id).one()
+    assert db.session.query(TrainingSet).count() == 1
+    assert client.post(
+        discard_session_url,
+        data={"csrf_token": token, "confirmation": "DESCARTAR"},
+    ).status_code == 303
+    assert db.session.query(TrainingSession).filter_by(public_id=session_id).one_or_none() is None
+    assert db.session.query(TrainingSet).count() == 0
+
+    discard_agenda_url = f"{pending_url}/planned/{agenda_id}/discard"
+    assert client.post(
+        discard_agenda_url,
+        data={"csrf_token": token, "confirmation": "DESCARTAR"},
+    ).status_code == 303
+    agenda_row = db.session.query(PlannedWorkout).filter_by(public_id=agenda_id).one()
+    assert agenda_row.deleted_at is not None and agenda_row.status == "cancelled"
+    page = client.get(pending_url)
+    assert "No quedan pendientes" in page.text
+    response = client.post(
+        f"/gym/programs/{plan.public_id}/delete",
+        data={
+            "csrf_token": token,
+            "base_revision": plan_revision,
+            "confirmation": "ELIMINAR",
+        },
+    )
+    assert response.status_code == 303, response.text
+    assert db.session.get(TrainingPlan, plan_id).deleted_at is not None
+
+
 def test_mobile_tombstone_and_no_resurrection(app, client, user):
     plan = program(user)
     public_id, revision = plan.public_id, plan.revision

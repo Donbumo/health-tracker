@@ -10,6 +10,14 @@ from app.extensions import db
 from app.gym import gym_bp
 from app.models import TrainingPlan, TrainingPlanVersion, TrainingSession
 from app.services.gym_programs import (GymError, PRESETS, activate_program, catalog, confirm_program, owned_plan, preset_draft, preview_token, resolve_draft, standard_document)
+from app.services.gym_delete import (
+    discard_pending_draft,
+    discard_pending_planned,
+    discard_pending_session,
+    pending_artifacts,
+    deletion_preview,
+)
+from app.services.mobile_sync import MobileSyncError
 from app.services.gym_sessions import complete_set, finish_session, owned_session, start_session, workout_context
 from app.services.importers.routine_draft import DeterministicParser, MAX_BYTES, RoutineImportDraft, RoutineParseError, draft_from_document
 from app.services.training_plans import get_active_version
@@ -179,23 +187,73 @@ def archive(public_id):
 @gym_bp.route("/programs/<public_id>/delete", methods=["GET", "POST"])
 @login_required
 def delete(public_id):
-    from app.services.gym_delete import delete_program, deletion_blocker
+    from app.services.gym_delete import delete_program
     if request.method == "GET":
         plan = owned_plan(current_user.id, public_id)
-        return render_template("gym/delete.html", plan=plan, blocker=deletion_blocker(plan))
+        return render_template("gym/delete.html", plan=plan, preview=deletion_preview(plan))
     try:
         revision = int(request.form.get("base_revision", ""))
     except (ValueError, TypeError):
         raise GymError("Revisión inválida.", 400)
     try:
         deleted = delete_program(current_user.id, public_id, base_revision=revision,
-                                 confirmation=request.form.get("confirmation"))
+                                 confirmation=request.form.get("confirmation"),
+                                 pending_token=request.form.get("pending_token"),
+                                 partial_action=request.form.get("partial_action"),
+                                 partial_confirmation=request.form.get("partial_confirmation"))
         db.session.commit()
     except Exception:
         db.session.rollback()
         raise
     flash("Rutina eliminada." if deleted else "La rutina ya estaba eliminada.", "success")
     return redirect(url_for("training.list_plans"), code=303)
+
+
+@gym_bp.get("/programs/<public_id>/pending")
+@login_required
+def pending(public_id):
+    plan = owned_plan(current_user.id, public_id)
+    return render_template(
+        "gym/pending.html",
+        plan=plan,
+        pending=pending_artifacts(plan),
+    )
+
+
+@gym_bp.post("/programs/<public_id>/pending/<kind>/<artifact_id>/discard")
+@login_required
+def discard_pending(public_id, kind, artifact_id):
+    confirmation = request.form.get("confirmation")
+    try:
+        if kind == "session":
+            discard_pending_session(
+                current_user.id,
+                public_id,
+                artifact_id,
+                confirmation=confirmation,
+            )
+        elif kind == "planned":
+            discard_pending_planned(
+                current_user.id,
+                public_id,
+                artifact_id,
+                confirmation=confirmation,
+            )
+        elif kind == "draft":
+            discard_pending_draft(
+                current_user.id,
+                public_id,
+                artifact_id,
+                confirmation=confirmation,
+            )
+        else:
+            raise GymError("Pendiente no reconocido.", 404)
+        db.session.commit()
+    except (GymError, MobileSyncError):
+        db.session.rollback()
+        raise
+    flash("Pendiente descartado.", "success")
+    return redirect(url_for("gym.pending", public_id=public_id), code=303)
 
 
 @gym_bp.post("/programs/<public_id>/start")

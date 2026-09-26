@@ -1,23 +1,45 @@
 {% extends "base.html" %}
 {% block title %}Eliminar rutina · Health Tracker{% endblock %}
 {% block content %}
-<section class="card">
-  <h1>Eliminar rutina</h1>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/gym_delete.css') }}">
+<dialog open class="gym-delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-description">
+  <h1 id="delete-title" tabindex="-1">Eliminar rutina</h1>
   <h2>{{ plan.name }}</h2>
-  {% if blocker %}
-  <p role="status">{{ blocker }}</p>
-  {% else %}
-  <p>La rutina desaparecerá de Mis rutinas y no podrá volver a utilizarse. Esta acción no se puede deshacer.</p>
-  <p>Tus entrenamientos realizados, series, pesos, repeticiones y fechas se conservan. Las revisiones necesarias para consultarlos permanecen como referencia histórica. Una rutina sin uso se elimina físicamente.</p>
-  <p>Primero debes resolver las sesiones en curso, la agenda pendiente y los borradores guardados. Tu catálogo de ejercicios y los archivos importados se conservan.</p>
+  <p id="delete-description">La rutina desaparecerá de Mis rutinas y no podrá volver a utilizarse. Esta acción no se puede deshacer.</p>
+  <h3>Se eliminarán o cancelarán</h3>
+  <ul>
+    <li>Borradores guardados: {{ preview.pending.drafts|length }}, incluidos sus campos sin finalizar.</li>
+    <li>Sesiones pendientes sin series: {{ preview.empty_sessions }}.</li>
+    <li>Entradas de agenda pendientes: {{ preview.pending.planned|length }}; se cancelarán y seguirán eliminadas al sincronizar.</li>
+  </ul>
+  <h3>Se conservarán</h3>
+  <p>Sesiones finalizadas o incompletas ya cerradas: {{ preview.history }}, con sus ejercicios, series, pesos, fechas y referencias. También tu catálogo de ejercicios y archivos importados.</p>
   <form method="post" action="{{ url_for('gym.delete', public_id=plan.public_id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="base_revision" value="{{ plan.revision }}">
+    <input type="hidden" name="pending_token" value="{{ preview.token }}">
+    {% if preview.partial_sets %}
+    <fieldset>
+      <legend>Series parciales registradas: {{ preview.partial_sets }}</legend>
+      <p>Estas series aún pertenecen a sesiones en curso. Decide qué hacer con ellas.</p>
+      <label for="partial-action">Actividad parcial</label>
+      <select id="partial-action" name="partial_action" required>
+        <option value="preserve">Conservar como incompleta</option>
+        <option value="discard">Descartar las {{ preview.partial_sets }} series</option>
+      </select>
+      <label for="partial-confirmation">Para descartar, escribe DESCARTAR</label>
+      <input type="text" id="partial-confirmation" name="partial_confirmation" autocomplete="off" maxlength="9" aria-describedby="partial-help">
+      <p id="partial-help" class="help">Déjalo vacío si eliges conservar. Descartar elimina definitivamente estas {{ preview.partial_sets }} series.</p>
+    </fieldset>
+    {% endif %}
     <label for="delete-confirmation">Escribe ELIMINAR para confirmar</label>
     <input type="text" id="delete-confirmation" name="confirmation" required pattern="ELIMINAR" autocomplete="off" maxlength="8">
-    <button class="button button-danger" type="submit">Eliminar rutina definitivamente</button>
+    <div class="form-actions">
+      <a class="button button-secondary" data-delete-cancel href="{{ url_for('training.list_plans') }}">Cancelar</a>
+      <button class="button button-danger" type="submit">Eliminar rutina definitivamente</button>
+    </div>
   </form>
-  {% endif %}
-  <a class="button button-secondary" href="{{ url_for('training.list_plans') }}">{{ 'Volver a mi programa' if blocker else 'Cancelar' }}</a>
-</section>
+  <a class="button button-secondary" href="{{ url_for('gym.pending', public_id=plan.public_id) }}">Gestionar pendientes individualmente</a>
+</dialog>
+<script src="{{ url_for('static', filename='js/gym_delete.js') }}" defer></script>
 {% endblock %}

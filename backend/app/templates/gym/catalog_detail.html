@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% from "gym/_components.html" import media_dialog, scripts with context %}
+{% block title %}{{ row.name }} · Catálogo de ejercicios{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/gym.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/exercise_catalog.css') }}">
+<div class="exercise-catalog gym"><a href="{{ url_for('exercise_catalog.index') }}">← Catálogo de ejercicios</a><h1>{{ row.name }}</h1>
+{% if not row.available %}<p>Esta referencia ya no está disponible en la fuente. Se conserva su identidad histórica.</p>{% endif %}
+<div class="catalog-gallery">{% for image in entry.gallery %}<button type="button" class="catalog-image-button" data-open-media="{{ row.name }}" data-media-binding='{{ {"internal_exercise_id": row.public_id, "status": "available", "media_asset_id": entry.media_asset_id}|tojson }}' aria-label="Ampliar demostraciones de {{ row.name }}"><img src="{{ image }}" alt="Demostración visual {{ loop.index }} de {{ row.name }}" width="480" height="360"></button>{% else %}<span class="catalog-fallback" aria-label="Sin imagen de referencia">◇</span>{% endfor %}</div>
+<p class="gym-muted">Demostraciones visuales de la fuente. Verifica la variante y el equipo de tu rutina.</p>
+<dl class="catalog-facts">{% for label,value in [('Músculos principales',row.details.primary_muscles|join(', ')),('Músculos secundarios',row.details.secondary_muscles|join(', ')),('Equipo',row.details.equipment),('Dificultad',row.details.difficulty),('Categoría',row.details.category),('Fuerza',row.details.force),('Mecánica',row.details.mechanic)] %}<div><dt>{{ label }}</dt><dd>{{ value or 'No indicado' }}</dd></div>{% endfor %}</dl>
+<h2>Instrucciones</h2><ol>{% for instruction in row.details.instructions %}<li>{{ instruction }}</li>{% endfor %}</ol>
+<p>Fuente: <a href="{{ entry.source_url }}" rel="noopener noreferrer">{{ entry.author }}</a> · <a href="{{ entry.license_url }}">{{ entry.license }}</a> · {{ entry.changes }}</p>
+{% if identities and row.available %}<details class="card"><summary>Vincular con un ejercicio de mi rutina</summary><p>Confirma la variante. Se conservan tu nombre, aliases y registros; este vínculo selecciona la referencia visual.</p><form method="post" action="{{ url_for('exercise_catalog.map_identity', public_id=row.public_id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label>Mi ejercicio<select name="exercise_id" required><option value="">Seleccionar</option>{% for identity in identities %}<option value="{{ identity.public_id }}">{{ identity.canonical_name }}{{ ' · vinculado' if identity.external_catalog_id == row.id else '' }}</option>{% endfor %}</select></label><button class="button">Confirmar vínculo con {{ row.name }}</button></form></details>{% endif %}
+{{ media_dialog() }}{{ scripts() }}</div>
+{% endblock %}

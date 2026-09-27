@@ -4,7 +4,7 @@
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/gym.css', v='media-1') }}">
 <div class="gym gym-programs">
-  <header class="gym-home-heading"><div><h1>Mi entrenamiento<span class="gym-accent">.</span></h1></div><nav class="gym-actions" aria-label="Rutinas"><a class="gym-text-link" href="{{ url_for('progress.overview') }}">Progreso ↗</a><a class="gym-text-link" href="{{ url_for('gym.editor') }}#import">Importar rutina ↗</a></nav></header>
+  <header class="gym-home-heading"><div><h1>Mi entrenamiento<span class="gym-accent">.</span></h1></div><nav class="gym-actions" aria-label="Rutinas"><a class="gym-text-link" href="{{ url_for('exercise_catalog.index') }}">Catálogo de ejercicios ↗</a><a class="gym-text-link" href="{{ url_for('progress.overview') }}">Progreso ↗</a><a class="gym-text-link" href="{{ url_for('gym.editor') }}#import">Importar rutina ↗</a></nav></header>
   {% for session in ongoing %}<section class="gym-resume gym-panel"><div><span class="gym-badge">● Lista para reanudar</span><h2>Continúa donde lo dejaste</h2><p class="gym-muted">Las series confirmadas están guardadas.</p></div><a class="button" href="{{ url_for('gym.workout', public_id=session.public_id) }}">Reanudar <span aria-hidden="true">→</span></a></section>{% endfor %}
   <div class="gym-layout"><div class="gym-main">
   {% for card in cards %}<section class="gym-program{{ ' is-active' if card.plan.gym_active else '' }}" data-program="{{ card.plan.public_id }}">

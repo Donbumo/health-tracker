@@ -32,6 +32,7 @@ class ProgramDraft(TypedDict, total=False):
 class ExerciseDraft(TypedDict, total=False):
     raw_name: str
     resolved_exercise_id: str
+    resolved_catalog_id: str
     create_new: bool
     name: str
     notes: str
@@ -273,6 +274,9 @@ def validate_draft_shape(draft):
                 raise RoutineParseError("Nombre de ejercicio inválido.")
             if not isinstance(exercise.get("sets"), list) or not 1 <= len(exercise["sets"]) <= MAX_SETS:
                 raise RoutineParseError("Cada ejercicio requiere entre 1 y 30 series.")
+            for key in ("resolved_catalog_id", "catalog_revision", "resolved_exercise_id", "external_source", "external_id"):
+                if exercise.get(key) is not None and (not isinstance(exercise[key], str) or len(exercise[key]) > 200):
+                    raise RoutineParseError("Referencia de ejercicio inválida.")
 
 
 def draft_from_document(document, *, name="", digest=None):

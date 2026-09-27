@@ -26,9 +26,9 @@
 {%- endmacro %}
 
 {% macro scripts(workout=false) -%}
-<script src="{{ url_for('static', filename='js/gym_core.js', v='media-1') }}" defer></script>
-<script src="{{ url_for('static', filename='js/gym_ui.js', v='media-1') }}" data-gym-catalog="{{ url_for('static', filename='media/gym-catalog.json', v='media-1') }}" defer></script>
-{% if workout %}<script src="{{ url_for('static', filename='js/gym_workout.js', v='media-1') }}" defer></script>{% endif %}
+<script src="{{ url_for('static', filename='js/gym_core.js', v='catalog-1') }}" defer></script>
+<script src="{{ url_for('static', filename='js/gym_ui.js', v='catalog-1') }}" data-gym-catalog="{{ url_for('exercise_catalog.media_catalog_json') }}" defer></script>
+{% if workout %}<script src="{{ url_for('static', filename='js/gym_workout.js', v='catalog-1') }}" defer></script>{% endif %}
 {%- endmacro %}
 
 {% macro set_form(series, exercise, record, unit) -%}

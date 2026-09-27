@@ -30,13 +30,29 @@ from app.services.gym_sessions import utc
 def exercise_media_context():
     # Lazy: only Gym templates request the owner-scoped presentation projection.
     projection = None
+    references = None
+    identities = None
+    def owner_catalog():
+        nonlocal identities
+        if identities is None:
+            identities = catalog(current_user.id)
+        return identities
+    def reference_catalog():
+        nonlocal references
+        if references is None:
+            from app.services.exercise_catalog import external_catalog
+            references = external_catalog()
+        return references
     def binding(exercise):
         nonlocal projection
         if projection is None:
             from app.services.gym_media import media_catalog, media_projection
-            projection = media_projection(catalog(current_user.id), media_catalog())
+            projection = media_projection(owner_catalog(), media_catalog(), reference_catalog())
         return projection(exercise)
-    return {"media_binding": binding}
+    def reference_candidates(name):
+        from app.services.exercise_catalog import candidate_report
+        return candidate_report(name, owner_catalog(), reference_catalog())
+    return {"media_binding": binding, "reference_catalog": reference_catalog, "reference_candidates": reference_candidates}
 
 
 @gym_bp.errorhandler(GymError)
@@ -129,9 +145,15 @@ def editor(public_id=None):
                         if field in request.form:
                             value = request.form[field]
                             exercise.pop("resolved_exercise_id", None)
+                            exercise.pop("resolved_catalog_id", None)
+                            exercise.pop("catalog_revision", None)
+                            exercise.pop("external_source", None)
+                            exercise.pop("external_id", None)
                             exercise.pop("name", None)
                             exercise["create_new"] = value == "new"
-                            if value and value != "new":
+                            if value.startswith("catalog:"):
+                                exercise["resolved_catalog_id"] = value.removeprefix("catalog:")
+                            elif value and value != "new":
                                 exercise["resolved_exercise_id"] = value
             # A mapping or prescription edit always returns through a fresh preview.
             resolve_draft(draft, current_user.id)

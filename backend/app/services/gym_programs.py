@@ -52,6 +52,10 @@ def resolve_draft(draft, user_id):
     """Exact owner names/aliases only. Unknown names require an explicit decision."""
     validate_draft_shape(draft)
     identities = catalog(user_id)
+    from app.services.exercise_catalog import external_catalog, resolve_external
+    references = external_catalog()
+    from app.models import ExerciseCatalogSource
+    revisions = {state.source_id: state.active_snapshot for state in db.session.execute(db.select(ExerciseCatalogSource)).scalars()}
     by_id = {item.public_id: item for item in identities}
     by_name = {name: item for item in identities for name in [item.normalized_name, *(alias.normalized_name for alias in item.aliases)]}
     # Explicit bilingual aliases only; never fuzzy-match a movement automatically.
@@ -62,16 +66,32 @@ def resolve_draft(draft, user_id):
     for day in draft.days:
         for exercise in day["exercises"]:
             resolved_id = exercise.get("resolved_exercise_id")
+            reference_id = exercise.get("resolved_catalog_id")
+            reference = resolve_external(exercise["raw_name"], identities, references, public_id=reference_id,
+                source=exercise.get("external_source"), external_id=exercise.get("external_id"))
+            if exercise.get("external_source") and exercise.get("external_id") and len(reference) == 1:
+                reference_id = exercise["resolved_catalog_id"] = reference[0].public_id
+            if reference_id and not reference:
+                raise GymError("Referencia del catálogo no disponible; revisa el mapping.", 404)
+            if reference_id and exercise.get("catalog_revision") and exercise["catalog_revision"] != revisions[reference[0].source]:
+                raise GymError("El catálogo cambió; vuelve a seleccionar la referencia y revisa el preview.", 409)
             item = by_id.get(resolved_id) if resolved_id else by_name.get(normalize_exercise_name(exercise["raw_name"]))
             if resolved_id and item is None:
                 raise GymError("Ejercicio no encontrado.", 404)
-            if item:
+            if reference_id:
+                exercise["name"] = item.canonical_name if item else reference[0].name
+            elif item:
                 exercise["resolved_exercise_id"] = item.public_id
                 exercise["name"] = item.canonical_name
             elif exercise.get("create_new") is True:
                 exercise["name"] = exercise["raw_name"].strip()
+            elif len(reference) == 1:
+                exercise["resolved_catalog_id"] = reference[0].public_id
+                exercise["name"] = reference[0].name
             else:
                 draft.unresolved.append(exercise["raw_name"])
+            if exercise.get("resolved_catalog_id") and len(reference) == 1:
+                exercise["catalog_revision"] = revisions[reference[0].source]
     return draft
 
 
@@ -136,16 +156,23 @@ def confirm_program(draft, user_id, token, *, plan_id=None, base_revision=None):
     identities = catalog(user_id)
     by_name = {name: item for item in identities for name in [item.normalized_name, *(alias.normalized_name for alias in item.aliases)]}
     by_id = {item.public_id: item for item in identities}
+    from app.services.exercise_catalog import external_catalog
+    references = {row.public_id: row for row in external_catalog()}
     for day in draft.days:
         for exercise in day["exercises"]:
             raw = normalize_exercise_name(exercise["raw_name"])
+            reference = references.get(exercise.get("resolved_catalog_id"))
             item = by_id.get(exercise.get("resolved_exercise_id")) or by_name.get(raw)
+            if item is None and reference:
+                item = by_name.get(reference.normalized_name)
             if item is None:
-                item = Exercise(user_id=user_id, public_id=str(uuid.uuid4()), canonical_name=exercise["name"], normalized_name=raw)
+                item = Exercise(user_id=user_id, public_id=str(uuid.uuid4()), canonical_name=exercise["name"], normalized_name=normalize_exercise_name(exercise["name"]))
                 db.session.add(item)
                 db.session.flush()
                 by_id[item.public_id] = item
-                by_name[raw] = item
+                by_name[item.normalized_name] = item
+            if reference:
+                item.external_catalog_id = reference.id
             if raw in by_name and by_name[raw].id != item.id:
                 raise GymError("Ese alias ya corresponde a otro ejercicio.")
             if raw not in by_name:

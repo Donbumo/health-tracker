@@ -23,7 +23,8 @@ def media_catalog():
         return []  # A missing optional presentation file must not break a workout.
 
 
-def media_projection(identities, entries):
+def media_projection(identities, entries, external_entries=()):
+    from app.services.exercise_catalog import resolve_external
     by_id = {item.public_id: item for item in identities}
     by_name = {}
     assets = {}
@@ -44,6 +45,12 @@ def media_projection(identities, entries):
         if len(matches) != 1:
             return {"status": "ambiguous" if len(matches) > 1 else "unresolved"}
         item = by_id[next(iter(matches))]
+        external = resolve_external(item.canonical_name, [item], external_entries)
+        if item.external_catalog_id or external:
+            if len(external) == 1:
+                row = external[0]
+                return {"internal_exercise_id": item.public_id, "status": "available" if row.media else "no_media", "media_asset_id": "catalog:" + row.public_id}
+            return {"internal_exercise_id": item.public_id, "status": "ambiguous" if len(external) > 1 else "no_media"}
         names = [item.normalized_name, *(a.normalized_name for a in item.aliases if a.user_id == item.user_id)]
         found = set().union(*(assets.get(n, set()) for n in names))
         result = {"internal_exercise_id": item.public_id}

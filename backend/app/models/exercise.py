@@ -27,6 +27,8 @@ class Exercise(db.Model):
     )
     canonical_name = db.Column(db.String(200), nullable=False)
     normalized_name = db.Column(db.String(255), nullable=False)
+    external_catalog_id = db.Column(db.Integer, db.ForeignKey("external_exercises.id"), nullable=True)
+    external_catalog = db.relationship("ExternalExercise")
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

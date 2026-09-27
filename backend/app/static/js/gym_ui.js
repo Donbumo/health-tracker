@@ -100,6 +100,14 @@
       element.referrerPolicy = 'no-referrer';
       element.addEventListener('error', () => { loaded(); content.replaceChildren(text('p', 'El medio no está disponible. Puedes continuar tu entrenamiento.', 'gym-media-unavailable')); }, {once:true});
       element.src = media.url; content.replaceChildren(element);
+      for (const value of (entry?.gallery || []).slice(1)) {
+        const extra = view.safeMedia(value, location.origin);
+        if (!extra || extra.external) continue;
+        const picture = document.createElement('img'); picture.alt = `Demostración visual: ${name}`;
+        picture.src = extra.url; picture.loading = 'lazy';
+        picture.addEventListener('error', () => picture.remove(), {once:true});
+        content.append(picture);
+      }
     }
     if (media?.external) {
       caption.textContent = 'Este medio se carga desde un sitio externo solo si lo solicitas.';
@@ -110,7 +118,7 @@
   const catalogURL = document.querySelector('script[data-gym-catalog]')?.dataset.gymCatalog;
   if (catalogURL) fetch(catalogURL, {credentials:'same-origin'}).then(response => response.ok ? response.json() : null).then(data => {
     if (!Array.isArray(data?.entries)) return;
-    entries = data.entries.slice(0, 500).map(view.catalogEntry).filter(Boolean);
+    entries = data.entries.slice(0, 5010).map(view.catalogEntry).filter(Boolean);
     decorate();
   }).catch(() => { /* The default visual is sufficient when the catalog is unavailable. */ });
 })();

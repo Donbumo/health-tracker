@@ -11,6 +11,7 @@ from app.models.activity import (
     Route,
 )
 from app.models.exercise import Exercise, ExerciseAlias
+from app.models.external_catalog import ExerciseCatalogSource, ExternalExercise
 from app.models.exercise_load_profile import ExerciseLoadProfile
 from app.models.export_record import ExportRecord
 from app.models.import_run import ImportRun
@@ -70,6 +71,8 @@ from app.models.ai import AIActionDraft, AIConversation, AIMessage, AIToolCall
 
 
 __all__ = [
+    "ExerciseCatalogSource",
+    "ExternalExercise",
     "DailyEnergy",
     "Activity",
     "ActivityDuplicateCandidate",

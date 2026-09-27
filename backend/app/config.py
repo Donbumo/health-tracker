@@ -36,6 +36,7 @@ class Config:
     }
 
     DATA_ROOT = Path(os.getenv("DATA_ROOT", PROJECT_ROOT / "data"))
+    EXERCISE_CATALOG_ROOT = os.getenv("EXERCISE_CATALOG_ROOT")
     UPLOAD_ROOT = DATA_ROOT / "uploads" / "raw"
     GENERATED_UPLOAD_ROOT = DATA_ROOT / "uploads" / "generated"
     PORTABILITY_ROOT = Path(

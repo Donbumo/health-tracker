@@ -2,35 +2,22 @@
 
 ## Estado actual
 
-- Rama `feature/beta-1.1-ai-foundation`; Iteration 2 convierte la base AI en release candidate Beta 1.1.
-- `FakeAIProvider` sigue sin red. `OpenAIResponsesProvider` usa Responses API mediante HTTP liviano, `store=false`, timeout, tools/function calls, usage y errores seguros; tests usan transporte mock.
-- AI remota exige consentimiento explícito por usuario y muestra provider/model/privacidad en `/ai`. `AI_ENABLED=false` permanece como default seguro.
-- El contexto está acotado por mensajes, caracteres, turnos, tools, rondas, output y usage total.
-- `body_measurement` y `food_entry` usan preview editable y confirmación owner-only por servicios oficiales. Bloqueo de fila + `client_event_id` determinista impiden duplicados, incluso concurrentes en MariaDB.
-- Conversaciones AI son portables en `health-tracker-portable-v1`; se omiten credenciales, argumentos/provider internals y chain-of-thought.
-- Migración `20260811_0038` añade consentimiento y metadata de aplicación de drafts sobre head `20260809_0037`.
+- Rama `feature/external-exercise-catalog`, sin worktree, sobre master/origin/master limpio `5607164f771e98b4d731da3e0100473d12ccd0a5`.
+- Catálogo externo local: adapter Free Exercise DB, CLI status/sync/cleanup, metadata y vínculo opcional con identidades personales, búsqueda/galería e integración Gym.
+- Única migración `20260927_0042` sobre `20260920_0041`. Sin cambios a providers, AI Coach, Strava ni contratos públicos de sesiones/rutinas.
+- Arquitectura, operación y evidencia en [EXERCISE_CATALOG.md](EXERCISE_CATALOG.md).
 
-## Trabajo en curso
+## QA
 
-- Implementación y automatización están cerradas; falta únicamente registrar commits/push y entregar el reporte de QA.
-- El índice de contexto sigue en `docs/DOCUMENTATION_INDEX.md`; el contrato AI está en `docs/AI_FOUNDATION.md`.
+- MariaDB 11.4 efímera con tmpfs y schemas QA; sin volúmenes persistentes ni NAS.
+- Snapshot `f00c92c7dcf1216a928a52c3706c7ce8e2f71ed5`: 876 ejercicios, 1,746 imágenes, aproximadamente 95 MiB; repetición sin duplicados.
+- Upgrade desde cero, downgrade 0042→0041, upgrade, head único y db check comprobados.
+- Navegación, imágenes, import y sesiones sin solicitudes externas; QA responsive claro/oscuro de 360 a 1366 px.
+- Resultados finales y commit en la entrega de la rama. Capturas y snapshot QA fuera de Git.
 
-## Pruebas relevantes
+## Pendiente tras revisión
 
-- MariaDB 11.4 efímera: base vacía→0038, downgrade 0038→0037, upgrade 0037→0038, `db current` y `db check`.
-- Suite AI con gates MariaDB: 47 passed, incluyendo concurrencia, owner isolation y cascadas.
-- Suite local AI + portabilidad: 70 passed; los skips corresponden a gates reservados a contenedor.
-- Suite backend completa con fixtures QA: 792 passed, 12 skipped.
-- Tests cloud no usan Internet ni una API key real.
-
-## Bloqueadores y riesgos
-
-- No hay bloqueadores funcionales conocidos para QA manual.
-- Attachments/food vision continúan deshabilitados: no se amplió scope sin storage privado completo.
-- `workout_entry` y `steps_entry` no se confirman todavía.
-- No hay coach, diagnóstico, Strava, BLE, billing, cambios Android, merge, tag ni deploy.
-
-## Siguiente paso
-
-- QA manual del flujo `/ai`: consentimiento remoto con configuración de entorno de QA, follow-ups, evidencia, confirmación/rechazo de peso/comida y portabilidad.
-- Mantener cualquier habilitación cloud de producción detrás de revisión operativa de proveedor, modelo, retención y secrets.
+- Review → PR → squash → master. Sin merge ni deploy en esta entrega.
+- Backup DB/storage; verificar estado real del NAS, head y permisos del bind mount antes del deploy.
+- Después del deploy: status → dry-run por commit → sync → counts/medios → healthz → gate sin GitHub.
+- Solo entonces revisar los seis ejercicios reales unresolved en la cuenta correcta. No se consultaron ni modificaron mappings de producción; `prensa` requiere selección explícita.

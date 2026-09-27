@@ -62,7 +62,7 @@
     try {
       const url = new URL(value, origin);
       if (url.username || url.password || url.hash) return null;
-      if (url.origin === origin && url.pathname.startsWith('/static/')) return {url:url.href, external:false};
+      if (url.origin === origin && (url.pathname.startsWith('/static/') || url.pathname.startsWith('/exercise-media/'))) return {url:url.href, external:false};
       if (url.protocol === 'https:' && url.origin !== origin) return {url:url.href, external:true};
     } catch (_) { /* Invalid URLs use the local fallback. */ }
     return null;
@@ -73,7 +73,7 @@
     const list = value => Array.isArray(value) ? value.filter(item => typeof item === 'string').slice(0, 12).map(text) : [];
     return {media_asset_id:text(raw.media_asset_id), source:text(raw.source), author:text(raw.author), source_url:text(raw.source_url), license:text(raw.license), license_url:text(raw.license_url), changes:text(raw.changes), external_exercise_id:text(raw.external_exercise_id), name:text(raw.name),
       aliases:list(raw.aliases), primary_muscles:list(raw.primary_muscles), secondary_muscles:list(raw.secondary_muscles),
-      equipment:list(raw.equipment), instructions:list(raw.instructions), media_url:text(raw.media_url),
+      equipment:list(raw.equipment), instructions:list(raw.instructions), media_url:text(raw.media_url), gallery:list(raw.gallery),
       thumbnail_url:text(raw.thumbnail_url), tags:list(raw.tags), difficulty:text(raw.difficulty),
       force:text(raw.force), mechanic:text(raw.mechanic), media_type:['image','video'].includes(raw.media_type) ? raw.media_type : 'image'};
   }

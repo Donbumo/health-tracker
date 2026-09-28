@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Ejercicios por revisar · Health Tracker{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/exercise_mapping.css') }}">
+<div class="exercise-mapping">
+<a href="{{ url_for('training.list_plans') }}">← Mi entrenamiento</a>
+<h1>Ejercicios por revisar</h1>
+<p role="status">{{ pending|length }} pendientes</p>
+<p>Elige una referencia visual para cada ejercicio. Tu nombre y tu historial se conservan.</p>
+{% for item in pending %}
+<article class="card mapping-row"><div><h2>{{ item.name }}</h2><p>→ {% if item.candidates|length == 1 %}{{ item.candidates[0].name }}{% elif item.candidates %}{{ item.candidates|length }} candidatos{% else %}Busca una variante en el catálogo{% endif %}</p></div><a class="button" href="{{ url_for('gym.exercise_link_review', name=item.name) }}">{{ 'Revisar' if item.candidates|length == 1 else 'Elegir' }}<span class="visually-hidden"> {{ item.name }}</span></a></article>
+{% else %}<p>No hay ejercicios pendientes de vincular.</p>{% endfor %}
+{% if linked %}<h2>Ejercicios vinculados</h2>{% for item in linked %}<article class="card mapping-row"><div><h3>{{ item.name }}</h3><p>→ {{ item.linked.name }}</p></div><a class="button button-secondary" href="{{ url_for('gym.exercise_link_review', name=item.name) }}">Cambiar vínculo<span class="visually-hidden"> {{ item.name }}</span></a></article>{% endfor %}{% endif %}
+</div>
+{% endblock %}

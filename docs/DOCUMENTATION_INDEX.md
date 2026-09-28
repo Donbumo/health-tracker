@@ -14,6 +14,8 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 
 ## Uso diario y web
 
+- Vínculos personales de ejercicios: [EXERCISE_MAPPING_ASSISTANT.md](EXERCISE_MAPPING_ASSISTANT.md), revisión manual, aliases e historial.
+
 - Catálogo externo: [EXERCISE_CATALOG.md](EXERCISE_CATALOG.md), identidad, snapshots, sync, storage, QA y gates de producción.
 
 - Eliminación de rutinas: [GYM_DELETE_PROGRAM.md](GYM_DELETE_PROGRAM.md), semántica conservadora, auditoría de FK, Mobile Sync y pruebas locales.

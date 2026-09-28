@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Vincular ejercicio · Health Tracker{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/exercise_mapping.css') }}">
+<div class="exercise-mapping">
+<a href="{{ url_for('gym.exercise_links') }}">← Ejercicios por revisar</a>
+<p>Nombre de tu rutina:</p><h1>{{ item.name }}</h1>
+{% if item.linked %}<p>Vínculo actual: <strong>{{ item.linked.name }}</strong>. Elegir otro conserva tu identidad y tu historial.</p>{% endif %}
+<p>Compara la variante y el equipo antes de vincular. Las sugerencias no se asignan automáticamente.</p>
+<form method="get" class="mapping-search"><input type="hidden" name="name" value="{{ item.name }}"><label for="mapping-search">Buscar en el catálogo local</label><div><input id="mapping-search" name="q" value="{{ query }}" maxlength="200" placeholder="Nombre del ejercicio"><button class="button">Buscar</button></div></form>
+<h2>Candidatos del catálogo</h2><p role="status">{{ total }} candidatos{% if total > 24 %} · se muestran 24; afina la búsqueda{% endif %}</p>
+<div class="mapping-grid">{% for card in cards %}
+<article class="card mapping-candidate">
+{% if card.media.thumbnail_url %}<img src="{{ card.media.thumbnail_url }}" alt="Demostración de {{ card.row.name }}" width="360" height="270" loading="lazy">{% else %}<p class="mapping-no-image">Sin imagen de referencia</p>{% endif %}
+<h3>{{ card.row.name }}</h3><dl><dt>Músculos</dt><dd>{{ card.row.details.primary_muscles|join(', ') }}</dd><dt>Equipo</dt><dd>{{ card.row.details.equipment or 'No indicado' }}</dd></dl>
+<p>{{ (card.row.details.instructions|first or 'Sin instrucciones disponibles')|truncate(280) }}</p>
+<p class="mapping-credit">{{ card.media.author }} · {{ card.media.license }}</p>
+<div class="mapping-actions"><form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="name" value="{{ item.name }}"><input type="hidden" name="reference_id" value="{{ card.row.public_id }}"><input type="hidden" name="token" value="{{ card.token }}"><button class="button" name="action" value="link">{{ 'Cambiar vínculo' if item.linked else 'Vincular' }}<span class="visually-hidden"> con {{ card.row.name }}</span></button></form><a href="{{ url_for('exercise_catalog.detail', public_id=card.row.public_id) }}" target="_blank" rel="noopener">Ver ejercicio<span class="visually-hidden"> {{ card.row.name }}</span></a></div>
+</article>{% else %}<p>No encontramos una coincidencia. Prueba el nombre de la fuente o conserva tu ejercicio sin vínculo.</p>{% endfor %}</div>
+<form method="post" class="mapping-none"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="name" value="{{ item.name }}"><button class="button button-secondary" name="action" value="none">Ninguno corresponde</button><p>No se guardará ningún cambio. Puedes volver a revisar más adelante.</p></form>
+</div>
+{% endblock %}

@@ -80,7 +80,43 @@ def program_home():
     for plan in plans:
         version = next((v for v in plan.versions if v.version_number == plan.active_version_number), None)
         cards.append({"plan": plan, "version": version, "days": [{"week": week["week_number"], "day": day, "last": last.get((version.id, week["week_number"], day["day_number"])), "submission": str(uuid.uuid4())} for week in version.content["data"]["weeks"] for day in week["days"]] if version else []})
-    return render_template("gym/programs.html", cards=cards, ongoing=ongoing, identities=identities, normalize_name=normalize_exercise_name)
+    from app.services.exercise_mapping import review_items
+    links, _, _ = review_items(current_user.id)
+    return render_template("gym/programs.html", cards=cards, ongoing=ongoing, identities=identities, normalize_name=normalize_exercise_name, pending_links=sum(not item["linked"] for item in links))
+
+
+@gym_bp.get("/exercise-links")
+@login_required
+def exercise_links():
+    from app.services.exercise_mapping import review_items
+    items, _, _ = review_items(current_user.id)
+    return render_template("gym/exercise_links.html", pending=[item for item in items if not item["linked"]], linked=[item for item in items if item["linked"]])
+
+
+@gym_bp.route("/exercise-links/review", methods=["GET", "POST"])
+@login_required
+def exercise_link_review():
+    from app.models import ExerciseCatalogSource
+    from app.services.exercise_catalog import media_entry
+    from app.services.exercise_mapping import candidates, confirm_link, decision_token, review_target
+    name = request.form.get("name", "") if request.method == "POST" else request.args.get("name", "")
+    item, identities, entries = review_target(current_user.id, name)
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "none":
+            flash("Sin cambios. Puedes volver a revisar este ejercicio cuando quieras.", "success")
+        elif action == "link":
+            confirm_link(current_user.id, name, request.form.get("reference_id"), request.form.get("token", ""))
+            db.session.commit()
+            flash("Vínculo guardado. Se conservan el nombre de tu rutina y tu historial.", "success")
+        else:
+            abort(400)
+        return redirect(url_for("gym.exercise_links"))
+    query = request.args.get("q", "").strip()[:200]
+    matches = candidates(item["name"], identities, entries, query)
+    states = {state.source_id: state for state in db.session.execute(db.select(ExerciseCatalogSource)).scalars()}
+    cards = [{"row": row, "media": media_entry(row, states[row.source]), "token": decision_token(current_user.id, item, row)} for row in matches[:24]]
+    return render_template("gym/exercise_link_review.html", item=item, cards=cards, total=len(matches), query=query)
 
 
 @gym_bp.get("")

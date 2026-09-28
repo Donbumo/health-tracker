@@ -1,23 +1,32 @@
 # Handoff activo
 
+Índice de reglas y guías: [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md).
+
 ## Estado actual
 
-- Rama `feature/external-exercise-catalog`, sin worktree, sobre master/origin/master limpio `5607164f771e98b4d731da3e0100473d12ccd0a5`.
-- Catálogo externo local: adapter Free Exercise DB, CLI status/sync/cleanup, metadata y vínculo opcional con identidades personales, búsqueda/galería e integración Gym.
-- Única migración `20260927_0042` sobre `20260920_0041`. Sin cambios a providers, AI Coach, Strava ni contratos públicos de sesiones/rutinas.
-- Arquitectura, operación y evidencia en [EXERCISE_CATALOG.md](EXERCISE_CATALOG.md).
+- Base: `e41ceb62cac5cc53208e949502dd5e91f1f4eafb` en master. External Exercise Catalog ya fue desplegado en la entrega anterior; este trabajo no accede al NAS.
+- Rama `codex/exercise-mapping-assistant`: revisión manual de vínculos desde Mi entrenamiento, lista de pendientes, búsqueda/candidatos visuales, confirmación explícita y cambio de vínculo.
+- Reutiliza identidades, aliases y FK nullable existentes. Sin migración, nueva fuente, descargas, AI ni modificación de External Exercise Catalog.
 
-## QA
+## Trabajo en curso
 
-- MariaDB 11.4 efímera con tmpfs y schemas QA; sin volúmenes persistentes ni NAS.
-- Snapshot `f00c92c7dcf1216a928a52c3706c7ce8e2f71ed5`: 876 ejercicios, 1,746 imágenes, aproximadamente 95 MiB; repetición sin duplicados.
-- Upgrade desde cero, downgrade 0042→0041, upgrade, head único y db check comprobados.
-- Navegación, imágenes, import y sesiones sin solicitudes externas; QA responsive claro/oscuro de 360 a 1366 px.
-- Resultados finales y commit en la entrega de la rama. Capturas y snapshot QA fuera de Git.
+- Implementación lista para revisión mediante commit y PR. Arquitectura y alcance en [EXERCISE_MAPPING_ASSISTANT.md](EXERCISE_MAPPING_ASSISTANT.md).
+- QA exclusivamente ficticia con SQLite/MariaDB efímera y servidor local. No copiar nombres/rutinas reales al repositorio.
 
-## Pendiente tras revisión
+## Bloqueadores y riesgos
 
-- Review → PR → squash → master. Sin merge ni deploy en esta entrega.
-- Backup DB/storage; verificar estado real del NAS, head y permisos del bind mount antes del deploy.
-- Después del deploy: status → dry-run por commit → sync → counts/medios → healthz → gate sin GitHub.
-- Solo entonces revisar los seis ejercicios reales unresolved en la cuenta correcta. No se consultaron ni modificaron mappings de producción; `prensa` requiere selección explícita.
+- Los candidatos son sugerencias, nunca equivalencias automáticas. «Ninguno corresponde» mantiene el ejercicio pendiente o su vínculo anterior.
+- No fusiona identidades ni cambia nombres/documentos históricos. Los límites de backup portable de la referencia visual no cambian.
+- El gate con ejercicios reales requiere revisión y autorización posterior para producción. No guardar mappings durante QA.
+
+## Siguiente paso
+
+- Revisar el PR. No merge, NAS, tag ni despliegue dentro de esta entrega.
+- Después del despliegue autorizado, el usuario selecciona manualmente los candidatos en su cuenta.
+
+## Pruebas relevantes
+
+- QA final: 1,108 backend PASS, 25 gates opcionales omitidos; 10 pruebas del asistente PASS en MariaDB 11.4; db check sin operaciones nuevas; 24 comprobaciones responsive/paleta PASS.
+- `backend/tests/test_exercise_mapping.py`: ownership, CSRF, decisiones firmadas y obsoletas, reintentos, aliases/import futuro, historia y nombres legacy.
+- `backend/tests/test_external_exercise_catalog.py`, `backend/tests/test_gym_training.py` y suite completa para regresiones.
+- `scripts/gym/mapping_qa_app.py`: fixture local, HTTP saliente bloqueado, prueba visual de resumen/candidatos y confirmación ficticia.

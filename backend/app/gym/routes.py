@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.extensions import db
 from app.gym import gym_bp
 from app.models import TrainingPlan, TrainingPlanVersion, TrainingSession
-from app.services.gym_programs import (GymError, PRESETS, activate_program, catalog, confirm_program, owned_plan, preset_draft, preview_token, resolve_draft, standard_document)
+from app.services.gym_programs import (GymError, PRESETS, activate_program, catalog, owned_plan, preset_draft, resolve_draft, standard_document)
 from app.services.gym_delete import (
     discard_pending_draft,
     discard_pending_planned,
@@ -60,7 +60,19 @@ def handle_gym_error(error):
     db.session.rollback()
     if request.is_json:
         return jsonify(error=str(error)), error.status
-    return render_template("gym/error.html", message=str(error)), error.status
+    return render_template("gym/error.html", message=str(error), draft_url=_draft_recovery_url()), error.status
+
+
+def _draft_recovery_url():
+    from app.models import GymImportDraft
+    public_id = (request.view_args or {}).get('draft_id') or request.form.get('draft_id')
+    if public_id and current_user.is_authenticated:
+        existing = db.session.execute(db.select(GymImportDraft.public_id).where(
+            GymImportDraft.public_id == public_id, GymImportDraft.user_id == current_user.id,
+            GymImportDraft.state == 'pending')).scalar_one_or_none()
+        if existing:
+            return url_for('gym.import_draft', draft_id=existing)
+    return None
 
 
 @gym_bp.before_request
@@ -82,7 +94,8 @@ def program_home():
         cards.append({"plan": plan, "version": version, "days": [{"week": week["week_number"], "day": day, "last": last.get((version.id, week["week_number"], day["day_number"])), "submission": str(uuid.uuid4())} for week in version.content["data"]["weeks"] for day in week["days"]] if version else []})
     from app.services.exercise_mapping import review_items
     links, _, _ = review_items(current_user.id)
-    return render_template("gym/programs.html", cards=cards, ongoing=ongoing, identities=identities, normalize_name=normalize_exercise_name, pending_links=sum(not item["linked"] for item in links))
+    from app.services.gym_import_drafts import pending
+    return render_template("gym/programs.html", cards=cards, ongoing=ongoing, identities=identities, normalize_name=normalize_exercise_name, pending_links=sum(not item["linked"] for item in links), import_drafts=pending(current_user.id))
 
 
 @gym_bp.get("/exercise-links")
@@ -132,17 +145,94 @@ def _draft_from_form():
     return RoutineImportDraft(**raw)
 
 
+@gym_bp.get("/programs/drafts/<draft_id>")
+@login_required
+def import_draft(draft_id):
+    from app.services import gym_import_drafts as drafts
+    row = drafts.owned(current_user.id, draft_id)
+    if row.state != 'pending':
+        return redirect(url_for('training.list_plans'))
+    draft = drafts.materialize(row)
+    plan = owned_plan(current_user.id, row.target_public_id) if row.target_public_id else None
+    state = drafts.status(row)
+    edit = request.args.get('edit') == '1' or bool(state['error'])
+    if not edit:
+        resolve_draft(draft, current_user.id)
+    return render_template('gym/editor.html' if edit else 'gym/preview.html',
+        draft=draft, plan=plan, base_revision=row.base_revision, saved_draft=row,
+        save_state=state, token=state['token'], presets=PRESETS, identities=catalog(current_user.id))
+
+
+@gym_bp.post("/programs/drafts/<draft_id>/save")
+@login_required
+def save_import_draft(draft_id):
+    from app.services import gym_import_drafts as drafts
+    try:
+        body = request.get_json() if request.is_json else None
+        if not isinstance(body, dict) or set(body) != {'revision', 'change'} or not isinstance(body['change'], dict):
+            raise GymError('Cambio inválido.')
+        row = drafts.save(current_user.id, draft_id, body['revision'], body['change'])
+        state = drafts.status(row)
+        db.session.commit()
+        return jsonify(state)
+    except (ValueError, TypeError, KeyError, RecursionError) as error:
+        db.session.rollback()
+        if isinstance(error, GymError):
+            raise
+        raise GymError('No se pudo guardar. Revisa el borrador.') from error
+
+
+@gym_bp.post("/programs/drafts/<draft_id>/review")
+@login_required
+def review_import_draft(draft_id):
+    from app.services import gym_import_drafts as drafts
+    row = drafts.owned(current_user.id, draft_id, lock=True)
+    try:
+        drafts._pending(row, int(request.form.get('revision', '')))
+        draft = drafts.materialize(row)
+        for di, day in enumerate(draft.days):
+            for ei, exercise in enumerate(day['exercises']):
+                field = f'mapping_{di}_{ei}'
+                if field in request.form:
+                    drafts.set_mapping(draft, di, ei, request.form[field])
+        resolve_draft(draft, current_user.id)
+        row = drafts.save(current_user.id, draft_id, row.revision, {'action':'edit','draft':{'program':draft.program,'days':draft.days}})
+        db.session.commit()
+    except (ValueError, TypeError, KeyError) as error:
+        db.session.rollback()
+        raise error if isinstance(error, GymError) else GymError('Revisa el borrador.')
+    return redirect(url_for('gym.import_draft', draft_id=row.public_id))
+
+
+@gym_bp.post("/programs/drafts/<draft_id>/cancel")
+@login_required
+def cancel_import_draft(draft_id):
+    from app.services import gym_import_drafts as drafts
+    try:
+        drafts.cancel(current_user.id, draft_id, int(request.form.get('revision', '')))
+        db.session.commit()
+    except (ValueError, TypeError) as error:
+        db.session.rollback()
+        raise error if isinstance(error, GymError) else GymError('Revisión inválida.')
+    flash('Importación cancelada. No se guardaron mappings personales.', 'success')
+    return redirect(url_for('training.list_plans'))
+
+
 @gym_bp.post("/programs/edit-draft")
 @login_required
 def edit_draft():
+    # Compatibility for an already-open legacy preview; persist before editing.
+    from app.services import gym_import_drafts as drafts
     try:
         draft = _draft_from_form()
-        resolve_draft(draft, current_user.id)
-        plan = owned_plan(current_user.id, request.form["plan_id"]) if request.form.get("plan_id") else None
-        revision = int(request.form["base_revision"]) if plan else None
+        plan = owned_plan(current_user.id, request.form['plan_id']) if request.form.get('plan_id') else None
+        revision = int(request.form['base_revision']) if plan else None
+        row = drafts.create(draft, current_user.id, plan=plan, base_revision=revision)
+        db.session.commit()
     except (ValueError, TypeError, KeyError):
+        db.session.rollback()
         abort(400)
-    return render_template("gym/editor.html", draft=draft, plan=plan, base_revision=revision, presets=PRESETS, identities=catalog(current_user.id))
+    return redirect(url_for('gym.import_draft', draft_id=row.public_id, edit=1))
 
 
 @gym_bp.route("/programs/new", methods=["GET", "POST"])
@@ -194,14 +284,23 @@ def editor(public_id=None):
             # A mapping or prescription edit always returns through a fresh preview.
             resolve_draft(draft, current_user.id)
             standard_document(draft, current_user.id)
-            if source_content is not None:
-                from app.services.gym_import_sources import stage_source
-                stage_source(draft, source_content, source_filename, current_user.id)
-            revision = int(request.form.get("base_revision") or plan.revision) if plan else None
-            return render_template("gym/preview.html", draft=draft, plan=plan, base_revision=revision, token=preview_token(draft, current_user.id, public_id, revision), identities=catalog(current_user.id))
+            from app.services import gym_import_drafts as drafts
+            if request.form.get('draft_id'):
+                row = drafts.owned(current_user.id, request.form['draft_id'])
+                if row.target_public_id != public_id:
+                    abort(404)
+                row = drafts.save(current_user.id, row.public_id, int(request.form.get('revision', '')), {'action':'edit', 'draft':{'program':draft.program,'days':draft.days}})
+            else:
+                if source_filename:
+                    draft.source_filename = str(source_filename).replace('\\', '/').rsplit('/', 1)[-1][:200]
+                source_type = source_filename.rsplit('.', 1)[-1].lower() if source_filename else 'text' if request.form.get('structured_text') else 'manual'
+                row = drafts.create(draft, current_user.id, plan=plan, base_revision=revision, source_type=source_type)
+            db.session.commit()
+            return redirect(url_for('gym.import_draft', draft_id=row.public_id))
     except (ValueError, TypeError, KeyError, RecursionError) as error:
-        if isinstance(error, GymError) and error.status == 404:
-            abort(404)
+        db.session.rollback()
+        if isinstance(error, GymError) and error.status in (404, 409):
+            raise
         flash("Revisa el programa: " + (str(error) if isinstance(error, (GymError, RoutineParseError)) else "formato o valores inválidos; verifica columnas, unidades y rangos."), "danger")
     return render_template("gym/editor.html", draft=draft, plan=plan, base_revision=revision, presets=PRESETS, identities=catalog(current_user.id))
 
@@ -210,12 +309,12 @@ def editor(public_id=None):
 @login_required
 def confirm():
     try:
-        draft = _draft_from_form()
-        plan, duplicate = confirm_program(draft, current_user.id, request.form.get("token", ""), plan_id=request.form.get("plan_id") or None, base_revision=int(request.form["base_revision"]) if request.form.get("base_revision") else None)
+        from app.services import gym_import_drafts as drafts
+        plan, duplicate = drafts.confirm(current_user.id, request.form['draft_id'], int(request.form['revision']), request.form.get('token', ''))
         db.session.commit()
     except (ValueError, TypeError, KeyError) as error:
         db.session.rollback()
-        return render_template("gym/error.html", message=str(error) if isinstance(error, GymError) else "No se pudo confirmar el programa; revisa un nuevo preview."), getattr(error, "status", 400)
+        return render_template("gym/error.html", message=str(error) if isinstance(error, GymError) else "No se pudo confirmar el programa; revisa un nuevo preview.", draft_url=_draft_recovery_url()), getattr(error, "status", 400)
     flash("Ese contenido ya estaba guardado." if duplicate else "Programa guardado. Tu historial conserva su versión original.", "success")
     return redirect(url_for("training.list_plans"))
 

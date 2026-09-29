@@ -65,10 +65,15 @@ def resolve_draft(draft, user_id):
     draft.unresolved = []
     for day in draft.days:
         for exercise in day["exercises"]:
+            if exercise.get("mapping_choice") == "unresolved":
+                draft.unresolved.append(exercise["raw_name"])
+                continue
             resolved_id = exercise.get("resolved_exercise_id")
             reference_id = exercise.get("resolved_catalog_id")
             reference = resolve_external(exercise["raw_name"], identities, references, public_id=reference_id,
                 source=exercise.get("external_source"), external_id=exercise.get("external_id"))
+            if exercise.get("mapping_choice") in ("new", "none"):
+                reference = []
             if exercise.get("external_source") and exercise.get("external_id") and len(reference) == 1:
                 reference_id = exercise["resolved_catalog_id"] = reference[0].public_id
             if reference_id and not reference:
@@ -150,8 +155,6 @@ def confirm_program(draft, user_id, token, *, plan_id=None, base_revision=None):
         raise GymError("Resuelve todos los ejercicios antes de confirmar.")
     # Validate before any catalog mutation, then validate again with real identities.
     standard_document(draft, user_id)
-    from app.services.gym_import_sources import promote_source
-    source = promote_source(draft, user_id)
     lock_user(user_id)
     identities = catalog(user_id)
     by_name = {name: item for item in identities for name in [item.normalized_name, *(alias.normalized_name for alias in item.aliases)]}
@@ -183,16 +186,10 @@ def confirm_program(draft, user_id, token, *, plan_id=None, base_revision=None):
     document = standard_document(draft, user_id)
     plan, duplicate = publish_program_document(document, user_id, plan_id=plan_id, base_revision=base_revision)
     version = db.session.execute(db.select(TrainingPlanVersion).where(TrainingPlanVersion.user_id == user_id, TrainingPlanVersion.training_plan_id == plan.id, TrainingPlanVersion.version_number == plan.active_version_number)).scalar_one()
-    if source:
-        source.import_status = "duplicate" if duplicate else "imported"
-        source.detected_type = "training_plan"
-        already_linked = db.session.execute(db.select(TrainingPlanVersion.id).where(TrainingPlanVersion.source_file_id == source.id)).first()
-        if not already_linked and not version.source_file_id:
-            version.source_file_id = source.id
     from app.services.import_audit import ImportAuditService
     audit = ImportAuditService()
     summary = {"total": 1, "inserts": int(not duplicate and not plan_id), "updates": int(not duplicate and bool(plan_id)), "skips": int(duplicate)}
-    run = audit.create_pending(user_id=user_id, target_type="training_plan", source_type="uploaded" if source else "manual_generated", payload_sha256=draft.source_sha256 or version.sha256, plan_sha256=version.sha256, summary=summary, metadata={"mode": "gym_program", "route": "/gym/programs/confirm", "contract_version": "1.0"})
+    run = audit.create_pending(user_id=user_id, target_type="training_plan", source_type="uploaded" if draft.source_sha256 else "manual_generated", payload_sha256=draft.source_sha256 or version.sha256, plan_sha256=version.sha256, summary=summary, metadata={"mode": "gym_program", "route": "/gym/programs/confirm", "contract_version": "1.0"})
     audit.finalize_succeeded(run, summary)
     return plan, duplicate
 

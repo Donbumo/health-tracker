@@ -4,29 +4,32 @@
 
 ## Estado actual
 
-- Base: `e41ceb62cac5cc53208e949502dd5e91f1f4eafb` en master. External Exercise Catalog ya fue desplegado en la entrega anterior; este trabajo no accede al NAS.
-- Rama `codex/exercise-mapping-assistant`: revisión manual de vínculos desde Mi entrenamiento, lista de pendientes, búsqueda/candidatos visuales, confirmación explícita y cambio de vínculo.
-- Reutiliza identidades, aliases y FK nullable existentes. Sin migración, nueva fuente, descargas, AI ni modificación de External Exercise Catalog.
+- Base productiva: `d143a07c92c5a93c97040a69ead9449251d29025`, PR #8 desplegado previamente.
+- Rama `fix/gym-import-draft-persistence`: borradores normalizados persistentes para el flujo de importación Gym.
+- Reutiliza parser, resolver y publicación oficial. Una única migración mínima `20260928_0043`; no se aplica a producción en esta entrega.
 
 ## Trabajo en curso
 
-- Implementación lista para revisión mediante commit y PR. Arquitectura y alcance en [EXERCISE_MAPPING_ASSISTANT.md](EXERCISE_MAPPING_ASSISTANT.md).
-- QA exclusivamente ficticia con SQLite/MariaDB efímera y servidor local. No copiar nombres/rutinas reales al repositorio.
+- Hotfix y contrato en [GYM_IMPORT_DRAFT_PERSISTENCE.md](GYM_IMPORT_DRAFT_PERSISTENCE.md).
+- Autosave privado, refresh/reopen, confirmación sin original, conflictos de revisión y recibo idempotente.
+- QA exclusivamente ficticia y bases efímeras. No copiar archivos, rutinas ni mappings personales al repositorio.
 
 ## Bloqueadores y riesgos
 
-- Los candidatos son sugerencias, nunca equivalencias automáticas. «Ninguno corresponde» mantiene el ejercicio pendiente o su vínculo anterior.
-- No fusiona identidades ni cambia nombres/documentos históricos. Los límites de backup portable de la referencia visual no cambian.
-- El gate con ejercicios reales requiere revisión y autorización posterior para producción. No guardar mappings durante QA.
+- Las decisiones antiguas no estaban guardadas en servidor. Recuperación desde una pestaña del navegador solo si se comprueba que conserva el formulario; no reconstruir desde logs.
+- La migración es necesaria para persistir trabajo antes de que exista una rutina. No reutilizar drafts de sesiones, auditoría ni restore para otro dominio.
+- Cambia la retención de originales únicamente en nuevas importaciones Gym: se conserva contenido normalizado y procedencia, sin bytes de upload.
 
 ## Siguiente paso
 
-- Revisar el PR. No merge, NAS, tag ni despliegue dentro de esta entrega.
-- Después del despliegue autorizado, el usuario selecciona manualmente los candidatos en su cuenta.
+- Entrega con commit `fix: persist gym import mapping progress` y push de la rama; siguiente paso: revisión para PR.
+- Sin merge, NAS, tag, AI Coach, descargas de medios ni cambios en mappings reales.
 
 ## Pruebas relevantes
 
-- QA final: 1,108 backend PASS, 25 gates opcionales omitidos; 10 pruebas del asistente PASS en MariaDB 11.4; db check sin operaciones nuevas; 24 comprobaciones responsive/paleta PASS.
-- `backend/tests/test_exercise_mapping.py`: ownership, CSRF, decisiones firmadas y obsoletas, reintentos, aliases/import futuro, historia y nombres legacy.
-- `backend/tests/test_external_exercise_catalog.py`, `backend/tests/test_gym_training.py` y suite completa para regresiones.
-- `scripts/gym/mapping_qa_app.py`: fixture local, HTTP saliente bloqueado, prueba visual de resumen/candidatos y confirmación ficticia.
+- `backend/tests/test_gym_import_drafts.py`: expiración/ausencia física, autosave, reapertura, cancelación, CSRF/ownership, historial, rollback e idempotencia.
+- MariaDB focal: 12 pruebas PASS, incluyendo carreras de guardado y confirmación. Migración upgrade/downgrade y db check PASS en schema efímero.
+- Suite backend completa: 1119 PASS, 26 gates opcionales omitidos. Autosave JavaScript: 4 PASS con `node --test scripts/gym/test_draft_autosave.cjs`.
+- QA local con seis ejercicios: original eliminado, draft envejecido 60 días, refresh/cierre/reapertura, conflicto entre pestañas, fallo de red y reintento, corrección manual y confirmación PASS. Historial ficticio conservado.
+- Responsive: anchos 360, 390, 430, 768, 1024 y 1366 sin overflow; captura móvil 390 × 844. Cancelación sin mappings personales PASS.
+- Recuperación del incidente real no confirmada: Edge no es accesible desde esta sesión; conservar la pestaña abierta sin recargar. No se modificó producción.

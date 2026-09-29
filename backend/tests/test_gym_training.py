@@ -167,7 +167,7 @@ def test_web_journey(app, client, user):
 
 def test_preview_web_and_csrf(app, client, user):
     login(client)
-    response = client.post('/gym/programs/new', data={'preset': 'ppl-v1'})
+    response = client.post('/gym/programs/new', data={'preset': 'ppl-v1'}, follow_redirects=True)
     assert response.status_code == 200, response.text
     assert 'Confirmar programa' in response.text
     assert db.session.query(TrainingPlan).count() == 0
@@ -279,26 +279,28 @@ def test_neutral_reads_and_future_actions_disabled(app, user):
     assert not set(FUTURE_ACTIONS) & set(AICapabilityRegistry().actions_by_id)
 
 
-def test_upload_preview_does_not_write_domain_and_confirm_preserves_source(app, client, user):
+def test_upload_preview_persists_normalized_provenance_without_original(app, client, user):
     from pathlib import Path
     from html import unescape
     import re
-    from app.models import UploadedFile, ImportRun
+    from app.models import UploadedFile, ImportRun, GymImportDraft
     login(client)
     raw = (Path(__file__).parent / 'fixtures/gym_qa/routine.csv').read_bytes()
-    response = client.post('/gym/programs/new', data={'name':'QA Import', 'file':(io.BytesIO(raw), 'routine.csv')})
+    response = client.post('/gym/programs/new', data={'name':'QA Import', 'file':(io.BytesIO(raw), 'routine.csv')}, follow_redirects=True)
     assert response.status_code == 200
     assert db.session.query(TrainingPlan).count() == 0
     assert db.session.query(UploadedFile).count() == 0
-    draft = json.loads(unescape(re.search(r'id="mapping-draft" value="([^"]+)"', response.text)[1]))
+    row = db.session.query(GymImportDraft).one()
+    draft = copy.deepcopy(row.payload_json)
     for day in draft['days']:
         for exercise in day['exercises']: exercise['create_new'] = True
-    response = client.post('/gym/programs/new', data={'draft':json.dumps(draft)})
+    response = client.post('/gym/programs/new', data={'draft':json.dumps(draft), 'draft_id':row.public_id, 'revision':row.revision}, follow_redirects=True)
     html = response.text.split('id="gym-confirm"')[1]
     fields = {name: unescape(value) for name,value in re.findall(r'name="([^"]+)" value="([^"]*)"', html.split('</form>')[0])}
     assert client.post('/gym/programs/confirm', data=fields).status_code == 302
     assert db.session.query(TrainingPlan).count() == 1
-    assert db.session.query(UploadedFile).one().sha256 == draft['source_sha256']
+    assert db.session.query(UploadedFile).count() == 0
+    assert db.session.query(ImportRun).one().payload_sha256 == draft['source_sha256']
     assert db.session.query(ImportRun).one().status == 'succeeded'
     assert client.post('/gym/programs/confirm', data=fields).status_code == 302
     assert db.session.query(TrainingPlan).count() == 1
@@ -381,11 +383,11 @@ def test_correcting_preview_preserves_revision_and_posts_to_editor(app, client, 
     newer = copy.deepcopy(draft)
     newer.program['name'] = 'QA concurrent change'
     program(user, newer, plan)
-    response = client.post('/gym/programs/edit-draft', data=fields)
+    response = client.post('/gym/programs/edit-draft', data=fields, follow_redirects=True)
     assert response.status_code == 200
     assert f'action="/gym/programs/{plan.public_id}/edit"' in response.text
     assert f'name="base_revision" value="{revision}"' in response.text
-    response = client.post(f'/gym/programs/{plan.public_id}/edit', data=fields)
+    response = client.post(f'/gym/programs/{plan.public_id}/edit', data=fields, follow_redirects=True)
     html = response.text.split('id="gym-confirm"')[1].split('</form>')[0]
     confirmation = {name: unescape(value) for name, value in re.findall(r'name="([^"]+)" value="([^"]*)"', html)}
     assert client.post('/gym/programs/confirm', data=confirmation).status_code == 409

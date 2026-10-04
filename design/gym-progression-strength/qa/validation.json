@@ -1,0 +1,507 @@
+{
+  "responsive": [
+    {
+      "width": 360,
+      "page": "home",
+      "brokenImages": 0,
+      "client": 360,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 360,
+      "shortControls": [],
+      "viewport": 360
+    },
+    {
+      "width": 360,
+      "page": "progress",
+      "brokenImages": 0,
+      "client": 360,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 360,
+      "shortControls": [],
+      "viewport": 360
+    },
+    {
+      "width": 360,
+      "page": "summary",
+      "brokenImages": 0,
+      "client": 360,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 360,
+      "shortControls": [],
+      "viewport": 360
+    },
+    {
+      "width": 390,
+      "page": "home",
+      "brokenImages": 0,
+      "client": 390,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 390,
+      "shortControls": [],
+      "viewport": 390
+    },
+    {
+      "width": 390,
+      "page": "progress",
+      "brokenImages": 0,
+      "client": 390,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 390,
+      "shortControls": [],
+      "viewport": 390
+    },
+    {
+      "width": 390,
+      "page": "summary",
+      "brokenImages": 0,
+      "client": 390,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 390,
+      "shortControls": [],
+      "viewport": 390
+    },
+    {
+      "width": 430,
+      "page": "home",
+      "brokenImages": 0,
+      "client": 430,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 430,
+      "shortControls": [],
+      "viewport": 430
+    },
+    {
+      "width": 430,
+      "page": "progress",
+      "brokenImages": 0,
+      "client": 430,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 430,
+      "shortControls": [],
+      "viewport": 430
+    },
+    {
+      "width": 430,
+      "page": "summary",
+      "brokenImages": 0,
+      "client": 430,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 430,
+      "shortControls": [],
+      "viewport": 430
+    },
+    {
+      "width": 768,
+      "page": "home",
+      "brokenImages": 0,
+      "client": 768,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 768,
+      "shortControls": [],
+      "viewport": 768
+    },
+    {
+      "width": 768,
+      "page": "progress",
+      "brokenImages": 0,
+      "client": 768,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 768,
+      "shortControls": [],
+      "viewport": 768
+    },
+    {
+      "width": 768,
+      "page": "summary",
+      "brokenImages": 0,
+      "client": 768,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 768,
+      "shortControls": [],
+      "viewport": 768
+    },
+    {
+      "width": 1024,
+      "page": "home",
+      "brokenImages": 0,
+      "client": 1024,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 1024,
+      "shortControls": [],
+      "viewport": 1024
+    },
+    {
+      "width": 1024,
+      "page": "progress",
+      "brokenImages": 0,
+      "client": 1024,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 1024,
+      "shortControls": [],
+      "viewport": 1024
+    },
+    {
+      "width": 1024,
+      "page": "summary",
+      "brokenImages": 0,
+      "client": 1024,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 1024,
+      "shortControls": [],
+      "viewport": 1024
+    },
+    {
+      "width": 1366,
+      "page": "home",
+      "brokenImages": 0,
+      "client": 1366,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 1366,
+      "shortControls": [],
+      "viewport": 1366
+    },
+    {
+      "width": 1366,
+      "page": "progress",
+      "brokenImages": 0,
+      "client": 1366,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 1366,
+      "shortControls": [],
+      "viewport": 1366
+    },
+    {
+      "width": 1366,
+      "page": "summary",
+      "brokenImages": 0,
+      "client": 1366,
+      "h1": 1,
+      "overflowElements": [],
+      "scroll": 1366,
+      "shortControls": [],
+      "viewport": 1366
+    }
+  ],
+  "interactions": [
+    {
+      "test": "Period selector 6 months",
+      "pass": true
+    },
+    {
+      "test": "Accessible chart data expands",
+      "pass": true
+    },
+    {
+      "test": "Simulated confirmation no write",
+      "pass": true
+    },
+    {
+      "test": "Escape and focus return",
+      "pass": true
+    },
+    {
+      "test": "Reject proposal",
+      "pass": true
+    },
+    {
+      "test": "Bench demonstration gallery and attribution",
+      "pass": true
+    },
+    {
+      "test": "Modal reverse Tab wraps to close",
+      "pass": true
+    },
+    {
+      "test": "Modal forward Tab wraps to first action",
+      "pass": true
+    },
+    {
+      "test": "Skip link focuses main without resetting page",
+      "pass": true
+    },
+    {
+      "test": "Skip link preserves route for subsequent interactions",
+      "pass": true
+    },
+    {
+      "test": "Mobile proposal confirmation",
+      "pass": true
+    },
+    {
+      "test": "Variant-specific curl media without bench image",
+      "pass": true
+    },
+    {
+      "test": "Mobile home to completed workout fixture",
+      "pass": true
+    },
+    {
+      "test": "Next D2 previews day without starting",
+      "pass": true
+    }
+  ],
+  "states": [
+    {
+      "chartCount": 1,
+      "empty": [],
+      "overflow": false,
+      "proposalButton": true,
+      "range": "8 reps Dentro del rango",
+      "selectFont": "16px",
+      "selected": "maintain",
+      "title": "Remo con barra"
+    },
+    {
+      "chartCount": 1,
+      "empty": [],
+      "overflow": false,
+      "proposalButton": true,
+      "range": "6 reps Buscando más reps",
+      "selectFont": "16px",
+      "selected": "below",
+      "title": "Curl con barra"
+    },
+    {
+      "chartCount": 1,
+      "empty": [],
+      "overflow": false,
+      "proposalButton": true,
+      "range": "8 reps Tope del rango",
+      "selectFont": "16px",
+      "selected": "top-range",
+      "title": "Press banca"
+    },
+    {
+      "chartCount": 0,
+      "empty": [
+        "Todavía no hay historial",
+        "Vincula la variante correcta",
+        "Aún sin series",
+        "Tu historial aparecerá aquí"
+      ],
+      "fallback": "↔Sin imagen disponible",
+      "overflow": false,
+      "proposalButton": false,
+      "selectFont": "16px",
+      "selected": "review",
+      "title": "Press de mi rutina"
+    },
+    {
+      "chartCount": 0,
+      "empty": [
+        "Una sesión es el comienzo",
+        "Sin propuesta por ahora"
+      ],
+      "overflow": false,
+      "proposalButton": false,
+      "range": "7 reps Dentro del rango",
+      "selectFont": "16px",
+      "selected": "insufficient",
+      "title": "Press banca"
+    },
+    {
+      "chartCount": 0,
+      "empty": [
+        "Todavía no hay historial",
+        "Sin propuesta por ahora",
+        "Aún sin series",
+        "Tu historial aparecerá aquí"
+      ],
+      "overflow": false,
+      "proposalButton": false,
+      "selectFont": "16px",
+      "selected": "no-history",
+      "title": "Press banca"
+    },
+    {
+      "chartCount": 1,
+      "empty": [],
+      "fallback": "↔Sin imagen disponible",
+      "overflow": false,
+      "proposalButton": true,
+      "range": "7 reps Dentro del rango",
+      "selectFont": "16px",
+      "selected": "no-image",
+      "title": "Press banca"
+    },
+    {
+      "chartCount": 1,
+      "empty": [
+        "Sin propuesta por ahora"
+      ],
+      "overflow": false,
+      "proposalButton": false,
+      "range": "7 reps Dentro del rango",
+      "selectFont": "16px",
+      "selected": "no-proposals",
+      "title": "Press banca"
+    },
+    {
+      "empty": [
+        "Tu progreso empieza aquí",
+        "Aún sin referencia",
+        "Una sesión a la vez"
+      ],
+      "overflow": false,
+      "selected": "new-program",
+      "title": "Mi entrenamiento"
+    }
+  ],
+  "light": [
+    {
+      "overflow": false,
+      "theme": "light",
+      "title": "Mi entrenamiento",
+      "viewport": 390
+    },
+    {
+      "overflow": false,
+      "theme": "light",
+      "title": "Press banca",
+      "viewport": 390
+    },
+    {
+      "overflow": false,
+      "theme": "light",
+      "title": "Entrenamientocompletado.",
+      "viewport": 390
+    },
+    {
+      "overflow": false,
+      "theme": "light",
+      "title": "Mi entrenamiento",
+      "viewport": 1366
+    },
+    {
+      "overflow": false,
+      "theme": "light",
+      "title": "Press banca",
+      "viewport": 1366
+    },
+    {
+      "overflow": false,
+      "theme": "light",
+      "title": "Entrenamientocompletado.",
+      "viewport": 1366
+    }
+  ],
+  "contrast": [
+    {
+      "theme": "dark",
+      "pair": "text/bg",
+      "ratio": 17.31
+    },
+    {
+      "theme": "dark",
+      "pair": "muted/surface",
+      "ratio": 8.02
+    },
+    {
+      "theme": "dark",
+      "pair": "muted/raised",
+      "ratio": 7.35
+    },
+    {
+      "theme": "dark",
+      "pair": "lime/lime-soft",
+      "ratio": 10.92
+    },
+    {
+      "theme": "dark",
+      "pair": "cyan/cyan-soft",
+      "ratio": 9.08
+    },
+    {
+      "theme": "dark",
+      "pair": "amber/amber-soft",
+      "ratio": 9.69
+    },
+    {
+      "theme": "light",
+      "pair": "text/bg",
+      "ratio": 13.97
+    },
+    {
+      "theme": "light",
+      "pair": "muted/surface",
+      "ratio": 6.05
+    },
+    {
+      "theme": "light",
+      "pair": "muted/raised",
+      "ratio": 5.26
+    },
+    {
+      "theme": "light",
+      "pair": "lime/lime-soft",
+      "ratio": 6.16
+    },
+    {
+      "theme": "light",
+      "pair": "cyan/cyan-soft",
+      "ratio": 5.64
+    },
+    {
+      "theme": "light",
+      "pair": "amber/amber-soft",
+      "ratio": 6.06
+    }
+  ],
+  "summaryAfterAttribution": [
+    {
+      "credit": true,
+      "overflow": false,
+      "width": 360
+    },
+    {
+      "credit": true,
+      "overflow": false,
+      "width": 390
+    },
+    {
+      "credit": true,
+      "overflow": false,
+      "width": 430
+    },
+    {
+      "credit": true,
+      "overflow": false,
+      "width": 768
+    },
+    {
+      "credit": true,
+      "overflow": false,
+      "width": 1024
+    },
+    {
+      "credit": true,
+      "overflow": false,
+      "width": 1366
+    }
+  ],
+  "console": [],
+  "tests": {
+    "existingFrontend": "12 PASS",
+    "existingAccessibility": "2 PASS / 4 deselected",
+    "syntax": "app.js + fixtures.js PASS",
+    "compose": "config --quiet PASS with explicit fictitious env file",
+    "fullBackend": "not run; backend unchanged"
+  }
+}

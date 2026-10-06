@@ -153,6 +153,18 @@ class StrengthReader:
                 key = (record.training_plan_id, record.planned_week_number, record.planned_day_number,
                        occurrence.planned_exercise_order, identity.public_id if identity else None)
                 self.by_prescription[key].append(row)
+            # An omitted exercise in a partially completed day breaks consecutive
+            # evidence too; never silently skip it and join two older successes.
+            recorded_orders = {e.planned_exercise_order for e in record.exercises}
+            for target in (historical_day["exercises"] if historical_day else []):
+                if target["exercise_order"] in recorded_orders:
+                    continue
+                identity = self.identity(target)
+                key = (record.training_plan_id, record.planned_week_number, record.planned_day_number,
+                       target["exercise_order"], identity.public_id if identity else None)
+                self.by_prescription[key].append({"session_id": record.public_id, "revision": record.revision,
+                    "date": utc(record.performed_at).astimezone(self.zone).strftime("%d/%m/%Y"),
+                    "signature": target_signature(target), "sets": []})
 
     def _current_locked_snapshot(self):
         """Refresh every private source with locking reads, including loader children."""
@@ -170,10 +182,14 @@ class StrengthReader:
             set_committed_value(p, "versions", [v for v in versions if v.training_plan_id == p.id])
         self.versions = {v.id: v for p in self.plans for v in p.versions}
         sessions, exercises, sets = rows(TrainingSession), rows(TrainingSessionExercise), rows(TrainingSet)
+        sets_by_exercise, exercises_by_session = defaultdict(list), defaultdict(list)
+        for s in sets:
+            sets_by_exercise[s.training_session_exercise_id].append(s)
         for e in exercises:
-            set_committed_value(e, "sets", [s for s in sets if s.training_session_exercise_id == e.id])
+            set_committed_value(e, "sets", sets_by_exercise[e.id])
+            exercises_by_session[e.training_session_id].append(e)
         for r in sessions:
-            set_committed_value(r, "exercises", [e for e in exercises if e.training_session_id == r.id])
+            set_committed_value(r, "exercises", exercises_by_session[r.id])
         plan_ids = {p.id for p in self.plans}
         self.records = sorted([r for r in sessions if r.deleted_at is None and r.status == "completed"
                                and r.training_plan_id in plan_ids and utc(r.performed_at) <= self.now],
@@ -302,7 +318,7 @@ class StrengthReader:
         return ExerciseStrengthDetail(
             identity={"exercise_id": identity.public_id, "name": identity.canonical_name,
                       "equipment": reference.details.get("equipment") if reference else None,
-                      "muscles": reference.details.get("primaryMuscles", []) if reference else []},
+                      "muscles": reference.details.get("primary_muscles", []) if reference else []},
             evaluation=self.evaluate(selected) if selected else None,
             contexts=[{"program_id": c["plan"].public_id, "prescription_id": c["id"],
                        "label": f'{c["plan"].name} · {c["day_name"]} · {c["prescription"]["name"]}'} for c in contexts],

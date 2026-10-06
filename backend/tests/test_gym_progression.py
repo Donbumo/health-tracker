@@ -46,9 +46,11 @@ def test_double_progression_increase_load_requires_two_complete_top_sessions():
 def test_increase_reps_and_missing_effort_are_explicit():
     result = evaluate([row((7, 7, 7), date="24/09/2026"), row((8, 7, 7), date="01/10/2026")])
     assert result["state"] == "increase_reps"
-    result = evaluate([row((8, 8, 8), date="24/09/2026"), row((8, 8, 8), date="01/10/2026")])
-    result["evidence"].append("RIR no disponible")
+    rows = [row((8, 8, 8), date="24/09/2026"), row((8, 8, 8), date="01/10/2026")]
+    rows[1]["sets"][0]["rir"] = None
+    result = evaluate(rows)
     assert result["state"] == "increase_load"
+    assert any("RIR no disponible" in line for line in result["evidence"])
 
 
 def test_review_for_identity_or_incompatible_mode():

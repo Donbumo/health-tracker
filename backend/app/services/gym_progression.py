@@ -9,7 +9,7 @@ import json
 from typing import TypedDict
 
 from app.services.mobile_progress import WEIGHT_VOLUME_MODES, _decimal, _text
-from app.services.workout_loads import from_kg
+from app.services.workout_loads import from_kg, MAX_WEIGHT
 
 E1RM_EPLEY_V1 = "E1RM_EPLEY_V1"
 RULE_ID = "double_progression"
@@ -136,6 +136,8 @@ class GymProgressionEngine:
         if len(sessions) < 2:
             return finish("insufficient_data", "Se necesitan al menos dos sesiones comparables completadas.")
         pair = recent[-2:]
+        if pair[0].get("session_id") and pair[0].get("session_id") == pair[1].get("session_id"):
+            return finish("review", "Las evidencias deben proceder de sesiones distintas.")
         for row in pair:
             if row.get("signature") != target_signature(prescription):
                 return finish("review", "La prescripción cambió; reúne evidencia con el objetivo actual.")
@@ -145,7 +147,7 @@ class GymProgressionEngine:
             actual = [s["number"] for s in row["sets"]]
             if len(actual) != len(set(actual)) or not set(actual).issubset(expected):
                 return finish("review", "Las series registradas contradicen la prescripción.")
-            if set(actual) != expected or any(_decimal(s["load_kg"]) is None or s["reps"] < 1 for s in row["sets"]):
+            if set(actual) != expected or any(_decimal(s["load_kg"]) is None or _decimal(s["load_kg"]) < 0 or s["reps"] < 1 for s in row["sets"]):
                 return finish("insufficient_data", "Faltan series de trabajo confirmadas para evaluar dos sesiones completas.")
         if any(s["rir"] is None for r in pair for s in r["sets"]):
             result["evidence"].append("RIR no disponible en alguna serie; no se infiere el esfuerzo.")
@@ -191,6 +193,8 @@ class GymProgressionEngine:
                 increment = min(increments) if increments else Decimal("2.5" if target["unit"] == "kg" else "5")
                 proposed = current_load + increment
                 kg = proposed * (Decimal("0.45359237") if target["unit"] == "lb" else Decimal(1))
+                if kg > MAX_WEIGHT:
+                    return finish("review", "La propuesta supera el límite de carga admitido.")
                 changes = [{"set_number": s["set_number"], "load_value": _text(proposed),
                             "load_unit": target["unit"], "weight_kg": _text(kg), "load_mode": "direct_total"}
                            for s in prescription["sets"]]

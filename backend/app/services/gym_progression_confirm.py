@@ -60,7 +60,10 @@ def confirm(user_id, token):
     # Locking reads are current reads under MariaDB REPEATABLE READ, including
     # relationships. Do not depend on an earlier request's authentication snapshot.
     reader = StrengthReader(user_id, lock=True)
-    context = reader.context(plan.public_id, payload["prescription"])
+    try:
+        context = reader.context(plan.public_id, payload["prescription"])
+    except GymError as error:
+        raise GymError(STALE, 409) from error
     current = context["version"]
     if (plan.revision == payload["revision"] + 1 and current.sha256 == payload["target"]):
         return plan, True

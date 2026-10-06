@@ -217,7 +217,7 @@ Se verifican 360, 390×844, 430, 768, 1024 y 1366, oscuro y revisión clara,
 interacción por teclado y contraste de tokens. La verificación no constituye
 una certificación WCAG ni una prueba con todos los lectores de pantalla.
 
-## Cierre y siguiente fase
+## Cierre visual aprobado (histórico)
 
 Gate visual aprobado. Este cierre autoriza el commit
 `design: define gym progression and strength experience` y el push de
@@ -232,3 +232,37 @@ tag o nueva versión en este cierre.
 Los resultados de validación y las capturas se registran en
 `design/gym-progression-strength/qa/`. Las capturas del 2026-10-03 documentan
 la dirección aprobada; la revalidación de cierre del 2026-10-04 no altera el diseño.
+
+## Implementación real — PR #10
+
+La dirección visual anterior se conserva como referencia histórica. En
+`feature/gym-progression-strength` las páginas Flask consumen read models reales;
+no cargan el JS, controles de escenario ni fixtures del prototipo.
+
+| Categoría | Fuente y comportamiento en runtime |
+| --- | --- |
+| Datos existentes | Programas/revisiones, prescripciones, sesiones completadas, series confirmadas, carga/modo/unidad, reps/RIR/RPE, identidad y catálogo local del propietario. |
+| Cálculos determinísticos implementados | Semana local, volumen oficial y flag parcial, comparación con cobertura compatible, consistencia de cuatro semanas, top set de una serie real, e1RM Epley v1 y doble progresión conservadora. |
+| Campos solo mock | Nombres y cifras de demostración, score/confianza inventada, escenarios conmutables y etiquetas QA del prototipo permanecen únicamente en `design/` y fixtures de pruebas. No se insertan en templates productivos. |
+| Contratos del motor | `ProgressionEvaluation` contiene estado, prescripción/revisión, propuesta, evidencia y regla versionada. Home, detalle y resumen consumen el mismo motor. El read `training.progression` queda neutral para integración futura, sin acciones ni proveedores AI. |
+
+Home conserva cabecera y semana, seguida por el programa/día y CTA de la próxima
+sesión como contenido principal; las tarjetas de progresión vienen después. En
+desktop fuerza y consistencia ocupan la columna lateral. No se añaden KPIs.
+
+Solo `increase_load` con cambios concretos habilita «Preparar cambio». Las
+propuestas conceptuales de reps, mantener o revisar no publican revisiones.
+Preview enseña actual/propuesto, evidencia y regla. Confirmar crea una revisión
+inmutable mediante el servicio oficial, con CSRF, ownership, expiración,
+revalidación, transacción e idempotencia. Las sesiones anteriores conservan su
+versión y sus resultados. La UI siempre etiqueta `e1RM · estimación`.
+
+Los medios, instrucciones y atribución provienen del catálogo local existente.
+Sin identidad o sin imagen se mantiene un fallback honesto. Una sola sesión no
+produce una tendencia, los huecos no se convierten en cero y los cambios de modo
+interrumpen la línea. El resumen se abre al finalizar, muestra resultados reales
+y propuestas sin aplicar. No añade récords, estándares externos ni AI Coach.
+
+Las capturas de implementación y los resultados del gate se distinguen de las
+del prototipo en [GYM_PROGRESSION_QA.md](GYM_PROGRESSION_QA.md). El zoom real al
+200% requiere evidencia separada; reducir el viewport no lo sustituye.

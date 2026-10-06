@@ -94,7 +94,7 @@ La evidencia y los estados se expresan con texto; los tokens de tema y reduced
 motion reutilizan el contrato web existente. La comparación visual mantiene
 la dirección aprobada, adaptada al shell y navegación de Health Tracker.
 
-El zoom real 200% queda sujeto a inspección manual en navegador externo: el
-navegador automatizado no expone control fiable de zoom. Un viewport reducido
-no constituye esa prueba. El resultado manual debe constar en el cierre del PR;
-mientras falte, **no está listo para squash merge**. No se solicita ni ejecuta merge.
+Zoom 200%: no certificado; no bloquea esta entrega.
+El navegador automatizado no expone control fiable de zoom; un viewport reducido
+no constituye esa prueba. La clasificación no implica que haya pasado el gate.
+Los demás gates del PR #10 quedaron aprobados y se autorizó Squash and merge.

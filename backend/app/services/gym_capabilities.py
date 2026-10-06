@@ -10,7 +10,18 @@ READ_MODELS = {
     "training.program_day": "get_training_program",
     "training.session": "get_training_session",
     "training.exercise_progress": "get_exercise_progress",
+    "training.progression": "read_progression",
 }
+
+
+def read_progression(user_id, program_id=None, prescription_id=None):
+    """Neutral provider-independent read. Not registered as an AI capability/action."""
+    from app.services.gym_strength import StrengthReader
+    reader = StrengthReader(user_id)
+    if program_id and prescription_id:
+        return reader.evaluate(reader.context(program_id, prescription_id))
+    return {"evaluations": [reader.evaluate(c) for c in reader.contexts
+                            if c["plan"].gym_active and (not program_id or c["plan"].public_id == program_id)]}
 FUTURE_ACTIONS = {
     "training.program.adjust": ("program_id", "base_revision", "days"),
     "training.exercise.replace": ("program_id", "base_revision", "exercise_id", "replacement_exercise_id"),

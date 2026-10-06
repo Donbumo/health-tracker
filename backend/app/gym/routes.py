@@ -2,7 +2,7 @@ import json
 import uuid
 from zoneinfo import ZoneInfo
 
-from flask import abort, flash, jsonify, redirect, render_template, request, url_for
+from flask import abort, flash, g, jsonify, make_response, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.orm import selectinload
 
@@ -35,7 +35,9 @@ def exercise_media_context():
     def owner_catalog():
         nonlocal identities
         if identities is None:
-            identities = catalog(current_user.id)
+            identities = getattr(g, "strength_identities", None)
+            if identities is None:
+                identities = catalog(current_user.id)
         return identities
     def reference_catalog():
         nonlocal references
@@ -81,21 +83,37 @@ def bounded_request():
         abort(413)
 
 
+@gym_bp.after_request
+def private_gym_response(response):
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
+def strength_reader():
+    from app.services.gym_strength import StrengthReader
+    reader = StrengthReader(current_user.id)
+    g.strength_identities = reader.identities
+    return reader
+
+
 def program_home():
-    plans = db.session.execute(db.select(TrainingPlan).where(TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == current_user.id).options(selectinload(TrainingPlan.versions)).order_by(TrainingPlan.gym_active.desc(), TrainingPlan.updated_at.desc())).scalars().all()
+    reader = strength_reader()
+    plans = sorted(reader.plans, key=lambda p: (p.gym_active, p.updated_at), reverse=True)
     ongoing = db.session.execute(db.select(TrainingSession).where(TrainingSession.user_id == current_user.id, TrainingSession.status == "in_progress", TrainingSession.deleted_at.is_(None)).order_by(TrainingSession.started_at.desc())).scalars().all()
     last_rows = db.session.execute(db.select(TrainingSession.training_plan_version_id, TrainingSession.planned_week_number, TrainingSession.planned_day_number, db.func.max(TrainingSession.performed_at)).where(TrainingSession.user_id == current_user.id, TrainingSession.status == "completed", TrainingSession.deleted_at.is_(None)).group_by(TrainingSession.training_plan_version_id, TrainingSession.planned_week_number, TrainingSession.planned_day_number)).all()
     local_zone = ZoneInfo(current_user.timezone or "UTC")
     last = {(v, w, d): utc(moment).astimezone(local_zone) for v, w, d, moment in last_rows}
-    identities = {name: item.public_id for item in catalog(current_user.id) for name in [item.normalized_name, *(alias.normalized_name for alias in item.aliases)]}
+    identities = {name: item.public_id for name, item in reader.by_name.items() if item is not None}
     cards = []
     for plan in plans:
         version = next((v for v in plan.versions if v.version_number == plan.active_version_number), None)
-        cards.append({"plan": plan, "version": version, "days": [{"week": week["week_number"], "day": day, "last": last.get((version.id, week["week_number"], day["day_number"])), "submission": str(uuid.uuid4())} for week in version.content["data"]["weeks"] for day in week["days"]] if version else []})
+        cards.append({"plan": plan, "version": version, "days": [{"week": week["week_number"], "day": day, "total_sets": sum(len(e["sets"]) for e in day["exercises"]), "last": last.get((version.id, week["week_number"], day["day_number"])), "submission": str(uuid.uuid4())} for week in version.content["data"]["weeks"] for day in week["days"]] if version else []})
     from app.services.exercise_mapping import review_items
     links, _, _ = review_items(current_user.id)
     from app.services.gym_import_drafts import pending
-    return render_template("gym/programs.html", cards=cards, ongoing=ongoing, identities=identities, normalize_name=normalize_exercise_name, pending_links=sum(not item["linked"] for item in links), import_drafts=pending(current_user.id))
+    response = make_response(render_template("gym/programs.html", cards=cards, ongoing=ongoing, identities=identities, normalize_name=normalize_exercise_name, pending_links=sum(not item["linked"] for item in links), import_drafts=pending(current_user.id), strength=reader.overview()))
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
 
 
 @gym_bp.get("/exercise-links")
@@ -422,7 +440,7 @@ def start(public_id):
     except (ValueError, TypeError) as error:
         db.session.rollback()
         return render_template("gym/error.html", message=str(error) if isinstance(error, GymError) else "Inicio inválido."), getattr(error, "status", 400)
-    return redirect(url_for("gym.workout", public_id=record.public_id))
+    return redirect(url_for("gym.completion" if record.status == "completed" else "gym.workout", public_id=record.public_id))
 
 
 @gym_bp.get("/sessions/<public_id>")
@@ -470,14 +488,35 @@ def finish(public_id):
     except GymError as error:
         db.session.rollback()
         return render_template("gym/error.html", message=str(error)), error.status
-    return redirect(url_for("gym.workout", public_id=record.public_id))
+    return redirect(url_for("gym.completion" if record.status == "completed" else "gym.workout", public_id=record.public_id))
 
 
 @gym_bp.get("/exercises/<public_id>/progress")
 @login_required
 def exercise_progress(public_id):
-    try:
-        progress = progress_exercise_detail(current_user.id, public_id, "365")
-    except ValueError as error:
-        abort(getattr(error, "status", 404))
+    progress = strength_reader().detail(public_id, request.args.get("period", "8"),
+                                        program_id=request.args.get("program"), prescription_id=request.args.get("prescription"))
     return render_template("gym/progress.html", progress=progress)
+
+
+@gym_bp.get("/sessions/<public_id>/summary")
+@login_required
+def completion(public_id):
+    return render_template("gym/completion.html", summary=strength_reader().summary(public_id))
+
+
+@gym_bp.get("/programs/<public_id>/progression/<prescription_id>/preview")
+@login_required
+def progression_preview(public_id, prescription_id):
+    from app.services.gym_progression_confirm import preview
+    return render_template("gym/progression_preview.html", preview=preview(current_user.id, public_id, prescription_id))
+
+
+@gym_bp.post("/progression/confirm")
+@login_required
+def progression_confirm():
+    from app.services.gym_progression_confirm import confirm
+    plan, duplicate = confirm(current_user.id, request.form.get("token"))
+    db.session.commit()
+    flash("Este cambio ya estaba confirmado." if duplicate else "Cambio confirmado. Tu próxima sesión usará la nueva revisión.", "success")
+    return redirect(url_for("training.list_plans"))

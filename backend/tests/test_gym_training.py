@@ -13,6 +13,7 @@ from app.services.gym_programs import GymError, confirm_program, preview_token, 
 from app.services.gym_sessions import complete_set, finish_session, start_session, workout_context
 from app.services.importers.routine_draft import DeterministicParser, RoutineParseError, draft_from_document
 from app.services.training_plans import get_active_version
+from app.services.gym_progression_confirm import preview as progression_preview, confirm as progression_confirm
 from app.services.validation import validate_json_document
 from app.services.exporters.training_session import build_completed_workout_document
 from tests.conftest import login
@@ -162,7 +163,53 @@ def test_web_journey(app, client, user):
     assert response.status_code == 200, response.text
     assert client.get(url).status_code == 200
     assert client.post(url + '/finish', data={'status':'completed'}).status_code == 302
-    assert client.get(url).status_code == 200
+    assert client.get(f'/gym/sessions/{row.public_id}/summary').status_code == 200
+
+
+def test_strength_home_and_summary_are_owner_scoped_read_models(app, client, user):
+    login(client)
+    plan = program(user)
+    response = client.get('/training-plans')
+    assert response.status_code == 200, response.text
+    assert 'Esta semana' in response.text and 'Consistencia' in response.text
+    row = start(user, plan)
+    complete_set(user, row.public_id, 1, 1, {'load': '80', 'unit': 'kg', 'reps': '8', 'rir': '2'})
+    db.session.commit()
+    finish_session(user, row.public_id, 'completed')
+    db.session.commit()
+    response = client.get(f'/gym/sessions/{row.public_id}/summary')
+    assert response.status_code == 200, response.text
+    assert 'Entrenamiento' in response.text and 'Volumen comparable' in response.text
+    identity = db.session.query(Exercise).filter_by(user_id=user).first()
+    response = client.get(f'/gym/exercises/{identity.public_id}/progress')
+    assert response.status_code == 200, response.text
+    assert 'e1RM · estimación' in response.text
+
+
+def test_progression_preview_confirm_creates_immutable_revision(app, user):
+    plan = program(user)
+    version = get_active_version(plan, user)
+    target = version.content['data']['weeks'][0]['days'][0]['exercises'][0]
+    for _ in range(2):
+        row = start(user, plan)
+        for item in target['sets']:
+            reps = item.get('reps_max', item.get('reps', 8))
+            complete_set(user, row.public_id, target['exercise_order'], item['set_number'],
+                        {'load': '80', 'unit': 'kg', 'reps': str(reps), 'rir': '2'})
+        db.session.commit()
+        finish_session(user, row.public_id, 'completed')
+        db.session.commit()
+    token_result = progression_preview(user, plan.public_id, '1:1:1')
+    assert token_result['evaluation']['state'] == 'increase_load'
+    old_version_id = get_active_version(plan, user).id
+    updated, duplicate = progression_confirm(user, token_result['token'])
+    db.session.commit()
+    assert not duplicate and updated.active_version_number == 2
+    assert get_active_version(plan, user).id != old_version_id
+    assert db.session.query(TrainingPlanVersion).count() == 2
+    updated_again, duplicate = progression_confirm(user, token_result['token'])
+    assert duplicate and updated_again.id == plan.id
+    db.session.rollback()
 
 
 def test_preview_web_and_csrf(app, client, user):

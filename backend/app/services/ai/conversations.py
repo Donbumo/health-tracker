@@ -32,6 +32,7 @@ from app.services.ai.capabilities.types import (
     AIIntent,
     AIIntentSpec,
     AIPlanSpec,
+    AIPlanStep,
     AIPlanStepStatus,
     CapabilityError,
 )
@@ -608,7 +609,8 @@ def _title(value: str | None) -> str:
 
 
 def serialize_draft(row: AIActionDraft) -> dict:
-    provenance = row.provenance_json or {}
+    provenance = {key: value for key, value in (row.provenance_json or {}).items()
+                  if key != "_coach_source_hash"}
     return {
         "id": row.public_id,
         "type": row.draft_type,
@@ -744,6 +746,44 @@ class AIConversationService:
         db.session.add(row)
         db.session.commit()
         return row
+
+    def prepare_coach_progression(self, user: User, program_id: str, prescription_id: str) -> AIConversation:
+        """Create an Operator draft from server-evaluated Gym evidence, without a provider."""
+        from app.services.gym_progression_confirm import preview
+        from app.services.gym_programs import GymError
+
+        capability = self.capability_registry.action("training.progression.update")
+        try:
+            evaluation = preview(user.id, program_id, prescription_id)["evaluation"]
+            payload = {"program_id": program_id, "prescription_id": prescription_id,
+                       "program_revision": evaluation["program_revision"],
+                       "proposed_load": evaluation["proposal"]["load"],
+                       "evidence": evaluation["evidence"]}
+            prepared = capability.create_draft(user, payload)
+        except GymError as error:
+            raise AIServiceError("progression_unavailable", str(error), error.status) from error
+        except CapabilityError as error:
+            raise AIServiceError(error.code, error.safe_message, error.status) from error
+
+        conversation = AIConversation(user_id=user.id, title=_title("Progresión Gym · " + evaluation["name"]))
+        db.session.add(conversation)
+        db.session.flush()
+        message = AIMessage(conversation_id=conversation.id, user_id=user.id, role="assistant",
+                            content="Propuesta calculada por Gym. Revisa el cambio y confirma explícitamente para aplicarlo.",
+                            attachments_json=[], evidence_json=[])
+        db.session.add(message)
+        db.session.flush()
+        step = AIPlanStep("progression", capability.action_id, capability.domain,
+                          capability.entity, capability.operation, prepared.arguments, (),
+                          prepared.status, prepared.preview, prepared.context)
+        plan = AIPlanSpec(str(uuid.uuid4()), "coach_progression",
+                          "Progresión de Gym · propuesta sin aplicar", (step,))
+        drafts = self._persist_plan(user, conversation.id, message.id, plan, user_text="",
+                                    provider="deterministic", model="coach-signal-v1")
+        drafts[0].provenance_json = {**drafts[0].provenance_json,
+                                     "_coach_source_hash": evaluation["source_hash"]}
+        db.session.commit()
+        return conversation
 
     def list(self, user_id: int, *, limit: int = 50) -> list[AIConversation]:
         if type(limit) is not int or not 1 <= limit <= 100:
@@ -1113,6 +1153,16 @@ class AIConversationService:
             else:
                 timing.outcome = "provider_error"
             if timing.evidence_read_completed:
+                if intent_spec is not None and intent_spec.intent in {
+                    AIIntent.DAILY_COACH, AIIntent.WEEKLY_COACH, AIIntent.EXPLAIN_SIGNAL,
+                    AIIntent.EXPLAIN_PROGRESSION, AIIntent.WHAT_CHANGED,
+                    AIIntent.WHAT_SHOULD_I_REVIEW,
+                }:
+                    raise AIServiceError(
+                        error.code,
+                        "La explicación AI no está disponible ahora. El resumen de Health Tracker sigue disponible.",
+                        error.status,
+                    ) from error
                 raise AIServiceError(
                     error.code,
                     "Los datos fueron consultados correctamente, pero no pude preparar una propuesta en este intento.",
@@ -1265,7 +1315,12 @@ class AIConversationService:
             plan is not None and (plan.action is not None or plan.actions)
         )
         required_provider_read = bool(plan and plan.tools and not require_action_plan)
-        required_reads = tuple(plan.tools) if require_action_plan else ()
+        coach_intent = bool(plan and plan.spec.intent.value in {
+            "daily_coach", "weekly_coach", "explain_signal", "explain_progression",
+            "what_changed", "what_should_i_review"})
+        required_reads = tuple(plan.tools) if require_action_plan or coach_intent else ()
+        if coach_intent:
+            required_provider_read = False
         tool_definitions = ()
         if provider.capabilities.supports_tools and not required_reads:
             tool_definitions = (
@@ -1743,6 +1798,14 @@ class AIConversationService:
         period = intent_spec.period if intent_spec is not None else "30d"
         preset = period if period in {"7d", "30d", "90d"} else "30d"
         comparison = bool(intent_spec and intent_spec.comparison)
+        if name == "get_coach_brief":
+            arguments = {"preset": "today" if period == "today" else "7d"}
+            if intent_spec and intent_spec.intent == AIIntent.EXPLAIN_PROGRESSION:
+                arguments["progression_only"] = True
+            signal_id = intent_spec.option("signal") if intent_spec else None
+            if signal_id:
+                arguments["signal_id"] = signal_id
+            return arguments
         if name == "get_latest_body_measurement":
             return {}
         if name in {"get_training_history", "get_activity_summary"}:

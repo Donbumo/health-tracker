@@ -59,6 +59,8 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
   para extender lecturas de un dominio y
   [HOW_TO_ADD_AN_AI_ACTION_CAPABILITY.md](HOW_TO_ADD_AN_AI_ACTION_CAPABILITY.md)
   para añadir acciones confirmables sin modificar el orquestador central.
+- AI Coach: [AI_COACH.md](AI_COACH.md), señales determinísticas, briefs diarios/semanales,
+  cobertura, explicación opcional y confirmación de progresión por Operator.
 
 - API v1: [project-rules/api-v1.md](project-rules/api-v1.md), [API_V1.md](API_V1.md), [API_AUTH.md](API_AUTH.md), [API_DEVICE_SESSIONS.md](API_DEVICE_SESSIONS.md), [API_SECURITY.md](API_SECURITY.md), [COMPANION_BOOTSTRAP.md](COMPANION_BOOTSTRAP.md).
 - Mobile Sync: [project-rules/mobile-sync.md](project-rules/mobile-sync.md), [MOBILE_SYNC.md](MOBILE_SYNC.md), [SYNC_PROTOCOL_1_0.md](SYNC_PROTOCOL_1_0.md), [SYNC_IDEMPOTENCY.md](SYNC_IDEMPOTENCY.md), [SYNC_CONFLICTS.md](SYNC_CONFLICTS.md), [PLANNED_WORKOUTS.md](PLANNED_WORKOUTS.md).

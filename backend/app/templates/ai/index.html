@@ -2,6 +2,22 @@
 {% block title %}Asistente AI · Health Tracker{% endblock %}
 {% block breadcrumb %}Asistente AI{% endblock %}
 {% block content %}
+{% from "ai/_coach.html" import brief with context %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/coach.css', v='1') }}">
+<div class="coach-home">
+  <div class="coach-hero"><p class="eyebrow">AI Coach</p><h1>Qué cambió y qué revisar</h1><p>Señales calculadas con tus registros. La evidencia siempre está disponible; ninguna propuesta se aplica sin tu confirmación.</p>
+    {% if ai_status.state != 'available' %}<p class="muted">Resumen generado con datos de Health Tracker. La explicación AI no está disponible ahora.</p>{% endif %}
+  </div>
+  <div class="coach-layout">
+    {{ brief(coach_briefs.today, 'Hoy') }}
+    {{ brief(coach_briefs.week, 'Esta semana') }}
+  </div>
+  <section class="coach-review"><h2>Para revisar</h2>
+    {% if pending_coach %}<ul>{% for draft in pending_coach %}<li>{{ draft.provenance_json.preview.exercise_name }} · propuesta sin aplicar <a href="{{ url_for('ai.conversation', conversation_id=draft.conversation.public_id) }}">Abrir preview</a></li>{% endfor %}</ul>
+    {% else %}<p>No hay propuestas de Coach pendientes de confirmación.</p>{% endif %}
+  </section>
+  <p><a class="button button-secondary" href="#ai-recommended-title">Pregúntale al Coach ↓</a></p>
+</div>
 <div class="page-heading ai-catalog-heading">
   <div>
     <p class="eyebrow">AI Capability Engine</p>
@@ -43,7 +59,7 @@
   </div>
   <div class="ai-capability-grid">
     {% for domain in adaptive_catalog.domains %}
-      {% for action in domain.action_capabilities if action.available %}
+      {% for action in domain.action_capabilities if action.available and not action.context_required %}
         <a class="card ai-capability-card" href="{{ url_for('ai.index', intent='correct' if action.operation in ['correct', 'update'] else 'record', domain=action.domain, action=action.action_id, period='today') }}">
           <span>
             <span class="status status-muted">{{ domain.label }} · {{ action.operation }}</span>

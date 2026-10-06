@@ -2,6 +2,8 @@
 {% block title %}Hoy · Health Tracker{% endblock %}
 {% block breadcrumb %}Hoy{% endblock %}
 {% block content %}
+{% from "ai/_coach.html" import brief with context %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/coach.css', v='1') }}">
   <section class="page-heading">
     <div><p class="eyebrow">Acción diaria</p><h1>Hoy</h1><p>Tu siguiente paso y el estado operativo de {{ summary.date.isoformat() }}.</p></div>
     <form method="get" action="{{ url_for('main.today') }}" class="page-actions">
@@ -12,6 +14,7 @@
   </section>
 
   <div class="dashboard-flow">
+  <div class="coach-preview">{{ brief(coach_brief, coach_title, true) }}<p><a class="button button-secondary" href="{{ url_for('ai.index') }}">Abrir Coach</a></p></div>
   {% if summary.onboarding.show_dashboard_prompt %}
     <section class="card onboarding-card compact-callout">
       <div><h2>Prepara tu cuenta</h2><p>{{ summary.onboarding.completed_count }}/{{ summary.onboarding.total_count }} pasos principales listos.</p></div>

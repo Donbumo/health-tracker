@@ -24,6 +24,12 @@ class AIIntent(StrEnum):
     RECORD = "record"
     CORRECT = "correct"
     PROPOSE_CHANGES = "propose_changes"
+    DAILY_COACH = "daily_coach"
+    WEEKLY_COACH = "weekly_coach"
+    EXPLAIN_SIGNAL = "explain_signal"
+    EXPLAIN_PROGRESSION = "explain_progression"
+    WHAT_CHANGED = "what_changed"
+    WHAT_SHOULD_I_REVIEW = "what_should_i_review"
 
 
 class CapabilityError(ValueError):
@@ -154,6 +160,7 @@ class ActionCapability:
     previewer: ActionPreviewer = _default_preview
     available: bool = True
     blocker: str | None = None
+    context_required: bool = False
     language: tuple[ActionLanguage, ...] = ()
 
     @property

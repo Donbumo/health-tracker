@@ -5,6 +5,7 @@ from app.services.ai.capabilities.types import (
     ReadCapability,
 )
 from app.services.ai.capabilities.domains.training_actions import TRAINING_CORRECT, TRAINING_CREATE
+from app.services.ai.capabilities.domains.progression_action import TRAINING_PROGRESSION_UPDATE
 
 
 METRICS = (
@@ -35,6 +36,6 @@ MANIFEST = AICapabilityManifest(
         ReadCapability(AIIntent.SUMMARY, ("get_training_program",), description="training.program / training.program_day: objetivos, nunca performance."),
         ReadCapability(AIIntent.LATEST, ("get_training_session",), ("sessions",), description="training.session: series confirmadas y estado."),
     ),
-    action_capabilities=(TRAINING_CREATE, TRAINING_CORRECT),
+    action_capabilities=(TRAINING_CREATE, TRAINING_CORRECT, TRAINING_PROGRESSION_UPDATE),
     comparisons=True,
 )

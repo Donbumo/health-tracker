@@ -2,6 +2,7 @@
 {% block title %}{{ conversation.title }} · AI · Health Tracker{% endblock %}
 {% block breadcrumb %}Asistente AI / {{ conversation.title }}{% endblock %}
 {% block content %}
+{% if coach_brief %}{% from "ai/_coach.html" import brief with context %}<link rel="stylesheet" href="{{ url_for('static', filename='css/coach.css', v='1') }}"><div class="coach-preview">{{ brief(coach_brief, 'Lectura del Coach', true) }}<p class="muted">Resumen generado con datos de Health Tracker. Si la explicación AI falla, estas señales siguen disponibles.</p></div>{% endif %}
 <div class="page-heading ai-page-heading">
   <div>
     <p class="eyebrow">Conversación privada</p>
@@ -64,6 +65,9 @@
               {% if draft.provenance_json.preview.original %}
                 <details class="ai-original"><summary>Original antes del cambio</summary><pre>{{ draft.provenance_json.preview.original|tojson(indent=2) }}</pre></details>
               {% endif %}
+              {% if draft.provenance_json.action_capability_id == 'training.progression.update' %}
+                <div class="coach-draft-preview"><p><strong>{{ draft.provenance_json.preview.exercise_name }}</strong> · propuesta sin aplicar</p><p>Actual: {{ draft.provenance_json.preview.current_load }} {{ draft.provenance_json.preview.unit }} → Propuesto: {{ draft.provenance_json.preview.proposed_load }} {{ draft.provenance_json.preview.unit }}</p><details><summary>¿Por qué?</summary><ul>{% for line in draft.provenance_json.preview.evidence %}<li>{{ line }}</li>{% endfor %}</ul></details><p>Al confirmar se crea una nueva revisión del programa. El historial anterior permanece igual.</p></div>
+              {% endif %}
               {% if draft.status in ['pending_confirmation', 'failed'] %}
                 <form action="{{ url_for('ai.confirm_draft', draft_id=draft.public_id) }}" method="post">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -120,7 +124,7 @@
                   {% if draft.payload_json.ambiguous_fields %}<p class="alert alert-warning"><strong>Requiere corrección:</strong> {{ draft.payload_json.ambiguous_fields|join(', ') }}</p>{% endif %}
                   {% if draft.payload_json.missing_fields %}<p class="muted"><strong>Sin dato:</strong> {{ draft.payload_json.missing_fields|join(', ') }}</p>{% endif %}
                   <div class="ai-step-actions">
-                    <button class="button button-secondary" type="submit" formaction="{{ url_for('ai.edit_draft', draft_id=draft.public_id) }}">Editar</button>
+                    {% if draft.provenance_json.action_capability_id != 'training.progression.update' %}<button class="button button-secondary" type="submit" formaction="{{ url_for('ai.edit_draft', draft_id=draft.public_id) }}">Editar</button>{% endif %}
                     <button class="button" type="submit">Confirmar</button>
                   </div>
                 </form>
@@ -128,7 +132,7 @@
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button class="button button-secondary" type="submit">Rechazar</button>
                 </form>
-                <p class="muted">Aún no se escribió ningún dato. Origen: reportado por ti e interpretado por AI.</p>
+                <p class="muted">Aún no se escribió ningún dato. {% if draft.provenance_json.action_capability_id == 'training.progression.update' %}Origen: GymProgressionEngine de Health Tracker.{% else %}Origen: reportado por ti e interpretado por AI.{% endif %}</p>
               {% elif draft.status == 'applied' %}
                 <p>Guardado tras tu confirmación explícita. Recursos: {{ draft.applied_resource_public_ids_json|join(', ') }}.</p>
               {% elif draft.status == 'rejected' %}

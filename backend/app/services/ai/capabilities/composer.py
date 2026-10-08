@@ -34,6 +34,12 @@ INTENT_LABELS = {
     AIIntent.RECORD: "Registrar",
     AIIntent.CORRECT: "Corregir",
     AIIntent.PROPOSE_CHANGES: "Proponer cambios",
+    AIIntent.DAILY_COACH: "Resumen de hoy",
+    AIIntent.WEEKLY_COACH: "Resumen semanal",
+    AIIntent.EXPLAIN_SIGNAL: "Explicar señal",
+    AIIntent.EXPLAIN_PROGRESSION: "Explicar progresión",
+    AIIntent.WHAT_CHANGED: "Qué cambió",
+    AIIntent.WHAT_SHOULD_I_REVIEW: "Qué revisar",
 }
 
 
@@ -93,6 +99,12 @@ class AdaptivePromptComposer:
                 blocks.append(
                     "Compara únicamente con el periodo anterior equivalente y declara lo no comparable."
                 )
+            if spec.intent in {AIIntent.DAILY_COACH, AIIntent.WEEKLY_COACH,
+                               AIIntent.EXPLAIN_SIGNAL, AIIntent.EXPLAIN_PROGRESSION,
+                               AIIntent.WHAT_CHANGED, AIIntent.WHAT_SHOULD_I_REVIEW}:
+                blocks.append("Usa las señales y evidencia calculadas por Health Tracker. "
+                              "No inventes progresiones, causalidad ni valores ausentes. "
+                              "Las propuestas no están aplicadas.")
             if spec.option("focus") == "deficit":
                 blocks.append(
                     "Separa déficit de superávit y no trates un día incompleto como déficit."
@@ -145,6 +157,12 @@ class AdaptivePromptComposer:
             AIIntent.RECORD: "Quiero registrar",
             AIIntent.CORRECT: "Quiero corregir",
             AIIntent.PROPOSE_CHANGES: "Propón cambios para",
+            AIIntent.DAILY_COACH: "Resume las señales de",
+            AIIntent.WEEKLY_COACH: "Resume las prioridades de",
+            AIIntent.EXPLAIN_SIGNAL: "Explica con evidencia una señal de",
+            AIIntent.EXPLAIN_PROGRESSION: "Explica la progresión calculada de",
+            AIIntent.WHAT_CHANGED: "Describe los cambios de",
+            AIIntent.WHAT_SHOULD_I_REVIEW: "Prioriza lo que debo revisar de",
         }
         return f"{verbs[spec.intent]} {target}"
 
@@ -240,7 +258,7 @@ class AdaptiveTemplateComposer:
                         )
                     )
             for action in manifest.action_capabilities:
-                if not action.available:
+                if not action.available or action.context_required:
                     continue
                 intent = (
                     AIIntent.CORRECT

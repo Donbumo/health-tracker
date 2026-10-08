@@ -5,7 +5,9 @@ from collections import defaultdict
 from datetime import datetime, time, timedelta, timezone
 from decimal import Decimal
 from typing import TypedDict
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+from flask import current_app
 
 from sqlalchemy.orm import selectinload, with_loader_criteria
 from sqlalchemy.orm.attributes import set_committed_value
@@ -71,7 +73,10 @@ class StrengthReader:
         self.user = db.session.get(User, user_id)
         if self.user is None:
             raise GymError("Usuario no encontrado.", 404)
-        self.zone = ZoneInfo(self.user.timezone or "UTC")
+        try:
+            self.zone = ZoneInfo(self.user.timezone or current_app.config["APP_TIMEZONE"])
+        except (ZoneInfoNotFoundError, ValueError, TypeError):
+            self.zone = ZoneInfo(current_app.config["APP_TIMEZONE"])
         self.unit = self.user.preferred_load_unit or "kg"
         self.identities = db.session.execute(db.select(Exercise).where(Exercise.user_id == user_id).options(
             selectinload(Exercise.aliases), selectinload(Exercise.load_profile), selectinload(Exercise.external_catalog),
@@ -257,7 +262,8 @@ class StrengthReader:
                 and _decimal(previous["volume"]) > 0 and not weekly["partial"] and not previous["partial"]
                 and coverage(buckets[-1]) is not None and coverage(buckets[-1]) == coverage(buckets[-2])):
             change = _text((_decimal(weekly["volume"]) / _decimal(previous["volume"]) - 1) * 100)
-        weekly.update(comparison=change, start=monday.strftime("%d/%m"), end=(monday + timedelta(days=6)).strftime("%d/%m"))
+        weekly.update(comparison=change,
+                      start=monday.strftime("%d/%m"), end=(monday + timedelta(days=6)).strftime("%d/%m"))
         maximum = max([w["count"] for w in weeks] + [1])
         for w in weeks:
             w["height"] = round(w["count"] / maximum * 100)
@@ -276,6 +282,29 @@ class StrengthReader:
                 break
         return GymStrengthOverview(weekly=weekly, consistency=weeks, consistency_total=sum(w["count"] for w in weeks),
                                    evaluations=evaluations[:4], strength=strength)
+
+    def comparable_range(self, start_date, end_date, previous_start, previous_end):
+        """Volume for the exact Dashboard windows, using the loaded owner-only snapshot."""
+        def rows_between(start, end):
+            return [row for row in self.records
+                    if start <= utc(row.performed_at).astimezone(self.zone).date() <= end]
+
+        current_rows = rows_between(start_date, end_date)
+        previous_rows = rows_between(previous_start, previous_end)
+        current = _metrics(current_rows, self.unit)
+        previous = _metrics(previous_rows, self.unit)
+
+        def identities(rows):
+            values = [self.coverage(row) for row in rows]
+            return frozenset().union(*values) if values and all(value is not None for value in values) else None
+
+        comparison = None
+        if (current["volume"] is not None and previous["volume"] is not None
+                and _decimal(previous["volume"]) > 0 and not current["partial"] and not previous["partial"]
+                and identities(current_rows) is not None
+                and identities(current_rows) == identities(previous_rows)):
+            comparison = _text((_decimal(current["volume"]) / _decimal(previous["volume"]) - 1) * 100)
+        return {**current, "previous_volume": previous["volume"], "comparison": comparison}
 
     def points(self, exercise_id, days):
         # One point per session even when the same identity occurs twice in that day.

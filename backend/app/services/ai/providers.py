@@ -721,6 +721,18 @@ class FakeAIProvider(AIProvider):
                 usage=self._usage(request, result.name),
             )
         data = result.data
+        if result.name == "get_coach_brief":
+            signals = data.get("signals") or []
+            summary = " ".join(
+                f"{item.get('title')}: {item.get('message')} "
+                f"Cobertura {item.get('coverage', {}).get('state', 'insufficient')}."
+                for item in signals[:5]
+            )
+            return AIProviderResponse(
+                content=(summary or "No hay señales comparables para este periodo.")
+                        + " Son observaciones basadas en registros; ningún cambio se aplicó.",
+                usage=self._usage(request, result.name),
+            )
         metrics = data.get("metrics") or {}
         period = data.get("period") or {}
         label = period.get("label") or (

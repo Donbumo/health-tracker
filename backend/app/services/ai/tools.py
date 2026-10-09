@@ -472,11 +472,13 @@ def _nutrition(user: User, arguments: dict) -> AIToolExecution:
             "period": previous_range.as_dict(),
             "metrics": previous["summary"],
             "coverage": previous["coverage"],
+            "nutrient_details": previous.get("nutrient_details", {}),
         }
     data = {
         "period": date_range.as_dict(),
         "metrics": result["summary"],
         "coverage": result["coverage"],
+        "nutrient_details": result.get("nutrient_details", {}),
         "comparison": comparison,
         "sources": evidence,
     }

@@ -155,6 +155,7 @@ class DailyNutritionJsonExporter(BaseExporter):
             content=serialize_json(document),
             mimetype="application/json",
             extension="json",
+            warning="Formato legacy: no incluye micros ni snapshots completos. Usa export de cuenta/backup con Nutrition Intelligence 2.0." if resource.authority else None,
         )
 
 
@@ -183,5 +184,6 @@ class DailyNutritionCsvExporter(BaseExporter):
             content=output.getvalue().encode("utf-8-sig"),
             mimetype="text/csv",
             extension="csv",
-            warning="CSV conserva solo el resumen diario; usa JSON para comidas e items.",
+            warning=("CSV legacy: no incluye micros ni snapshots completos. Usa export de cuenta/backup con Nutrition Intelligence 2.0."
+                     if resource.authority else "CSV conserva solo el resumen diario; usa JSON para comidas e items."),
         )

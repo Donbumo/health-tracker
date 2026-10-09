@@ -429,7 +429,10 @@ def patch_food(user_id: int, public_id: str, payload: dict) -> FoodProduct:
     if record is None:
         raise MobileSyncError("not_found", "Alimento no encontrado.", 404)
     _check_revision(record.revision, payload.get("base_revision"))
-    for field, value in _food_values(payload, creating=False).items():
+    changes = _food_values(payload, creating=False)
+    from app.services.food_catalog import refresh_personal_vector
+    refresh_personal_vector(record,user_id,changes)
+    for field, value in changes.items():
         setattr(record, field, value)
     record.revision += 1
     record.updated_at = datetime.now(timezone.utc)
@@ -565,6 +568,10 @@ def _ensure_meal(day: DailyNutrition, meal_type: str, name: str | None = None) -
 
 
 def _recalculate_day(day: DailyNutrition) -> None:
+    if day.authority:
+        from app.services.nutrition_intelligence import recalculate
+        recalculate(day)
+        return
     items = db.session.execute(
         db.select(NutritionItem).join(NutritionMeal).where(
             NutritionMeal.daily_nutrition_id == day.id,
@@ -579,6 +586,7 @@ def _recalculate_day(day: DailyNutrition) -> None:
 
 def serialize_nutrition_item(record: NutritionItem) -> dict:
     day = record.meal.daily_nutrition
+    log = record.intelligence_log
     return {
         "id": record.public_id,
         "date": day.date.isoformat(),
@@ -599,7 +607,8 @@ def serialize_nutrition_item(record: NutritionItem) -> dict:
         "notes": record.notes,
         "source": record.source,
         "client_event_id": record.client_event_id,
-        "data_complete": all(
+        "snapshot_available": bool(log and log.user_id == record.user_id),
+        "data_complete": (not log or all(log.snapshot_json['summary'][n]['state']=='complete' for n in ('energy','protein','fat','carbohydrate_total'))) and all(
             value is not None for value in (
                 record.calories, record.protein_g, record.fat_g,
                 record.total_carbs_g if record.total_carbs_g is not None else record.net_carbs_g,
@@ -627,6 +636,7 @@ def serialize_nutrition_day(user_id: int, target: date) -> dict:
         "totals": totals,
         "targets": None,
         "remaining": None,
+        "nutrient_details": day.nutrition_summary_json,
         "meals": [
             {
                 "meal_type": meal.meal_type,
@@ -655,7 +665,11 @@ def create_nutrition_item(user_id: int, payload: dict) -> NutritionItem:
     target = values.pop("date")
     meal_type = values.pop("meal_type")
     meal_name = values.pop("meal_name", None)
+    from app.services.nutrition_intelligence import lock_owner
+    lock_owner(user_id)
     day = _ensure_day(user_id, target)
+    if day.authority is None and (day.raw_payload_json is not None or (not day.meals and any(getattr(day,field) is not None for field in NUTRITION_FIELDS))):
+        raise MobileSyncError('conflict', 'Revisa la autoridad del agregado importado antes de registrar.', 409)
     meal = _ensure_meal(day, meal_type, meal_name)
     position = (db.session.execute(
         db.select(db.func.max(NutritionItem.sort_order)).where(
@@ -677,7 +691,14 @@ def create_nutrition_item(user_id: int, payload: dict) -> NutritionItem:
 
 
 def patch_nutrition_item(user_id: int, public_id: str, payload: dict) -> NutritionItem:
+    from app.services.nutrition_intelligence import lock_owner, guard_legacy_item
+    from app.services.nutrition_math import NutritionError
+    lock_owner(user_id)
     item = _owned_item(user_id, public_id, lock=True)
+    try:
+        guard_legacy_item(item)
+    except NutritionError as error:
+        raise MobileSyncError('conflict', str(error), error.status) from error
     _check_revision(item.revision, payload.get("base_revision"))
     values = _nutrition_item_values(user_id, payload, creating=False)
     if "source" in values and not (item.source == "health_connect" and values["source"] == "user_override"):
@@ -691,6 +712,8 @@ def patch_nutrition_item(user_id: int, public_id: str, payload: dict) -> Nutriti
     meal_name = values.pop("meal_name", None)
     if target_date != old_day.date or meal_type != old_meal.meal_type:
         target_day = _ensure_day(user_id, target_date)
+        if target_day.authority is None and (target_day.raw_payload_json is not None or (not target_day.meals and any(getattr(target_day,field) is not None for field in NUTRITION_FIELDS))):
+            raise MobileSyncError('conflict', 'Revisa la autoridad del agregado importado antes de mover entradas.', 409)
         target_meal = _ensure_meal(target_day, meal_type, meal_name)
         position = (db.session.execute(
             db.select(db.func.max(NutritionItem.sort_order)).where(
@@ -717,7 +740,14 @@ def patch_nutrition_item(user_id: int, public_id: str, payload: dict) -> Nutriti
 
 
 def duplicate_nutrition_item(user_id: int, public_id: str, payload: dict) -> NutritionItem:
+    from app.services.nutrition_intelligence import lock_owner, guard_legacy_item
+    from app.services.nutrition_math import NutritionError
+    lock_owner(user_id)
     source = _owned_item(user_id, public_id)
+    try:
+        guard_legacy_item(source)
+    except NutritionError as error:
+        raise MobileSyncError('conflict', str(error), error.status) from error
     if set(payload) - {"public_id", "date", "meal_type"}:
         raise MobileSyncError("invalid_request", "La duplicación contiene campos desconocidos.")
     document = {
@@ -745,7 +775,14 @@ def duplicate_nutrition_item(user_id: int, public_id: str, payload: dict) -> Nut
 def delete_nutrition_item(user_id: int, public_id: str, payload: dict) -> dict:
     if set(payload) != {"base_revision"}:
         raise MobileSyncError("invalid_request", "Se requiere base_revision.")
+    from app.services.nutrition_intelligence import lock_owner, guard_legacy_item
+    from app.services.nutrition_math import NutritionError
+    lock_owner(user_id)
     item = _owned_item(user_id, public_id, lock=True)
+    try:
+        guard_legacy_item(item)
+    except NutritionError as error:
+        raise MobileSyncError('conflict', str(error), error.status) from error
     _check_revision(item.revision, payload["base_revision"])
     meal = item.meal
     day = meal.daily_nutrition
@@ -956,7 +993,7 @@ def health_today(user_id: int, target: date, timezone_name: str | None) -> dict:
     nutrition_remaining = {
         key: (
             _number(max(Decimal("0"), Decimal(target_value) - Decimal(nutrition_totals[key] or "0")))
-            if target_value is not None else None
+            if target_value is not None and nutrition_totals[key] is not None and (not nutrition or not nutrition.nutrition_summary_json or nutrition.nutrition_summary_json.get({'calories_kcal':'energy','protein_g':'protein','fat_g':'fat','carbohydrate_g':'carbohydrate_total'}.get(key),{}).get('state')=='complete') else None
         )
         for key, target_value in nutrition_targets.items()
     }
@@ -966,6 +1003,7 @@ def health_today(user_id: int, target: date, timezone_name: str | None) -> dict:
         "weight": serialize_body_stat(latest_weight) if latest_weight else None,
         "weight_is_exact_date": exact_weight,
         "nutrition": {
+            "nutrient_details": nutrition.nutrition_summary_json if nutrition else None,
             "totals": nutrition_totals,
             "targets": nutrition_targets if any(value is not None for value in nutrition_targets.values()) else None,
             "remaining": nutrition_remaining if any(value is not None for value in nutrition_targets.values()) else None,

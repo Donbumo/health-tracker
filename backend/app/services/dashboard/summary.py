@@ -101,6 +101,7 @@ class DashboardSummaryService:
         weight = self.weight.build_from_rows(loaded_weight, date_range, unit)
         training = self.training.build_from_rows(loaded_training, date_range, unit)
         result = {
+            "nutrient_details": nutrition.get("nutrient_details", {}),
             "summary": {
                 **nutrition["summary"],
                 "activity": activity["summary"],
@@ -169,6 +170,7 @@ class DashboardSummaryService:
                 "range": previous_range.as_dict(),
                 "summary": previous["summary"],
                 "coverage": previous["coverage"],
+                "nutrient_details": previous["nutrient_details"],
             },
             "comparison": comparison,
             "insights": self.insights.build(current, previous, date_range.days),

@@ -1,0 +1,1062 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/nutrition_intelligence_2.schema.json",
+  "title": "Nutrition Intelligence complete snapshot bundle 2.0",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "2.0"
+    },
+    "type": {
+      "const": "nutrition_intelligence"
+    },
+    "foods": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "identity": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nutrition": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "nutrients": {
+                "$ref": "#/$defs/vector"
+              },
+              "servings": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/serving"
+                },
+                "maxItems": 100
+              },
+              "density_g_ml": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+                    "maxLength": 80
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "nutrients",
+              "servings",
+              "density_g_ml"
+            ]
+          }
+        },
+        "required": [
+          "source_id",
+          "identity",
+          "revision",
+          "name",
+          "brand",
+          "nutrition"
+        ]
+      },
+      "maxItems": 1000
+    },
+    "templates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source_id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "identity": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1
+          },
+          "snapshot": {
+            "$ref": "#/$defs/snapshot"
+          }
+        },
+        "required": [
+          "source_id",
+          "identity",
+          "revision",
+          "name",
+          "snapshot"
+        ]
+      },
+      "maxItems": 1000
+    },
+    "logs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "identity": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "client_event_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "local_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "consumed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "recipe_id": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "meal_order": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "item_order": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "snapshot": {
+            "$ref": "#/$defs/snapshot"
+          }
+        },
+        "required": [
+          "identity",
+          "client_event_id",
+          "revision",
+          "local_date",
+          "consumed_at",
+          "timezone",
+          "recipe_id",
+          "meal_order",
+          "item_order",
+          "snapshot"
+        ]
+      },
+      "maxItems": 1000
+    },
+    "authorities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "authority": {
+            "enum": [
+              "derived",
+              "disjoint_aggregate"
+            ]
+          },
+          "baseline": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/baseline"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "date",
+          "authority",
+          "baseline"
+        ]
+      },
+      "maxItems": 1000
+    }
+  },
+  "required": [
+    "schema_version",
+    "type",
+    "foods",
+    "templates",
+    "logs",
+    "authorities"
+  ],
+  "$defs": {
+    "value": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "enum": [
+            "known",
+            "unknown",
+            "trace",
+            "below_limit"
+          ]
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+              "maxLength": 80
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unit": {
+          "enum": [
+            "g",
+            "mg",
+            "ug",
+            "kcal"
+          ]
+        },
+        "limit": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+              "maxLength": 80
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provenance": {
+          "type": "object",
+          "maxProperties": 40,
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "integer",
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
+      "required": [
+        "state",
+        "value",
+        "unit"
+      ]
+    },
+    "vector": {
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "energy",
+          "protein",
+          "carbohydrate_total",
+          "net_carbs",
+          "fat",
+          "fiber",
+          "sugar",
+          "sodium",
+          "potassium",
+          "calcium",
+          "iron",
+          "magnesium",
+          "phosphorus",
+          "zinc",
+          "vitamin_a_rae",
+          "retinol",
+          "vitamin_a_re",
+          "vitamin_c",
+          "vitamin_d",
+          "vitamin_e_alpha",
+          "vitamin_k1",
+          "vitamin_k2",
+          "thiamin",
+          "riboflavin",
+          "niacin",
+          "vitamin_b6",
+          "vitamin_b12",
+          "folate_dfe",
+          "folate_food",
+          "choline"
+        ]
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/value"
+      }
+    },
+    "serving": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "amount": {
+          "type": "string",
+          "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+          "maxLength": 80
+        },
+        "unit": {
+          "enum": [
+            "g",
+            "ml"
+          ]
+        },
+        "provenance": {
+          "type": "object",
+          "maxProperties": 40,
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "integer",
+              "null",
+              "boolean"
+            ]
+          }
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "amount",
+        "unit"
+      ]
+    },
+    "food": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scope": {
+          "enum": [
+            "catalog",
+            "user",
+            "legacy"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "source_food_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "revision": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200,
+          "minLength": 1
+        },
+        "source_name": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "preparation": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "basis_amount": {
+          "type": "string",
+          "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+          "maxLength": 80
+        },
+        "basis_unit": {
+          "enum": [
+            "g",
+            "ml"
+          ]
+        },
+        "density_g_ml": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+              "maxLength": 80
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "nutrients": {
+          "$ref": "#/$defs/vector"
+        },
+        "servings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/serving"
+          },
+          "maxItems": 100
+        },
+        "license": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "provenance": {
+          "type": "object",
+          "maxProperties": 40,
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "integer",
+              "null",
+              "boolean"
+            ]
+          }
+        },
+        "catalog_revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "catalog_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "scope",
+        "source",
+        "revision",
+        "name",
+        "preparation",
+        "basis_amount",
+        "basis_unit",
+        "nutrients",
+        "servings",
+        "density_g_ml"
+      ]
+    },
+    "ingredient": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "food": {
+          "$ref": "#/$defs/food"
+        },
+        "amount": {
+          "type": "string",
+          "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+          "maxLength": 80
+        },
+        "unit": {
+          "enum": [
+            "g",
+            "ml",
+            "serving"
+          ]
+        },
+        "serving_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 200
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "normalized": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "amount": {
+              "type": "string",
+              "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+              "maxLength": 80
+            },
+            "unit": {
+              "enum": [
+                "g",
+                "ml"
+              ]
+            },
+            "mass_g": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "amount",
+            "unit",
+            "mass_g"
+          ]
+        },
+        "contribution": {
+          "$ref": "#/$defs/vector"
+        }
+      },
+      "required": [
+        "food",
+        "amount",
+        "unit",
+        "serving_id",
+        "normalized",
+        "contribution"
+      ]
+    },
+    "summary_value": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+              "maxLength": 80
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unit": {
+          "enum": [
+            "g",
+            "mg",
+            "ug",
+            "kcal"
+          ]
+        },
+        "state": {
+          "enum": [
+            "complete",
+            "partial",
+            "unknown"
+          ]
+        },
+        "known_weight": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+              "maxLength": 80
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "total_weight": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+              "maxLength": 80
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coverage": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+              "maxLength": 80
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "coverage_method": {
+          "const": "mass_weighted_v1"
+        },
+        "known_items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "value",
+        "unit",
+        "state",
+        "known_weight",
+        "total_weight",
+        "coverage",
+        "coverage_method",
+        "known_items",
+        "total_items",
+        "sources"
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "energy",
+        "protein",
+        "carbohydrate_total",
+        "net_carbs",
+        "fat",
+        "fiber",
+        "sugar",
+        "sodium",
+        "potassium",
+        "calcium",
+        "iron",
+        "magnesium",
+        "phosphorus",
+        "zinc",
+        "vitamin_a_rae",
+        "retinol",
+        "vitamin_a_re",
+        "vitamin_c",
+        "vitamin_d",
+        "vitamin_e_alpha",
+        "vitamin_k1",
+        "vitamin_k2",
+        "thiamin",
+        "riboflavin",
+        "niacin",
+        "vitamin_b6",
+        "vitamin_b12",
+        "folate_dfe",
+        "folate_food",
+        "choline"
+      ],
+      "properties": {
+        "energy": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "protein": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "carbohydrate_total": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "net_carbs": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "fat": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "fiber": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "sugar": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "sodium": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "potassium": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "calcium": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "iron": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "magnesium": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "phosphorus": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "zinc": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "vitamin_a_rae": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "retinol": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "vitamin_a_re": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "vitamin_c": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "vitamin_d": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "vitamin_e_alpha": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "vitamin_k1": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "vitamin_k2": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "thiamin": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "riboflavin": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "niacin": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "vitamin_b6": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "vitamin_b12": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "folate_dfe": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "folate_food": {
+          "$ref": "#/$defs/summary_value"
+        },
+        "choline": {
+          "$ref": "#/$defs/summary_value"
+        }
+      },
+      "additionalProperties": false
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "2.0"
+        },
+        "calculation_method": {
+          "const": "decimal_scaled_v1"
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200,
+          "minLength": 1
+        },
+        "local_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "meal_type": {
+          "enum": [
+            "breakfast",
+            "lunch",
+            "dinner",
+            "snack",
+            "other"
+          ]
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "ingredients": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ingredient"
+          },
+          "maxItems": 100
+        },
+        "summary": {
+          "$ref": "#/$defs/summary"
+        },
+        "recipe_id": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recipe_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "save_target": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "save_base_revision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "schema_version",
+        "calculation_method",
+        "name",
+        "local_date",
+        "meal_type",
+        "timezone",
+        "ingredients",
+        "summary"
+      ]
+    },
+    "coord": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "meal_order": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "item_order": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "meal_order",
+        "item_order"
+      ]
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "original_totals": {
+          "type": "object",
+          "properties": {
+            "calories": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "protein_g": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "fat_g": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "total_carbs_g": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "net_carbs_g": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "fiber_g": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sugar_g": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sodium_mg": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "calories",
+            "protein_g",
+            "fat_g",
+            "total_carbs_g",
+            "net_carbs_g",
+            "fiber_g",
+            "sugar_g",
+            "sodium_mg"
+          ],
+          "additionalProperties": false
+        },
+        "choice": {
+          "enum": [
+            "derive_items",
+            "disjoint_aggregate"
+          ]
+        },
+        "included_items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/coord"
+          },
+          "maxItems": 1000
+        }
+      },
+      "required": [
+        "original_totals",
+        "choice",
+        "included_items"
+      ]
+    }
+  }
+}

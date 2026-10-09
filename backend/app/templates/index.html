@@ -110,7 +110,7 @@
   </section>
 
   <section class="summary-grid dashboard-metrics">
-    <div class="metric"><strong>{{ summary.calories_consumed if summary.calories_consumed is not none else '—' }}</strong><span>kcal ingeridas</span></div>
+    <div class="metric"><strong>{{ summary.calories_consumed if summary.calories_consumed is not none else '—' }}</strong><span>{{ 'kcal · subtotal conocido' if summary.nutrient_details and summary.nutrient_details.energy.state=='partial' else 'kcal ingeridas' }}</span></div>
     <div class="metric"><strong>{{ summary.calories_expended if summary.calories_expended is not none else '—' }}</strong><span>kcal gastadas</span></div>
     <div class="metric">
       <strong>{{ summary.balance if summary.balance is not none else '—' }}</strong>
@@ -127,6 +127,7 @@
 
   <section class="card">
     <h2>Nutrición</h2>
+    {% if summary.nutrient_details %}<p>Los valores parciales son subtotales conocidos. Su cobertura mide disponibilidad de datos; no confirma un déficit ni completitud nutricional.</p>{% endif %}
     {% if summary.nutrition %}
       <dl class="metadata">
         <dt>Calorías</dt><dd>{{ summary.calories_consumed if summary.calories_consumed is not none else '—' }}</dd>

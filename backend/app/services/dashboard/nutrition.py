@@ -5,6 +5,7 @@ from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from app.extensions import db
+from app.services.nutrition_intelligence import comparison_value
 from app.models import DailyEnergy, DailyNutrition, UserGoal
 from app.services.dashboard.date_range import DashboardDateRange
 from app.services.dashboard.goals import DashboardGoalsService, goal_for_day
@@ -109,7 +110,7 @@ class NutritionTrendService:
             expended, energy = effective_energy_value(
                 energy_by_date.get(day, []), "total_calories"
             )
-            consumed = nutrition.calories if nutrition is not None else None
+            consumed = comparison_value(nutrition,"calories")
             balance = (
                 consumed - expended
                 if consumed is not None and expended is not None
@@ -139,7 +140,7 @@ class NutritionTrendService:
             protein_points.append(
                 {
                     "date": day,
-                    "grams": nutrition.protein_g if nutrition is not None else None,
+                    "grams": comparison_value(nutrition,"protein_g"),
                     "target": protein_goal.target_value if protein_goal else None,
                 }
             )
@@ -164,9 +165,9 @@ class NutritionTrendService:
             )
         for key, label, field, unit, goal_type in NUTRITION_METRICS:
             values = [
-                getattr(row, field)
+                comparison_value(row, field)
                 for row in nutrition_by_date.values()
-                if getattr(row, field) is not None
+                if comparison_value(row, field) is not None
             ]
             total = _sum_or_none(values)
             targets = []
@@ -201,6 +202,7 @@ class NutritionTrendService:
         )
 
         return {
+            "nutrient_details": {row.date.isoformat():row.nutrition_summary_json for row in nutrition_by_date.values() if row.nutrition_summary_json},
             "summary": {
                 "energy": {
                     "consumed_total": consumed_total,

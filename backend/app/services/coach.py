@@ -137,11 +137,17 @@ class CoachSignalEngine:
         # Today uses the last points of the same seven-day dashboard snapshot.
         today_energy = dashboard["trends"]["energy"][-1]
         if today_energy["consumed"] is None:
+            quality=dashboard.get('nutrient_details',{}).get(period['to'],{}).get('energy')
+            details=(
+                _evidence('Subtotal energético conocido (kcal)',quality['value'],'Dashboard · Nutrition Intelligence',daily_period),
+                _evidence('Cobertura por masa: disponibilidad de datos (%)',quality['coverage'],'mass_weighted_v1',daily_period),
+            ) if quality else (_evidence("Días con ingesta registrada",0,"Dashboard · nutrición",daily_period),)
             daily.append(cls._signal(period=daily_period, domain="nutrition", kind="insufficient_data",
-                metric="energy_intake", title="Nutrición sin registro hoy",
-                message="No hay un registro energético de hoy; no se infiere cuánto comiste.",
+                metric="energy_intake", title="Nutrición con datos incompletos hoy" if quality else "Nutrición sin registro hoy",
+                message="Hay consumos registrados con energía parcial o desconocida; el subtotal no confirma un déficit." if quality else "No hay un registro energético de hoy; no se infiere cuánto comiste.",
+                current=quality['value'] if quality else None, unit='kcal' if quality else None,
                 coverage=_coverage(0, 1, minimum=1), provenance=("Dashboard · nutrición",),
-                evidence=(_evidence("Días con ingesta registrada", 0, "Dashboard · nutrición", daily_period),)))
+                evidence=details))
         else:
             daily.append(cls._signal(period=daily_period, domain="nutrition", kind="recorded",
                 metric="energy_intake", title="Ingesta registrada hoy",

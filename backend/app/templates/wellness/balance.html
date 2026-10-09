@@ -20,5 +20,6 @@
     <div class="metric"><strong>{{ summary.active_calories if summary.active_calories is not none else '—' }}</strong><span>calorías activas</span></div>
     <div class="metric"><strong>{{ summary.balance if summary.balance is not none else '—' }}</strong><span>balance</span></div>
   </section>
+  {% if summary.nutrient_details %}<section class="notice">Nutrition Intelligence: los valores parciales son subtotales conocidos. No se usan para confirmar un déficit; consulta el detalle de cobertura en Nutrición.</section>{% endif %}
   {% if not summary.complete %}<section class="notice warning">Día incompleto: falta nutrición, gasto total o ambos.</section>{% endif %}
 {% endblock %}

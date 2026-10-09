@@ -57,6 +57,9 @@ class Recipe(db.Model):
         db.ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
+    public_id = db.Column(db.String(36), nullable=False, unique=True, default=lambda: str(__import__("uuid").uuid4()))
+    revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    nutrition_snapshot_json = db.Column(db.JSON, nullable=True)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
     servings = db.Column(
@@ -200,6 +203,7 @@ class RecipeIngredient(db.Model):
         db.ForeignKey("food_products.id", ondelete="SET NULL"),
         nullable=True,
     )
+    nutrition_snapshot_json = db.Column(db.JSON, nullable=True)
     name_snapshot = db.Column(db.String(200), nullable=False)
     brand_snapshot = db.Column(db.String(200), nullable=True)
     quantity_g = db.Column(db.Numeric(12, 3), nullable=False)

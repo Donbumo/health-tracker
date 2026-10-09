@@ -127,3 +127,8 @@ de pantalla, teléfono físico ni QA Android productiva.
 No hay modificaciones a backend, Android, schemas públicos ni datos existentes.
 El historial, las referencias clínicas y la adquisición de catálogos se diseñaron
 como pasos posteriores y no se ejecutaron.
+
+
+## Implementación posterior autorizada · 2026-10-09
+
+Las capturas anteriores siguen siendo prototipo de diseño. La QA de Flask/Jinja real, con datos ficticios y SQLite efímera, está en [galería productiva QA](../design/nutrition-intelligence-2/production-qa/gallery.html) y [reporte de implementación](NUTRITION_INTELLIGENCE_2_IMPLEMENTATION.md). MariaDB sigue pendiente; aprobación visual no equivale a autorización de despliegue.

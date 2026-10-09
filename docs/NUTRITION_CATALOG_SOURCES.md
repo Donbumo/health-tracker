@@ -83,3 +83,8 @@ search/detail/nutrients/servings sobre snapshot. Añadir futuras fuentes manteni
 namespace, provenance y equivalencias revisadas; no mezclar nutrientes de distintos
 alimentos para «rellenar» coverage. Los alimentos personales permanecen owner-only.
 Runtime sin Internet; sync únicamente tras revisión, validación y activación atómica.
+
+
+## Implementación posterior autorizada · 2026-10-09
+
+La investigación documental anterior corresponde a diseño, antes de descargar la muestra. La evaluación reproducible posterior y la elección acotada USDA están en [NUTRITION_CATALOG_EVALUATION.md](NUTRITION_CATALOG_EVALUATION.md). No se altera retrospectivamente la decisión de diseño.

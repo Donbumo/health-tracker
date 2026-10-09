@@ -1,0 +1,24 @@
+{
+  "engine": "MariaDB isolated reserved schema",
+  "data": "fictional QA only",
+  "isolations": [
+    {
+      "level": "READ COMMITTED",
+      "same_event": "pass",
+      "distinct_events_current_totals": "pass",
+      "stale_draft": "pass",
+      "stale_template": "pass",
+      "caller_rollback": "pass"
+    },
+    {
+      "level": "REPEATABLE READ",
+      "same_event": "pass",
+      "distinct_events_current_totals": "pass",
+      "stale_draft": "pass",
+      "stale_template": "pass",
+      "caller_rollback": "pass"
+    }
+  ],
+  "migration": "base to 0043, fictitious legacy records, 0044 to head; downgrade/upgrade before consumption; repeated upgrade; db check and metadata match",
+  "head": "20261009_0044"
+}

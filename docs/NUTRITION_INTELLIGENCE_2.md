@@ -353,3 +353,8 @@ fuente inicial, referencias, políticas de coverage y schemas futuros aún requi
 decisión y validación antes de activar escrituras. El commit/publicación de esta
 rama de diseño no autoriza merge, NAS, migraciones ni implementación productiva.
 Detener aquí.
+
+
+## Implementación posterior autorizada · 2026-10-09
+
+La arquitectura y aprobación visual anteriores se conservan como base histórica. La implementación autorizada posterior se documenta en [NUTRITION_INTELLIGENCE_2_IMPLEMENTATION.md](NUTRITION_INTELLIGENCE_2_IMPLEMENTATION.md); sus gates pendientes impiden activación/publicación. Los contratos JSON versionados de schemas son la autoridad productiva.

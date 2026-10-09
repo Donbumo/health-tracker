@@ -43,7 +43,7 @@
         <h2 id="nav-health-{{ section_class }}">Salud y actividad</h2>
         {{ nav_link('wellness.balance', 'Balance diario', 'wellness.balance') }}
         {{ nav_link('body.list_weigh_ins', 'Peso y composición', 'body.') }}
-        {{ nav_link('wellness.nutrition_list', 'Nutrición', 'wellness.nutrition') }}
+        {% if config.NUTRITION_INTELLIGENCE_ENABLED %}{{ nav_link('nutrition.today', 'Nutrición', 'nutrition.') }}{% else %}{{ nav_link('wellness.nutrition_list', 'Nutrición', 'wellness.nutrition') }}{% endif %}
         {{ nav_link('wellness.energy_list', 'Energía', 'wellness.energy') }}
         {{ nav_link('activities.list_activities', 'Actividades', 'activities.activity') }}
         {{ nav_link('activities.list_routes', 'Rutas', 'activities.route') }}

@@ -1,0 +1,947 @@
+[
+  {
+    "target": "Tortilla de maíz",
+    "usda": [
+      {
+        "fdc_id": "173241",
+        "data_type": "sr_legacy_food",
+        "description": "Tortillas, ready-to-bake or -fry, corn, without added salt",
+        "food_category_id": "18",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "175036",
+        "data_type": "sr_legacy_food",
+        "description": "Tortillas, ready-to-bake or -fry, corn",
+        "food_category_id": "18",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": [
+      {
+        "id": "7813",
+        "name": "Tortilla souple (à garnir), à base de maïs"
+      },
+      {
+        "id": "7815",
+        "name": "Tortilla souple (à garnir), à base de blé"
+      },
+      {
+        "id": "38105",
+        "name": "Chips de maïs ou tortilla chips, aromatisé"
+      },
+      {
+        "id": "38417",
+        "name": "Chips de maïs ou tortilla chips, nature"
+      },
+      {
+        "id": "22510",
+        "name": "Tortilla espagnole aux oignons (omelette aux pommes\nde terre et oignons), préemballée"
+      }
+    ]
+  },
+  {
+    "target": "Arroz blanco cocido",
+    "usda": [
+      {
+        "fdc_id": "168878",
+        "data_type": "sr_legacy_food",
+        "description": "Rice, white, long-grain, regular, enriched, cooked",
+        "food_category_id": "20",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": [
+      {
+        "id": "9104",
+        "name": "Riz blanc, cuit, sans sel ajouté"
+      }
+    ]
+  },
+  {
+    "target": "Frijol negro cocido",
+    "usda": [
+      {
+        "fdc_id": "173735",
+        "data_type": "sr_legacy_food",
+        "description": "Beans, black, mature seeds, cooked, boiled, without salt",
+        "food_category_id": "16",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "175237",
+        "data_type": "sr_legacy_food",
+        "description": "Beans, black, mature seeds, cooked, boiled, with salt",
+        "food_category_id": "16",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Frijol pinto cocido",
+    "usda": [
+      {
+        "fdc_id": "173796",
+        "data_type": "sr_legacy_food",
+        "description": "Beans, pinto, mature seeds, cooked, boiled, with salt",
+        "food_category_id": "16",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "175200",
+        "data_type": "sr_legacy_food",
+        "description": "Beans, pinto, mature seeds, cooked, boiled, without salt",
+        "food_category_id": "16",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": [
+      {
+        "id": "20503",
+        "name": "Haricot rouge, bouilli/cuit à l'eau"
+      },
+      {
+        "id": "20524",
+        "name": "Haricot rouge, appertisé, égoutté"
+      },
+      {
+        "id": "20525",
+        "name": "Haricot rouge, sec"
+      }
+    ]
+  },
+  {
+    "target": "Pechuga pollo asada",
+    "usda": [
+      {
+        "fdc_id": "171477",
+        "data_type": "sr_legacy_food",
+        "description": "Chicken, broilers or fryers, breast, meat only, cooked, roasted",
+        "food_category_id": "5",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": [
+      {
+        "id": "36018",
+        "name": "Poulet, filet sans peau grillé/poêlé"
+      },
+      {
+        "id": "36041",
+        "name": "Poulet, filet sans peau grillé/poêlé, bio"
+      },
+      {
+        "id": "36017",
+        "name": "Poulet, filet sans peau cru"
+      },
+      {
+        "id": "36039",
+        "name": "Poulet, filet sans peau cru, bio"
+      },
+      {
+        "id": "36040",
+        "name": "Poulet, filet sans peau cru, label rouge"
+      }
+    ]
+  },
+  {
+    "target": "Huevo cocido",
+    "usda": [
+      {
+        "fdc_id": "173424",
+        "data_type": "sr_legacy_food",
+        "description": "Egg, whole, cooked, hard-boiled",
+        "food_category_id": "1",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Aguacate crudo",
+    "usda": [
+      {
+        "fdc_id": "171705",
+        "data_type": "sr_legacy_food",
+        "description": "Avocados, raw, all commercial varieties",
+        "food_category_id": "9",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Jitomate crudo",
+    "usda": [
+      {
+        "fdc_id": "170457",
+        "data_type": "sr_legacy_food",
+        "description": "Tomatoes, red, ripe, raw, year round average",
+        "food_category_id": "11",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Leche entera",
+    "usda": [
+      {
+        "fdc_id": "171265",
+        "data_type": "sr_legacy_food",
+        "description": "Milk, whole, 3.25% milkfat, with added vitamin D",
+        "food_category_id": "1",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "172217",
+        "data_type": "sr_legacy_food",
+        "description": "Milk, whole, 3.25% milkfat, without added vitamin A and vitamin D",
+        "food_category_id": "1",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": [
+      {
+        "id": "19024",
+        "name": "Lait entier, pasteurisé"
+      }
+    ]
+  },
+  {
+    "target": "Yogur natural entero",
+    "usda": [
+      {
+        "fdc_id": "171284",
+        "data_type": "sr_legacy_food",
+        "description": "Yogurt, plain, whole milk",
+        "food_category_id": "1",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Queso fresco",
+    "usda": [],
+    "ciqual": [
+      {
+        "id": "26239",
+        "name": "Surimi, fourré au fromage frais"
+      },
+      {
+        "id": "19572",
+        "name": "Fromage frais type petit suisse, aromatisé chocolat,\nsucré"
+      },
+      {
+        "id": "19663",
+        "name": "Fromage frais type petit suisse, nature, 0% MG"
+      },
+      {
+        "id": "19664",
+        "name": "Fromage frais type petit suisse, nature, 4% MG\nenviron"
+      },
+      {
+        "id": "19666",
+        "name": "Fromage frais type petit suisse, nature, 10% MG\nenviron"
+      },
+      {
+        "id": "19719",
+        "name": "Fromage frais type petit suisse, aux fruits, 2-3% MG,\nsucré"
+      },
+      {
+        "id": "19720",
+        "name": "Fromage frais type petit suisse, aux fruits, 2-3% MG,\nsucré, enrichi en vitamine D"
+      },
+      {
+        "id": "19721",
+        "name": "Fromage frais type petit suisse, aromatisé, 2-3% MG,\nsucré"
+      },
+      {
+        "id": "19722",
+        "name": "Fromage frais type petit suisse, aromatisé, 2-3% MG,\nsucré, enrichi en vitamine D"
+      },
+      {
+        "id": "39249",
+        "name": "Mousse aux fruits, au fromage frais, 0% MG, sucrée,\navec édulcorants, enrichie en calcium, rayon frais"
+      },
+      {
+        "id": "39250",
+        "name": "Mousse aux fruits, au fromage frais, sucrée, rayon\nfrais"
+      },
+      {
+        "id": "12068",
+        "name": "Fromage frais ou spécialité fromagère non affinée,\nnature, à tartiner, en barquette, non allégée en\nmatière grasse"
+      },
+      {
+        "id": "12069",
+        "name": "Fromage frais ou spécialité fromagère non affinée,\nnature, à tartiner, en barquette, allégée en matière\ngrasse"
+      },
+      {
+        "id": "12070",
+        "name": "Fromage frais ou spécialité fromagère non affinée, ail\net fines herbes, à tartiner, non allégée en matière\ngrasse"
+      },
+      {
+        "id": "12073",
+        "name": "Fromage frais ou spécialité fromagère non affinée,\nolives, figues et noix, etc (autre que ail et fines\nherbes), à tartiner, non allégée en matière grasse"
+      },
+      {
+        "id": "12342",
+        "name": "Fromage frais ou spécialité fromagère non affinée, ail\net fines herbes, à tartiner, allégée en matière grasse"
+      },
+      {
+        "id": "11222",
+        "name": "Ktipiti, tartinade de fromage frais aux poivrons rouges,\npréemballé"
+      },
+      {
+        "id": "19864",
+        "name": "Tzatziki à base de fromage frais, préemballé"
+      }
+    ]
+  },
+  {
+    "target": "Avena seca",
+    "usda": [
+      {
+        "fdc_id": "168138",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals ready-to-eat, POST, HONEY BUNCHES OF OATS, honey roasted",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "169063",
+        "data_type": "sr_legacy_food",
+        "description": "Breakfast bars, oats, sugar, raisins, coconut (include granola bar)",
+        "food_category_id": "23",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "169705",
+        "data_type": "sr_legacy_food",
+        "description": "Oats (Includes foods for USDA's Food Distribution Program)",
+        "food_category_id": "20",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "169859",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals ready-to-eat, POST, HONEY BUNCHES OF OATS, with almonds",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "170685",
+        "data_type": "sr_legacy_food",
+        "description": "Buckwheat groats, roasted, dry",
+        "food_category_id": "20",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "170686",
+        "data_type": "sr_legacy_food",
+        "description": "Buckwheat groats, roasted, cooked",
+        "food_category_id": "20",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "171661",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals, oats, instant, fortified, plain, dry",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "171662",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals, oats, instant, fortified, plain, prepared with water (boiling water added or microwaved)",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "171664",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals, oats, instant, fortified, with cinnamon and spice, dry",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "171675",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals, oats, regular and quick and instant, unenriched, cooked with water (includes boiling and microwaving), with salt",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "172975",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals ready-to-eat, QUAKER, QUAKER 100% Natural Granola with Oats, Wheat, Honey, and Raisins",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "172989",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals, QUAKER, Quick Oats, Dry",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "173015",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals ready-to-eat, POST, HONEY BUNCHES OF OATS with vanilla bunches",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "173019",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals ready-to-eat, POST, HONEY BUNCHES OF OATS, with real strawberries",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "173020",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals ready-to-eat, POST HONEY BUNCHES OF OATS with cinnamon bunches",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "173149",
+        "data_type": "sr_legacy_food",
+        "description": "Formulated bar, high fiber, chewy, oats and chocolate",
+        "food_category_id": "23",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "173659",
+        "data_type": "sr_legacy_food",
+        "description": "Beverages, drink mix, QUAKER OATS, GATORADE, orange flavor, powder",
+        "food_category_id": "14",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "173892",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals ready-to-eat, QUAKER, 100% Natural Granola, Oats, Wheat and Honey",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "173904",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals, oats, regular and quick, not fortified, dry",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "173905",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals, oats, regular and quick, unenriched, cooked with water (includes boiling and microwaving), without salt",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "173906",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals, oats, instant, fortified, with cinnamon and spice, prepared with water",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "173908",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals, oats, instant, fortified, with raisins and spice, prepared with water",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "173920",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals, oats, instant, fortified, maple and brown sugar, dry",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "174640",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals, QUAKER, Quick Oats with Iron, Dry",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "174663",
+        "data_type": "sr_legacy_food",
+        "description": "Cereals ready-to-eat, POST, HONEY BUNCHES OF OATS, pecan bunches",
+        "food_category_id": "8",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Plátano crudo",
+    "usda": [
+      {
+        "fdc_id": "173944",
+        "data_type": "sr_legacy_food",
+        "description": "Bananas, raw",
+        "food_category_id": "9",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Manzana con piel",
+    "usda": [
+      {
+        "fdc_id": "171688",
+        "data_type": "sr_legacy_food",
+        "description": "Apples, raw, with skin (Includes foods for USDA's Food Distribution Program)",
+        "food_category_id": "9",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Naranja cruda",
+    "usda": [
+      {
+        "fdc_id": "169097",
+        "data_type": "sr_legacy_food",
+        "description": "Oranges, raw, all commercial varieties",
+        "food_category_id": "9",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Papaya cruda",
+    "usda": [
+      {
+        "fdc_id": "169926",
+        "data_type": "sr_legacy_food",
+        "description": "Papayas, raw",
+        "food_category_id": "9",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Mango crudo",
+    "usda": [
+      {
+        "fdc_id": "169910",
+        "data_type": "sr_legacy_food",
+        "description": "Mangos, raw",
+        "food_category_id": "9",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Piña cruda",
+    "usda": [
+      {
+        "fdc_id": "169124",
+        "data_type": "sr_legacy_food",
+        "description": "Pineapple, raw, all varieties",
+        "food_category_id": "9",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Fresa cruda",
+    "usda": [
+      {
+        "fdc_id": "167762",
+        "data_type": "sr_legacy_food",
+        "description": "Strawberries, raw",
+        "food_category_id": "9",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": [
+      {
+        "id": "13014",
+        "name": "Fraise, crue"
+      }
+    ]
+  },
+  {
+    "target": "Limón verde crudo",
+    "usda": [
+      {
+        "fdc_id": "168155",
+        "data_type": "sr_legacy_food",
+        "description": "Limes, raw",
+        "food_category_id": "9",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": [
+      {
+        "id": "13067",
+        "name": "Citron vert ou lime, chair sans peau, sans pépins, cru"
+      }
+    ]
+  },
+  {
+    "target": "Zanahoria cruda",
+    "usda": [
+      {
+        "fdc_id": "170393",
+        "data_type": "sr_legacy_food",
+        "description": "Carrots, raw",
+        "food_category_id": "11",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": [
+      {
+        "id": "20009",
+        "name": "Carotte, crue"
+      }
+    ]
+  },
+  {
+    "target": "Brócoli cocido",
+    "usda": [
+      {
+        "fdc_id": "169967",
+        "data_type": "sr_legacy_food",
+        "description": "Broccoli, cooked, boiled, drained, without salt",
+        "food_category_id": "11",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": [
+      {
+        "id": "20304",
+        "name": "Brocoli, cuit à la vapeur"
+      },
+      {
+        "id": "20351",
+        "name": "Brocoli, cuit (aliment moyen)"
+      }
+    ]
+  },
+  {
+    "target": "Espinaca cruda",
+    "usda": [
+      {
+        "fdc_id": "168440",
+        "data_type": "sr_legacy_food",
+        "description": "New Zealand spinach, raw",
+        "food_category_id": "11",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "168462",
+        "data_type": "sr_legacy_food",
+        "description": "Spinach, raw",
+        "food_category_id": "11",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Cebolla cruda",
+    "usda": [
+      {
+        "fdc_id": "170000",
+        "data_type": "sr_legacy_food",
+        "description": "Onions, raw",
+        "food_category_id": "11",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": [
+      {
+        "id": "20034",
+        "name": "Oignon, cru"
+      }
+    ]
+  },
+  {
+    "target": "Calabacita cocida",
+    "usda": [
+      {
+        "fdc_id": "169292",
+        "data_type": "sr_legacy_food",
+        "description": "Squash, summer, zucchini, includes skin, cooked, boiled, drained, without salt",
+        "food_category_id": "11",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "170534",
+        "data_type": "sr_legacy_food",
+        "description": "Squash, summer, zucchini, includes skin, cooked, boiled, drained, with salt",
+        "food_category_id": "11",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Pepino con piel",
+    "usda": [
+      {
+        "fdc_id": "168409",
+        "data_type": "sr_legacy_food",
+        "description": "Cucumber, with peel, raw",
+        "food_category_id": "11",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Papa cocida",
+    "usda": [
+      {
+        "fdc_id": "170440",
+        "data_type": "sr_legacy_food",
+        "description": "Potatoes, boiled, cooked without skin, flesh, without salt",
+        "food_category_id": "11",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": [
+      {
+        "id": "4002",
+        "name": "Pomme de terre, sans peau, rôtie/cuite au four"
+      },
+      {
+        "id": "4008",
+        "name": "Pomme de terre, sans peau, crue"
+      }
+    ]
+  },
+  {
+    "target": "Elote cocido",
+    "usda": [
+      {
+        "fdc_id": "169999",
+        "data_type": "sr_legacy_food",
+        "description": "Corn, sweet, yellow, cooked, boiled, drained, without salt",
+        "food_category_id": "11",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": [
+      {
+        "id": "20108",
+        "name": "Maïs doux, en épis, surgelé, cru"
+      },
+      {
+        "id": "20233",
+        "name": "Maïs doux, surgelé, cru"
+      },
+      {
+        "id": "20049",
+        "name": "Maïs doux, en épis, cuit"
+      },
+      {
+        "id": "20066",
+        "name": "Maïs doux, appertisé, égoutté"
+      }
+    ]
+  },
+  {
+    "target": "Res molida cocida 90/10",
+    "usda": [],
+    "ciqual": [
+      {
+        "id": "6251",
+        "name": "Boeuf, steak haché 5% MG cuit"
+      },
+      {
+        "id": "6253",
+        "name": "Boeuf, steak haché 10% MG cuit"
+      },
+      {
+        "id": "6255",
+        "name": "Boeuf, steak haché 15% MG cuit"
+      },
+      {
+        "id": "6257",
+        "name": "Boeuf, steak haché 20% MG cuit"
+      },
+      {
+        "id": "6259",
+        "name": "Boeuf, steak haché, cuit (aliment moyen)"
+      },
+      {
+        "id": "6250",
+        "name": "Boeuf, steak haché 5% MG cru"
+      },
+      {
+        "id": "6252",
+        "name": "Boeuf, steak haché 10% MG cru"
+      },
+      {
+        "id": "6254",
+        "name": "Boeuf, steak haché 15% MG cru"
+      },
+      {
+        "id": "6256",
+        "name": "Boeuf, steak haché 20% MG cru"
+      }
+    ]
+  },
+  {
+    "target": "Lenteja cocida",
+    "usda": [
+      {
+        "fdc_id": "172421",
+        "data_type": "sr_legacy_food",
+        "description": "Lentils, mature seeds, cooked, boiled, without salt",
+        "food_category_id": "16",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Garbanzo cocido",
+    "usda": [
+      {
+        "fdc_id": "173757",
+        "data_type": "sr_legacy_food",
+        "description": "Chickpeas (garbanzo beans, bengal gram), mature seeds, cooked, boiled, without salt",
+        "food_category_id": "16",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "173799",
+        "data_type": "sr_legacy_food",
+        "description": "Chickpeas (garbanzo beans, bengal gram), mature seeds, cooked, boiled, with salt",
+        "food_category_id": "16",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Cacahuate crudo",
+    "usda": [
+      {
+        "fdc_id": "172430",
+        "data_type": "sr_legacy_food",
+        "description": "Peanuts, all types, raw",
+        "food_category_id": "16",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Semilla calabaza seca",
+    "usda": [
+      {
+        "fdc_id": "170556",
+        "data_type": "sr_legacy_food",
+        "description": "Seeds, pumpkin and squash seed kernels, dried",
+        "food_category_id": "12",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Nopal cocido",
+    "usda": [
+      {
+        "fdc_id": "169388",
+        "data_type": "sr_legacy_food",
+        "description": "Nopales, cooked, without salt",
+        "food_category_id": "11",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Chile jalapeño crudo",
+    "usda": [
+      {
+        "fdc_id": "168576",
+        "data_type": "sr_legacy_food",
+        "description": "Peppers, jalapeno, raw",
+        "food_category_id": "11",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": [
+      {
+        "id": "20151",
+        "name": "Piment, cru"
+      },
+      {
+        "id": "26692",
+        "name": "Anchois, filets, marinés à l'orientale (huile, piments…),\nsemi-conserve, égouttés"
+      },
+      {
+        "id": "11112",
+        "name": "Harissa (sauce au piment), préemballée"
+      },
+      {
+        "id": "11088",
+        "name": "Poivre de Cayenne ou piment de Cayenne, poudre"
+      }
+    ]
+  },
+  {
+    "target": "Atún en agua escurrido",
+    "usda": [
+      {
+        "fdc_id": "173709",
+        "data_type": "sr_legacy_food",
+        "description": "Fish, tuna, light, canned in water, drained solids (Includes foods for USDA's Food Distribution Program)",
+        "food_category_id": "15",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": []
+  },
+  {
+    "target": "Pan integral",
+    "usda": [
+      {
+        "fdc_id": "172688",
+        "data_type": "sr_legacy_food",
+        "description": "Bread, whole-wheat, commercially prepared",
+        "food_category_id": "18",
+        "publication_date": "2019-04-01"
+      },
+      {
+        "fdc_id": "172689",
+        "data_type": "sr_legacy_food",
+        "description": "Bread, whole-wheat, commercially prepared, toasted",
+        "food_category_id": "18",
+        "publication_date": "2019-04-01"
+      }
+    ],
+    "ciqual": [
+      {
+        "id": "7106",
+        "name": "Pain complet au seigle, préemballé"
+      },
+      {
+        "id": "7110",
+        "name": "Pain complet ou intégral (à la farine T150)"
+      }
+    ]
+  }
+]

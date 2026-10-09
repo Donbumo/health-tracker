@@ -4,6 +4,7 @@ from decimal import Decimal
 from app.extensions import db
 from app.models import (
     DailyNutrition,
+    FoodProduct,
     NutritionItem,
     NutritionMeal,
     Recipe,
@@ -83,6 +84,11 @@ def _validate_ordering(data: dict) -> None:
             raise DailyNutritionImportError("Nutrition item names must not be blank")
 
 def _validate_recipe_references(data: dict, user_id: int) -> None:
+    product_ids = {item['food_product_id'] for meal in data.get('meals', []) for item in meal.get('items', []) if item.get('food_product_id') is not None}
+    owned_products = set(db.session.execute(db.select(FoodProduct.id).where(FoodProduct.user_id == user_id, FoodProduct.id.in_(product_ids))).scalars()) if product_ids else set()
+    if product_ids - owned_products:
+        raise DailyNutritionImportError('Nutrition item food_product_id does not belong to this user')
+
     recipe_ids = {
         item["recipe_id"]
         for meal in data.get("meals", [])

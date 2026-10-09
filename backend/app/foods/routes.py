@@ -17,7 +17,7 @@ from app.services.validation import JsonSchemaValidationError
 
 
 def _decimal(value) -> Decimal | None:
-    return Decimal(str(value)) if value else None
+    return Decimal(str(value)) if value is not None and value != "" else None
 
 
 @foods_bp.route("")
@@ -77,13 +77,24 @@ def detail_food(id: int):
 @foods_bp.route("/<int:id>/edit", methods=["GET", "POST"])
 @login_required
 def edit_food(id: int):
-    product = db.session.get(FoodProduct, id)
+    query=db.select(FoodProduct).where(FoodProduct.id==id,FoodProduct.user_id==current_user.id)
+    if request.method=='POST': query=query.with_for_update().execution_options(populate_existing=True)
+    product=db.session.execute(query).scalar_one_or_none()
     if product is None or product.user_id != current_user.id:
         abort(404)
 
     form = FoodProductForm(obj=product)
 
     if form.validate_on_submit():
+        if product.nutrition_json is not None and request.form.get('base_revision')!=str(product.revision):
+            abort(409)
+
+        from app.services.food_catalog import refresh_personal_vector
+        from app.services.nutrition_math import PRODUCT
+        changes={column:_decimal(getattr(form,column).data) for column in PRODUCT.values() if getattr(product,column)!=_decimal(getattr(form,column).data)}
+        refresh_personal_vector(product,current_user.id,changes)
+        product.revision += 1
+
         product.name = form.name.data.strip()
         product.brand = form.brand.data.strip() if form.brand.data else None
         product.serving_size_g = _decimal(form.serving_size_g.data)

@@ -1,0 +1,64 @@
+{
+  "data": "synthetic QA only",
+  "isolations": [
+    {
+      "level": "READ COMMITTED",
+      "checks": {
+        "effective_isolation": "pass",
+        "owner_only": "pass",
+        "idempotency": "pass",
+        "unknown_vs_zero": "pass",
+        "trace_below_limit": "pass",
+        "partial_micronutrients": "pass",
+        "no_double_count": "pass",
+        "immutable_food_history": "pass",
+        "immutable_recipe_history": "pass",
+        "repeat_new_event": "pass",
+        "legacy_macros_authority": "pass",
+        "android_projection_read": "pass",
+        "android_mutation_guard": "pass",
+        "operator_apply_replay": "pass",
+        "operator_quality_read": "pass",
+        "account_restore_owner_remap_replay": "pass",
+        "zip_restore_snapshots": "pass",
+        "flag_off_preserves_history": "pass"
+      }
+    },
+    {
+      "level": "REPEATABLE READ",
+      "checks": {
+        "effective_isolation": "pass",
+        "owner_only": "pass",
+        "idempotency": "pass",
+        "unknown_vs_zero": "pass",
+        "trace_below_limit": "pass",
+        "partial_micronutrients": "pass",
+        "no_double_count": "pass",
+        "immutable_food_history": "pass",
+        "immutable_recipe_history": "pass",
+        "repeat_new_event": "pass",
+        "legacy_macros_authority": "pass",
+        "android_projection_read": "pass",
+        "android_mutation_guard": "pass",
+        "operator_apply_replay": "pass",
+        "operator_quality_read": "pass",
+        "account_restore_owner_remap_replay": "pass",
+        "zip_restore_snapshots": "pass",
+        "flag_off_preserves_history": "pass"
+      }
+    }
+  ],
+  "schema_catalog": {
+    "tables_indexes_foreign_keys": "pass",
+    "schema_local_privileges_only": "pass",
+    "legacy_migration_fixture_preserved": "pass",
+    "repeated_upgrade_after_consumption": "pass",
+    "db_check": "pass",
+    "catalog": {
+      "source": "usda_sr_legacy",
+      "revision": "2018-04-mx37",
+      "foods": 37,
+      "sha256": "b1b96afe3d58c12c438532d538383a1f4ace4ec6947378ad78f4762bdbf87bd9"
+    }
+  }
+}

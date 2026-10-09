@@ -12,9 +12,8 @@
     </div>
   </section>
 
-  {% set has_active_filters = filters.date_from or filters.date_to or filters.plan_id or filters.exercise %}
-  <details class="filter-disclosure" aria-labelledby="session-filters-title" open>
-    <summary id="session-filters-title">Filtrar historial{% if has_active_filters %} <span class="status status-muted">Filtros activos</span>{% endif %}</summary>
+  <section class="card filter-card" aria-labelledby="session-filters-title">
+    <h2 id="session-filters-title">Filtrar historial</h2>
     <form method="get" class="filter-form">
       <div class="form-group">
         <label for="date_from">Desde</label>
@@ -42,29 +41,22 @@
         <a class="button button-secondary" href="{{ url_for('sessions.list_sessions') }}">Limpiar</a>
       </div>
     </form>
-  </details>
+  </section>
 
   <section class="card">
     <p class="muted-text">{{ total }} sesión{% if total != 1 %}es{% endif %} encontrada{% if total != 1 %}s{% endif %}.</p>
     {% set session_list = sessions|list %}
     {% if session_list %}
-      <div class="table-wrap">
-        <table class="stack-table">
-          <thead>
-            <tr><th>Fecha</th><th>Rutina</th><th>Versión</th><th>Semana/día</th><th></th></tr>
-          </thead>
-          <tbody>
-            {% for session in session_list %}
-              <tr>
-                <td data-label="Fecha">{{ session.performed_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                <td data-label="Rutina">{{ session.training_plan.name }}</td>
-                <td data-label="Versión">{{ session.training_plan_version.version_number }}</td>
-                <td data-label="Semana/día">{{ session.planned_week_number }}/{{ session.planned_day_number }}</td>
-                <td><a href="{{ url_for('sessions.detail', session_id=session.id) }}">Ver detalle</a></td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/gym.css') }}">
+      <div class="gym gym-days">
+        {% for session in session_list %}
+          <article class="gym-day">
+            <h2>{{ session.training_plan.name }}</h2>
+            <p>{{ session.performed_at.strftime('%Y-%m-%d %H:%M') }} · Revisión {{ session.training_plan_version.version_number }}</p>
+            <p>{{ 'Incompleto' if session.status == 'abandoned' else 'Finalizado' }}</p>
+            <a class="button button-secondary" href="{{ url_for('gym.workout', public_id=session.public_id) if session.started_at else url_for('sessions.detail', session_id=session.id) }}">Ver detalle</a>
+          </article>
+        {% endfor %}
       </div>
       {% if has_previous or has_next %}
         <nav class="pagination" aria-label="Páginas del historial">
@@ -77,12 +69,6 @@
           {% endif %}
         </nav>
       {% endif %}
-    {% elif has_active_filters %}
-      <div class="empty-state">
-        <h3>Ningún resultado con estos filtros</h3>
-        <p>Ajusta el rango de fechas, la rutina o el ejercicio buscado.</p>
-        <a class="button button-secondary" href="{{ url_for('sessions.list_sessions') }}">Limpiar filtros</a>
-      </div>
     {% else %}
       <p>Todavía no has registrado sesiones.</p>
       <div class="page-actions">

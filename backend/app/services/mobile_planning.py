@@ -16,6 +16,7 @@ from app.models import (
     TrainingPlan,
     TrainingPlanVersion,
     TrainingPlanWorkout,
+    SyncChange,
 )
 from app.services.mobile_sync import (
     MobileSyncError,
@@ -93,7 +94,7 @@ def _owned_plan(user_id: int, public_id: str, *, lock: bool = False) -> Training
     public_id = _uuid(public_id, "El ID de rutina")
     statement = (
         db.select(TrainingPlan)
-        .where(TrainingPlan.user_id == user_id, TrainingPlan.public_id == public_id)
+        .where(TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == user_id, TrainingPlan.public_id == public_id)
         .options(selectinload(TrainingPlan.workouts))
     )
     if lock:
@@ -150,6 +151,7 @@ def _validate_set(value: dict, position: int) -> dict:
         "load_components",
         "load_details",
         "rir",
+        "target",
         "rpe",
         "rest_seconds",
         "duration_seconds",
@@ -231,6 +233,7 @@ def _validate_set(value: dict, position: int) -> dict:
     except WorkoutLoadError as error:
         raise MobileSyncError("invalid_request", "La prescripción de carga no es válida.") from error
     result["notes"] = _text(value.get("notes"), field="notes", maximum=2000)
+    result["target"] = _text(value.get("target"), field="target", maximum=200)
     has_reps = any(field in result for field in ("reps", "reps_min"))
     has_timed = "duration_seconds" in result or "distance_m" in result
     if mode == "duration_distance" and not has_timed:
@@ -483,7 +486,7 @@ def _record_plan(plan: TrainingPlan, device_id: int | None) -> None:
 def list_plans(user_id: int, status: str | None = "active") -> list[dict]:
     statement = (
         db.select(TrainingPlan)
-        .where(TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == user_id)
         .options(selectinload(TrainingPlan.workouts))
         .order_by(TrainingPlan.updated_at.desc(), TrainingPlan.public_id)
     )
@@ -525,6 +528,7 @@ def create_plan(*, user_id: int, payload: dict, device_id: int | None) -> Traini
     if set(payload) - {"public_id", "name", "description"}:
         raise MobileSyncError("invalid_request", "La rutina contiene campos desconocidos.")
     public_id = _uuid(payload.get("public_id") or str(uuid.uuid4()), "El ID de rutina")
+    _reject_deleted_plan_id(user_id, public_id)
     if db.session.execute(db.select(TrainingPlan).where(TrainingPlan.public_id == public_id)).scalar_one_or_none():
         raise MobileSyncError("conflict", "El ID ya existe.", 409)
     plan = TrainingPlan(
@@ -537,6 +541,14 @@ def create_plan(*, user_id: int, payload: dict, device_id: int | None) -> Traini
     db.session.flush()
     _record_plan(plan, device_id)
     return plan
+
+
+def _reject_deleted_plan_id(user_id, public_id):
+    if db.session.execute(db.select(SyncChange.sequence).where(
+        SyncChange.user_id == user_id, SyncChange.entity_type == "training_plan",
+        SyncChange.entity_public_id == public_id, SyncChange.operation == "delete",
+    ).limit(1)).first():
+        raise MobileSyncError("conflict", "Este ID corresponde a una rutina eliminada. Usa uno nuevo.", 409)
 
 
 def patch_plan(*, user_id: int, public_id: str, payload: dict, device_id: int | None) -> TrainingPlan:
@@ -607,6 +619,7 @@ def duplicate_plan(*, user_id: int, public_id: str, payload: dict, device_id: in
         name=_text(payload.get("name") or f"{source.name} (copia)", field="name", maximum=200, required=True),
         description=source.description,
     )
+    _reject_deleted_plan_id(user_id, target.public_id)
     if db.session.execute(db.select(TrainingPlan).where(TrainingPlan.public_id == target.public_id)).scalar_one_or_none():
         raise MobileSyncError("conflict", "El ID ya existe.", 409)
     db.session.add(target)

@@ -11,6 +11,7 @@ from app.models.activity import (
     Route,
 )
 from app.models.exercise import Exercise, ExerciseAlias
+from app.models.external_catalog import ExerciseCatalogSource, ExternalExercise
 from app.models.exercise_load_profile import ExerciseLoadProfile
 from app.models.export_record import ExportRecord
 from app.models.import_run import ImportRun
@@ -31,6 +32,7 @@ from app.models.uploaded_file import UploadedFile
 from app.models.user import User
 from app.models.weigh_in import WeighIn
 from app.models.workout_draft import WorkoutSessionDraft
+from app.models.gym_import_draft import GymImportDraft
 from app.models.api_auth import ApiDevice, ApiRefreshToken, ApiSession
 from app.models.mobile_sync import (
     DeviceSyncState,
@@ -70,6 +72,8 @@ from app.models.ai import AIActionDraft, AIConversation, AIMessage, AIToolCall
 
 
 __all__ = [
+    "ExerciseCatalogSource",
+    "ExternalExercise",
     "DailyEnergy",
     "Activity",
     "ActivityDuplicateCandidate",

@@ -70,6 +70,7 @@ from app.services.backups import (
 from app.services.files import UploadError, store_uploaded_file
 from app.services.files import mark_import_status
 from app.services.daily_dashboard import daily_health_dashboard
+from app.services.coach import CoachBriefService
 from app.services.dashboard import (
     DashboardDateRange,
     DashboardRangeError,
@@ -1222,6 +1223,8 @@ def dashboard():
             "dashboard.html",
             dashboard=dashboard_summary,
             range_error=range_error,
+            coach_brief=CoachBriefService().build(current_user._get_current_object(),
+                                                  dashboard_snapshot=dashboard_summary)["week"],
         ),
         status_code,
     )
@@ -1238,7 +1241,8 @@ def today():
 def _render_today():
     timezone_name = current_user.timezone or current_app.config["APP_TIMEZONE"]
     app_timezone = ZoneInfo(timezone_name)
-    target_date = datetime.now(app_timezone).date()
+    current_date = datetime.now(app_timezone).date()
+    target_date = current_date
     requested_date = request.args.get("date", "").strip()
     if requested_date:
         try:
@@ -1253,6 +1257,8 @@ def _render_today():
                 target_date,
                 timezone_name,
             ),
+            coach_brief=CoachBriefService().build(current_user._get_current_object(), today=target_date)["today"],
+            coach_title="Resumen de hoy" if target_date == current_date else f"Resumen del {target_date.isoformat()}",
         )
     )
     response.headers["Cache-Control"] = "private, no-store"

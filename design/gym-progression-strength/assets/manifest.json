@@ -1,0 +1,44 @@
+[
+  {
+    "file": "bench-0.jpg",
+    "source_id": "Barbell_Bench_Press_-_Medium_Grip",
+    "position": 0,
+    "sha256": "44ba81b3ea124f625c555ae812b37263f82ae460749bbc9ebbeb55a6309f6663",
+    "bytes": 72816
+  },
+  {
+    "file": "bench-1.jpg",
+    "source_id": "Barbell_Bench_Press_-_Medium_Grip",
+    "position": 1,
+    "sha256": "5056475ae5def865dbe52882d30d2730142de2b03231bda304f82fd0b088f608",
+    "bytes": 72202
+  },
+  {
+    "file": "row-0.jpg",
+    "source_id": "Bent_Over_Barbell_Row",
+    "position": 0,
+    "sha256": "09abbeb2fca7006d0e072bdc802158b34acf7923bd3069bb835951e49a95de41",
+    "bytes": 64589
+  },
+  {
+    "file": "incline-0.jpg",
+    "source_id": "Incline_Dumbbell_Press",
+    "position": 0,
+    "sha256": "5128af58efedb66e5d3e2454c7a1e3c7f9353b573e97c8430e37cb638da8882e",
+    "bytes": 61978
+  },
+  {
+    "file": "curl-0.jpg",
+    "source_id": "Barbell_Curl",
+    "position": 0,
+    "sha256": "eb409ec1cced4d85c91c41920e66d8b2f0e4736dee43c01eab953fdcbeace673",
+    "bytes": 60608
+  },
+  {
+    "file": "squat-0.jpg",
+    "source_id": "Barbell_Squat",
+    "position": 0,
+    "sha256": "469a3c5a6eb35b88c45cda9fa7f9086032976fa3d45f5d844a0cc09a95574db5",
+    "bytes": 72823
+  }
+]

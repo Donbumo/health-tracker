@@ -27,6 +27,7 @@ class UiFormattersTest {
     }
 
     @Test fun planningAndConflictEnumsAreNeverShownRaw() {
+        assertTrue(humanPlanningConflict("remote_deleted").contains("copia local está conservada"))
         assertEquals("Programado en este dispositivo", humanWorkoutStatus("locally_pending"))
         assertEquals("Sincronizando", humanWorkoutStatus("syncing"))
         assertEquals("Requiere atención", humanWorkoutStatus("conflict"))

@@ -7,6 +7,7 @@ from app.body import body_bp
 from app.body.forms import WeighInImportForm
 from app.extensions import db
 from app.models import WeighIn
+from app.services.ai.capabilities.context import issue_action_context_token
 from app.services.exporters.weigh_in import (
     WeighInHistoryCsvExporter,
     WeighInJsonExporter,
@@ -115,9 +116,25 @@ def import_weigh_in():
 @body_bp.get("/weigh-ins/<int:record_id>")
 @login_required
 def weigh_in_detail(record_id: int):
+    record = _user_weigh_in_or_404(record_id)
+    action_context = issue_action_context_token(
+        user_id=current_user.id,
+        action_capability_id="body.measurement.correct",
+        domain="body",
+        resource_type="body_stat",
+        resource_public_id=record.public_id,
+    )
     return render_template(
         "body/weigh_in_detail.html",
-        record=_user_weigh_in_or_404(record_id),
+        record=record,
+        ai_correction_url=url_for(
+            "ai.index",
+            intent="correct",
+            domain="body",
+            action="body.measurement.correct",
+            period="today",
+            action_context=action_context,
+        ),
     )
 
 

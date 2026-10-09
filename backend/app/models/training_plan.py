@@ -28,12 +28,15 @@ class TrainingPlan(db.Model):
         nullable=False,
     )
     name = db.Column(db.String(200), nullable=False)
+    gym_active = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
     description = db.Column(db.Text, nullable=True)
     status = db.Column(
         db.String(20), nullable=False, default="active", server_default="active"
     )
     revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")
     archived_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    # Irreversible removal from planning; retained only to anchor historical FKs.
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
     active_version_number = db.Column(
         db.Integer,
         nullable=False,

@@ -1,0 +1,31 @@
+{% macro signal_card(signal, compact=false) %}
+<article class="coach-signal" aria-labelledby="coach-{{ signal.signal_id|replace(':', '-') }}">
+  <div class="coach-signal-top"><span class="status {{ 'status-warning' if signal.severity == 'high' else 'status-muted' }}">{{ signal.domain|replace('_', ' ')|capitalize }}</span><span class="coach-coverage">{{ {'sufficient':'Cobertura suficiente','partial':'Cobertura parcial','insufficient':'Datos insuficientes'}.get(signal.coverage.state if signal.coverage else '', 'Cobertura por revisar') }}</span></div>
+  <h3 id="coach-{{ signal.signal_id|replace(':', '-') }}">{{ signal.title }}</h3>
+  <p>{{ signal.message }}</p>
+  <details class="coach-evidence"><summary>¿Por qué?</summary>
+    <p><strong>Periodo:</strong> {{ signal.period.from }} a {{ signal.period.to }} · {{ signal.period.timezone }}</p>
+    {% if signal.current is not none %}<p><strong>Valor registrado:</strong> {{ signal.current }} {{ signal.unit or '' }}</p>{% endif %}
+    {% if signal.baseline is not none %}<p><strong>Comparación:</strong> {{ signal.baseline }} {{ signal.unit or '' }}</p>{% endif %}
+    <p><strong>Cobertura:</strong> {{ signal.coverage.observed }}/{{ signal.coverage.expected }} · {{ signal.coverage.state }}</p>
+    <ul>{% for item in signal.evidence %}<li><strong>{{ item.label }}:</strong> {{ item.value }} <small>· {{ item.source }}</small></li>{% endfor %}</ul>
+    <p><strong>Procedencia:</strong> {{ signal.provenance|join(' · ') }}</p>
+  </details>
+  {% if not compact %}<div class="coach-actions">
+    <a class="button button-secondary" href="{{ url_for('ai.index', intent='explain_progression' if signal.domain == 'gym' else 'explain_signal', domain='all', period=signal.period.preset if signal.period.preset in ['today','7d'] else '7d', signal=signal.signal_id) }}#prepared-context-title">Pedir explicación AI</a>
+    {% if signal.action and signal.action.capability == 'training.progression.update' %}
+      <form method="post" action="{{ url_for('ai.prepare_coach_progression', program_id=signal.action.program_id, prescription_id=signal.action.prescription_id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="button" type="submit">Preparar cambio</button>
+      </form>
+    {% endif %}
+  </div>{% endif %}
+</article>
+{% endmacro %}
+
+{% macro brief(brief, title, compact=false) %}
+<section class="coach-brief" aria-label="{{ title }}">
+  <div class="coach-brief-heading"><div><p class="eyebrow">Health Tracker · lectura determinística</p><h2>{{ title }}</h2></div><span class="coach-brief-count">{{ brief.top_priorities|length }} señales</span></div>
+  <div class="coach-signal-list">{% for signal in brief.top_priorities %}{{ signal_card(signal, compact) }}{% endfor %}</div>
+</section>
+{% endmacro %}

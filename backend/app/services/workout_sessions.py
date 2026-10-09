@@ -46,7 +46,7 @@ class PlannedDay:
 
 
 def list_planned_days(user_id: int, plan_id: int | None = None) -> list[PlannedDay]:
-    statement = db.select(TrainingPlan).where(TrainingPlan.user_id == user_id)
+    statement = db.select(TrainingPlan).where(TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == user_id)
     if plan_id is not None:
         statement = statement.where(TrainingPlan.id == plan_id)
     plans = db.session.execute(statement.order_by(TrainingPlan.name)).scalars()
@@ -82,7 +82,7 @@ def resolve_planned_day(key: str, user_id: int) -> PlannedDay:
             TrainingPlanVersion.user_id == user_id,
         )
     ).scalar_one_or_none()
-    if version is None or version.training_plan.user_id != user_id:
+    if version is None or version.training_plan.user_id != user_id or version.training_plan.deleted_at is not None:
         raise TrainingSessionError("Planned day does not belong to this user")
     if version.training_plan.active_version_number != version.version_number:
         raise TrainingSessionError("The selected plan version is no longer active")
@@ -339,6 +339,10 @@ def import_completed_workout(
 
     performed_at = datetime.fromisoformat(data["performed_at"])
     session = TrainingSession(
+        status=data.get("status", "completed"),
+        started_at=datetime.fromisoformat(data["started_at"]) if data.get("started_at") else None,
+        completed_at=datetime.fromisoformat(data["completed_at"]) if data.get("completed_at") else None,
+        timezone=data.get("timezone"),
         user_id=user_id,
         training_plan_id=planned_day.plan.id,
         training_plan_version_id=planned_day.version.id,

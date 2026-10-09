@@ -43,6 +43,36 @@ class CompanionDatabaseTest {
 
     @After fun close() = database.close()
 
+    @Test fun deletedPlanRemovesOnlySyncedPrescriptionCacheAndPreservesOfflineConflict() = runBlocking {
+        val dao = database.companionDao()
+        val now = "2099-09-19T00:00:00Z"
+        listOf("scope-a", "scope-b").forEach { scope ->
+            dao.replacePlan(
+                MobilePlanEntity(scope, "qa-plan", "QA", null, "active", 1, null, null, "synced", now, now, null),
+                listOf(MobilePlanWorkoutEntity(scope, "qa-day", "qa-plan", "QA day", null, 1, null, 1, "synced", now, now)),
+                emptyList(), emptyList(),
+            )
+            dao.replaceHistorySession(history(scope, "qa-history", "qa-event", now))
+        }
+        dao.applyPlanDeletion("scope-a", "qa-plan", 2, now)
+        dao.applyPlanDeletion("scope-a", "qa-plan", 2, now)
+        assertNull(dao.plan("scope-a", "qa-plan"))
+        assertTrue(dao.planWorkouts("scope-a", "qa-plan").isEmpty())
+        assertNotNull(dao.plan("scope-b", "qa-plan"))
+        assertNotNull(dao.historySession("scope-a", "qa-history"))
+        dao.insertPending(PendingActionEntity(accountScope="scope-b", actionType="planning_workout_patch",
+            entityId="qa-day", idempotencyKey="qa-key", payloadJson="{}", payloadHash="qa", createdAt=now))
+        dao.applyPlanDeletion("scope-b", "qa-plan", 2, now)
+        assertEquals("conflict", dao.plan("scope-b", "qa-plan")?.syncStatus)
+        assertEquals("remote_deleted", dao.planningConflict("scope-b", "qa-plan")?.changedFields)
+        assertEquals("conflict", dao.planPendingActions("scope-b", "qa-plan").single().status)
+        assertEquals(1, dao.planWorkouts("scope-b", "qa-plan").size)
+        dao.acceptPlanDeletion("scope-b", "qa-plan")
+        assertNull(dao.plan("scope-b", "qa-plan"))
+        assertNull(dao.pendingActionForEntity("scope-b", "qa-day"))
+        assertNotNull(dao.historySession("scope-b", "qa-history"))
+    }
+
     @Test fun historyAndProgressCachesAreAccountScopedAndPaginated() = runBlocking {
         val dao = database.companionDao()
         val first = history("scope-a", "session-a", "event-a", "2026-07-23T00:00:00Z")

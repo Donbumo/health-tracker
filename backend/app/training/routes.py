@@ -45,7 +45,7 @@ def _user_plan_or_404(plan_id: int) -> TrainingPlan:
     plan = db.session.execute(
         db.select(TrainingPlan).where(
             TrainingPlan.id == plan_id,
-            TrainingPlan.user_id == current_user.id,
+            TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == current_user.id,
         )
     ).scalar_one_or_none()
     if plan is None:
@@ -72,16 +72,8 @@ def _user_version_or_404(
 @training_bp.get("")
 @login_required
 def list_plans():
-    plans = db.session.execute(
-        db.select(TrainingPlan)
-        .where(TrainingPlan.user_id == current_user.id)
-        .order_by(TrainingPlan.updated_at.desc())
-    ).scalars().all()
-    return render_template(
-        "training/list.html",
-        plans=plans,
-        plan_summaries={plan.id: _plan_summary(plan) for plan in plans},
-    )
+    from app.gym.routes import program_home
+    return program_home()
 
 
 @training_bp.route("/new", methods=["GET", "POST"])
@@ -92,7 +84,7 @@ def create_plan():
         name = form.name.data.strip()
         existing = db.session.execute(
             db.select(TrainingPlan).where(
-                TrainingPlan.user_id == current_user.id,
+                TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == current_user.id,
                 TrainingPlan.name == name,
             )
         ).scalar_one_or_none()
@@ -119,7 +111,7 @@ def create_plan():
                 if result["committed"]:
                     plan = db.session.execute(
                         db.select(TrainingPlan).where(
-                            TrainingPlan.user_id == current_user.id,
+                            TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == current_user.id,
                             TrainingPlan.name == name,
                         )
                     ).scalar_one()
@@ -140,7 +132,7 @@ def duplicate_plan(plan_id: int):
     name = form.name.data.strip()
     if db.session.execute(
         db.select(TrainingPlan.id).where(
-            TrainingPlan.user_id == current_user.id,
+            TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == current_user.id,
             TrainingPlan.name == name,
         )
     ).scalar_one_or_none() is not None:
@@ -172,7 +164,7 @@ def duplicate_plan(plan_id: int):
         return redirect(url_for("training.detail", plan_id=plan.id))
     duplicate = db.session.execute(
         db.select(TrainingPlan).where(
-            TrainingPlan.user_id == current_user.id,
+            TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == current_user.id,
             TrainingPlan.name == name,
         )
     ).scalar_one()

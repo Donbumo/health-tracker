@@ -20,6 +20,7 @@ from app.services.dashboard.date_range import DashboardDateRange, DashboardRange
 from app.services.dashboard.nutrition import NutritionTrendService
 from app.services.dashboard.serializers import serialize_dashboard
 from app.services.dashboard.summary import DashboardSummaryService
+from app.services.coach import CoachBriefService
 from app.services.dashboard.weight import WeightTrendService
 from app.services.engagement import adherence_summary
 from app.services.exercise_progress import ExerciseProgressService
@@ -232,7 +233,7 @@ class AIProvenanceService:
                     TrainingSession.source_device_id,
                 ).where(
                     TrainingSession.user_id == user_id,
-                    TrainingSession.deleted_at.is_(None),
+                    TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed",
                     TrainingSession.performed_at >= start_at,
                     TrainingSession.performed_at < end_at,
                 )
@@ -310,6 +311,27 @@ def _dashboard(user: User, arguments: dict) -> AIToolExecution:
         "sources": evidence,
     }
     return AIToolExecution(sanitize_untrusted_data(data), tuple(evidence))
+
+
+def _coach_brief(user: User, arguments: dict) -> AIToolExecution:
+    preset = arguments.get("preset", "7d")
+    briefs = CoachBriefService().build(user, today=_today_override())
+    brief = briefs["today" if preset == "today" else "week"]
+    signal_id = arguments.get("signal_id")
+    signals = brief["top_priorities"]
+    if signal_id:
+        signals = [item for item in brief["signals"] if item["signal_id"] == signal_id]
+        if not signals:
+            raise AIToolError("signal_not_found", "La señal ya no está disponible.", rejected=True)
+    if arguments.get("progression_only"):
+        signals = [item for item in signals if item["domain"] == "gym"
+                   and item["type"] in {"progression_candidate", "increase_reps", "maintain", "review", "insufficient_data"}]
+        if signal_id and not signals:
+            raise AIToolError("signal_not_found", "La progresión solicitada no está disponible.", rejected=True)
+    evidence = tuple(_calculated_evidence(item["metric"], item["period"]) for item in signals)
+    data = {"period": brief["period"], "generated_at": brief["generated_at"],
+            "signals": signals, "coverage": brief["coverage"], "domains": brief["domains"]}
+    return AIToolExecution(sanitize_untrusted_data(data), evidence)
 
 
 def _weight(user: User, arguments: dict) -> AIToolExecution:
@@ -682,9 +704,45 @@ def _data_sources(user: User, arguments: dict) -> AIToolExecution:
     return AIToolExecution(sanitize_untrusted_data(data), tuple(evidence))
 
 
+def _gym_program(user, arguments):
+    from app.services.gym_capabilities import read_program
+    from app.services.gym_programs import GymError
+    try:
+        data = read_program(user.id, arguments.get("program_id"), arguments.get("week"), arguments.get("day"))
+    except GymError as error:
+        raise AIToolError("not_found", str(error)) from error
+    return AIToolExecution(sanitize_untrusted_data(data), ())
+
+
+def _gym_session(user, arguments):
+    from app.services.gym_capabilities import read_session
+    from app.services.gym_programs import GymError
+    try:
+        data = read_session(user.id, arguments["session_id"])
+    except GymError as error:
+        raise AIToolError("not_found", str(error)) from error
+    return AIToolExecution(sanitize_untrusted_data(data), ())
+
+
 class AIToolRegistry:
     def __init__(self):
         self._handlers: dict[str, tuple[AIToolDefinition, Callable[[User, dict], AIToolExecution]]] = {}
+        self._register("get_coach_brief", "Señales determinísticas owner-only con cobertura y evidencia estructurada.",
+            {"type": "object", "properties": {
+                "preset": {"type": "string", "enum": ["today", "7d"]},
+                "signal_id": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[a-z0-9:_-]+$"},
+                "progression_only": {"type": "boolean"}},
+             "additionalProperties": False},
+            _coach_brief,
+            _metadata(("all",), ("dashboard_summary", "coach_signal"), (),
+                      ("daily_coach", "weekly_coach", "explain_signal", "explain_progression",
+                       "what_changed", "what_should_i_review")))
+        self._register("get_training_program", "Programa activo o indicado y objetivos de sus días; no son resultados realizados.",
+            {"type": "object", "properties": {"program_id": {"type": "string", "format": "uuid"}, "week": {"type": "integer", "minimum": 1, "maximum": 104}, "day": {"type": "integer", "minimum": 1, "maximum": 7}}, "additionalProperties": False},
+            _gym_program, _metadata(("training",), ("training_program", "program_day"), (), ("summary", "latest")))
+        self._register("get_training_session", "Estado y series confirmadas de una sesión propia, con su versión histórica.",
+            {"type": "object", "properties": {"session_id": {"type": "string", "format": "uuid"}}, "required": ["session_id"], "additionalProperties": False},
+            _gym_session, _metadata(("training",), ("training_session",), ("sessions",), ("latest",)))
         self._register(
             "get_dashboard_summary",
             "Resumen longitudinal de energía, proteína, peso y entrenamiento.",

@@ -1,0 +1,5 @@
+Día|Ejercicio|Series|Reps|Carga|RIR|RPE|Rest|Notas
+D1|QA Press banca|3|6-8|80kg|2||90|Fixture ficticia QA
+D1|QA Remo|2|8|||8|60|Sin peso prescrito
+D2|QA Sentadilla|3|3x8|100lb|2||120|Fixture ficticia QA
+D3|QA Press militar|2|8-10|||8|60|Fixture ficticia QA

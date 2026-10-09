@@ -25,7 +25,7 @@ def getting_started_status(user_id: int) -> dict:
     if user is None:
         raise ValueError("User not found")
 
-    has_plan = _exists(TrainingPlan, user_id)
+    has_plan = _exists(TrainingPlan, user_id, TrainingPlan.deleted_at.is_(None))
     has_planned_workout = _exists(
         PlannedWorkout,
         user_id,

@@ -369,6 +369,7 @@ def test_action_metadata_reports_real_actions_and_honest_future_blockers():
         "body.measurement.correct",
         "training.session.create",
         "training.session.correct",
+            "training.progression.update",
         "goal.create",
         "goal.update",
     }

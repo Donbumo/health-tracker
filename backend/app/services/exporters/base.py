@@ -1,4 +1,5 @@
 import json
+import csv
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -6,6 +7,16 @@ from typing import Any, Callable
 
 class ExportError(ValueError):
     pass
+
+
+class SafeCsvDictWriter(csv.DictWriter):
+    """Keep untrusted names and notes as spreadsheet text, including prefixed formulas."""
+    def writerow(self, rowdict):
+        def safe(value):
+            if isinstance(value, str) and value.lstrip(" \t\r\n\ufeff").startswith(("=", "+", "-", "@")):
+                return "'" + value
+            return value
+        return super().writerow({key: safe(value) for key, value in rowdict.items()})
 
 
 @dataclass(frozen=True)

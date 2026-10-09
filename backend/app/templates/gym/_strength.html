@@ -1,0 +1,35 @@
+{% from "gym/_components.html" import thumbnail with context %}
+{% macro badge(evaluation) %}<span class="strength-state state-{{ evaluation.state }}">{{ evaluation.label }}</span>{% endmacro %}
+{% macro progression_link(evaluation, label='Ver progreso') %}
+{% if evaluation.exercise_id %}<a class="gym-text-link" href="{{ url_for('gym.exercise_progress', public_id=evaluation.exercise_id, program=evaluation.program_id, prescription=evaluation.prescription_id) }}">{{ label }} ↗</a>{% else %}<a class="gym-text-link" href="{{ url_for('gym.exercise_link_review', name=evaluation.name) }}">Vincular ejercicio ↗</a>{% endif %}
+{% endmacro %}
+{% macro evidence(evaluation) %}<div class="strength-evidence"><h3>Evidencia</h3><ul>{% for line in evaluation.evidence %}<li>{{ line }}</li>{% endfor %}</ul><p class="gym-small">Doble progresión · {{ evaluation.rule_version }}</p></div>{% endmacro %}
+{% macro proposal(evaluation) %}
+<section class="gym-panel strength-proposal"><p class="gym-eyebrow">TU SIGUIENTE PASO</p><h2>Próxima progresión</h2>
+{% if evaluation %}{{ badge(evaluation) }}<p class="gym-small">{{ evaluation.program_name }} · {{ evaluation.day_name }}</p>
+{% if evaluation.proposal %}<p class="strength-proposal-value">{{ evaluation.current.load or '—' }} <small>{{ evaluation.current.unit }}</small>{% if evaluation.proposal.field_changes %}<span aria-hidden="true"> → </span>{{ evaluation.proposal.load }} <small>{{ evaluation.current.unit }}</small>{% endif %}</p><p>{{ evaluation.proposal.message }}</p>{% else %}<p>Sin propuesta aplicable por ahora.</p>{% endif %}
+{{ evidence(evaluation) }}
+{% if evaluation.proposal and evaluation.proposal.field_changes %}<a class="button strength-full" href="{{ url_for('gym.progression_preview', public_id=evaluation.program_id, prescription_id=evaluation.prescription_id) }}">Preparar cambio →</a><a class="gym-text-link" href="{{ url_for('ai.index', intent='explain_progression', domain='all', period='7d', signal='7d:gym:progression_candidate:exercise_progression:' ~ evaluation.program_id ~ ':' ~ evaluation.prescription_id) }}">Coach puede explicarte esta progresión ↗</a>{% endif %}
+{% if not evaluation.exercise_id %}<a class="button button-secondary" href="{{ url_for('gym.exercise_link_review', name=evaluation.name) }}">Vincular ejercicio</a>{% endif %}
+<p class="gym-small">Propuesta sin aplicar. Solo tu confirmación cambia la rutina.</p>
+{% else %}<p>No hay una prescripción actual para este ejercicio. Tu historial sigue disponible.</p>{% endif %}</section>
+{% endmacro %}
+{% macro weekly(model) %}
+<section class="strength-week" aria-labelledby="week-title"><div class="gym-section-heading"><h2 id="week-title">Esta semana <span class="gym-muted">/ {{ model.start }} – {{ model.end }}</span></h2></div><div class="gym-panel strength-weekly">
+<div><strong>{{ model.sessions }}</strong><span>Sesiones completadas</span></div>
+<div><strong>{{ model.sets }}</strong><span>Series confirmadas</span></div>
+<div><strong>{{ model.volume if model.volume is not none else '—' }} <small>{{ model.unit }}·reps</small></strong><span>Volumen comparable{{ ' · parcial' if model.partial else '' }}</span></div>
+<div><strong>{{ model.comparison if model.comparison is not none else '—' }}{% if model.comparison is not none %}<small>%</small>{% endif %}</strong><span>Volumen vs semana anterior</span></div>
+</div></section>
+{% endmacro %}
+{% macro highlights(evaluations) %}
+<section class="strength-highlights" id="progressions"><div class="gym-section-heading"><h2>Progresando</h2><span class="gym-small">Propuestas por revisar</span></div><div class="strength-tiles">
+{% for item in evaluations %}<article class="gym-panel strength-tile">{{ thumbnail({'name': item.name, 'exercise_id': item.exercise_id}) }}{{ badge(item) }}<h3>{{ item.name }}</h3><p class="gym-small">{{ item.day_name }}</p><p>{{ item.proposal.message if item.proposal else item.evidence[-1] }}</p>{{ progression_link(item) }}</article>
+{% else %}<div class="gym-panel"><h3>Tu progreso empieza aquí</h3><p>Crea un programa y registra tus sesiones para ver referencias y propuestas.</p></div>{% endfor %}</div></section>
+{% endmacro %}
+{% macro sidebar(model) %}
+<aside class="strength-stack" aria-label="Fuerza y consistencia"><section class="gym-panel"><div class="gym-section-heading"><h2>Fuerza</h2></div><p class="gym-small">e1RM · estimación</p>
+{% if model.strength %}<p>{{ model.strength.name }}</p><p class="strength-big">{{ model.strength.estimate }} <small>{{ model.strength.unit }}</small></p><p class="gym-small">Top set reciente</p><strong>{{ model.strength.top.load }} {{ model.strength.unit }} × {{ model.strength.top.reps }}</strong><a class="gym-text-link" href="{{ url_for('gym.exercise_progress', public_id=model.strength.exercise_id) }}">Explorar evolución ↗</a><p class="gym-small">Epley · referencias de al menos dos sesiones compatibles. No es un máximo medido.</p>
+{% else %}<h3>Aún sin referencia suficiente</h3><p class="gym-muted">Registra dos sesiones con series elegibles para ver una estimación.</p>{% endif %}</section>
+<section class="gym-panel"><h2>Consistencia</h2><p class="strength-big">{{ model.weekly.sessions }} <small>esta semana</small></p><div class="strength-bars" aria-label="Sesiones por semana">{% for week in model.consistency %}<div><span class="strength-bar" style="--bar-height:{{ week.height }}%"><b>{{ week.count }}</b></span><span>{{ week.label }}</span></div>{% endfor %}</div><p class="gym-small"><strong>{{ model.consistency_total }} sesiones</strong> en las últimas 4 semanas.</p></section></aside>
+{% endmacro %}

@@ -103,6 +103,8 @@ class AIProviderRequest:
     draft_types: tuple[str, ...] | None = None
     actions: tuple[AIProviderActionDefinition, ...] = ()
     require_tool: bool = False
+    phase: str = "response"
+    intent: str = "freeform"
 
 
 @dataclass(frozen=True)

@@ -1,0 +1,395 @@
+{
+  "date": "2026-10-04",
+  "visualApproval": "PASS",
+  "designChanges": "none; documentation and approval metadata only",
+  "responsive": [
+    {
+      "page": "home",
+      "brokenImages": 0,
+      "client": 345,
+      "h1": 1,
+      "height": 844,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 345,
+      "smallControls": [],
+      "viewport": 360
+    },
+    {
+      "page": "progress",
+      "brokenImages": 0,
+      "client": 345,
+      "h1": 1,
+      "height": 844,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 345,
+      "smallControls": [],
+      "viewport": 360
+    },
+    {
+      "page": "summary",
+      "brokenImages": 0,
+      "client": 345,
+      "h1": 1,
+      "height": 844,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 345,
+      "smallControls": [],
+      "viewport": 360
+    },
+    {
+      "page": "home",
+      "brokenImages": 0,
+      "client": 375,
+      "h1": 1,
+      "height": 844,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 375,
+      "smallControls": [],
+      "viewport": 390
+    },
+    {
+      "page": "progress",
+      "brokenImages": 0,
+      "client": 375,
+      "h1": 1,
+      "height": 844,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 375,
+      "smallControls": [],
+      "viewport": 390
+    },
+    {
+      "page": "summary",
+      "brokenImages": 0,
+      "client": 375,
+      "h1": 1,
+      "height": 844,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 375,
+      "smallControls": [],
+      "viewport": 390
+    },
+    {
+      "page": "home",
+      "brokenImages": 0,
+      "client": 415,
+      "h1": 1,
+      "height": 844,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 415,
+      "smallControls": [],
+      "viewport": 430
+    },
+    {
+      "page": "progress",
+      "brokenImages": 0,
+      "client": 415,
+      "h1": 1,
+      "height": 844,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 415,
+      "smallControls": [],
+      "viewport": 430
+    },
+    {
+      "page": "summary",
+      "brokenImages": 0,
+      "client": 415,
+      "h1": 1,
+      "height": 844,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 415,
+      "smallControls": [],
+      "viewport": 430
+    },
+    {
+      "page": "home",
+      "brokenImages": 0,
+      "client": 753,
+      "h1": 1,
+      "height": 900,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 753,
+      "smallControls": [],
+      "viewport": 768
+    },
+    {
+      "page": "progress",
+      "brokenImages": 0,
+      "client": 753,
+      "h1": 1,
+      "height": 900,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 753,
+      "smallControls": [],
+      "viewport": 768
+    },
+    {
+      "page": "summary",
+      "brokenImages": 0,
+      "client": 753,
+      "h1": 1,
+      "height": 900,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 753,
+      "smallControls": [],
+      "viewport": 768
+    },
+    {
+      "page": "home",
+      "brokenImages": 0,
+      "client": 1009,
+      "h1": 1,
+      "height": 900,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 1009,
+      "smallControls": [],
+      "viewport": 1024
+    },
+    {
+      "page": "progress",
+      "brokenImages": 0,
+      "client": 1009,
+      "h1": 1,
+      "height": 900,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 1009,
+      "smallControls": [],
+      "viewport": 1024
+    },
+    {
+      "page": "summary",
+      "brokenImages": 0,
+      "client": 1009,
+      "h1": 1,
+      "height": 900,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 1009,
+      "smallControls": [],
+      "viewport": 1024
+    },
+    {
+      "page": "home",
+      "brokenImages": 0,
+      "client": 1351,
+      "h1": 1,
+      "height": 900,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 1351,
+      "smallControls": [],
+      "viewport": 1366
+    },
+    {
+      "page": "progress",
+      "brokenImages": 0,
+      "client": 1351,
+      "h1": 1,
+      "height": 900,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 1351,
+      "smallControls": [],
+      "viewport": 1366
+    },
+    {
+      "page": "summary",
+      "brokenImages": 0,
+      "client": 1351,
+      "h1": 1,
+      "height": 900,
+      "lang": "es",
+      "main": 1,
+      "overflow": false,
+      "scroll": 1351,
+      "smallControls": [],
+      "viewport": 1366
+    }
+  ],
+  "light": [
+    {
+      "page": "home",
+      "overflow": false,
+      "theme": "light",
+      "viewport": 390
+    },
+    {
+      "page": "progress",
+      "overflow": false,
+      "theme": "light",
+      "viewport": 390
+    },
+    {
+      "page": "summary",
+      "overflow": false,
+      "theme": "light",
+      "viewport": 390
+    },
+    {
+      "page": "home",
+      "overflow": false,
+      "theme": "light",
+      "viewport": 1366
+    },
+    {
+      "page": "progress",
+      "overflow": false,
+      "theme": "light",
+      "viewport": 1366
+    },
+    {
+      "page": "summary",
+      "overflow": false,
+      "theme": "light",
+      "viewport": 1366
+    }
+  ],
+  "accessibility": [
+    {
+      "check": "Skip link retains progress and focuses main",
+      "pass": true
+    },
+    {
+      "check": "Reverse Tab stays in modal with visible focus",
+      "pass": true
+    },
+    {
+      "check": "Forward Tab wraps inside modal",
+      "pass": true
+    },
+    {
+      "check": "Escape closes and restores focus",
+      "pass": true
+    },
+    {
+      "check": "Chart has keyboard-accessible text data",
+      "pass": true
+    },
+    {
+      "check": "Scenario select labelled and font 16px",
+      "pass": true
+    },
+    {
+      "check": "Textual state insufficient",
+      "pass": true
+    },
+    {
+      "check": "Textual state review",
+      "pass": true
+    },
+    {
+      "check": "Textual state no-image",
+      "pass": true
+    }
+  ],
+  "contrast": [
+    {
+      "theme": "light",
+      "pair": "text/bg",
+      "ratio": 13.97
+    },
+    {
+      "theme": "light",
+      "pair": "muted/surface",
+      "ratio": 6.05
+    },
+    {
+      "theme": "light",
+      "pair": "muted/raised",
+      "ratio": 5.26
+    },
+    {
+      "theme": "light",
+      "pair": "lime/lime-soft",
+      "ratio": 6.16
+    },
+    {
+      "theme": "light",
+      "pair": "cyan/cyan-soft",
+      "ratio": 5.64
+    },
+    {
+      "theme": "light",
+      "pair": "amber/amber-soft",
+      "ratio": 6.06
+    },
+    {
+      "theme": "dark",
+      "pair": "text/bg",
+      "ratio": 17.31
+    },
+    {
+      "theme": "dark",
+      "pair": "muted/surface",
+      "ratio": 8.02
+    },
+    {
+      "theme": "dark",
+      "pair": "muted/raised",
+      "ratio": 7.35
+    },
+    {
+      "theme": "dark",
+      "pair": "lime/lime-soft",
+      "ratio": 10.92
+    },
+    {
+      "theme": "dark",
+      "pair": "cyan/cyan-soft",
+      "ratio": 9.08
+    },
+    {
+      "theme": "dark",
+      "pair": "amber/amber-soft",
+      "ratio": 9.69
+    }
+  ],
+  "console": [],
+  "zoom200": "Not verified: the available in-app browser shortcut did not change the page zoom; no 200% zoom PASS is claimed.",
+  "tests": {
+    "frontend": {
+      "passed": 12,
+      "failed": 0
+    },
+    "existingAccessibility": {
+      "passed": 2,
+      "failed": 0,
+      "deselected": 4
+    },
+    "composeConfig": "PASS using explicit fictitious env file",
+    "fullBackend": "not run",
+    "backendChanges": 0
+  }
+}

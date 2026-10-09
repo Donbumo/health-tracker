@@ -7,6 +7,7 @@
       {% if plan.description %}<p>{{ plan.description }}</p>{% endif %}
     </div>
     <div class="page-actions">
+      <a class="button" href="{{ url_for('gym.editor', public_id=plan.public_id) }}">Editar días y objetivos</a>
       <a class="button" href="{{ url_for('sessions.new_session', plan_id=plan.id) }}">Registrar sesión</a>
       <a class="button button-secondary" href="{{ url_for('planned.create') }}">Planear entrenamiento</a>
       <a class="button" href="{{ url_for('training.new_version', plan_id=plan.id) }}">Nueva versión</a>
@@ -39,6 +40,10 @@
       {{ duplicate_form.submit(class_="button button-secondary") }}
     </form>
   </section>
+
+  {% for week in active_version.content.data.weeks %}{% for day in week.days %}
+  <section class="card"><h2>{{ day.name }}</h2>{% for exercise in day.exercises %}<h3>{{ exercise.name }}</h3>{% if exercise.notes %}<p>{{ exercise.notes }}</p>{% endif %}<ul>{% for target in exercise.sets %}<li>Serie {{ target.set_number }}: {% if target.reps is defined %}{{ target.reps }} reps{% elif target.reps_min is defined %}{{ target.reps_min }}–{{ target.reps_max }} reps{% else %}{{ target.duration_seconds or '—' }} s{% endif %}{% if target.load_value is defined %} · {{ target.load_value }} {{ target.load_unit }}{% elif target.weight_kg is defined %} · {{ target.weight_kg }} kg{% endif %}{% if target.rir is defined %} · RIR {{ target.rir }}{% endif %}{% if target.rpe is defined %} · RPE {{ target.rpe }}{% endif %}{% if target.rest_seconds is defined %} · {{ target.rest_seconds }} s descanso{% endif %}</li>{% endfor %}</ul>{% endfor %}</section>
+  {% endfor %}{% endfor %}
 
   <details class="card context-help">
     <summary>Información técnica y exportación</summary>

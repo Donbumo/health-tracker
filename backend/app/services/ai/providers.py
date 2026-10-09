@@ -721,6 +721,18 @@ class FakeAIProvider(AIProvider):
                 usage=self._usage(request, result.name),
             )
         data = result.data
+        if result.name == "get_coach_brief":
+            signals = data.get("signals") or []
+            summary = " ".join(
+                f"{item.get('title')}: {item.get('message')} "
+                f"Cobertura {item.get('coverage', {}).get('state', 'insufficient')}."
+                for item in signals[:5]
+            )
+            return AIProviderResponse(
+                content=(summary or "No hay señales comparables para este periodo.")
+                        + " Son observaciones basadas en registros; ningún cambio se aplicó.",
+                usage=self._usage(request, result.name),
+            )
         metrics = data.get("metrics") or {}
         period = data.get("period") or {}
         label = period.get("label") or (
@@ -1069,6 +1081,9 @@ def _log_openai_response_diagnostic(
     status: int | None,
     content_type: str | None,
     document,
+    model: str | None = None,
+    phase: str | None = None,
+    intent: str | None = None,
 ) -> None:
     top_level_keys: list[str] = []
     output_item_types: list[str] = []
@@ -1091,7 +1106,7 @@ def _log_openai_response_diagnostic(
     current_app.logger.warning(
         "ai_provider_response_rejected http_status=%s content_type=%s "
         "top_level_keys=%s output_item_types=%s has_id=%s has_model=%s "
-        "has_usage=%s error_code=%s error_type=%s",
+        "has_usage=%s error_code=%s error_type=%s model=%s phase=%s intent=%s",
         status if type(status) is int else "unknown",
         content_type or "unknown",
         ",".join(sorted(set(top_level_keys))) or "none",
@@ -1101,6 +1116,9 @@ def _log_openai_response_diagnostic(
         "yes" if isinstance(document, dict) and "usage" in document else "no",
         error_code,
         error_type,
+        _diagnostic_token(model),
+        _diagnostic_token(phase),
+        _diagnostic_token(intent),
     )
 
 
@@ -1228,6 +1246,9 @@ class OpenAIResponsesProvider(AIProvider):
                 status=error.code,
                 content_type=_response_content_type(error.headers),
                 document=document,
+                model=request.model,
+                phase=request.phase,
+                intent=request.intent,
             )
             self._raise_http(error.code)
         except (TimeoutError, socket.timeout) as error:
@@ -1239,6 +1260,14 @@ class OpenAIResponsesProvider(AIProvider):
                 "provider_offline", "El proveedor AI no está disponible temporalmente.", 503
             ) from error
         except (UnicodeError, json.JSONDecodeError, TypeError, ValueError) as error:
+            _log_openai_response_diagnostic(
+                status=None,
+                content_type=None,
+                document=None,
+                model=request.model,
+                phase=request.phase,
+                intent=request.intent,
+            )
             raise AIProviderError(
                 "provider_malformed_response",
                 "El proveedor AI devolvió una respuesta no válida.",
@@ -1253,6 +1282,9 @@ class OpenAIResponsesProvider(AIProvider):
                     status=http_status,
                     content_type=content_type,
                     document=document,
+                    model=request.model,
+                    phase=request.phase,
+                    intent=request.intent,
                 )
                 self._raise_http(http_status)
         else:
@@ -1263,6 +1295,9 @@ class OpenAIResponsesProvider(AIProvider):
             document,
             http_status=http_status,
             content_type=content_type,
+            model=request.model,
+            phase=request.phase,
+            intent=request.intent,
         )
 
     @staticmethod
@@ -1295,6 +1330,9 @@ class OpenAIResponsesProvider(AIProvider):
         *,
         http_status: int | None = None,
         content_type: str | None = None,
+        model: str | None = None,
+        phase: str | None = None,
+        intent: str | None = None,
     ) -> AIProviderResponse:
         try:
             return OpenAIResponsesProvider._parse_document(document)
@@ -1303,6 +1341,9 @@ class OpenAIResponsesProvider(AIProvider):
                 status=http_status,
                 content_type=content_type,
                 document=document,
+                model=model,
+                phase=phase,
+                intent=intent,
             )
             raise
 

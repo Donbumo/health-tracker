@@ -7,6 +7,8 @@ from app.extensions import db
 class TrainingSession(db.Model):
     __tablename__ = "training_sessions"
     __table_args__ = (
+        db.CheckConstraint("status IN ('in_progress', 'completed', 'abandoned')", name="ck_training_sessions_status"),
+        db.Index("ix_training_sessions_user_status", "user_id", "status"),
         db.CheckConstraint(
             "planned_week_number >= 1",
             name="ck_training_sessions_week_number",
@@ -88,6 +90,7 @@ class TrainingSession(db.Model):
         db.Integer, db.ForeignKey("api_devices.id", ondelete="SET NULL"), nullable=True
     )
     client_event_id = db.Column(db.String(36), nullable=True)
+    status = db.Column(db.String(20), nullable=False, default="completed", server_default="completed")
     client_submission_id = db.Column(db.String(36), nullable=True)
     client_payload_sha256 = db.Column(db.String(64), nullable=True)
     revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")

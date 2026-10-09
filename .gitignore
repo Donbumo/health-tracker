@@ -16,6 +16,10 @@
 *.[zZ][iI][pP]
 *.[dD][cC][mM]
 
+# Explicitly fictional, bounded routine-import QA fixtures.
+!backend/tests/fixtures/gym_qa/routine.csv
+!backend/tests/fixtures/gym_qa/routine.xlsx
+
 __pycache__/
 *.py[cod]
 .venv/

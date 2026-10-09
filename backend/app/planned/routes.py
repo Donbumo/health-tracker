@@ -23,6 +23,8 @@ def _options(user_id: int):
     ).scalars().all()
     result = []
     for version in versions:
+        if version.training_plan.deleted_at is not None:
+            continue
         for week in version.content["data"]["weeks"]:
             for day in week["days"]:
                 if day["exercises"]:

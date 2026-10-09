@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+  <title>Mi entrenamiento · Health Tracker · Prototipo QA</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="fixtures.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Saltar al contenido</a>
+  <div class="design-banner"><span class="demo-dot" aria-hidden="true"></span> PROTOTIPO QA <span>Datos ficticios · Sin guardado</span></div>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Health Tracker">
+      <a href="#home" class="brand"><span class="brand-mark" aria-hidden="true">h<span>↗</span></span><span>health<span class="brand-light">tracker</span></span></a>
+      <p class="nav-label">TU ESPACIO</p>
+      <button class="side-link" data-action="outside"><span aria-hidden="true">◷</span> Hoy</button>
+      <button class="side-link" data-action="outside"><span aria-hidden="true">▦</span> Resumen</button>
+      <p class="nav-label">ENTRENAMIENTOS</p>
+      <a class="side-link selected" href="#home"><span aria-hidden="true">↗</span> Gym <span class="side-dot" aria-hidden="true"></span></a>
+      <button class="side-link" data-action="outside"><span aria-hidden="true">⌁</span> Actividades</button>
+      <p class="nav-label">TU HISTORIAL</p>
+      <button class="side-link" data-action="history"><span aria-hidden="true">◴</span> Sesiones</button>
+      <button class="side-link" data-action="outside"><span aria-hidden="true">♡</span> Salud y actividad</button>
+      <div class="sidebar-bottom"><span class="avatar">QA</span><div><strong>Espacio de diseño</strong><small>Solo fixtures locales</small></div></div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar"><a href="#home" class="mobile-brand" aria-label="Health Tracker, entrenamiento">h<span>↗</span></a><nav aria-label="Migas de pan" class="breadcrumbs">Entrenamientos <span aria-hidden="true">/</span> <strong>Gym</strong></nav><div class="top-actions"><button class="icon-button" id="theme-toggle" aria-label="Cambiar a tema claro" title="Cambiar tema">☼</button><span class="avatar desktop-avatar" aria-label="Cuenta ficticia QA">QA</span></div></header>
+      <nav class="gym-nav" aria-label="Gym"><a href="#home" data-page="home">Entrenamiento</a><a href="#progress" data-page="progress">Progreso</a><button data-action="catalog">Ejercicios</button><button data-action="history">Historial</button></nav>
+      <main id="main-content" tabindex="-1"></main>
+      <footer class="prototype-footer">
+        <span>HEALTH TRACKER <b> / </b> GYM EXPERIENCE</span>
+        <details class="qa-tools"><summary>Escenarios de diseño</summary><div class="qa-controls"><label for="scenario">Estado ficticio</label><select id="scenario"><option value="positive">Progreso positivo</option><option value="maintain">Mantener</option><option value="below">Buscando más reps</option><option value="top-range">Tope del rango</option><option value="review">Revisar / sin mapping</option><option value="insufficient">Solo una sesión</option><option value="no-history">Sin historial</option><option value="no-image">Sin imagen</option><option value="new-program">Programa nuevo</option><option value="no-proposals">Sin progresiones</option></select><button data-action="complete">Ver cierre de sesión QA</button><p>Todos los números y propuestas son fixtures. Ninguna acción modifica Gym.</p></div></details>
+      </footer>
+    </div>
+  </div>
+  <dialog id="modal" aria-labelledby="dialog-title"><div id="dialog-content"></div><button class="dialog-close icon-button" aria-label="Cerrar diálogo">×</button></dialog>
+  <div id="announcement" class="sr-only" role="status" aria-live="polite"></div>
+  <noscript>Este prototipo de diseño requiere JavaScript. No conecta con la aplicación ni guarda datos.</noscript>
+</body>
+</html>

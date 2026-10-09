@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Catálogo de ejercicios · Health Tracker{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/exercise_catalog.css') }}">
+<div class="exercise-catalog">
+<header><a href="{{ url_for('training.list_plans') }}">← Mi entrenamiento</a><h1>Catálogo de ejercicios</h1><p>Explora movimientos, equipo y demostraciones visuales.</p></header>
+<form method="get" class="catalog-filters"><label>Buscar<input type="text" name="q" value="{{ filters.q }}" placeholder="Nombre, músculo, equipo o alias"></label>
+{% for key,label in [('muscle','Músculo'),('equipment','Equipo'),('category','Categoría'),('difficulty','Dificultad')] %}<label>{{ label }}<select name="{{ key }}"><option value="">Todos</option>{% for value in facets[key] %}<option value="{{ value }}"{% if filters[key] == value %} selected{% endif %}>{{ value }}</option>{% endfor %}</select></label>{% endfor %}
+<button class="button">Buscar</button><a href="{{ url_for('exercise_catalog.index') }}">Limpiar filtros</a></form>
+<p role="status">{{ count }} ejercicios · Página {{ page }} de {{ pages }}</p>
+<div class="catalog-grid">{% for row,entry in cards %}<article class="card catalog-card"><a href="{{ url_for('exercise_catalog.detail', public_id=row.public_id) }}">{% if entry.thumbnail_url %}<img src="{{ entry.thumbnail_url }}" alt="Demostración de {{ row.name }}" width="320" height="240" loading="lazy">{% else %}<span class="catalog-fallback" aria-label="Sin imagen de referencia">◇</span>{% endif %}<h2>{{ row.name }}</h2></a><p>{{ row.details.primary_muscles|join(', ') }}</p><p>{{ row.details.equipment or 'Equipo no indicado' }}</p></article>{% else %}<p>No hay ejercicios para esta búsqueda. Tu rutina sigue disponible.</p>{% endfor %}</div>
+<nav class="catalog-pagination" aria-label="Páginas del catálogo">{% if page > 1 %}<a class="button button-secondary" href="{{ url_for('exercise_catalog.index', page=page-1, **filters) }}">Anterior</a>{% endif %}{% if page < pages %}<a class="button" href="{{ url_for('exercise_catalog.index', page=page+1, **filters) }}">Siguiente</a>{% endif %}</nav>
+</div>
+{% endblock %}

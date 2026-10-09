@@ -32,6 +32,10 @@
           "format": "uuid"
         },
         "performed_at": {"type": "string", "format": "date-time"},
+        "status": {"enum": ["in_progress", "completed", "abandoned"]},
+        "started_at": {"type": "string", "format": "date-time"},
+        "completed_at": {"type": "string", "format": "date-time"},
+        "timezone": {"type": "string", "maxLength": 64},
         "planned_week_number": {"type": "integer", "minimum": 1},
         "planned_day_number": {"type": "integer", "minimum": 1, "maximum": 7},
         "duration_seconds": {"type": "integer", "minimum": 1, "maximum": 604800},
@@ -40,11 +44,15 @@
         "notes": {"type": "string", "maxLength": 5000},
         "exercises": {
           "type": "array",
-          "minItems": 1,
+          "minItems": 0,
           "maxItems": 100,
           "items": {"$ref": "#/$defs/exercise"}
         }
-      }
+      },
+      "allOf": [{
+        "if": {"anyOf": [{"not": {"required": ["status"]}}, {"properties": {"status": {"const": "completed"}}, "required": ["status"]}]},
+        "then": {"properties": {"exercises": {"minItems": 1}}}
+      }]
     }
   },
   "$defs": {

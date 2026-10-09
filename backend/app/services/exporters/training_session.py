@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 from flask import current_app
 
 from app.models import TrainingSession
-from app.services.exporters.base import BaseExporter, ExportArtifact, serialize_json
+from app.services.exporters.base import SafeCsvDictWriter, BaseExporter, ExportArtifact, serialize_json
 from app.services.validation import validate_json_document
 
 
@@ -66,11 +66,19 @@ def build_completed_workout_document(
     data = {
         "training_plan_id": session.training_plan_id,
         "training_plan_version_id": session.training_plan_version_id,
-        "performed_at": performed_at.isoformat(timespec="seconds"),
+        "performed_at": performed_at.isoformat(),
         "planned_week_number": session.planned_week_number,
         "planned_day_number": session.planned_day_number,
         "exercises": exercises,
     }
+    data["status"] = session.status
+    for field in ("started_at", "completed_at"):
+        moment = getattr(session, field)
+        if moment is not None:
+            from app.services.gym_sessions import utc
+            data[field] = utc(moment).isoformat()
+    if session.timezone:
+        data["timezone"] = session.timezone
     if session.notes:
         data["notes"] = session.notes
     if session.duration_seconds is not None:
@@ -147,7 +155,7 @@ class TrainingSessionCsvExporter(BaseExporter):
         validate_json_document(document, "completed_workout")
 
         output = StringIO(newline="")
-        writer = csv.DictWriter(output, fieldnames=self.fieldnames)
+        writer = SafeCsvDictWriter(output, fieldnames=self.fieldnames)
         writer.writeheader()
         for exercise in resource.exercises:
             for training_set in exercise.sets:

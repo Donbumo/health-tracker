@@ -11,7 +11,7 @@ from app.services.ai.capabilities.domains.action_support import (
     preview_field,
     today_for_user,
 )
-from app.services.ai.capabilities.types import ActionApplyResult, ActionCapability
+from app.services.ai.capabilities.types import ActionApplyResult, ActionCapability, ActionLanguage, ActionNumericSlot
 from app.services.mobile_health import create_nutrition_item
 
 
@@ -140,4 +140,29 @@ FOOD_CREATE = ActionCapability(
     draft_type="food_entry",
     normalizer=_normalize,
     previewer=_preview,
+    language=tuple(
+        ActionLanguage(
+            verbs=("registra", "registrar", "anota", "anotar"),
+            entities=(meal_name,),
+            # The user explicitly names the aggregate meal. Reuse that noun as
+            # its schema-required item name; never invent foods or missing macros.
+            bindings=(("meal_type", meal_type), ("items.0.name", meal_name)),
+            slots=tuple(ActionNumericSlot(
+                f"items.0.{field}", aliases=aliases,
+                units=((unit, unit),),
+            ) for field, aliases, unit in (
+                ("calories_kcal", ("kcal", "calorías"), "kcal"),
+                ("protein_g", ("proteína",), "g"),
+                ("fat_g", ("grasa",), "g"),
+                ("net_carbs_g", ("carbohidratos netos",), "g"),
+                ("total_carbs_g", ("carbohidratos totales",), "g"),
+                ("fiber_g", ("fibra",), "g"),
+                ("sugar_g", ("azúcar",), "g"),
+                ("sodium_mg", ("sodio",), "mg"),
+            )),
+        ) for meal_name, meal_type in (
+            ("desayuno", "breakfast"), ("comida", "lunch"),
+            ("cena", "dinner"), ("snack", "snack"),
+        )
+    ),
 )

@@ -120,6 +120,7 @@ def create_app(test_config: dict | None = None) -> Flask:
     from app.planned import planned_bp
     from app.workout_drafts import workout_drafts_bp
     from app.ai import ai_bp
+    from app.gym import gym_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(activities_bp)
@@ -137,9 +138,14 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(planned_bp)
     app.register_blueprint(workout_drafts_bp)
     app.register_blueprint(ai_bp)
+    app.register_blueprint(gym_bp)
     csrf.exempt(api_v1_bp)
     app.register_blueprint(api_v1_bp)
     register_commands(app)
+    from app.catalog_cli import catalog_group
+    from app.exercise_catalog import catalog_bp
+    app.cli.add_command(catalog_group)
+    app.register_blueprint(catalog_bp)
 
     @app.after_request
     def secure_api_fallback_responses(response):

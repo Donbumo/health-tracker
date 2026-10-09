@@ -1,0 +1,17 @@
+.exercise-mapping { max-width: 1120px; margin: auto; overflow-wrap: anywhere; }
+.exercise-mapping h1 { margin: .5rem 0 1rem; }
+.mapping-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1rem 0; }
+.mapping-row h2,.mapping-row h3 { font-size: 1.15rem; margin: 0; }
+.mapping-row p { margin: .5rem 0 0; }
+.mapping-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,280px),1fr)); gap: 1rem; }
+.mapping-candidate { min-width: 0; display: flex; flex-direction: column; }
+.mapping-candidate img { width: 100%; height: auto; aspect-ratio: 4/3; object-fit: contain; background: white; border-radius: .5rem; }
+.mapping-candidate dl { margin: 0; }.mapping-candidate dd { margin: 0 0 .5rem; }.mapping-candidate dt { font-weight: 700; }
+.mapping-actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-top: auto; }
+.mapping-actions a,.exercise-mapping .button { min-height: 44px; display: inline-flex; align-items: center; white-space: normal; }
+.mapping-search { margin: 1.5rem 0; }.mapping-search label { display: block; margin-bottom: .5rem; }
+.mapping-search div { display: flex; gap: .5rem; }.mapping-search input { min-width: 0; flex: 1; font-size: 16px; min-height: 44px; }
+.mapping-none { margin: 2rem 0; }.mapping-credit { font-size: .85rem; }.mapping-no-image { min-height: 150px; display: grid; place-items: center; }
+.exercise-mapping :focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+@media (max-width: 480px) { .mapping-row { align-items: stretch; flex-direction: column; }.mapping-row .button { align-self: start; } }
+.exercise-mapping > a { display: inline-flex; align-items: center; min-height: 44px; }

@@ -180,6 +180,7 @@ def _owned_context(
     if (
         version is None
         or version.training_plan.public_id != context["plan_public_id"]
+        or version.training_plan.deleted_at is not None
     ):
         raise WorkoutDraftError("not_found", "Workout context was not found.", 404)
 

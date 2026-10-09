@@ -14,6 +14,16 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 
 ## Uso diario y web
 
+- Borradores de importación Gym: [GYM_IMPORT_DRAFT_PERSISTENCE.md](GYM_IMPORT_DRAFT_PERSISTENCE.md), autosave, reanudación y confirmación sin original.
+
+- Vínculos personales de ejercicios: [EXERCISE_MAPPING_ASSISTANT.md](EXERCISE_MAPPING_ASSISTANT.md), revisión manual, aliases e historial.
+
+- Catálogo externo: [EXERCISE_CATALOG.md](EXERCISE_CATALOG.md), identidad, snapshots, sync, storage, QA y gates de producción.
+
+- Eliminación de rutinas: [GYM_DELETE_PROGRAM.md](GYM_DELETE_PROGRAM.md), semántica conservadora, auditoría de FK, Mobile Sync y pruebas locales.
+
+- Gym Training: [GYM_TRAINING_2.md](GYM_TRAINING_2.md), arquitectura, importación, captura por serie y contratos futuros; [GYM_TRAINING_2_QA.md](GYM_TRAINING_2_QA.md), resultados de validación; [GYM_VISUAL_REDESIGN.md](GYM_VISUAL_REDESIGN.md), composición visual, medios neutrales, rango y QA de presentación.
+
 - Reglas: [project-rules/web-ui.md](project-rules/web-ui.md), [project-rules/web-daily-driver.md](project-rules/web-daily-driver.md).
 - Resumen longitudinal: [DASHBOARD_TRENDS.md](DASHBOARD_TRENDS.md).
 - Primer acceso y uso: [GETTING_STARTED.md](GETTING_STARTED.md), [USER_GUIDE.md](USER_GUIDE.md), [DAILY_WORKFLOW.md](DAILY_WORKFLOW.md), [TROUBLESHOOTING_USER.md](TROUBLESHOOTING_USER.md).
@@ -49,6 +59,8 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
   para extender lecturas de un dominio y
   [HOW_TO_ADD_AN_AI_ACTION_CAPABILITY.md](HOW_TO_ADD_AN_AI_ACTION_CAPABILITY.md)
   para añadir acciones confirmables sin modificar el orquestador central.
+- AI Coach: [AI_COACH.md](AI_COACH.md), señales determinísticas, briefs diarios/semanales,
+  cobertura, explicación opcional y confirmación de progresión por Operator.
 
 - API v1: [project-rules/api-v1.md](project-rules/api-v1.md), [API_V1.md](API_V1.md), [API_AUTH.md](API_AUTH.md), [API_DEVICE_SESSIONS.md](API_DEVICE_SESSIONS.md), [API_SECURITY.md](API_SECURITY.md), [COMPANION_BOOTSTRAP.md](COMPANION_BOOTSTRAP.md).
 - Mobile Sync: [project-rules/mobile-sync.md](project-rules/mobile-sync.md), [MOBILE_SYNC.md](MOBILE_SYNC.md), [SYNC_PROTOCOL_1_0.md](SYNC_PROTOCOL_1_0.md), [SYNC_IDEMPOTENCY.md](SYNC_IDEMPOTENCY.md), [SYNC_CONFLICTS.md](SYNC_CONFLICTS.md), [PLANNED_WORKOUTS.md](PLANNED_WORKOUTS.md).
@@ -72,3 +84,7 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 - [history/PHASE_5B_ORIGINAL_PROPOSAL.md](history/PHASE_5B_ORIGINAL_PROPOSAL.md): propuesta original; contiene ejemplos superados.
 
 No leas `history/` para una tarea normal. Si un archivo histórico contradice schemas, pruebas, reglas o código vigente, pierde prioridad.
+
+- Medios de Gym por identidad, cobertura y QA: [GYM_EXERCISE_MEDIA.md](GYM_EXERCISE_MEDIA.md).
+
+- Propuesta futura de catálogo externo y mappings: [GYM_EXTERNAL_CATALOG_PROPOSAL.md](GYM_EXTERNAL_CATALOG_PROPOSAL.md).

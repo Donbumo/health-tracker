@@ -1,0 +1,46 @@
+[
+  {
+    "Día": "D1",
+    "Ejercicio": "QA Press banca",
+    "Series": "3",
+    "Reps": "6-8",
+    "Carga": "80kg",
+    "RIR": "2",
+    "RPE": "",
+    "Rest": "90",
+    "Notas": "Fixture ficticia QA"
+  },
+  {
+    "Día": "D1",
+    "Ejercicio": "QA Remo",
+    "Series": "2",
+    "Reps": "8",
+    "Carga": "",
+    "RIR": "",
+    "RPE": "8",
+    "Rest": "60",
+    "Notas": "Sin peso prescrito"
+  },
+  {
+    "Día": "D2",
+    "Ejercicio": "QA Sentadilla",
+    "Series": "3",
+    "Reps": "3x8",
+    "Carga": "100lb",
+    "RIR": "2",
+    "RPE": "",
+    "Rest": "120",
+    "Notas": "Fixture ficticia QA"
+  },
+  {
+    "Día": "D3",
+    "Ejercicio": "QA Press militar",
+    "Series": "2",
+    "Reps": "8-10",
+    "Carga": "",
+    "RIR": "",
+    "RPE": "8",
+    "Rest": "60",
+    "Notas": "Fixture ficticia QA"
+  }
+]

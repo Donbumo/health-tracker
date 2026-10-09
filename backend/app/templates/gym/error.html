@@ -1,0 +1,2 @@
+{% extends "base.html" %}
+{% block content %}<section class="card"><h1>{{ 'No se confirmó el programa' if draft_url else 'No se guardaron cambios' }}</h1><p role="alert">{{ message }}</p>{% if draft_url %}<p>Tu borrador y las selecciones guardadas siguen disponibles.</p><a class="button" href="{{ draft_url }}">Continuar importación</a>{% endif %}<a class="button button-secondary" href="{{ url_for('training.list_plans') }}">Volver al programa</a></section>{% endblock %}

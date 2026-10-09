@@ -276,6 +276,7 @@ def test_ai_disabled_is_safe_and_does_not_break_global_health(app, client, user)
             "body.measurement.correct",
             "training.session.create",
             "training.session.correct",
+                "training.progression.update",
             "goal.create",
             "goal.update",
         ],
@@ -460,11 +461,14 @@ def test_tool_registry_is_allowlisted_and_excludes_medical_shell_sql_and_urls(ap
         names = {item.name for item in AIToolRegistry().definitions}
     assert names == {
         "get_dashboard_summary",
+            "get_coach_brief",
         "get_latest_body_measurement",
         "get_weight_trend",
         "get_nutrition_summary",
         "get_training_summary",
         "get_training_history",
+        "get_training_program",
+        "get_training_session",
         "get_activity_summary",
         "get_steps_summary",
         "get_goals_summary",

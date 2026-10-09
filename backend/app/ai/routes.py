@@ -4,6 +4,7 @@ import time
 
 from flask import abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
+from sqlalchemy.orm import selectinload
 
 from app.ai import ai_bp
 from app.extensions import db
@@ -15,12 +16,14 @@ from app.services.ai.capabilities.composer import (
 )
 from app.services.ai.capabilities.context import load_action_context_token
 from app.services.ai.capabilities.registry import AICapabilityRegistry
-from app.services.ai.capabilities.types import AIIntentSpec, CapabilityError
+from app.services.ai.capabilities.types import AIIntent, AIIntentSpec, CapabilityError
 from app.services.ai.template_registry import (
     AITemplateError,
     AITemplateRegistry,
     PERIOD_LABELS,
 )
+from app.services.coach import CoachBriefService
+from app.models import AIActionDraft
 
 
 @ai_bp.after_request
@@ -175,6 +178,7 @@ def _selection(values):
                     403,
                 )
             action_context = context.as_mapping()
+            resolved_action.owner_resolver(current_user, {}, action_context)
         title = f"{INTENT_LABELS[spec.intent]} · {manifest.label}"
         prompt = AdaptivePromptComposer(capability_registry).compose(spec)
         return _AISelection(
@@ -223,6 +227,14 @@ def _render_index():
     adaptive_catalog = AdaptiveTemplateComposer(
         registry.capability_registry
     ).build(current_user.id, period=request.args.get("period") or "30d")
+    coach_briefs = CoachBriefService().build(current_user._get_current_object())
+    pending_coach = db.session.execute(db.select(AIActionDraft).where(
+        AIActionDraft.user_id == current_user.id,
+        AIActionDraft.status == "pending_confirmation",
+    ).options(selectinload(AIActionDraft.conversation))
+      .order_by(AIActionDraft.created_at.desc()).limit(50)).scalars().all()
+    pending_coach = [item for item in pending_coach
+                     if (item.provenance_json or {}).get("action_capability_id") == "training.progression.update"][:5]
     catalog_ms = max(0, round((time.perf_counter() - catalog_started) * 1000))
     render_started = time.perf_counter()
     html = render_template(
@@ -240,6 +252,8 @@ def _render_index():
         selected_spec=selection.spec if selection else None,
         selection_fields=selection.form_fields if selection else {},
         prepared_prompt=selection.prompt if selection else None,
+        coach_briefs=coach_briefs,
+        pending_coach=pending_coach,
     )
     render_ms = max(0, round((time.perf_counter() - render_started) * 1000))
     current_app.logger.info(
@@ -260,6 +274,18 @@ def _render_index():
 @login_required
 def index():
     return _render_index()
+
+
+@ai_bp.post("/coach/progression/<program_id>/<prescription_id>/prepare")
+@login_required
+def prepare_coach_progression(program_id: str, prescription_id: str):
+    try:
+        conversation = AIConversationService().prepare_coach_progression(
+            current_user._get_current_object(), program_id, prescription_id)
+    except AIServiceError as error:
+        _web_error(error)
+        return redirect(url_for("ai.index"))
+    return redirect(url_for("ai.conversation", conversation_id=conversation.public_id))
 
 
 @ai_bp.get("/templates")
@@ -330,6 +356,13 @@ def conversation(conversation_id: str):
         return redirect(url_for("ai.index"))
     prepared_prompt = selection.prompt if selection and not row.messages else ""
     has_answer = bool(row.messages and row.messages[-1].role == "assistant")
+    coach_brief = None
+    if selection and selection.spec.intent in {
+        AIIntent.DAILY_COACH, AIIntent.WEEKLY_COACH, AIIntent.EXPLAIN_SIGNAL,
+        AIIntent.EXPLAIN_PROGRESSION, AIIntent.WHAT_CHANGED, AIIntent.WHAT_SHOULD_I_REVIEW,
+    }:
+        briefs = CoachBriefService().build(current_user._get_current_object())
+        coach_brief = briefs["today" if selection.period == "today" else "week"]
     return render_template(
         "ai/conversation.html",
         conversation=row,
@@ -341,6 +374,7 @@ def conversation(conversation_id: str):
         active_title=selection.title if selection else None,
         template_period=period,
         template_followups=_followups(template, period) if has_answer else (),
+        coach_brief=coach_brief,
     )
 
 

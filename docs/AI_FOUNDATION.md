@@ -157,6 +157,22 @@ desconocidas, campos adicionales, operaciones incompatibles, ciclos y recursos
 fuera del owner se rechazan en servidor. Los estados lógicos son `proposed`,
 `needs_input`, `ready`, `confirmed`, `rejected`, `applied` y `failed`.
 
+Las acciones explícitas simples se interpretan antes de construir o llamar al
+provider mediante metadata opcional de cada `ActionCapability`. Peso, cambio
+de meta y comida explícita pueden preparar drafts con el proveedor caído.
+También se compone el plan corporal + meta desde el primer turno y se rellenan
+slots sin cambiar sus IDs. La gramática exige cobertura completa y una sola
+interpretación; el resto conserva el provider y su validación estricta.
+Las metas siguen resolviéndose owner-only; ausencia/ambigüedad de target queda
+`needs_input`, nunca `goal.create`. No hay escrituras de dominio sin confirmar.
+
+Para captura corporal simple sin unidad, la metadata usa kg, la unidad
+canónica de captura; kg/lb explícitos se conservan. En comidas agregadas se
+reutiliza el sustantivo que escribió el usuario (por ejemplo, desayuno) como
+nombre del item requerido por el schema. No se inventan alimentos ni macros.
+La extensión y los límites se documentan en
+[Cómo añadir una ActionCapability](HOW_TO_ADD_AN_AI_ACTION_CAPABILITY.md#interpretación-determinística-opcional).
+
 Cada paso se persiste en un `AIActionDraft` existente. `provenance_json`
 mantiene la identidad del plan, orden/dependencias, capability, estado y
 contexto owner-bound; no existe una segunda tabla de workflows. Los estados de

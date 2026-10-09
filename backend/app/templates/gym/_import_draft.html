@@ -1,0 +1,9 @@
+<section class="gym-panel" id="draft-save-panel" data-url="{{ url_for('gym.save_import_draft', draft_id=saved_draft.public_id) }}" data-revision="{{ saved_draft.revision }}" data-ready="{{ 'true' if save_state.ready else 'false' }}" data-csrf="{{ csrf_token() }}">
+  <p>Borrador guardado automáticamente. Las selecciones se convierten en vínculos personales al confirmar el programa.</p>
+  <p id="draft-save-status" role="status">Último guardado: {{ saved_draft.updated_at.strftime('%Y-%m-%d %H:%M:%S') }} UTC</p>
+  <p id="draft-save-error" role="alert">{{ save_state.error or '' }}</p>
+  <button type="button" id="draft-save-retry" class="button button-secondary" hidden>Reintentar guardado</button>
+  <a id="draft-save-reload" href="{{ url_for('gym.import_draft', draft_id=saved_draft.public_id) }}" hidden>Recargar borrador guardado</a>
+  <noscript><p>Sin JavaScript, usa «Revisar mappings corregidos» para guardar antes de salir.</p></noscript>
+</section>
+<script src="{{ url_for('static', filename='js/gym_draft_save.js', v='draft-2') }}" defer></script>

@@ -110,6 +110,61 @@ mismo recurso, nunca duplicarlo.
 No añadas deletes genéricos. Una operación destructiva futura necesita un
 contrato opt-in separado, semántica de recuperación y revisión de seguridad.
 
+## Interpretación determinística opcional
+
+`ActionCapability.language` permite declarar `ActionLanguage` y
+`ActionNumericSlot` en el módulo propietario del dominio. El intérprete
+descubre esa metadata desde el registro; no importa handlers de dominios ni
+contiene un switch por capability.
+
+```python
+language=(ActionLanguage(
+    verbs=("registrar", "anotar"),
+    entities=("sueño",),
+    slots=(
+        ActionNumericSlot("duration", aliases=("duración",),
+                          units=(("horas", "h"),), primary=True),
+        ActionNumericSlot("quality", aliases=("calidad",)),
+    ),
+),)
+```
+
+`Anotar sueño de 8 horas y calidad 4` produce argumentos de ese schema.
+`bindings` expresa únicamente semántica de la entidad declarada, como
+`goal_type` o `meal_type`. Los paths anidados pueden referir `items.0.name`.
+No uses bindings para fabricar métricas requeridas o recomendar valores.
+El registro rechaza paths que no existan en el schema. Las unidades son aliases
+de la unidad del contrato; para múltiples unidades, declara `unit_field` y
+delega compatibilidad/conversión al normalizador del dominio.
+
+La confianza es una condición cerrada: una interpretación única de todas las
+cláusulas, todos los tokens consumidos, campos y unidades reconocidos y ningún
+target repetido. No se estima una probabilidad. Preguntas, negaciones,
+condicionales, fechas no soportadas, valores en conflicto y texto residual
+vuelven al provider; el parser nunca recomienda valores. El primer alcance
+acepta comandos simples en español y declaraciones corporales explícitas,
+con el periodo actual; otros periodos conservan el flujo existente.
+
+El resultado es una propuesta neutral (`AIProviderPlanProposal`, pese a su
+nombre histórico). Siempre cruza `resolve_action_proposal` y se convierte en
+`AIPlanSpec` mediante schema, normalización y owner resolver. Si falta un
+target o hay varios, la capability conserva `needs_input`; no cambia update
+por create. Sólo se persisten conversación, auditoría de lecturas y drafts.
+
+Las respuestas de slots usan la misma metadata sobre el plan pendiente y
+conservan plan, draft, step y contexto por paso. Un fragmento con unidad puede
+identificar un slot; un número sin unidad sólo se asigna cuando queda una
+opción inequívoca. Unidades incompatibles se rechazan y no modifican el plan.
+Los pasos aplicados, rechazados o expirados permanecen protegidos.
+
+Los drafts determinísticos usan el mismo preview y confirmación oficial;
+su provenance indica `parsed_deterministically`, sin atribuir uso a un modelo.
+Los logs sólo incluyen resolución, capability IDs, conteos, IDs de campos
+faltantes tomados del contrato, outcome y duración. La función AI conserva su
+habilitación y consentimiento existentes; una caída del proveedor o una
+factoría que falla no impide estos planes cuando la función está habilitada
+y configurada. No se cambia la configuración del proveedor.
+
 ## Gates mínimos
 
 Antes de registrar una acción real, prueba:

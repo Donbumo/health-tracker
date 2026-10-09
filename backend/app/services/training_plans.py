@@ -85,7 +85,7 @@ def replace_mobile_workouts_from_document(
     user_id: int,
 ) -> None:
     """Refresh the mutable mobile editor projection from an immutable plan version."""
-    if plan.user_id != user_id:
+    if plan.user_id != user_id or plan.deleted_at is not None:
         raise TrainingPlanImportError("Training plan does not belong to this user")
     db.session.execute(
         db.delete(TrainingPlanWorkout).where(
@@ -157,7 +157,7 @@ def create_training_plan_version(
     user_id: int,
     change_reason: str,
 ) -> tuple[TrainingPlanVersion, bool]:
-    if plan.user_id != user_id:
+    if plan.user_id != user_id or plan.deleted_at is not None:
         raise TrainingPlanImportError("Training plan does not belong to this user")
     reason = (change_reason or "").strip()
     if len(reason) < 3 or len(reason) > 2000:
@@ -195,7 +195,7 @@ def create_training_plan_version(
 
     locked_plan = db.session.execute(
         db.select(TrainingPlan)
-        .where(TrainingPlan.id == plan.id, TrainingPlan.user_id == user_id)
+        .where(TrainingPlan.id == plan.id, TrainingPlan.user_id == user_id, TrainingPlan.deleted_at.is_(None))
         .with_for_update()
     ).scalar_one_or_none()
     if locked_plan is None:

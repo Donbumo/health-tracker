@@ -213,7 +213,7 @@ def create_goal(user_id: int, payload: dict) -> UserGoal:
         raise MobileSyncError("conflict", "El identificador ya existe.", 409)
     if values.get("related_public_id"):
         plan = db.session.execute(db.select(TrainingPlan.id).where(
-            TrainingPlan.user_id == user_id, TrainingPlan.public_id == values["related_public_id"]
+            TrainingPlan.deleted_at.is_(None), TrainingPlan.user_id == user_id, TrainingPlan.public_id == values["related_public_id"]
         )).scalar_one_or_none()
         if plan is None:
             raise MobileSyncError("not_found", "Rutina no encontrada.", 404)
@@ -685,7 +685,7 @@ def _load_adherence_data(user_id: int, start: date, end: date) -> dict:
     end_at = datetime.combine(end + timedelta(days=2), time.min, timezone.utc)
     return {
         "sessions": db.session.execute(db.select(TrainingSession).options(selectinload(TrainingSession.training_plan)).where(
-            TrainingSession.user_id == user_id, TrainingSession.deleted_at.is_(None),
+            TrainingSession.user_id == user_id, TrainingSession.deleted_at.is_(None), TrainingSession.status == "completed",
             TrainingSession.performed_at >= start_at, TrainingSession.performed_at < end_at,
         )).scalars().all(),
         "planned": db.session.execute(db.select(PlannedWorkout).options(selectinload(PlannedWorkout.completed_session)).where(

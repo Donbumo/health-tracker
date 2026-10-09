@@ -41,6 +41,8 @@
 {%- endmacro %}
 
 {% block content %}
+{% from "ai/_coach.html" import brief with context %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/coach.css', v='1') }}">
 {% set energy = dashboard.summary.energy %}
 {% set nutrition = dashboard.summary.nutrition %}
 {% set activity = dashboard.summary.activity %}
@@ -88,6 +90,7 @@
     {{ hero_metric('Cambio de peso', weight.change, weight.unit, none, 'Primera vs última medición' if weight.change is not none else (weight.entries|string + ' medición' if weight.entries == 1 else 'Sin mediciones suficientes')) }}
   </div>
 </section>
+<div class="coach-preview">{{ brief(coach_brief, 'Resumen semanal', true) }}<p><a class="button button-secondary" href="{{ url_for('ai.index') }}">Abrir Coach</a></p></div>
 
 <section class="dashboard-card dashboard-card-energy" aria-labelledby="energy-title">
   <div class="dashboard-card-heading">

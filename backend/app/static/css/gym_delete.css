@@ -1,0 +1,12 @@
+.gym-delete-dialog {
+  position: relative; width: min(38rem, calc(100% - 2rem)); max-height: calc(100dvh - 2rem);
+  margin: auto; padding: 1.25rem; overflow-y: auto; overflow-wrap: anywhere;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text);
+}
+.gym-delete-dialog::backdrop { background: rgb(0 0 0 / 65%); }
+.gym-delete-dialog form, .pending-item form { display: grid; gap: .65rem; }
+.gym-delete-dialog fieldset { min-width: 0; margin: 0; padding: .75rem; border: 1px solid var(--border); }
+.gym-delete-dialog input, .gym-delete-dialog select, .pending-item input { width: 100%; min-height: 44px; font-size: 16px; }
+.gym-delete-dialog > .button { margin-top: 1rem; }
+.gym-delete-dialog .button, .pending-item .button { min-height: 44px; white-space: normal; }
+.pending-item { padding: 1rem 0; border-top: 1px solid var(--border); overflow-wrap: anywhere; }

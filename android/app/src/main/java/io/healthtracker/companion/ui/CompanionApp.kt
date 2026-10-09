@@ -602,7 +602,9 @@ private fun PlanScreen(viewModel: CompanionViewModel, openPlan: (String) -> Unit
                                 Text(humanPlanningConflict(conflict.changedFields), style = MaterialTheme.typography.bodySmall)
                                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     TextButton(onClick = { viewModel.keepRemoteConflict(conflict.entityId) }) { Text("Usar servidor") }
-                                    TextButton(onClick = { viewModel.retryPlanningConflict(conflict.entityId) }) { Text("Reintentar copia local") }
+                                    if (conflict.changedFields != "remote_deleted") {
+                                        TextButton(onClick = { viewModel.retryPlanningConflict(conflict.entityId) }) { Text("Reintentar copia local") }
+                                    }
                                     if (conflict.entityType in setOf("plan", "workout")) {
                                         TextButton(onClick = { viewModel.duplicatePlanningConflict(conflict.entityId) }) { Text("Duplicar copia local") }
                                     }

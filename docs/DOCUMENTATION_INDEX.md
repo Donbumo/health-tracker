@@ -14,6 +14,8 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 
 ## Uso diario y web
 
+- Nutrition Intelligence 2.0 (propuesta, sin backend): [NUTRITION_INTELLIGENCE_2.md](NUTRITION_INTELLIGENCE_2.md), auditoría, contratos conceptuales y convivencia legacy; [NUTRITION_CATALOG_SOURCES.md](NUTRITION_CATALOG_SOURCES.md), comparación documental de fuentes locales; [NUTRITION_INTELLIGENCE_2_QA.md](NUTRITION_INTELLIGENCE_2_QA.md), prototipo, capturas y gate de revisión.
+
 - Borradores de importación Gym: [GYM_IMPORT_DRAFT_PERSISTENCE.md](GYM_IMPORT_DRAFT_PERSISTENCE.md), autosave, reanudación y confirmación sin original.
 
 - Vínculos personales de ejercicios: [EXERCISE_MAPPING_ASSISTANT.md](EXERCISE_MAPPING_ASSISTANT.md), revisión manual, aliases e historial.

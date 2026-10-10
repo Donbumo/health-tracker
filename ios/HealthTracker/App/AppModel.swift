@@ -21,6 +21,7 @@ final class AppModel {
     private let session: SessionService
     private let engine: SyncEngine
     let sync: SyncCoordinator
+    let training: TrainingModel
     private let connectivity: ConnectivityMonitor
     private var started = false
 
@@ -32,9 +33,12 @@ final class AppModel {
         self.engine = engine
         self.connectivity = connectivity
         self.sync = SyncCoordinator(session: session, engine: engine)
+        self.training = TrainingModel(repository: TrainingRepository(api: session.api, store: session.store), store: session.store)
         self.preferences = session.preferences.values
         sync.onRunFinished = { [weak self] in Task { await self?.reloadCache() } }
         sync.onSessionInvalidated = { [weak self] code in self?.sessionInvalidated(code) }
+        training.context = { [weak self] in (self?.preferences.accountScope, self?.connected ?? false) }
+        training.report = { [weak self] text in self?.message = text }
     }
 
     static func live() -> AppModel {
@@ -176,11 +180,13 @@ final class AppModel {
             planned = []
             recent = []
             syncSnapshot = SyncSnapshot(pendingCount: 0, conflictCount: 0, hasSyncState: false)
+            await training.reload()
             return
         }
         planned = await session.store.plannedWorkouts(scope)
         recent = await session.store.recentSessions(scope, limit: 10)
         syncSnapshot = await session.store.snapshot(scope)
+        await training.reload()
     }
 
     private func signedOut() {

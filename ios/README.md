@@ -1,6 +1,6 @@
 # Health Tracker iOS Companion
 
-Cliente iOS nativo (SwiftUI, iOS 17+) equivalente al companion Android de `android/`. Reutiliza `/api/v1`; no contiene un backend alternativo. Se entrega por etapas: **Etapa 1** fundación (auth, API, Keychain) y **Etapa 2** sync offline (SwiftData, bootstrap/pull, cola FIFO, sync en segundo plano).
+Cliente iOS nativo (SwiftUI, iOS 17+) equivalente al companion Android de `android/`. Reutiliza `/api/v1`; no contiene un backend alternativo. Se entrega por etapas: **Etapa 1** fundación (auth, API, Keychain), **Etapa 2** sync offline (SwiftData, bootstrap/pull, cola FIFO, sync en segundo plano) y **Etapa 3** historial, rutinas en lectura y progreso (caché offline, Swift Charts).
 
 ## Stack
 
@@ -18,6 +18,8 @@ Cliente iOS nativo (SwiftUI, iOS 17+) equivalente al companion Android de `andro
 | Room | `LocalStore` (SwiftData, `@ModelActor`) |
 | WorkManager / SyncWorker | `SyncCoordinator` (BGAppRefreshTask + disparadores en primer plano) |
 | `processPending` / `synchronize` | `SyncEngine` (cola FIFO estricta, backoff, conflictos, pull paginado) |
+| `refreshHistory` / `refreshProgress` / `refreshPlans` | `TrainingRepository` + `LocalStore+Training` |
+| `UiFormatters.kt` | `DisplayText` |
 
 ## Construcción
 
@@ -35,7 +37,7 @@ cd ios/HealthTrackerKit && swift test
 xcodebuild -scheme HealthTrackerKit -destination 'platform=iOS Simulator,name=iPhone 16 Pro' test
 ```
 
-Smoke test UI contra un backend local con usuario QA ficticio (se omite si no hay variables):
+Smoke test UI contra un backend local con usuario QA ficticio (se omite si no hay variables; `QA_EXPECTED_SESSION` y `QA_EXPECTED_EXERCISE` activan la prueba de Plan, Historial y Progreso con datos sembrados):
 
 ```sh
 TEST_RUNNER_QA_SERVER_URL=http://127.0.0.1:5000 TEST_RUNNER_QA_USERNAME=<usuario-qa> TEST_RUNNER_QA_PASSWORD=<password-qa> \

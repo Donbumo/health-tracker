@@ -261,5 +261,8 @@ enum LocalSchema {
     static let models: [any PersistentModel.Type] = [
         AccountModel.self, SyncStateModel.self, PlannedWorkoutModel.self, DeliveryModel.self,
         LocalProfileModel.self, RecentSessionModel.self, PendingActionModel.self, PlanningConflictModel.self,
+        HistorySessionModel.self, HistoryExerciseModel.self, HistorySetModel.self, HistoryPageModel.self,
+        HistoryQueryStateModel.self, ProgressSummaryModel.self, ProgressExerciseModel.self, ProgressPointModel.self,
+        PersonalRecordModel.self, PlanModel.self, PlanWorkoutModel.self, PlanExerciseModel.self, PlanSetModel.self,
     ]
 }

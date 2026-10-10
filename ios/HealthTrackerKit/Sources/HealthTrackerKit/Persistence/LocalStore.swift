@@ -69,7 +69,7 @@ public actor LocalStore: AccountStore {
         return LocalStore(modelContainer: container)
     }
 
-    private func write<T>(_ body: () throws -> T) throws -> T {
+    func write<T>(_ body: () throws -> T) throws -> T {
         do {
             let result = try body()
             try modelContext.save()
@@ -81,7 +81,7 @@ public actor LocalStore: AccountStore {
         }
     }
 
-    private func fetch<M: PersistentModel>(_ predicate: Predicate<M>, sort: [SortDescriptor<M>] = [], limit: Int? = nil) throws -> [M] {
+    func fetch<M: PersistentModel>(_ predicate: Predicate<M>, sort: [SortDescriptor<M>] = [], limit: Int? = nil) throws -> [M] {
         var descriptor = FetchDescriptor<M>(predicate: predicate, sortBy: sort)
         descriptor.fetchLimit = limit
         return try modelContext.fetch(descriptor)
@@ -112,6 +112,7 @@ public actor LocalStore: AccountStore {
             try modelContext.delete(model: RecentSessionModel.self, where: #Predicate { $0.accountScope == scope })
             try modelContext.delete(model: PendingActionModel.self, where: #Predicate { $0.accountScope == scope })
             try modelContext.delete(model: PlanningConflictModel.self, where: #Predicate { $0.accountScope == scope })
+            try clearTrainingData(scope)
         }
     }
 
@@ -358,7 +359,7 @@ public actor LocalStore: AccountStore {
 
     // MARK: Helpers
 
-    private func iso(_ date: Date) -> String { ISO8601DateFormatter().string(from: date) }
+    func iso(_ date: Date) -> String { ISO8601DateFormatter().string(from: date) }
 
     /// Plain decimal text without trailing zeros (Kotlin `stripTrailingZeros().toPlainString()`).
     static func plain(_ value: Decimal) -> String {

@@ -107,9 +107,9 @@ final class LoginSmokeUITests: XCTestCase {
         try loginIfNeeded(app, env)
         XCTAssertTrue(app.staticTexts[title].firstMatch.waitForExistence(timeout: 20), "Today's workout missing")
 
-        let download = app.buttons["download_workout"].firstMatch
+        let download = app.buttons["download_workout_\(title)"].firstMatch
         if download.waitForExistence(timeout: 5) { download.tap() }
-        let start = app.buttons["start_workout"].firstMatch
+        let start = app.buttons["start_workout_\(title)"].firstMatch
         XCTAssertTrue(start.waitForExistence(timeout: 20), "Download did not finish")
         attach(app, "11-downloaded")
         start.tap()
@@ -133,6 +133,64 @@ final class LoginSmokeUITests: XCTestCase {
         let synced = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Sincronizado")).firstMatch
         XCTAssertTrue(synced.waitForExistence(timeout: 30), "Completed session did not sync")
         attach(app, "15-history-synced")
+    }
+
+    /// Stage 5: create a routine and a workout offline-first, add a catalog exercise, schedule it for
+    /// today and see the schedule synced in the agenda. Requires QA_EXPECTED_CATALOG_EXERCISE.
+    func testPlanningEditorCreatesAndSchedulesAWorkout() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let catalogExercise = env["QA_EXPECTED_CATALOG_EXERCISE"] else { throw XCTSkip("QA catalog not configured") }
+        let suffix = String(Int(Date().timeIntervalSince1970) % 100_000)
+        let planName = "Plan UI QA \(suffix)"
+        let workoutName = "Día UI QA \(suffix)"
+        let app = XCUIApplication()
+        app.launch()
+        try loginIfNeeded(app, env)
+
+        app.tabBars.buttons["Plan"].tap()
+        app.buttons["create_plan"].tap()
+        let planField = app.alerts.textFields.firstMatch
+        XCTAssertTrue(planField.waitForExistence(timeout: 5))
+        planField.typeText(planName)
+        app.alerts.buttons["Crear"].tap()
+        let planRow = app.staticTexts[planName].firstMatch
+        XCTAssertTrue(planRow.waitForExistence(timeout: 10), "Created plan not listed")
+        planRow.tap()
+
+        let addWorkout = app.buttons["add_workout"]
+        XCTAssertTrue(addWorkout.waitForExistence(timeout: 10))
+        addWorkout.tap()
+        let workoutField = app.alerts.textFields.firstMatch
+        XCTAssertTrue(workoutField.waitForExistence(timeout: 5))
+        workoutField.typeText(workoutName)
+        app.alerts.buttons["Crear"].tap()
+        let workoutRow = app.staticTexts[workoutName].firstMatch
+        XCTAssertTrue(workoutRow.waitForExistence(timeout: 10), "Created workout not listed")
+        attach(app, "16-plan-detail")
+        workoutRow.tap()
+
+        let search = app.textFields["catalog_search"]
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        search.tap()
+        search.typeText(String(catalogExercise.prefix(5)))
+        let item = app.buttons.matching(identifier: "catalog_item").firstMatch
+        XCTAssertTrue(item.waitForExistence(timeout: 15), "Catalog did not load")
+        item.tap()
+        app.buttons["add_selected"].tap()
+        XCTAssertTrue(app.staticTexts["Ejercicios (1)"].waitForExistence(timeout: 5))
+        attach(app, "17-workout-editor")
+        app.buttons["schedule_workout"].tap()
+
+        app.navigationBars["Editar entrenamiento"].buttons["Rutina"].tap()
+        XCTAssertTrue(app.navigationBars["Rutina"].waitForExistence(timeout: 5))
+        app.navigationBars["Rutina"].buttons["Plan"].tap()
+        let agenda = app.segmentedControls.buttons["Agenda"]
+        XCTAssertTrue(agenda.waitForExistence(timeout: 5))
+        agenda.tap()
+        XCTAssertTrue(app.staticTexts[workoutName].firstMatch.waitForExistence(timeout: 10), "Schedule missing from agenda")
+        let synced = app.staticTexts.matching(NSPredicate(format: "label == %@", "Programado")).firstMatch
+        XCTAssertTrue(synced.waitForExistence(timeout: 40), "Schedule did not sync")
+        attach(app, "18-agenda-synced")
     }
 
     private func loginIfNeeded(_ app: XCUIApplication, _ env: [String: String]) throws {

@@ -123,31 +123,61 @@ public struct TrainingPlan: Sendable, Equatable, Identifiable {
 }
 
 public struct PlanSet: Sendable, Equatable, Identifiable {
-    public let id: String
-    public let setNumber: Int
-    public let reps: Int?
-    public let repsMin: Int?
-    public let repsMax: Int?
-    public let weightKg: String?
-    public let loadValue: String?
-    public let loadUnit: String
-    public let loadMode: String
-    public let loadDetailsJSON: String?
-    public let rir: String?
-    public let rpe: String?
-    public let restSeconds: Int?
-    public let durationSeconds: Int?
-    public let distanceMeters: String?
-    public let notes: String?
+    public var id: String
+    public var setNumber: Int
+    public var reps: Int?
+    public var repsMin: Int?
+    public var repsMax: Int?
+    public var weightKg: String?
+    public var loadValue: String?
+    public var loadUnit: String
+    public var loadMode: String
+    public var loadDetailsJSON: String?
+    public var rir: String?
+    public var rpe: String?
+    public var restSeconds: Int?
+    public var durationSeconds: Int?
+    public var distanceMeters: String?
+    public var notes: String?
+
+    public init(id: String, setNumber: Int, reps: Int?, repsMin: Int? = nil, repsMax: Int? = nil, weightKg: String? = nil, loadValue: String? = nil,
+                loadUnit: String = "kg", loadMode: String = "direct_total", loadDetailsJSON: String? = nil, rir: String? = nil, rpe: String? = nil,
+                restSeconds: Int? = nil, durationSeconds: Int? = nil, distanceMeters: String? = nil, notes: String? = nil) {
+        self.id = id
+        self.setNumber = setNumber
+        self.reps = reps
+        self.repsMin = repsMin
+        self.repsMax = repsMax
+        self.weightKg = weightKg
+        self.loadValue = loadValue
+        self.loadUnit = loadUnit
+        self.loadMode = loadMode
+        self.loadDetailsJSON = loadDetailsJSON
+        self.rir = rir
+        self.rpe = rpe
+        self.restSeconds = restSeconds
+        self.durationSeconds = durationSeconds
+        self.distanceMeters = distanceMeters
+        self.notes = notes
+    }
 }
 
 public struct PlanExercise: Sendable, Equatable, Identifiable {
-    public let id: String
-    public let exerciseId: String?
-    public let name: String
-    public let notes: String?
-    public let exerciseOrder: Int
-    public let sets: [PlanSet]
+    public var id: String
+    public var exerciseId: String?
+    public var name: String
+    public var notes: String?
+    public var exerciseOrder: Int
+    public var sets: [PlanSet]
+
+    public init(id: String, exerciseId: String?, name: String, notes: String?, exerciseOrder: Int, sets: [PlanSet]) {
+        self.id = id
+        self.exerciseId = exerciseId
+        self.name = name
+        self.notes = notes
+        self.exerciseOrder = exerciseOrder
+        self.sets = sets
+    }
 }
 
 public struct PlanWorkout: Sendable, Equatable, Identifiable {
@@ -185,6 +215,8 @@ extension LocalStore {
         try modelContext.delete(model: PlanWorkoutModel.self, where: #Predicate { $0.accountScope == scope })
         try modelContext.delete(model: PlanExerciseModel.self, where: #Predicate { $0.accountScope == scope })
         try modelContext.delete(model: PlanSetModel.self, where: #Predicate { $0.accountScope == scope })
+        try modelContext.delete(model: ExerciseCatalogModel.self, where: #Predicate { $0.accountScope == scope })
+        try modelContext.delete(model: CatalogQueryStateModel.self, where: #Predicate { $0.accountScope == scope })
     }
 
     // MARK: History

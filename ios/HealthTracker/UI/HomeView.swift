@@ -23,10 +23,12 @@ private struct TodayView: View {
     @Environment(AppModel.self) private var model
 
     private var todayKey: String { Formatters.dayKey(Date()) }
-    private var todayWorkout: PlannedWorkout? {
+    /// Today's workouts, open ones first (Android `todayWorkouts`).
+    private var todayWorkouts: [PlannedWorkout] {
         let today = model.planned.filter { $0.scheduledForDate == todayKey }
-        return today.first { !["cancelled", "completed"].contains($0.status) } ?? today.first
+        return today.filter { !["cancelled", "completed"].contains($0.status) } + today.filter { ["cancelled", "completed"].contains($0.status) }
     }
+    private var todayWorkout: PlannedWorkout? { todayWorkouts.first }
     private var upcoming: [PlannedWorkout] { Array(model.planned.filter { $0.scheduledForDate > todayKey }.prefix(7)) }
 
     var body: some View {
@@ -48,13 +50,21 @@ private struct TodayView: View {
                             .foregroundStyle(Theme.textMuted)
                     }
                 }
+                .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("today_card")
+                ForEach(todayWorkouts.dropFirst().filter { $0.status != "cancelled" }) { workout in
+                    Card {
+                        Text(workout.title).font(.headline)
+                        StatusPill(text: DisplayText.workoutStatus(displayStatus(workout)), tone: .info)
+                        WorkoutActions(workout: workout)
+                    }
+                }
 
                 if !upcoming.isEmpty {
                     section("Próximos") {
                         ForEach(upcoming) { workout in
                             row(title: workout.title, detail: Formatters.day(workout.scheduledForDate), trailing: DisplayText.workoutStatus(displayStatus(workout)))
-                            WorkoutActions(workout: workout)
+                            WorkoutActions(workout: workout, identifierPrefix: "upcoming_")
                         }
                     }
                 }

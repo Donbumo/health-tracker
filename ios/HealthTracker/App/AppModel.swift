@@ -23,6 +23,7 @@ final class AppModel {
     let sync: SyncCoordinator
     let training: TrainingModel
     let workout: WorkoutModel
+    let planning: PlanningModel
     private let connectivity: ConnectivityMonitor
     private var started = false
 
@@ -36,6 +37,7 @@ final class AppModel {
         self.sync = SyncCoordinator(session: session, engine: engine)
         self.training = TrainingModel(repository: TrainingRepository(api: session.api, store: session.store), store: session.store)
         self.workout = WorkoutModel(repository: WorkoutRepository(api: session.api, store: session.store), store: session.store)
+        self.planning = PlanningModel(repository: PlanningRepository(api: session.api, store: session.store), store: session.store)
         self.preferences = session.preferences.values
         sync.onRunFinished = { [weak self] in Task { await self?.reloadCache() } }
         sync.onSessionInvalidated = { [weak self] code in self?.sessionInvalidated(code) }
@@ -47,6 +49,12 @@ final class AppModel {
         workout.report = { [weak self] text in self?.message = text }
         workout.requestSync = { [weak self] trigger in self?.sync.enqueueNow(trigger) }
         workout.onLocalChange = { [weak self] in Task { await self?.reloadCache() } }
+        planning.context = { [weak self] in
+            (self?.preferences.accountScope, self?.connected ?? false, self?.profile?.timezone ?? TimeZone.current.identifier)
+        }
+        planning.report = { [weak self] text in self?.message = text }
+        planning.requestSync = { [weak self] trigger in self?.sync.enqueueNow(trigger) }
+        planning.onLocalChange = { [weak self] in await self?.reloadCache() }
     }
 
     static func live() -> AppModel {
@@ -63,7 +71,7 @@ final class AppModel {
         }
         let api = APIClient(preferences: preferences, tokens: tokens)
         let session = SessionService(api: api, preferences: preferences, tokens: tokens, store: store, appVersion: appVersion)
-        let engine = SyncEngine(api: api, store: store, preferences: preferences, handlers: CompanionHandlers.all)
+        let engine = SyncEngine(api: api, store: store, preferences: preferences, handlers: CompanionHandlers.all.merging(PlanningHandlers.all) { first, _ in first })
         return AppModel(session: session, engine: engine, connectivity: ConnectivityMonitor())
     }
 
@@ -190,6 +198,7 @@ final class AppModel {
             syncSnapshot = SyncSnapshot(pendingCount: 0, conflictCount: 0, hasSyncState: false)
             await training.reload()
             await workout.reload()
+            await planning.reload()
             return
         }
         planned = await session.store.plannedWorkouts(scope)
@@ -197,6 +206,7 @@ final class AppModel {
         syncSnapshot = await session.store.snapshot(scope)
         await training.reload()
         await workout.reload()
+        await planning.reload()
     }
 
     private func signedOut() {

@@ -1,6 +1,6 @@
 # Health Tracker iOS Companion
 
-Cliente iOS nativo (SwiftUI, iOS 17+) equivalente al companion Android de `android/`. Reutiliza `/api/v1`; no contiene un backend alternativo. Se entrega por etapas: **Etapa 1** fundación (auth, API, Keychain), **Etapa 2** sync offline (SwiftData, bootstrap/pull, cola FIFO, sync en segundo plano) **Etapa 3** historial, rutinas en lectura y progreso (caché offline, Swift Charts) y **Etapa 4** sesión de entrenamiento en vivo (package verificado, borrador offline con autosave, cola companion).
+Cliente iOS nativo (SwiftUI, iOS 17+) equivalente al companion Android de `android/`. Reutiliza `/api/v1`; no contiene un backend alternativo. Se entrega por etapas: **Etapa 1** fundación (auth, API, Keychain), **Etapa 2** sync offline (SwiftData, bootstrap/pull, cola FIFO, sync en segundo plano) **Etapa 3** historial, rutinas en lectura y progreso (caché offline, Swift Charts) **Etapa 4** sesión de entrenamiento en vivo (package verificado, borrador offline con autosave, cola companion) y **Etapa 5** editor de rutinas, catálogo y agenda offline con resolución de conflictos.
 
 ## Stack
 
@@ -24,6 +24,9 @@ Cliente iOS nativo (SwiftUI, iOS 17+) equivalente al companion Android de `andro
 | `downloadWorkout` / `startWorkout` / `completeWorkout` | `WorkoutRepository` + `LocalStore+Workout` |
 | `processPending` `companion_*` | `CompanionHandlers` |
 | `DebouncedAutosave` | `DebouncedAutosave` (actor) |
+| `PlanningRules.kt` | `PlanningRules` |
+| `createPlanOffline` … `rescheduleWorkoutOffline` | `PlanningRepository` + `LocalStore+Planning` |
+| `processPending` `planning_*` | `PlanningHandlers` |
 
 ## Construcción
 
@@ -41,7 +44,7 @@ cd ios/HealthTrackerKit && swift test
 xcodebuild -scheme HealthTrackerKit -destination 'platform=iOS Simulator,name=iPhone 16 Pro' test
 ```
 
-Smoke test UI contra un backend local con usuario QA ficticio (se omite si no hay variables; `QA_EXPECTED_SESSION` y `QA_EXPECTED_EXERCISE` activan la prueba de Plan, Historial y Progreso, y `QA_EXPECTED_TODAY_WORKOUT` la captura completa de un entrenamiento programado para hoy):
+Smoke test UI contra un backend local con usuario QA ficticio (se omite si no hay variables; `QA_EXPECTED_SESSION` y `QA_EXPECTED_EXERCISE` activan la prueba de Plan, Historial y Progreso, `QA_EXPECTED_TODAY_WORKOUT` la captura completa de un entrenamiento programado para hoy y `QA_EXPECTED_CATALOG_EXERCISE` el editor de rutinas con un ejercicio del catálogo):
 
 ```sh
 TEST_RUNNER_QA_SERVER_URL=http://127.0.0.1:5000 TEST_RUNNER_QA_USERNAME=<usuario-qa> TEST_RUNNER_QA_PASSWORD=<password-qa> \

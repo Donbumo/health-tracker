@@ -33,12 +33,14 @@ public actor SyncEngine {
         api: APIClient,
         store: LocalStore,
         preferences: PreferenceStore,
+        handlers: [String: PendingActionHandler] = [:],
         now: @escaping @Sendable () -> Date = Date.init,
         jitter: @escaping @Sendable (Int64) -> Int64 = { Int64.random(in: 0...max(0, $0)) }
     ) {
         self.api = api
         self.store = store
         self.preferences = preferences
+        self.handlers = handlers
         self.now = now
         self.jitter = jitter
     }

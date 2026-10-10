@@ -113,6 +113,7 @@ public actor LocalStore: AccountStore {
             try modelContext.delete(model: PendingActionModel.self, where: #Predicate { $0.accountScope == scope })
             try modelContext.delete(model: PlanningConflictModel.self, where: #Predicate { $0.accountScope == scope })
             try clearTrainingData(scope)
+            try clearWorkoutData(scope)
         }
     }
 
@@ -223,7 +224,7 @@ public actor LocalStore: AccountStore {
         modelContext.insert(conflict)
     }
 
-    private func upsertDelivery(_ scope: String, _ dto: DeliveryDTO) throws {
+    func upsertDelivery(_ scope: String, _ dto: DeliveryDTO) throws {
         let key = scopedKey(scope, dto.id)
         if let existing = try fetch(#Predicate<DeliveryModel> { $0.key == key }).first {
             existing.update(from: dto)
@@ -232,7 +233,7 @@ public actor LocalStore: AccountStore {
         }
     }
 
-    private func upsertRecent(_ scope: String, _ completed: CompletedWorkoutDTO) throws {
+    func upsertRecent(_ scope: String, _ completed: CompletedWorkoutDTO) throws {
         guard let id = completed.id ?? completed.clientEventId else {
             throw AppFailure(.schemaIncompatible, "El entrenamiento no contiene un identificador.", retryable: false)
         }
@@ -267,24 +268,27 @@ public actor LocalStore: AccountStore {
     /// Inserts a durable operation. Re-enqueueing the same key with the same content is a no-op;
     /// a different payload under the same key is rejected.
     public func enqueue(_ scope: String, actionType: String, entityId: String, idempotencyKey: String, payloadJSON: String, now: Date = Date()) throws {
+        try write { try insertPending(scope, actionType: actionType, entityId: entityId, idempotencyKey: idempotencyKey, payloadJSON: payloadJSON, now: now) }
+    }
+
+    /// Queue insert for use inside a larger `write` unit.
+    func insertPending(_ scope: String, actionType: String, entityId: String, idempotencyKey: String, payloadJSON: String, now: Date) throws {
         guard let payload = try? JSONValue.parse(payloadJSON) else {
             throw AppFailure(.localStorageError, "La operación pendiente no es JSON válido.", retryable: false)
         }
         let hash = CanonicalJSON.sha256(payload)
         let key = scopedKey(scope, idempotencyKey)
-        try write {
-            if let existing = try fetch(#Predicate<PendingActionModel> { $0.key == key }).first {
-                guard existing.payloadHash == hash, existing.actionType == actionType, existing.entityId == entityId else {
-                    throw AppFailure(.submissionConflict, "La clave idempotente ya pertenece a otra operación local.", retryable: false)
-                }
-                return
+        if let existing = try fetch(#Predicate<PendingActionModel> { $0.key == key }).first {
+            guard existing.payloadHash == hash, existing.actionType == actionType, existing.entityId == entityId else {
+                throw AppFailure(.submissionConflict, "La clave idempotente ya pertenece a otra operación local.", retryable: false)
             }
-            let last = try fetch(#Predicate<PendingActionModel> { _ in true }, sort: [SortDescriptor(\.sequence, order: .reverse)], limit: 1).first
-            modelContext.insert(PendingActionModel(
-                sequence: (last?.sequence ?? 0) + 1, scope: scope, actionType: actionType, entityId: entityId,
-                idempotencyKey: idempotencyKey, payloadJSON: payloadJSON, payloadHash: hash, createdAt: iso(now)
-            ))
+            return
         }
+        let last = try fetch(#Predicate<PendingActionModel> { _ in true }, sort: [SortDescriptor(\.sequence, order: .reverse)], limit: 1).first
+        modelContext.insert(PendingActionModel(
+            sequence: (last?.sequence ?? 0) + 1, scope: scope, actionType: actionType, entityId: entityId,
+            idempotencyKey: idempotencyKey, payloadJSON: payloadJSON, payloadHash: hash, createdAt: iso(now)
+        ))
     }
 
     public func headOfQueue(_ scope: String) -> PendingAction? {

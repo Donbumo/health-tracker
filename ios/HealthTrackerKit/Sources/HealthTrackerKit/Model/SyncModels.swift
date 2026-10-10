@@ -132,39 +132,62 @@ public struct CompletedExerciseDTO: Decodable, Sendable {
     public let exerciseOrder: Int
     public let plannedExerciseOrder: Int
     public let name: String
+    public let notes: String?
     public let sets: [CompletedSetDTO]
 
     enum CodingKeys: String, CodingKey {
         case exerciseOrder = "exercise_order"
         case plannedExerciseOrder = "planned_exercise_order"
-        case name, sets
+        case name, notes, sets
     }
 }
 
 public struct CompletedSetDTO: Decodable, Sendable {
     public let setNumber: Int
+    public let plannedSetNumber: Int?
     public let weightKg: Decimal
     public let reps: Int
     public let loadMode: String?
+    public let displayTotal: WeightComponentDTO?
+    public let rir: Decimal?
+    public let rpe: Decimal?
+    public let restSeconds: Int?
+    public let durationSeconds: Int?
+    public let notes: String?
 
     enum CodingKeys: String, CodingKey {
         case setNumber = "set_number"
+        case plannedSetNumber = "planned_set_number"
         case weightKg = "weight_kg"
-        case reps
+        case reps, rir, rpe, notes
         case loadDetails = "load_details"
+        case restSeconds = "rest_seconds"
+        case durationSeconds = "duration_seconds"
     }
 
     private struct LoadDetails: Decodable {
         let loadMode: String
-        enum CodingKeys: String, CodingKey { case loadMode = "load_mode" }
+        let displayTotal: WeightComponentDTO?
+        enum CodingKeys: String, CodingKey {
+            case loadMode = "load_mode"
+            case displayTotal = "display_total"
+        }
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         setNumber = try container.decode(Int.self, forKey: .setNumber)
+        plannedSetNumber = try container.decodeIfPresent(Int.self, forKey: .plannedSetNumber)
         weightKg = try container.decode(Decimal.self, forKey: .weightKg)
         reps = try container.decode(Int.self, forKey: .reps)
-        loadMode = try container.decodeIfPresent(LoadDetails.self, forKey: .loadDetails)?.loadMode
+        let details = try container.decodeIfPresent(LoadDetails.self, forKey: .loadDetails)
+        loadMode = details?.loadMode
+        displayTotal = details?.displayTotal
+        rir = try container.decodeIfPresent(Decimal.self, forKey: .rir)
+        rpe = try container.decodeIfPresent(Decimal.self, forKey: .rpe)
+        restSeconds = try container.decodeIfPresent(Int.self, forKey: .restSeconds)
+        durationSeconds = try container.decodeIfPresent(Int.self, forKey: .durationSeconds)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
     }
 
     public static let comparableVolumeModes: Set<String> = [
@@ -216,6 +239,7 @@ public struct CompanionProfileDTO: Decodable, Sendable, Equatable {
 
 public struct DeliveryDTO: Decodable, Sendable, Equatable {
     public let id: String
+    public var deviceId: String? = nil
     public let profileId: String
     public let plannedWorkoutId: String
     public let packageHash: String
@@ -228,6 +252,7 @@ public struct DeliveryDTO: Decodable, Sendable, Equatable {
 
     enum CodingKeys: String, CodingKey {
         case id
+        case deviceId = "device_id"
         case profileId = "profile_id"
         case plannedWorkoutId = "planned_workout_id"
         case packageHash = "package_hash"

@@ -23,23 +23,26 @@ private struct TodayView: View {
     @Environment(AppModel.self) private var model
 
     private var todayKey: String { Formatters.dayKey(Date()) }
-    private var todayWorkout: PlannedWorkout? { model.planned.first { $0.scheduledForDate == todayKey } }
+    private var todayWorkout: PlannedWorkout? {
+        let today = model.planned.filter { $0.scheduledForDate == todayKey }
+        return today.first { !["cancelled", "completed"].contains($0.status) } ?? today.first
+    }
     private var upcoming: [PlannedWorkout] { Array(model.planned.filter { $0.scheduledForDate > todayKey }.prefix(7)) }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Space.s4) {
                 SyncBanner()
+                if let draft = model.workout.draft { DraftCard(draft: draft) }
                 Card {
                     Text("Entrenamiento de hoy").font(.headline)
                     if let workout = todayWorkout {
                         Text(workout.title).font(.title3.weight(.semibold))
                         HStack {
-                            StatusPill(text: Formatters.plannedStatus(workout.status), tone: workout.status == "conflict" ? .danger : .info)
+                            StatusPill(text: DisplayText.workoutStatus(displayStatus(workout)), tone: workout.status == "conflict" ? .danger : .info)
                             Spacer()
                         }
-                        Text("La descarga y captura del entrenamiento llegan en la siguiente etapa.")
-                            .font(.footnote).foregroundStyle(Theme.textMuted)
+                        WorkoutActions(workout: workout)
                     } else {
                         Text(model.syncSnapshot.hasSyncState ? "No hay entrenamiento programado para hoy." : "Sincroniza para descargar tu agenda.")
                             .foregroundStyle(Theme.textMuted)
@@ -50,7 +53,8 @@ private struct TodayView: View {
                 if !upcoming.isEmpty {
                     section("Próximos") {
                         ForEach(upcoming) { workout in
-                            row(title: workout.title, detail: Formatters.day(workout.scheduledForDate), trailing: Formatters.plannedStatus(workout.status))
+                            row(title: workout.title, detail: Formatters.day(workout.scheduledForDate), trailing: DisplayText.workoutStatus(displayStatus(workout)))
+                            WorkoutActions(workout: workout)
                         }
                     }
                 }
@@ -73,6 +77,17 @@ private struct TodayView: View {
         .refreshable { model.syncNow() }
         .background(Theme.bg)
         .navigationTitle("Hoy")
+        .fullScreenCover(isPresented: Binding(get: { model.workout.presented }, set: { model.workout.presented = $0 })) {
+            WorkoutView()
+        }
+    }
+
+    private func displayStatus(_ workout: PlannedWorkout) -> String {
+        if let package = model.workout.package(forPlanned: workout.id) {
+            if model.workout.draft?.deliveryId == package.deliveryId { return "active" }
+            if workout.status == "planned" { return "downloaded" }
+        }
+        return workout.status
     }
 
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {

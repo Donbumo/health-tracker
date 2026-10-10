@@ -264,5 +264,6 @@ enum LocalSchema {
         HistorySessionModel.self, HistoryExerciseModel.self, HistorySetModel.self, HistoryPageModel.self,
         HistoryQueryStateModel.self, ProgressSummaryModel.self, ProgressExerciseModel.self, ProgressPointModel.self,
         PersonalRecordModel.self, PlanModel.self, PlanWorkoutModel.self, PlanExerciseModel.self, PlanSetModel.self,
+        WorkoutPackageModel.self, PackageExerciseModel.self, PackageSetModel.self, WorkoutDraftModel.self, DraftSetModel.self,
     ]
 }

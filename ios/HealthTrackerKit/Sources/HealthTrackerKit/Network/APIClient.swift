@@ -265,3 +265,23 @@ public actor APIClient {
         #endif
     }
 }
+
+// MARK: Mobile Sync and Companion negotiation
+
+extension APIClient {
+    public func bootstrap() async throws -> BootstrapResponse {
+        try await call("/api/v1/sync/bootstrap", method: "GET")
+    }
+
+    public func pull(cursor: String, limit: Int) async throws -> PullResponse {
+        try await call("/api/v1/sync/pull?cursor=\(Self.encodeQuery(cursor))&limit=\(limit)", method: "GET")
+    }
+
+    public func syncStatus() async throws -> SyncStatusResponse {
+        try await call("/api/v1/sync/status", method: "GET")
+    }
+
+    public func negotiate(_ request: NegotiationRequest) async throws -> NegotiationResponse {
+        try await call("/api/v1/companion/negotiate", method: "POST", body: try Self.encode(request))
+    }
+}

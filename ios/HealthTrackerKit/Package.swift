@@ -10,6 +10,6 @@ let package = Package(
     ],
     targets: [
         .target(name: "HealthTrackerKit"),
-        .testTarget(name: "HealthTrackerKitTests", dependencies: ["HealthTrackerKit"]),
+        .testTarget(name: "HealthTrackerKitTests", dependencies: ["HealthTrackerKit"], resources: [.copy("Fixtures")]),
     ]
 )

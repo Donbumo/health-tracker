@@ -28,33 +28,38 @@ final class FakeTransport: HTTPTransport, @unchecked Sendable {
     }
 }
 
-private let qaServer = "https://tracker.example"
-private let qaProfile = #"{"data":{"id":"qa-user-1","email":"qa@example.test","role":"user","timezone":"America/Mexico_City","created_at":"2026-01-01T00:00:00Z","capabilities":{"mobile":true}}}"#
+let qaServer = "https://tracker.example"
+let qaProfile = #"{"data":{"id":"qa-user-1","email":"qa@example.test","role":"user","timezone":"America/Mexico_City","created_at":"2026-01-01T00:00:00Z","capabilities":{"mobile":true}}}"#
 
-private func tokenJSON(_ suffix: String) -> String {
+func tokenJSON(_ suffix: String) -> String {
     #"{"data":{"access_token":"qa-access-\#(suffix)","refresh_token":"qa-refresh-\#(suffix)","token_type":"Bearer","expires_in":900,"refresh_expires_at":"2026-12-01T00:00:00Z"}}"#
 }
 
-private struct Harness {
+struct Harness {
     let transport = FakeTransport()
     let preferences: PreferenceStore
     let tokens = TokenStore(storage: InMemorySecureStorage())
-    let accounts: UserDefaultsAccountStore
+    let store: LocalStore
     let api: APIClient
     let session: SessionService
 
-    init() {
-        let suite = "qa.\(UUID().uuidString)"
-        preferences = PreferenceStore(defaults: UserDefaults(suiteName: suite)!)
-        accounts = UserDefaultsAccountStore(defaults: UserDefaults(suiteName: suite + ".accounts")!)
+    init() throws {
+        preferences = PreferenceStore(defaults: UserDefaults(suiteName: "qa.\(UUID().uuidString)")!)
+        store = try LocalStore.make(inMemory: true)
         api = APIClient(preferences: preferences, tokens: tokens, transport: transport)
-        session = SessionService(api: api, preferences: preferences, tokens: tokens, accounts: accounts, appVersion: "0.1.0-qa")
+        session = SessionService(api: api, preferences: preferences, tokens: tokens, store: store, appVersion: "0.1.0-qa")
         transport.on("GET", "/api/v1/health", json: #"{"data":{"status":"ok","app":"health-tracker"}}"#)
+    }
+
+    func scriptBootstrapAndNegotiation(deviceId: String = "qa-device", cursor: String = "qa-cursor-0") {
+        transport.on("GET", "/api/v1/sync/bootstrap", json: QAFixtures.bootstrap(deviceId: deviceId, cursor: cursor))
+        transport.on("POST", "/api/v1/companion/negotiate", json: QAFixtures.negotiation(deviceId: deviceId))
     }
 
     func login() async throws -> LoginOutcome {
         transport.on("POST", "/api/v1/auth/login", json: tokenJSON("1"))
         transport.on("GET", "/api/v1/me", json: qaProfile)
+        scriptBootstrapAndNegotiation()
         return try await session.login(rawURL: qaServer + "/", explicitLocalHTTP: false, email: " qa@example.test ", password: "qa-password", deviceName: "QA iPhone", osVersion: "iOS 18.2")
     }
 }
@@ -121,7 +126,7 @@ struct LoginCompensationTests {
 
 struct SessionServiceTests {
     @Test func loginRegistersIOSDeviceStoresScopedSessionAndSupportsOfflineRestore() async throws {
-        let h = Harness()
+        let h = try Harness()
         let outcome = try await h.login()
 
         #expect(outcome.profile.email == "qa@example.test")
@@ -138,13 +143,16 @@ struct SessionServiceTests {
         let meRequest = try #require(h.transport.requests.first { $0.url?.path == "/api/v1/me" })
         #expect(meRequest.value(forHTTPHeaderField: "Authorization") == "Bearer qa-access-1")
 
-        let offline = try #require(h.session.restoreLocalSession())
+        #expect(await h.store.recentSessions(outcome.scope).count == 1)
+        #expect(await h.store.syncCursor(outcome.scope) == "qa-cursor-0")
+        #expect(await h.store.localProfileRevision(outcome.scope) == 2)
+        let offline = try #require(await h.session.restoreLocalSession())
         #expect(offline.role == "offline_cache")
         #expect(offline.id == "qa-user-1")
     }
 
     @Test func failedPostLoginSetupLogsOutAndLeavesNoLocalSession() async throws {
-        let h = Harness()
+        let h = try Harness()
         h.transport.on("POST", "/api/v1/auth/login", json: tokenJSON("1"))
         h.transport.on("GET", "/api/v1/me", json: #"{"data":{"unexpected":true}}"#)
         h.transport.on("POST", "/api/v1/auth/logout", json: #"{"data":{}}"#)
@@ -155,15 +163,15 @@ struct SessionServiceTests {
         #expect(h.transport.count("POST", "/api/v1/auth/logout") == 1)
         #expect(h.tokens.refreshToken() == nil)
         #expect(h.preferences.values.accountScope == nil)
-        #expect(h.session.restoreLocalSession() == nil)
+        #expect(await h.session.restoreLocalSession() == nil)
     }
 
-    @Test func nonHealthTrackerServerIsRejectedBeforeCredentialsAreSent() async {
+    @Test func nonHealthTrackerServerIsRejectedBeforeCredentialsAreSent() async throws {
         let transport = FakeTransport()
         let preferences = PreferenceStore(defaults: UserDefaults(suiteName: "qa.\(UUID().uuidString)")!)
         let tokens = TokenStore(storage: InMemorySecureStorage())
         let api = APIClient(preferences: preferences, tokens: tokens, transport: transport)
-        let session = SessionService(api: api, preferences: preferences, tokens: tokens, accounts: UserDefaultsAccountStore(defaults: UserDefaults(suiteName: "qa.\(UUID().uuidString)")!), appVersion: "qa")
+        let session = SessionService(api: api, preferences: preferences, tokens: tokens, store: try LocalStore.make(inMemory: true), appVersion: "qa")
         transport.on("GET", "/api/v1/health", json: #"{"data":{"status":"ok","app":"something-else"}}"#)
 
         await #expect(throws: AppFailure(.serverIncompatible, "El servidor no se identifica como Health Tracker.", retryable: false)) {
@@ -173,7 +181,7 @@ struct SessionServiceTests {
     }
 
     @Test func expiredAccessTokenIsRefreshedOnceAndRequestRetried() async throws {
-        let h = Harness()
+        let h = try Harness()
         _ = try await h.login()
         h.transport.on("GET", "/api/v1/me", status: 401, json: #"{"error":{"code":"token_expired","message":"expired"}}"#)
         h.transport.on("POST", "/api/v1/auth/refresh", json: tokenJSON("2"))
@@ -189,7 +197,7 @@ struct SessionServiceTests {
     }
 
     @Test func revokedSessionClearsTokensWithoutRefreshing() async throws {
-        let h = Harness()
+        let h = try Harness()
         _ = try await h.login()
         h.transport.on("GET", "/api/v1/me", status: 401, json: #"{"error":{"code":"session_revoked","message":"revoked"}}"#)
 
@@ -199,7 +207,7 @@ struct SessionServiceTests {
     }
 
     @Test func definitiveRefreshFailureClearsSessionButTemporaryFailureKeepsIt() async throws {
-        let h = Harness()
+        let h = try Harness()
         _ = try await h.login()
         h.transport.on("GET", "/api/v1/me", status: 401, json: #"{"error":{"code":"token_expired","message":"expired"}}"#)
         h.transport.on("POST", "/api/v1/auth/refresh", status: 503, json: #"{"error":{"code":"unavailable","message":"later"}}"#)
@@ -218,7 +226,7 @@ struct SessionServiceTests {
     }
 
     @Test func restoreOnlineRejectsAProfileFromAnotherAccount() async throws {
-        let h = Harness()
+        let h = try Harness()
         let outcome = try await h.login()
         h.transport.on("GET", "/api/v1/me", json: qaProfile.replacingOccurrences(of: "qa-user-1", with: "qa-user-2"))
 
@@ -231,17 +239,17 @@ struct SessionServiceTests {
     }
 
     @Test func logoutClearsLocalSessionEvenWhenServerIsUnreachable() async throws {
-        let h = Harness()
+        let h = try Harness()
         let outcome = try await h.login()
         try await h.session.logout(scope: outcome.scope, revokeDevice: false)
         #expect(h.tokens.refreshToken() == nil)
         #expect(h.preferences.values.accountScope == nil)
         #expect(h.preferences.values.serverURL == qaServer)
-        #expect(h.session.restoreLocalSession() == nil)
+        #expect(await h.session.restoreLocalSession() == nil)
     }
 
     @Test func oversizedResponsesAreRejected() async throws {
-        let h = Harness()
+        let h = try Harness()
         let huge = String(repeating: "a", count: APIClient.maxResponseBytes + 1)
         h.transport.on("GET", "/api/v1/health", json: huge)
         _ = try await h.api.health(baseURL: qaServer) // consumes the default scripted response

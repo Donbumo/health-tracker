@@ -5,13 +5,13 @@ public struct LoginOutcome: Sendable, Equatable {
     public let profile: UserProfile
 }
 
-/// Server connection and session lifecycle (Android `CompanionRepository` auth subset).
-/// Stage 2 extends `login`/`restoreOnlineSession` with bootstrap, negotiation and the offline cache.
+/// Server connection and session lifecycle (Android `CompanionRepository` auth subset): login and
+/// online restore include Mobile Sync bootstrap and Companion negotiation into the offline cache.
 public final class SessionService: Sendable {
     public let api: APIClient
     public let preferences: PreferenceStore
     public let tokens: TokenStore
-    private let accounts: AccountStore
+    public let store: LocalStore
     private let appVersion: String
     private let now: @Sendable () -> Date
 
@@ -19,14 +19,14 @@ public final class SessionService: Sendable {
         api: APIClient,
         preferences: PreferenceStore,
         tokens: TokenStore,
-        accounts: AccountStore,
+        store: LocalStore,
         appVersion: String,
         now: @escaping @Sendable () -> Date = Date.init
     ) {
         self.api = api
         self.preferences = preferences
         self.tokens = tokens
-        self.accounts = accounts
+        self.store = store
         self.appVersion = appVersion
         self.now = now
     }
@@ -69,25 +69,30 @@ public final class SessionService: Sendable {
                 let scope = CanonicalJSON.accountScope(serverURL: baseURL, userPublicId: profile.id)
                 createdScope.value = scope
                 preferences.setAccountScope(scope)
-                try accounts.upsert(AccountRecord(
+                try await store.upsert(AccountRecord(
                     scope: scope, serverURL: baseURL, userPublicId: profile.id, displayEmail: profile.email,
                     deviceId: deviceId, timezone: profile.timezone, createdAt: ISO8601DateFormatter().string(from: now())
                 ))
+                let initial = try await api.bootstrap()
+                try SyncContract.verify(initial)
+                let negotiated = try await api.negotiate(.companion(baseRevision: initial.companion.profile?.revision))
+                try SyncContract.verify(negotiated)
+                try await store.applyBootstrap(scope, initial, negotiated: negotiated.profile, now: now())
                 preferences.setOfflineSessionEligible(true)
                 return LoginOutcome(scope: scope, profile: profile)
             },
             remoteLogout: { try await api.logout() },
-            localCleanup: { [self] in try cleanupIncompleteLogin(createdScope.value) }
+            localCleanup: { [self] in try await cleanupIncompleteLogin(createdScope.value) }
         )
     }
 
     /// Restores a session from local state only, so the app is usable offline.
-    public func restoreLocalSession() -> UserProfile? {
+    public func restoreLocalSession() async -> UserProfile? {
         let local = preferences.values
         guard let scope = local.accountScope, local.offlineSessionEligible,
               let serverURL = local.serverURL, !local.deviceId.isEmpty,
               tokens.refreshToken(serverIdentity: serverURL) != nil,
-              let account = accounts.account(scope),
+              let account = await store.account(scope),
               account.scope == scope, account.serverURL == serverURL, account.deviceId == local.deviceId else { return nil }
         return UserProfile(
             id: account.userPublicId,
@@ -100,7 +105,7 @@ public final class SessionService: Sendable {
 
     public func restoreOnlineSession(scope: String) async throws -> UserProfile {
         let local = preferences.values
-        guard let account = accounts.account(scope) else {
+        guard let account = await store.account(scope) else {
             throw AppFailure(.localStorageError, "Falta la identidad local de la cuenta.", retryable: false)
         }
         guard local.accountScope == scope, account.serverURL == local.serverURL, account.deviceId == local.deviceId else {
@@ -111,6 +116,20 @@ public final class SessionService: Sendable {
         guard CanonicalJSON.accountScope(serverURL: account.serverURL, userPublicId: profile.id) == scope else {
             throw AppFailure(.refreshFailed, "La sesión restaurada no corresponde a la cuenta local.", retryable: false)
         }
+        let bootstrap = try await api.bootstrap()
+        try SyncContract.verify(bootstrap)
+        var negotiated: CompanionProfileDTO?
+        if SyncContract.needsNegotiation(bootstrap.companion.profile) {
+            let response = try await api.negotiate(.companion(baseRevision: bootstrap.companion.profile?.revision))
+            try SyncContract.verify(response)
+            negotiated = response.profile
+        }
+        try await store.applyBootstrap(scope, bootstrap, negotiated: negotiated, now: now())
+        try await store.upsert(AccountRecord(
+            scope: scope, serverURL: account.serverURL, userPublicId: account.userPublicId, displayEmail: profile.email,
+            deviceId: account.deviceId, timezone: profile.timezone, createdAt: account.createdAt
+        ))
+        preferences.setOfflineSessionEligible(true)
         return profile
     }
 
@@ -120,23 +139,23 @@ public final class SessionService: Sendable {
         } else {
             try? await api.logout()
         }
-        try clearLocal(scope: scope)
+        try await clearLocal(scope: scope)
     }
 
     public func logoutAll(scope: String) async throws {
         try await api.logoutAll()
-        try clearLocal(scope: scope)
+        try await clearLocal(scope: scope)
     }
 
-    public func clearLocal(scope: String) throws {
-        try accounts.clearAccountData(scope)
+    public func clearLocal(scope: String) async throws {
+        try await store.clearAccountData(scope)
         tokens.clear()
         preferences.setOfflineSessionEligible(false)
         preferences.setAccountScope(nil)
     }
 
-    public func clearConfirmedInvalidSession(scope: String) throws {
-        if preferences.values.accountScope == scope { try clearLocal(scope: scope) }
+    public func clearConfirmedInvalidSession(scope: String) async throws {
+        if preferences.values.accountScope == scope { try await clearLocal(scope: scope) }
     }
 
     /// Ends the active session but keeps local rows under their scope; a new login derives a new scope.
@@ -146,11 +165,11 @@ public final class SessionService: Sendable {
         preferences.setAccountScope(nil)
     }
 
-    private func cleanupIncompleteLogin(_ scope: String?) throws {
+    private func cleanupIncompleteLogin(_ scope: String?) async throws {
         tokens.clear()
         preferences.setOfflineSessionEligible(false)
         preferences.setAccountScope(nil)
-        if let scope { try accounts.clearAccountData(scope) }
+        if let scope { try await store.clearAccountData(scope) }
     }
 }
 

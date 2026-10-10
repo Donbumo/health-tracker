@@ -22,34 +22,7 @@ public struct AccountRecord: Codable, Sendable, Equatable {
 }
 
 public protocol AccountStore: Sendable {
-    func account(_ scope: String) -> AccountRecord?
-    func upsert(_ account: AccountRecord) throws
-    func clearAccountData(_ scope: String) throws
-}
-
-/// Stage 1 store. Stage 2 replaces it with the SwiftData offline cache, keeping this protocol.
-public final class UserDefaultsAccountStore: AccountStore, @unchecked Sendable {
-    private let defaults: UserDefaults
-    private let lock = NSLock()
-
-    public init(defaults: UserDefaults = UserDefaults(suiteName: "companion_accounts_v1") ?? .standard) {
-        self.defaults = defaults
-    }
-
-    public func account(_ scope: String) -> AccountRecord? {
-        lock.withLock {
-            defaults.data(forKey: key(scope)).flatMap { try? JSONDecoder().decode(AccountRecord.self, from: $0) }
-        }
-    }
-
-    public func upsert(_ account: AccountRecord) throws {
-        let data = try JSONEncoder().encode(account)
-        lock.withLock { defaults.set(data, forKey: key(account.scope)) }
-    }
-
-    public func clearAccountData(_ scope: String) throws {
-        lock.withLock { defaults.removeObject(forKey: key(scope)) }
-    }
-
-    private func key(_ scope: String) -> String { "account.\(scope)" }
+    func account(_ scope: String) async -> AccountRecord?
+    func upsert(_ account: AccountRecord) async throws
+    func clearAccountData(_ scope: String) async throws
 }

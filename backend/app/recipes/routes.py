@@ -207,6 +207,8 @@ def export_all_recipes():
         .order_by(Recipe.name.asc())
     ).scalars().all()
 
+    if any(recipe.nutrition_snapshot_json is not None for recipe in recipes):
+        abort(409, description="Estas comidas requieren export de cuenta/backup 2.0 para conservar micros y snapshots.")
     payload = recipe_bundle_export_bytes(recipes)
     return Response(
         payload,
@@ -277,6 +279,8 @@ def duplicate_recipe(id: int):
 @login_required
 def export_recipe(id: int):
     recipe = _recipe_for_user(id)
+    if recipe.nutrition_snapshot_json is not None:
+        abort(409, description="Esta comida requiere export de cuenta/backup 2.0 para conservar micros y snapshots.")
     payload = recipe_export_bytes(recipe)
     filename = _recipe_export_filename(recipe)
 

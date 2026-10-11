@@ -2,6 +2,7 @@ from datetime import date
 
 from app.extensions import db
 from app.models import DailyEnergy, DailyNutrition
+from app.services.nutrition_intelligence import comparison_value
 
 
 def effective_energy_record(user_id: int, target_date: date) -> DailyEnergy | None:
@@ -28,10 +29,11 @@ def daily_balance(user_id: int, target_date: date) -> dict:
     energy = effective_energy_record(user_id, target_date)
 
     calories_consumed = nutrition.calories if nutrition is not None else None
+    comparable = comparison_value(nutrition, 'calories')
     calories_expended = energy.total_calories if energy is not None else None
     balance = (
-        calories_consumed - calories_expended
-        if calories_consumed is not None and calories_expended is not None
+        comparable - calories_expended
+        if comparable is not None and calories_expended is not None
         else None
     )
     return {
@@ -39,6 +41,8 @@ def daily_balance(user_id: int, target_date: date) -> dict:
         "nutrition": nutrition,
         "energy": energy,
         "calories_consumed": calories_consumed,
+        "calories_comparable": comparable,
+        "nutrient_details": nutrition.nutrition_summary_json if nutrition else None,
         "protein_g": nutrition.protein_g if nutrition is not None else None,
         "fat_g": nutrition.fat_g if nutrition is not None else None,
         "net_carbs_g": nutrition.net_carbs_g if nutrition is not None else None,

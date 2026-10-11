@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}Nutrition Intelligence · Health Tracker{% endblock %}
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+{% macro unit_options(food,entry=none) %}
+  <option value="g"{% if entry and entry.unit=='g' %} selected{% endif %}>Gramos</option>
+  <option value="ml"{% if entry and entry.unit=='ml' %} selected{% endif %}>Mililitros (con equivalencia)</option>
+  {% for s in food.servings %}<option value="serving:{{ s.id }}"{% if entry and entry.serving_id==s.id %} selected{% endif %}>{{ s.label }} · {{ s.amount|nutrient_value }} {{ s.unit }}</option>{% endfor %}
+{% endmacro %}
+{% macro nutrient_cards(summary,micros=false) %}
+  <div class="ni-grid">
+  {% for state in (['partial','complete','unknown'] if micros else ['complete','partial','unknown']) %}
+  {% for key,definition in nutrients.items() %}{% if summary[key].state==state and ((micros and definition[2] not in ['macro','energy']) or (not micros and key in ['energy','protein','carbohydrate_total','fat','fiber'])) %}
+    {% set n=summary[key] %}
+    <article class="ni-card" data-nutrient="{{ key }}" data-state="{{ n.state }}">
+      <h3>{{ definition[0] }}</h3><strong class="ni-value">{{ n.value|nutrient_value }}{% if n.value is not none %} <small>{{ n.unit }}</small>{% endif %}</strong>
+      <p>{{ 'Aporte registrado' if n.state=='complete' else 'Subtotal conocido' if n.value is not none else 'Sin dato conocido' }} · {{ n.state }}</p>
+      {% if micros %}
+      <p>Cobertura por masa: <strong>{{ n.coverage|nutrient_value }}{% if n.coverage is not none %}%{% endif %}</strong></p>
+      <p class="ni-muted">Masa conocida {{ n.known_weight|nutrient_value }} / {{ n.total_weight|nutrient_value }} g · mass_weighted_v1</p>
+      <p class="ni-muted">{{ coverage_explanation }}</p>
+      <p class="ni-muted">Fuentes: {{ n.sources|join(', ') or 'Sin datos' }}</p>
+      {% endif %}
+    </article>
+  {% endif %}{% endfor %}{% endfor %}
+  </div>
+{% endmacro %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static',filename='css/nutrition.css',v='2') }}">
+<div class="ni-shell">
+{% if config.NUTRITION_QA_LABEL %}<p role="status"><strong>QA ficticia · datos sintéticos · base efímera</strong></p>{% endif %}
+<nav class="ni-tabs" aria-label="Nutrición"><a href="{{ url_for('nutrition.today') }}">Hoy</a><a href="{{ url_for('nutrition.search') }}">Alimentos</a><a href="{{ url_for('nutrition.saved') }}">Guardadas</a><a href="{{ url_for('nutrition.micros') }}">Micros</a></nav>
+{% if not enabled %}<p role="status">Nuevas escrituras desactivadas. El historial se conserva.</p>{% endif %}
+{% if view=='today' %}
+  <header class="ni-heading"><div><p class="ni-eyebrow">NUTRITION TODAY</p><h1>Tu nutrición, hoy</h1><p>{{ target }} · Sólo lo registrado</p></div>{% if enabled %}<a class="button" href="{{ url_for('nutrition.add') }}">Añadir comida</a>{% endif %}</header>
+  <section class="ni-hero"><p>{{ 'Aporte registrado' if summary.energy.state=='complete' else 'Subtotal conocido' }}</p><strong>{{ summary.energy.value|nutrient_value }}{% if summary.energy.value is not none %} kcal{% endif %}</strong><p>El día vacío no significa cero ingesta. Los valores parciales no confirman un déficit.</p></section>
+  {{ nutrient_cards(summary) }}
+  <div class="ni-columns"><section><h2>Comidas registradas</h2>
+  {% for log in logs %}<article class="ni-card"><div class="ni-heading"><h3>{{ log.snapshot_json.name }}</h3><span>Snapshot · revisión {{ log.revision }}</span></div>
+    {% for e in log.snapshot_json.ingredients %}<p>{{ e.food.name }} · {{ e.amount|nutrient_value }} {{ e.unit }}{% if e.serving_id %} ({{ e.serving_id }}){% endif %}</p>{% endfor %}
+    {% if enabled %}<form method="post" action="{{ url_for('nutrition.repeat',key=log.public_id) }}">{{ csrf() }}<button type="submit">Repetir y revisar</button></form>{% endif %}</article>
+  {% else %}<p class="ni-empty">Todavía no hay comidas con detalle en este día.</p>{% endfor %}
+  {% if legacy_detail_missing or (day and not logs) %}<article class="ni-card"><h3>Historial legacy</h3><p>Se conservan calorías y macros. Detalle de ingredientes y micronutrientes no disponible.</p><a href="{{ url_for('wellness.nutrition_list') }}">Ver registro original</a></article>{% endif %}
+  </section><aside class="ni-card"><h2>Calidad del registro</h2><p>{{ coverage_explanation }}</p><a class="button" href="{{ url_for('nutrition.micros',date=target.isoformat()) }}">Ver micronutrientes</a></aside></div>
+{% elif view=='add' %}
+  <p class="ni-eyebrow">ADD MEAL</p><h1>¿Qué comiste?</h1><div class="ni-grid">
+  <form class="ni-card" method="post" action="{{ url_for('nutrition.create') }}">{{ csrf() }}<h2>Armar comida</h2><p>Buscar alimentos y revisar cantidades con cálculo del servidor.</p><button type="submit">Empezar</button></form>
+  <a class="ni-card ni-link" href="{{ url_for('nutrition.saved') }}"><h2>Comidas guardadas</h2><p>Usa tus recetas y cantidades habituales.</p></a>
+  <a class="ni-card ni-link" href="{{ url_for('nutrition.my_food') }}"><h2>Mi alimento</h2><p>Datos declarados por ti; visible sólo para tu cuenta.</p></a>
+  <article class="ni-card"><h2>Reconocimiento por foto</h2><p>No disponible todavía. No se suben ni analizan fotos.</p></article>
+  <article class="ni-card"><h2>Identificación por texto</h2><p>No disponible todavía. Usa búsqueda y selección explícita.</p></article></div>
+{% elif view=='search' %}
+  <p class="ni-eyebrow">FOOD SEARCH</p><h1>Encuentra un alimento</h1><p>Catálogo local · crudo y cocido son identidades diferentes</p>
+  <form method="get" class="ni-card ni-inline"><label>Buscar<input type="text" name="q" value="{{ text }}" maxlength="100" placeholder="Nombre del alimento"></label>{% if draft %}<input type="hidden" name="draft" value="{{ draft }}">{% endif %}<button>Buscar</button></form>
+  <div class="ni-grid">{% for item in results %}<a class="ni-card ni-link" href="{{ url_for('nutrition.detail',ref=item.ref,draft=draft) }}"><h2>{{ item.name }}</h2><p>{{ item.preparation }}</p><span>{{ 'Catálogo' if item.scope=='catalog' else 'Tu alimento privado' }}</span></a>{% else %}<p class="ni-empty">Sin coincidencias. No hay alimentos precargados si el catálogo no está activo.</p>{% endfor %}</div>
+{% elif view=='detail' %}
+  <p class="ni-eyebrow">FOOD DETAIL</p><h1>{{ food.name }}</h1><p>{{ food.preparation }}</p><p>Base {{ food.basis_amount }} {{ food.basis_unit }} · {{ food.source }} · revisión {{ food.revision }}</p>
+  <div class="ni-columns"><section>{{ nutrient_cards(summary) }}
+  {% for key,n in food.nutrients.items() %}{% if n.state in ['trace','below_limit'] %}<p class="ni-card">{{ nutrients[key][0] }}: {{ 'Traza' if n.state=='trace' else 'Bajo límite de detección · <' ~ n.limit ~ ' ' ~ n.unit }}. No es un cero ni un valor exacto.</p>{% endif %}{% endfor %}
+  {{ nutrient_cards(summary,true) }}</section><aside class="ni-card">
+  <h2>Revisar cantidad</h2>{% if draft %}{% set row=none %}<form method="post" action="{{ url_for('nutrition.change',key=draft) }}">{{ csrf() }}
+  <input type="hidden" name="action" value="add"><input type="hidden" name="ref" value="{{ food.ref }}"><input type="hidden" name="food_revision" value="{{ food.revision }}"><input type="hidden" name="revision" value="{{ draft_revision }}">
+  <label>Cantidad<input name="amount" type="number" value="100" min="0.000001" step="any" required></label><label>Unidad<select name="unit">{{ unit_options(food) }}</select></label><p>Porciones específicas de esta revisión. Volumen sin densidad exige cantidad compatible.</p><button type="submit">Añadir y revisar</button></form>
+  {% else %}<p>Empieza una comida para añadir este alimento.</p><a class="button" href="{{ url_for('nutrition.add') }}">Añadir comida</a>{% endif %}</aside></div>
+{% elif view=='review' %}
+  <header class="ni-heading"><div><p class="ni-eyebrow">MEAL REVIEW</p><h1>Revisa tu comida</h1></div><strong class="ni-pending" role="status" aria-live="polite">{{ pending }} pendientes</strong></header>
+  <div class="ni-columns ni-review"><section>
+  <form method="post" action="{{ url_for('nutrition.change',key=row.public_id) }}" class="ni-card">{{ csrf() }}<input type="hidden" name="revision" value="{{ row.revision }}"><input type="hidden" name="action" value="metadata">
+  <div class="ni-inline"><label>Nombre<input type="text" name="name" value="{{ row.snapshot_json.name }}" maxlength="200" required></label><label>Momento<select name="meal_type">{% for m,label in [('breakfast','Desayuno'),('lunch','Comida'),('dinner','Cena'),('snack','Snack'),('other','Otro')] %}<option value="{{ m }}"{% if row.snapshot_json.meal_type==m %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label></div><label>Fecha<input type="date" name="date" value="{{ row.snapshot_json.local_date }}" required></label><button>Actualizar comida</button></form>
+  {% for e in row.snapshot_json.ingredients %}{% set index=loop.index0 %}<article class="ni-card ni-ingredient">
+    <h2>{{ e.food.name }}</h2><p class="ni-muted">{{ e.food.preparation }} · {{ e.food.source }} · revisión {{ e.food.revision }}</p>
+    <form method="post" action="{{ url_for('nutrition.change',key=row.public_id) }}">{{ csrf() }}<input type="hidden" name="revision" value="{{ row.revision }}"><input type="hidden" name="index" value="{{ index }}"><input type="hidden" name="action" value="amount">
+      <div class="ni-inline"><label>Cantidad<input type="number" name="amount" value="{{ e.amount }}" step="any" min="0.000001" required></label><label>Unidad<select name="unit">{{ unit_options(e.food,e) }}</select></label></div><button>Actualizar cantidad</button></form>
+    <div class="ni-inline"><form method="post" action="{{ url_for('nutrition.change',key=row.public_id) }}">{{ csrf() }}<input type="hidden" name="revision" value="{{ row.revision }}"><input type="hidden" name="index" value="{{ index }}"><input type="hidden" name="action" value="accept"><button{% if index in row.accepted_json %} disabled{% endif %}>{{ 'Revisado' if index in row.accepted_json else 'Confirmar identidad y cantidad' }}</button></form>
+    <form method="post" action="{{ url_for('nutrition.change',key=row.public_id) }}">{{ csrf() }}<input type="hidden" name="revision" value="{{ row.revision }}"><input type="hidden" name="index" value="{{ index }}"><input type="hidden" name="action" value="remove"><button>Quitar</button></form></div>
+  </article>{% else %}<p class="ni-empty">Añade ingredientes para calcular tu comida.</p>{% endfor %}
+  <a class="button" href="{{ url_for('nutrition.search',draft=row.public_id) }}">Añadir ingrediente</a></section>
+  <aside><h2>Resumen calculado</h2>{{ nutrient_cards(summary) }}<a class="button" href="#review-micros">Ver micros de esta comida</a>
+  <form class="ni-card" method="post" action="{{ url_for('nutrition.confirm',key=row.public_id) }}">{{ csrf() }}<input type="hidden" name="token" value="{{ token }}">
+    {% if legacy_conflict %}<h3>Resolver agregado legacy</h3><p>El total previo puede solaparse con esta comida. El original se conserva para auditoría.</p><label>Autoridad explícita<select name="authority" required><option value="">Selecciona tras revisar</option><option value="derive_items">Usar sólo items detallados (reemplazar autoridad del agregado)</option><option value="disjoint_aggregate">Confirmo que agregado y nuevas comidas son consumos distintos</option></select></label>{% endif %}
+    <button{% if pending or not row.snapshot_json.ingredients or row.state!='pending' %} disabled{% endif %}>Confirmar y registrar consumo</button></form>
+  <form class="ni-card" method="post" action="{{ url_for('nutrition.save',key=row.public_id) }}">{{ csrf() }}<input type="hidden" name="revision" value="{{ row.revision }}"><p>Guardar una receta no registra un consumo.</p><button{% if pending or not row.snapshot_json.ingredients or row.state!='pending' %} disabled{% endif %}>Guardar comida reutilizable</button></form></aside></div>
+  <details id="review-micros" class="ni-card"><summary>Micronutrientes de la comida</summary>{{ nutrient_cards(summary,true) }}</details>
+{% elif view=='saved' %}
+  <p class="ni-eyebrow">SAVED MEALS</p><h1>Tus comidas guardadas</h1><p>Recetas reutilizables; modificarlas no cambia consumos anteriores.</p><div class="ni-grid">
+  {% for recipe in recipes %}<article class="ni-card"><h2>{{ recipe.name }}</h2><p>Revisión {{ recipe.revision }} · {{ recipe.servings|nutrient_value }} porciones · {{ uses[recipe.id] }} consumos</p><form method="post" action="{{ url_for('nutrition.use',key=recipe.public_id) }}">{{ csrf() }}<button>Usar y revisar</button></form><form method="post" action="{{ url_for('nutrition.use',key=recipe.public_id) }}">{{ csrf() }}<input type="hidden" name="editing" value="yes"><button>Editar comida guardada</button></form></article>{% else %}<p class="ni-empty">Guarda tu primera comida después de revisar sus ingredientes.</p>{% endfor %}</div>
+{% elif view=='micros' %}
+  <p class="ni-eyebrow">MICRONUTRIENTS</p><h1>Lo conocido y lo pendiente</h1><p>{{ target }} · Subtotales conocidos; no se diagnostican déficits.</p>{{ nutrient_cards(summary,true) }}
+{% elif view=='my_food' %}
+  <p class="ni-eyebrow">MI ALIMENTO</p><h1>Tu alimento privado</h1>
+  {% if preview %}<section class="ni-card"><h2>{{ preview.name }}</h2><p>Base 100 g · declarado por ti</p>{% for key,n in preview.nutrients.items() %}<p>{{ nutrients[key][0] }}: {{ n.value|nutrient_value }} {{ n.unit }}</p>{% endfor %}<p>Campos ausentes permanecen desconocidos.</p><form method="post">{{ csrf() }}<input type="hidden" name="token" value="{{ token }}"><button>Confirmar y guardar alimento</button></form></section>
+  {% else %}<form method="post" class="ni-card">{{ csrf() }}<label>Nombre<input type="text" name="name" maxlength="200" required></label><p>Valores por 100 g. Vacío = desconocido; cero explícito = conocido.</p><div class="ni-grid">{% for key,n in nutrients.items() %}<label>{{ n[0] }} ({{ n[1] }})<input type="number" name="{{ key }}" step="any" min="0"></label>{% endfor %}</div><button>Revisar antes de guardar</button></form>{% endif %}
+{% endif %}
+</div>
+{% endblock %}

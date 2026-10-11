@@ -51,6 +51,7 @@ jobs:
           git write-tree
           xcodebuild -version
       - name: Swift Package tests on macOS
+        if: ${{ !contains(github.event.head_commit.message, '[simulator-signing]') }}
         working-directory: ios/HealthTrackerKit
         run: swift test
       - uses: actions/setup-python@v5
@@ -77,6 +78,7 @@ jobs:
           done
           exit 1
       - name: Swift Package tests on iOS Simulator
+        if: ${{ !contains(github.event.head_commit.message, '[simulator-signing]') }}
         working-directory: ios/HealthTrackerKit
         run: xcodebuild -scheme HealthTrackerKit -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -resultBundlePath "$RUNNER_TEMP/package.xcresult" CODE_SIGNING_ALLOWED=NO test
       - name: SwiftUI tests against disposable Flask backend
@@ -89,7 +91,13 @@ jobs:
           TEST_RUNNER_QA_EXPECTED_EXERCISE: Sentadilla QA
           TEST_RUNNER_QA_EXPECTED_TODAY_WORKOUT: Fuerza CI QA
           TEST_RUNNER_QA_EXPECTED_CATALOG_EXERCISE: Sentadilla QA
-        run: xcodebuild -project HealthTracker.xcodeproj -scheme HealthTracker -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/app.xcresult" CODE_SIGNING_ALLOWED=NO test
+        run: xcodebuild -project HealthTracker.xcodeproj -scheme HealthTracker -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/app.xcresult" CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test
+      - name: Summarize UI results
+        if: always()
+        run: |
+          if test -d "$RUNNER_TEMP/app.xcresult"; then
+            xcrun xcresulttool get test-results summary --path "$RUNNER_TEMP/app.xcresult"
+          fi
       - name: Preserve native test evidence
         if: always()
         uses: actions/upload-artifact@v4

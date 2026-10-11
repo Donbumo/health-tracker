@@ -84,7 +84,7 @@ public enum PlanningHandlers {
             case "active_schedules": "schedule_date_conflict"
             default: action.actionType == "planning_schedule_patch" ? "schedule_date_conflict" : "revision_conflict"
             }
-            try await store.recordPlanningConflict(scope, entityId: action.entityId, conflictType: type, remoteName: remoteName, remoteRevision: remoteRevision)
+            try await store.recordPlanningConflict(scope, entityId: action.entityId, conflictType: type, remoteName: remoteName, remoteRevision: remoteRevision, action: action)
         }
     }
 }

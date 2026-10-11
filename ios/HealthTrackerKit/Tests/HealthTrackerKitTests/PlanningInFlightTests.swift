@@ -267,6 +267,35 @@ struct PlanningInFlightIntegrationTests {
         #expect(await store.plannedWorkout(scope, id: "qa-planned-1")?.revision == 4)
     }
 
+    @Test func aCancellationInFlightCannotAcceptAnUnsendableReschedule() async throws {
+        let store = try LocalStore.make(inMemory: true)
+        try await store.applyBootstrap(scope, QAFixtures.decode(BootstrapResponse.self, envelope: QAFixtures.bootstrap()))
+        try await store.cancelScheduleOffline(scope, scheduledId: "qa-planned-1", key: "cancel")
+        let sent = try await claim(store)
+        try await store.markPlanningSyncStatus(scope, action: sent, status: "syncing")
+        await #expect(throws: AppFailure.self) {
+            try await store.rescheduleWorkoutOffline(scope, scheduledId: "qa-planned-1", date: "2026-10-21", timezone: "UTC", key: "unsendable")
+        }
+        #expect(await store.snapshot(scope).pendingCount == 1)
+        try await store.deletePlanned(scope, action: sent)
+        try await store.completePending(sent, scope: scope)
+        #expect(await store.snapshot(scope).pendingCount == 0)
+    }
+
+    @Test func aLateConflictResponseCannotRecreateAnAlreadyResolvedConflict() async throws {
+        let store = try LocalStore.make(inMemory: true)
+        try await seed(store)
+        try await store.editPlanOffline(scope, publicId: "qa-plan-1", name: "Before QA", description: nil, key: "first")
+        let sent = try await claim(store)
+        try await store.markPendingConflict(sent.key, errorCode: "revisionConflict")
+        try await store.rebaseConflict(scope, entityId: "qa-plan-1", remoteRevision: 5, newKey: "resolved")
+        try await store.recordPlanningConflict(scope, entityId: "qa-plan-1", conflictType: "revision_conflict", remoteName: "Stale QA", remoteRevision: 1, action: sent)
+        try await store.markPlanningSyncStatus(scope, action: sent, status: "conflict")
+        #expect(await store.planningConflict(scope, entityId: "qa-plan-1") == nil)
+        #expect(await store.headOfQueue(scope)?.idempotencyKey == "resolved")
+        #expect(await store.plan(scope, publicId: "qa-plan-1")?.syncStatus == "pending")
+    }
+
     @Test func remoteDeletionKeepsAQueuedScheduleEditAsAVisibleConflict() async throws {
         let store = try LocalStore.make(inMemory: true)
         try await store.applyBootstrap(scope, QAFixtures.decode(BootstrapResponse.self, envelope: QAFixtures.bootstrap()))

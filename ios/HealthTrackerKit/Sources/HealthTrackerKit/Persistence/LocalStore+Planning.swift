@@ -265,7 +265,8 @@ extension LocalStore {
             guard let planned = try fetch(#Predicate<PlannedWorkoutModel> { $0.key == plannedKey }).first else {
                 throw AppFailure(.localStorageError, "La programación no está disponible localmente.", retryable: false)
             }
-            guard !["completed", "cancelled"].contains(planned.status) else {
+            guard !["completed", "cancelled"].contains(planned.status),
+                  try pendingModel(scope, entityId: scheduledId, type: "planning_cancel_schedule") == nil else {
                 throw AppFailure(.revisionConflict, "La programación ya está finalizada.", retryable: false)
             }
             if planned.scheduledForDate == date && planned.timezone == timezone { return }
@@ -585,7 +586,8 @@ extension LocalStore {
             }
     }
 
-    public func recordPlanningConflict(_ scope: String, entityId: String, conflictType: String, remoteName: String?, remoteRevision: Int?, now: Date = Date()) throws {
+    public func recordPlanningConflict(_ scope: String, entityId: String, conflictType: String, remoteName: String?, remoteRevision: Int?, action: PendingAction? = nil, now: Date = Date()) throws {
+        if let action, try matchesPending(scope, action) == nil { return }
         guard let entity = planningEntity(scope, entityId: entityId) else { return }
         let conflict: PlanningConflictModel
         switch entity {

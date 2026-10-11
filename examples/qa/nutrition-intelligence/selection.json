@@ -1,0 +1,224 @@
+[
+  {
+    "usda_id": "175036",
+    "ciqual_id": "7813",
+    "comparable": false,
+    "note": "Corn tortilla candidate: regional formulation and ready-to-bake/fry vs ready-to-fill differ; not identical."
+  },
+  {
+    "usda_id": "169757",
+    "ciqual_id": "9104",
+    "comparable": true,
+    "note": "White long-grain rice cooked unenriched without salt vs cooked white rice without salt; broadly comparable edible state, distinct source identities."
+  },
+  {
+    "usda_id": "173735",
+    "ciqual_id": null,
+    "comparable": false,
+    "note": "No reviewed equivalent with matching state/preparation; absence is not proof dataset lacks all alternatives."
+  },
+  {
+    "usda_id": "175200",
+    "ciqual_id": null,
+    "comparable": false,
+    "note": "No reviewed equivalent with matching state/preparation; absence is not proof dataset lacks all alternatives."
+  },
+  {
+    "usda_id": "171477",
+    "ciqual_id": "36018",
+    "comparable": false,
+    "note": "USDA roasted vs Ciqual grilled/pan-fried breast: preparation differs."
+  },
+  {
+    "usda_id": "173424",
+    "ciqual_id": "22010",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "171705",
+    "ciqual_id": "13004",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "170457",
+    "ciqual_id": null,
+    "comparable": false,
+    "note": "Ciqual only regional Martinique raw tomato located; not generic equivalent selected."
+  },
+  {
+    "usda_id": "172217",
+    "ciqual_id": "19024",
+    "comparable": false,
+    "note": "USDA 3.25% without A/D enrichment; Ciqual whole pasteurized; fat specification differs."
+  },
+  {
+    "usda_id": "171284",
+    "ciqual_id": null,
+    "comparable": false,
+    "note": "Whole plain yogurt: no sufficiently precise reviewed Ciqual identity selected."
+  },
+  {
+    "usda_id": "172223",
+    "ciqual_id": null,
+    "comparable": false,
+    "note": "Mexican queso fresco is not French fromage frais; no substitute."
+  },
+  {
+    "usda_id": "169705",
+    "ciqual_id": "9310",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "173944",
+    "ciqual_id": "13005",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "171688",
+    "ciqual_id": "13039",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "169097",
+    "ciqual_id": "13034",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "169926",
+    "ciqual_id": "13035",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "169910",
+    "ciqual_id": "13025",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "169124",
+    "ciqual_id": "13002",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "167762",
+    "ciqual_id": "13014",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "168155",
+    "ciqual_id": "13067",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "170393",
+    "ciqual_id": "20009",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "169967",
+    "ciqual_id": "20351",
+    "comparable": false,
+    "note": "Ciqual average cooked vs USDA boiled/drained without salt; not identical."
+  },
+  {
+    "usda_id": "168462",
+    "ciqual_id": null,
+    "comparable": false,
+    "note": "Ciqual frozen raw spinach candidate differs from fresh; no substitute."
+  },
+  {
+    "usda_id": "170000",
+    "ciqual_id": "20034",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "169292",
+    "ciqual_id": "20021",
+    "comparable": false,
+    "note": "Ciqual cooked courgette unspecified method vs USDA boiled/drained."
+  },
+  {
+    "usda_id": "168409",
+    "ciqual_id": "20019",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "170440",
+    "ciqual_id": null,
+    "comparable": false,
+    "note": "No reviewed equivalent with matching state/preparation; absence is not proof dataset lacks all alternatives."
+  },
+  {
+    "usda_id": "169999",
+    "ciqual_id": "20049",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "171794",
+    "ciqual_id": "6253",
+    "comparable": false,
+    "note": "Ciqual 10% ground beef cooked method unspecified vs USDA crumbles pan-browned."
+  },
+  {
+    "usda_id": "172421",
+    "ciqual_id": "20360",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "173757",
+    "ciqual_id": "20507",
+    "comparable": true,
+    "note": "Comparable broad edible state; source formulations and analytical methods remain distinct."
+  },
+  {
+    "usda_id": "172430",
+    "ciqual_id": null,
+    "comparable": false,
+    "note": "Ciqual peanut without added salt preparation not precise; no substitute."
+  },
+  {
+    "usda_id": "170556",
+    "ciqual_id": null,
+    "comparable": false,
+    "note": "No reviewed equivalent with matching state/preparation; absence is not proof dataset lacks all alternatives."
+  },
+  {
+    "usda_id": "169388",
+    "ciqual_id": null,
+    "comparable": false,
+    "note": "No reviewed equivalent with matching state/preparation; absence is not proof dataset lacks all alternatives."
+  },
+  {
+    "usda_id": "168576",
+    "ciqual_id": null,
+    "comparable": false,
+    "note": "Generic piment is not confirmed jalapeno; no substitute."
+  },
+  {
+    "usda_id": "173709",
+    "ciqual_id": "26039",
+    "comparable": false,
+    "note": "Tuna canned in water: Ciqual species unspecified."
+  },
+  {
+    "usda_id": "172688",
+    "ciqual_id": "7110",
+    "comparable": false,
+    "note": "Whole wheat flour specification differs between countries."
+  }
+]

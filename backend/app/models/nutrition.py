@@ -64,6 +64,9 @@ class DailyNutrition(db.Model):
     fiber_g = db.Column(db.Numeric(12, 3), nullable=True)
     sugar_g = db.Column(db.Numeric(12, 3), nullable=True)
     sodium_mg = db.Column(db.Numeric(12, 3), nullable=True)
+    authority = db.Column(db.String(24), nullable=True)
+    authority_baseline_json = db.Column(db.JSON, nullable=True)
+    nutrition_summary_json = db.Column(db.JSON, nullable=True)
     raw_payload_json = db.Column(db.JSON, nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
@@ -214,6 +217,7 @@ class NutritionItem(db.Model):
     )
     food_product = db.relationship("FoodProduct")
     recipe = db.relationship("Recipe")
+    intelligence_log = db.relationship("MealLog", uselist=False, viewonly=True, lazy="joined")
 
 FOOD_PRODUCT_METRICS = (
     "calories_per_100g",
@@ -273,6 +277,7 @@ class FoodProduct(db.Model):
     notes = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, nullable=False, default=True, server_default="1")
     revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    nutrition_json = db.Column(db.JSON, nullable=True)
     raw_payload_json = db.Column(db.JSON, nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),

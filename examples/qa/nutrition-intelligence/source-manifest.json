@@ -1,0 +1,16 @@
+{
+  "usda": {
+    "url": "https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_sr_legacy_food_csv_2018-04.zip",
+    "bytes": 6074592,
+    "sha256": "b80817294b8850530aaedf2e515c02593b1824f763a0ff356e5c2081643e6fd0",
+    "license": "CC0-1.0",
+    "edition": "SR Legacy April 2018"
+  },
+  "ciqual": {
+    "url": "https://entrepot.recherche.data.gouv.fr/api/access/datafile/666260",
+    "bytes": 1541998,
+    "sha256": "5555c572fa3735991298d832d0427788fa69a11b4fd20a5d580d58942369fbb0",
+    "license": "Licence Ouverte",
+    "edition": "Ciqual 2025"
+  }
+}

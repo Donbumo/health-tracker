@@ -14,6 +14,19 @@ struct SettingsView: View {
                 info("Versión", "App \(AppModel.appVersion) (\(AppModel.buildNumber)) · API 1 · Sync 1.0 · Companion 1.0")
 
                 Card {
+                    Text("Sincronización").font(.headline)
+                    Text("Última sincronización: \(Formatters.instant(model.preferences.lastSyncAt))")
+                    Text("Pendientes: \(model.syncSnapshot.pendingCount) · Conflictos: \(model.syncSnapshot.conflictCount)")
+                        .foregroundStyle(Theme.textMuted)
+                    Text("No incluye tokens, headers, hashes, notas ni payloads.").font(.footnote).foregroundStyle(Theme.textMuted)
+                    Button(syncButtonTitle) { model.syncNow() }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .disabled(!model.connected || model.syncStatus == .syncing)
+                        .padding(.top, Theme.Space.s2)
+                        .accessibilityIdentifier("sync_now_button")
+                }
+
+                Card {
                     Text("Apariencia").font(.headline)
                     Picker("Tema", selection: Binding(get: { model.preferences.theme }, set: { model.setTheme($0) })) {
                         ForEach(ThemePreference.allCases, id: \.self) { Text(label(for: $0)).tag($0) }
@@ -52,6 +65,11 @@ struct SettingsView: View {
             }
             .presentationDetents([.medium])
         }
+    }
+
+    private var syncButtonTitle: String {
+        if model.syncStatus == .syncing { return "Sincronizando…" }
+        return model.connected ? "Sincronizar ahora" : "Sincronización sin conexión"
     }
 
     private var deviceLabel: String {

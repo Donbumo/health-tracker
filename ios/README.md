@@ -1,6 +1,6 @@
 # Health Tracker iOS Companion
 
-Cliente iOS nativo (SwiftUI, iOS 17+) equivalente al companion Android de `android/`. Reutiliza `/api/v1`; no contiene un backend alternativo. Se entrega por etapas; esta es la **Etapa 1: fundación**.
+Cliente iOS nativo (SwiftUI, iOS 17+) equivalente al companion Android de `android/`. Reutiliza `/api/v1`; no contiene un backend alternativo. Se entrega por etapas: **Etapa 1** fundación (auth, API, Keychain) y **Etapa 2** sync offline (SwiftData, bootstrap/pull, cola FIFO, sync en segundo plano).
 
 ## Stack
 
@@ -15,7 +15,9 @@ Cliente iOS nativo (SwiftUI, iOS 17+) equivalente al companion Android de `andro
 | SecureTokenStore (Keystore) | `TokenStore` (Keychain, `AfterFirstUnlockThisDeviceOnly`) |
 | OkHttp | `APIClient` (actor) + `URLSessionTransport` |
 | ConnectivityObserver | `ConnectivityMonitor` (NWPathMonitor) |
-| Room | SwiftData (Etapa 2) |
+| Room | `LocalStore` (SwiftData, `@ModelActor`) |
+| WorkManager / SyncWorker | `SyncCoordinator` (BGAppRefreshTask + disparadores en primer plano) |
+| `processPending` / `synchronize` | `SyncEngine` (cola FIFO estricta, backoff, conflictos, pull paginado) |
 
 ## Construcción
 

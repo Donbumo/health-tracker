@@ -1,0 +1,87 @@
+{
+  "data": {
+    "schema_version": "1.0",
+    "server_time": "2026-07-19T12:00:00Z",
+    "cursor": "qa-signed-cursor",
+    "active_routine": null,
+    "planned_workouts": [],
+    "completed_workouts": [
+      {
+        "schema_version": "1.0",
+        "id": "11111111-1111-4111-8111-111111111111",
+        "client_event_id": null,
+        "planned_workout_id": null,
+        "training_plan_id": "22222222-2222-4222-8222-222222222222",
+        "training_plan_version_id": "33333333-3333-4333-8333-333333333333",
+        "started_at": "2026-07-18T12:00:00Z",
+        "completed_at": "2026-07-18T12:30:00Z",
+        "timezone": "UTC",
+        "planned_week_number": 1,
+        "planned_day_number": 1,
+        "duration_seconds": 1800,
+        "average_heart_rate_bpm": null,
+        "calories_burned": null,
+        "notes": null,
+        "revision": 1,
+        "updated_at": "2026-07-18T12:30:00Z",
+        "exercises": [
+          {
+            "exercise_order": 1,
+            "planned_exercise_order": 1,
+            "name": "Ejercicio QA",
+            "notes": null,
+            "sets": [
+              {
+                "set_number": 1,
+                "planned_set_number": 1,
+                "weight_kg": 40.0,
+                "reps": 8,
+                "rir": null,
+                "rpe": null,
+                "rest_seconds": null,
+                "notes": null
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "capabilities": {
+      "offline_sync_push": true,
+      "incremental_pull": true,
+      "planned_workouts": true,
+      "completed_workouts": true,
+      "companion_delivery": true,
+      "capability_negotiation": true,
+      "progress_checkpoints": true,
+      "workout_package": true
+    },
+    "limits": {
+      "push_operations": 50,
+      "pull_limit": 200,
+      "json_bytes": 1048576
+    },
+    "schemas": {
+      "planned_workout": "1.0",
+      "completed_workout": "1.0",
+      "sync": "1.0"
+    },
+    "device": {
+      "device_id": "44444444-4444-4444-8444-444444444444",
+      "session_id": "55555555-5555-4555-8555-555555555555"
+    },
+    "companion": {
+      "profile": null,
+      "deliveries": [],
+      "versions": {
+        "protocol": "1.0",
+        "workout_package": "1.0",
+        "result": "1.0"
+      }
+    }
+  },
+  "meta": {
+    "api_version": "1",
+    "request_id": "qa-request"
+  }
+}

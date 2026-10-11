@@ -35,6 +35,12 @@ final class LoginSmokeUITests: XCTestCase {
         app.buttons["login_button"].tap()
 
         XCTAssertTrue(app.navigationBars["Hoy"].waitForExistence(timeout: 20), "Home did not appear after login")
+        if let expected = env["QA_EXPECTED_WORKOUT"] {
+            XCTAssertTrue(app.staticTexts[expected].firstMatch.waitForExistence(timeout: 20), "Synced workout not shown")
+            let synced = NSPredicate(format: "label == %@", "Sincronizado")
+            expectation(for: synced, evaluatedWith: app.staticTexts["sync_status"])
+            waitForExpectations(timeout: 20)
+        }
         attach(app, "03-home")
 
         app.tabBars.buttons["Ajustes"].tap()

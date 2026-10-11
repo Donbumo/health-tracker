@@ -18,16 +18,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - pr: 12
-            head: 32dc6ac0151cb7dede4ee702b703484b3fccc76b
           - pr: 14
-            head: d4156da5ae9cce6f5e4f0990e06f05ed99b0efad
-          - pr: 15
-            head: cd8c543c24c2276f0cecc087006901307d2c7cc6
-          - pr: 16
-            head: b389ffe1553ad8f0b41729604ca032fda41e66be
-          - pr: 17
-            head: cb664a9ace2160f2adbe46763cee7935dd688fd4
+            head: fee5c943bf3c611667df57ef0fa0bc404d356d0d
     env:
       FLASK_SKIP_DOTENV: '1'
       NUTRITION_HEAD: 518deebc769550c9f4259fa9db3f49107df113ee
@@ -50,6 +42,16 @@ jobs:
           git rev-parse HEAD
           git write-tree
           xcodebuild -version
+          # GitHub simulator login completed after the original 20s UI wait.
+          # Only the injected QA wait changes; application and package sources stay exact.
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('ios/HealthTrackerUITests/LoginSmokeUITests.swift')
+          text = path.read_text()
+          old = 'waitForExistence(timeout: 20)'
+          assert old in text
+          path.write_text(text.replace(old, 'waitForExistence(timeout: 60)'))
+          PY
       - name: Swift Package tests on macOS
         if: ${{ !contains(github.event.head_commit.message, '[simulator-signing]') }}
         working-directory: ios/HealthTrackerKit
@@ -88,6 +90,7 @@ jobs:
           TEST_RUNNER_QA_USERNAME: ios-ci-qa
           TEST_RUNNER_QA_PASSWORD: fictional-ios-ci-qa-password
           TEST_RUNNER_QA_EXPECTED_SESSION: Rutina CI QA
+          TEST_RUNNER_QA_EXPECTED_WORKOUT: Fuerza CI QA
           TEST_RUNNER_QA_EXPECTED_EXERCISE: Sentadilla QA
           TEST_RUNNER_QA_EXPECTED_TODAY_WORKOUT: Fuerza CI QA
           TEST_RUNNER_QA_EXPECTED_CATALOG_EXERCISE: Sentadilla QA

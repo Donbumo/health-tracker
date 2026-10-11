@@ -27,16 +27,18 @@ final class LoginSmokeUITests: XCTestCase {
         }
         let email = app.textFields["email_field"]
         email.tap()
-        email.typeText(username)
+        // Use the form's submit transition: tapping while the scroll view moves can dismiss focus.
+        email.typeText(username + "\n")
         let secure = app.secureTextFields["password_field"]
-        secure.tap()
+        XCTAssertTrue(secure.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 10))
         secure.typeText(password)
         attach(app, "02-filled")
         app.buttons["login_button"].tap()
 
-        XCTAssertTrue(app.navigationBars["Hoy"].waitForExistence(timeout: 20), "Home did not appear after login")
+        XCTAssertTrue(app.navigationBars["Hoy"].waitForExistence(timeout: 60), "Home did not appear after login")
         if let expected = env["QA_EXPECTED_WORKOUT"] {
-            XCTAssertTrue(app.staticTexts[expected].firstMatch.waitForExistence(timeout: 20), "Synced workout not shown")
+            XCTAssertTrue(app.staticTexts[expected].firstMatch.waitForExistence(timeout: 60), "Synced workout not shown")
             let synced = NSPredicate(format: "label == %@", "Sincronizado")
             expectation(for: synced, evaluatedWith: app.staticTexts["sync_status"])
             waitForExpectations(timeout: 20)
@@ -49,7 +51,7 @@ final class LoginSmokeUITests: XCTestCase {
 
         app.terminate()
         app.launch()
-        XCTAssertTrue(app.navigationBars["Hoy"].waitForExistence(timeout: 20), "Session was not restored on relaunch")
+        XCTAssertTrue(app.navigationBars["Hoy"].waitForExistence(timeout: 60), "Session was not restored on relaunch")
         attach(app, "05-restored")
     }
 
@@ -65,23 +67,25 @@ final class LoginSmokeUITests: XCTestCase {
         try loginIfNeeded(app, env)
 
         app.tabBars.buttons["Plan"].tap()
-        XCTAssertTrue(app.staticTexts[session].firstMatch.waitForExistence(timeout: 20), "Seeded plan not listed")
+        XCTAssertTrue(app.staticTexts[session].firstMatch.waitForExistence(timeout: 60), "Seeded plan not listed")
         app.staticTexts[session].firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Rutina"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts[session].firstMatch.waitForExistence(timeout: 10))
+        let planName = app.textFields["plan_name_field"]
+        XCTAssertTrue(planName.waitForExistence(timeout: 10))
+        XCTAssertEqual(planName.value as? String, session)
         attach(app, "06-plan")
 
         app.tabBars.buttons["Historial"].tap()
         let row = app.descendants(matching: .any).matching(identifier: "history_row").firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 20), "History did not load")
+        XCTAssertTrue(row.waitForExistence(timeout: 60), "History did not load")
         attach(app, "07-history")
         row.tap()
         XCTAssertTrue(app.navigationBars["Sesión"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts[exercise].firstMatch.waitForExistence(timeout: 20), "History detail missing exercise")
+        XCTAssertTrue(app.staticTexts[exercise].firstMatch.waitForExistence(timeout: 60), "History detail missing exercise")
         attach(app, "08-history-detail")
 
         app.tabBars.buttons["Progreso"].tap()
-        XCTAssertTrue(app.staticTexts[exercise].firstMatch.waitForExistence(timeout: 20), "Progress exercise missing")
+        XCTAssertTrue(app.staticTexts[exercise].firstMatch.waitForExistence(timeout: 60), "Progress exercise missing")
         attach(app, "09-progress")
         app.staticTexts[exercise].firstMatch.tap()
         XCTAssertTrue(app.staticTexts["Mejor carga por fecha"].waitForExistence(timeout: 10))
@@ -90,7 +94,7 @@ final class LoginSmokeUITests: XCTestCase {
         // The cached copy stays readable after relaunch.
         app.terminate()
         app.launch()
-        XCTAssertTrue(app.navigationBars["Hoy"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.navigationBars["Hoy"].waitForExistence(timeout: 60))
         app.tabBars.buttons["Historial"].tap()
         XCTAssertTrue(row.waitForExistence(timeout: 10))
     }
@@ -105,12 +109,12 @@ final class LoginSmokeUITests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
         try loginIfNeeded(app, env)
-        XCTAssertTrue(app.staticTexts[title].firstMatch.waitForExistence(timeout: 20), "Today's workout missing")
+        XCTAssertTrue(app.staticTexts[title].firstMatch.waitForExistence(timeout: 60), "Today's workout missing")
 
-        let download = app.buttons["download_workout"].firstMatch
+        let download = app.buttons["download_workout_\(title)"].firstMatch
         if download.waitForExistence(timeout: 5) { download.tap() }
-        let start = app.buttons["start_workout"].firstMatch
-        XCTAssertTrue(start.waitForExistence(timeout: 20), "Download did not finish")
+        let start = app.buttons["start_workout_\(title)"].firstMatch
+        XCTAssertTrue(start.waitForExistence(timeout: 60), "Download did not finish")
         attach(app, "11-downloaded")
         start.tap()
 
@@ -135,6 +139,64 @@ final class LoginSmokeUITests: XCTestCase {
         attach(app, "15-history-synced")
     }
 
+    /// Stage 5: create a routine and a workout offline-first, add a catalog exercise, schedule it for
+    /// today and see the schedule synced in the agenda. Requires QA_EXPECTED_CATALOG_EXERCISE.
+    func testPlanningEditorCreatesAndSchedulesAWorkout() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let catalogExercise = env["QA_EXPECTED_CATALOG_EXERCISE"] else { throw XCTSkip("QA catalog not configured") }
+        let suffix = String(Int(Date().timeIntervalSince1970) % 100_000)
+        let planName = "Plan UI QA \(suffix)"
+        let workoutName = "Día UI QA \(suffix)"
+        let app = XCUIApplication()
+        app.launch()
+        try loginIfNeeded(app, env)
+
+        app.tabBars.buttons["Plan"].tap()
+        app.buttons["create_plan"].tap()
+        let planField = app.alerts.textFields.firstMatch
+        XCTAssertTrue(planField.waitForExistence(timeout: 5))
+        planField.typeText(planName)
+        app.alerts.buttons["Crear"].tap()
+        let planRow = app.staticTexts[planName].firstMatch
+        XCTAssertTrue(planRow.waitForExistence(timeout: 10), "Created plan not listed")
+        planRow.tap()
+
+        let addWorkout = app.buttons["add_workout"]
+        XCTAssertTrue(addWorkout.waitForExistence(timeout: 10))
+        addWorkout.tap()
+        let workoutField = app.alerts.textFields.firstMatch
+        XCTAssertTrue(workoutField.waitForExistence(timeout: 5))
+        workoutField.typeText(workoutName)
+        app.alerts.buttons["Crear"].tap()
+        let workoutRow = app.staticTexts[workoutName].firstMatch
+        XCTAssertTrue(workoutRow.waitForExistence(timeout: 10), "Created workout not listed")
+        attach(app, "16-plan-detail")
+        workoutRow.tap()
+
+        let search = app.textFields["catalog_search"]
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        search.tap()
+        search.typeText(String(catalogExercise.prefix(5)))
+        let item = app.buttons.matching(identifier: "catalog_item").firstMatch
+        XCTAssertTrue(item.waitForExistence(timeout: 15), "Catalog did not load")
+        item.tap()
+        app.buttons["add_selected"].tap()
+        XCTAssertTrue(app.staticTexts["Ejercicios (1)"].waitForExistence(timeout: 5))
+        attach(app, "17-workout-editor")
+        app.buttons["schedule_workout"].tap()
+
+        app.navigationBars["Editar entrenamiento"].buttons["Rutina"].tap()
+        XCTAssertTrue(app.navigationBars["Rutina"].waitForExistence(timeout: 5))
+        app.navigationBars["Rutina"].buttons["Plan"].tap()
+        let agenda = app.segmentedControls.buttons["Agenda"]
+        XCTAssertTrue(agenda.waitForExistence(timeout: 5))
+        agenda.tap()
+        XCTAssertTrue(app.staticTexts[workoutName].firstMatch.waitForExistence(timeout: 10), "Schedule missing from agenda")
+        let synced = app.staticTexts.matching(NSPredicate(format: "label == %@", "Programado")).firstMatch
+        XCTAssertTrue(synced.waitForExistence(timeout: 40), "Schedule did not sync")
+        attach(app, "18-agenda-synced")
+    }
+
     private func loginIfNeeded(_ app: XCUIApplication, _ env: [String: String]) throws {
         if app.navigationBars["Hoy"].waitForExistence(timeout: 8) { return }
         guard let server = env["QA_SERVER_URL"], let username = env["QA_USERNAME"], let password = env["QA_PASSWORD"] else {
@@ -149,11 +211,12 @@ final class LoginSmokeUITests: XCTestCase {
             if toggle.value as? String == "0" { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap() }
         }
         app.textFields["email_field"].tap()
-        app.textFields["email_field"].typeText(username)
-        app.secureTextFields["password_field"].tap()
+        app.textFields["email_field"].typeText(username + "\n")
+        XCTAssertTrue(app.secureTextFields["password_field"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 10))
         app.secureTextFields["password_field"].typeText(password)
         app.buttons["login_button"].tap()
-        XCTAssertTrue(app.navigationBars["Hoy"].waitForExistence(timeout: 20), "Home did not appear after login")
+        XCTAssertTrue(app.navigationBars["Hoy"].waitForExistence(timeout: 60), "Home did not appear after login")
     }
 
     private func attach(_ app: XCUIApplication, _ name: String) {

@@ -66,7 +66,14 @@ public actor LocalStore: AccountStore {
             configuration = ModelConfiguration("companion_v1", schema: schema)
         }
         let container = try ModelContainer(for: schema, configurations: [configuration])
-        return LocalStore(modelContainer: container)
+        let store = LocalStore(modelContainer: container)
+        // A previous process may have stopped after claiming, or after the server committed.
+        // Recover eligibility only: attempted payloads and idempotency keys remain frozen.
+        let context = ModelContext(container)
+        let interrupted = try context.fetch(FetchDescriptor<PendingActionModel>(predicate: #Predicate { $0.status == "sending" }))
+        for action in interrupted { action.status = "pending" }
+        try context.save()
+        return store
     }
 
     func write<T>(_ body: () throws -> T) throws -> T {
@@ -166,7 +173,14 @@ public actor LocalStore: AccountStore {
         if change.operation == "delete" {
             if change.entityType == "planned_workout" {
                 let key = scopedKey(scope, change.entityId)
-                try modelContext.delete(model: PlannedWorkoutModel.self, where: #Predicate { $0.key == key })
+                if protectedIds.contains(change.entityId), let local = try fetch(#Predicate<PlannedWorkoutModel> { $0.key == key }).first {
+                    local.status = "conflict"
+                    try upsertConflict(PlanningConflictModel(scope: scope, entityId: change.entityId, entityType: "schedule",
+                        localRevision: local.revision, serverRevision: change.revision, changedFields: "remote_deleted",
+                        localName: "\(local.title) · \(local.scheduledForDate)", remoteName: nil, createdAt: iso(now)))
+                } else {
+                    try modelContext.delete(model: PlannedWorkoutModel.self, where: #Predicate { $0.key == key })
+                }
             }
             return
         }
@@ -307,11 +321,43 @@ public actor LocalStore: AccountStore {
         try write { try modelContext.delete(model: PendingActionModel.self, where: #Predicate { $0.key == key }) }
     }
 
+    /// Saves the claim before returning a sendable snapshot. Actor isolation and `write` make
+    /// selection, freezing and claiming one durable transaction, before any network suspension.
+    public func claimNextPending(_ scope: String, now: Date = Date()) throws -> PendingAction? {
+        try write {
+            guard let model = try fetch(#Predicate<PendingActionModel> { $0.accountScope == scope },
+                                        sort: [SortDescriptor(\.sequence)], limit: 1).first,
+                  model.status == "pending", model.notBefore <= now else { return nil }
+            model.attemptCount += 1
+            model.status = "sending"
+            return PendingAction(key: model.key, sequence: model.sequence, actionType: model.actionType,
+                                 entityId: model.entityId, idempotencyKey: model.idempotencyKey,
+                                 payloadJSON: model.payloadJSON, status: model.status,
+                                 attemptCount: model.attemptCount, notBefore: model.notBefore, lastErrorCode: model.lastErrorCode)
+        }
+    }
+
+    func matchesPending(_ scope: String, _ action: PendingAction) throws -> PendingActionModel? {
+        let key = action.key
+        guard let model = try fetch(#Predicate<PendingActionModel> { $0.accountScope == scope && $0.key == key }).first,
+              model.idempotencyKey == action.idempotencyKey, model.payloadJSON == action.payloadJSON,
+              model.sequence == action.sequence else { return nil }
+        return model
+    }
+
+    /// ACK removal and visible planning state commit together. Repeated or stale ACKs are no-ops.
+    public func completePending(_ action: PendingAction, scope: String) throws {
+        try write {
+            guard let model = try matchesPending(scope, action) else { return }
+            modelContext.delete(model)
+            try setPlanningSyncStatus(scope, action: action, status: "synced")
+        }
+    }
+
     public func reschedulePending(_ key: String, errorCode: String, notBefore: Date) throws {
         try write {
             guard let model = try fetch(#Predicate<PendingActionModel> { $0.key == key }).first else { return }
             model.status = "pending"
-            model.attemptCount += 1
             model.lastErrorCode = errorCode
             model.notBefore = notBefore
         }
@@ -321,7 +367,6 @@ public actor LocalStore: AccountStore {
         try write {
             guard let model = try fetch(#Predicate<PendingActionModel> { $0.key == key }).first else { return }
             model.status = "conflict"
-            model.attemptCount += 1
             model.lastErrorCode = errorCode
             model.notBefore = .distantFuture
         }

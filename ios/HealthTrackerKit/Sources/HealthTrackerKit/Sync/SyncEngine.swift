@@ -101,7 +101,7 @@ public actor SyncEngine {
 
     private func processPending(scope: String) async throws {
         for _ in 0..<Self.maxActionsPerRun {
-            guard let action = await store.headOfQueue(scope) else { return }
+            guard let action = try await store.claimNextPending(scope, now: now()) else { return }
             // A conflicted or backed-off head blocks later operations: required transitions keep their order.
             if action.status == "conflict" || action.notBefore > now() { return }
             guard let handler = handlers[action.actionType] else {
@@ -110,15 +110,20 @@ public actor SyncEngine {
             }
             do {
                 try await handler.handle(action, scope: scope, api: api, store: store)
-                try await store.completePending(action.key)
+                try await store.completePending(action, scope: scope)
             } catch let failure as AppFailure {
                 if failure.retryable {
-                    let delay = failure.retryAfterSeconds.map { $0 * 1000 } ?? backoffMillis(attempt: action.attemptCount + 1)
+                    let delay = failure.retryAfterSeconds.map { $0 * 1000 } ?? backoffMillis(attempt: action.attemptCount)
                     try await store.reschedulePending(action.key, errorCode: failure.code.rawValue, notBefore: now().addingTimeInterval(Double(delay) / 1000))
                 } else {
                     try await store.markPendingConflict(action.key, errorCode: failure.code.rawValue)
                 }
                 throw failure
+            } catch {
+                // Cancellation and unexpected transport interruptions also release eligibility,
+                // preserving the durable claim count, request bytes and idempotency key.
+                try await store.reschedulePending(action.key, errorCode: "interrupted", notBefore: now())
+                throw error
             }
         }
     }

@@ -83,6 +83,23 @@ final class PlannedWorkoutModel {
         sourceWorkoutId = dto.sourceWorkoutId
     }
 
+    /// A schedule created on this device, pending its first sync.
+    init(scope: String, id: String, planId: String, workoutId: String, title: String, date: String, timezone: String, now: String) {
+        key = scopedKey(scope, id)
+        accountScope = scope
+        self.id = id
+        self.planId = planId
+        planVersionId = "pending"
+        scheduledForDate = date
+        self.timezone = timezone
+        status = "locally_pending"
+        self.title = title
+        revision = 1
+        updatedAt = now
+        deleted = false
+        sourceWorkoutId = workoutId
+    }
+
     func update(from dto: PlannedWorkoutDTO) {
         planId = dto.trainingPlanId
         planVersionId = dto.trainingPlanVersionId
@@ -265,5 +282,6 @@ enum LocalSchema {
         HistoryQueryStateModel.self, ProgressSummaryModel.self, ProgressExerciseModel.self, ProgressPointModel.self,
         PersonalRecordModel.self, PlanModel.self, PlanWorkoutModel.self, PlanExerciseModel.self, PlanSetModel.self,
         WorkoutPackageModel.self, PackageExerciseModel.self, PackageSetModel.self, WorkoutDraftModel.self, DraftSetModel.self,
+        ExerciseCatalogModel.self, CatalogQueryStateModel.self,
     ]
 }

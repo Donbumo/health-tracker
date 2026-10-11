@@ -347,6 +347,21 @@ final class PlanWorkoutModel {
         createdAt = dto.createdAt
         updatedAt = dto.updatedAt
     }
+
+    /// A workout created on this device, pending its first sync.
+    init(scope: String, planPublicId: String, publicId: String, name: String, notes: String?, position: Int, now: String) {
+        key = scopedKey(scope, publicId)
+        accountScope = scope
+        self.publicId = publicId
+        self.planPublicId = planPublicId
+        self.name = name
+        self.notes = notes
+        self.position = position
+        revision = 1
+        syncStatus = "pending"
+        createdAt = now
+        updatedAt = now
+    }
 }
 
 @Model
@@ -369,6 +384,17 @@ final class PlanExerciseModel {
         name = dto.name
         notes = dto.notes
         exerciseOrder = dto.exerciseOrder
+    }
+
+    init(scope: String, workoutPublicId: String, value: PlanExercise) {
+        key = scopedKey(scope, "\(workoutPublicId)#\(value.id)")
+        accountScope = scope
+        self.workoutPublicId = workoutPublicId
+        id = value.id
+        exerciseId = value.exerciseId
+        name = value.name
+        notes = value.notes
+        exerciseOrder = value.exerciseOrder
     }
 }
 
@@ -416,5 +442,76 @@ final class PlanSetModel {
         durationSeconds = dto.durationSeconds
         distanceMeters = dto.distanceMeters
         notes = dto.notes
+    }
+
+    init(scope: String, workoutPublicId: String, exerciseRowId: String, value: PlanSet) {
+        key = scopedKey(scope, "\(workoutPublicId)#\(exerciseRowId)#\(value.id)")
+        accountScope = scope
+        self.workoutPublicId = workoutPublicId
+        self.exerciseRowId = exerciseRowId
+        id = value.id
+        setNumber = value.setNumber
+        reps = value.reps
+        repsMin = value.repsMin
+        repsMax = value.repsMax
+        weightKg = value.weightKg
+        loadValue = value.loadValue
+        loadUnit = value.loadUnit
+        loadMode = value.loadMode
+        loadDetailsJSON = value.loadDetailsJSON
+        rir = value.rir
+        rpe = value.rpe
+        restSeconds = value.restSeconds
+        durationSeconds = value.durationSeconds
+        distanceMeters = value.distanceMeters
+        notes = value.notes
+    }
+}
+
+@Model
+final class ExerciseCatalogModel {
+    @Attribute(.unique) var key: String
+    var accountScope: String
+    var publicId: String
+    var name: String
+    var normalizedName: String
+    var aliases: String
+    var selectable: Bool
+    var archived: Bool
+    var preferredLoadMode: String?
+    var preferredUnit: String?
+    var updatedAt: String
+
+    init(scope: String, dto: ExerciseCatalogItemDTO, now: String) {
+        key = scopedKey(scope, dto.publicId)
+        accountScope = scope
+        publicId = dto.publicId
+        name = dto.name
+        normalizedName = dto.name.lowercased()
+        aliases = dto.aliases.joined(separator: "|")
+        selectable = dto.selectable
+        archived = dto.archived
+        preferredLoadMode = dto.preferredLoadMode
+        preferredUnit = dto.preferredUnit
+        updatedAt = now
+    }
+}
+
+@Model
+final class CatalogQueryStateModel {
+    @Attribute(.unique) var key: String
+    var accountScope: String
+    var query: String
+    var nextCursor: String?
+    var hasMore: Bool
+    var updatedAt: String
+
+    init(scope: String, query: String, nextCursor: String?, hasMore: Bool, updatedAt: String) {
+        key = scopedKey(scope, "catalog#\(query)")
+        accountScope = scope
+        self.query = query
+        self.nextCursor = nextCursor
+        self.hasMore = hasMore
+        self.updatedAt = updatedAt
     }
 }

@@ -6,6 +6,8 @@ import UIKit
 struct WorkoutActions: View {
     @Environment(AppModel.self) private var model
     let workout: PlannedWorkout
+    /// Distinguishes today's card from upcoming rows in UI tests.
+    var identifierPrefix = ""
 
     var body: some View {
         let session = model.workout
@@ -18,21 +20,21 @@ struct WorkoutActions: View {
                 if session.draft?.isFinalPending == false {
                     Button("Continuar") { Task { await session.resume() } }
                         .buttonStyle(PrimaryButtonStyle())
-                        .accessibilityIdentifier("continue_workout")
+                        .accessibilityIdentifier("\(identifierPrefix)continue_workout_\(workout.title)")
                 }
             } else if package != nil {
-                Muted("Descargado · disponible sin conexión").accessibilityIdentifier("offline_available")
+                Muted("Descargado · disponible sin conexión").accessibilityIdentifier("\(identifierPrefix)offline_available_\(workout.title)")
                 Button(session.starting ? "Iniciando…" : "Empezar") { Task { await session.start(workout.id) } }
                     .buttonStyle(PrimaryButtonStyle())
                     .disabled(session.starting || session.draft.map { !$0.isFinalPending && $0.status != "corrupt" } == true)
-                    .accessibilityIdentifier("start_workout")
+                    .accessibilityIdentifier("\(identifierPrefix)start_workout_\(workout.title)")
             } else {
                 Button(session.downloading == workout.id ? "Descargando…" : model.connected ? "Descargar para usar offline" : "Descarga requiere conexión") {
                     Task { await session.download(workout.id) }
                 }
                 .buttonStyle(SecondaryButtonStyle())
                 .disabled(!model.connected || session.downloading != nil || ["locally_pending", "syncing", "conflict"].contains(workout.status))
-                .accessibilityIdentifier("download_workout")
+                .accessibilityIdentifier("\(identifierPrefix)download_workout_\(workout.title)")
             }
         }
     }

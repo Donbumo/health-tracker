@@ -461,6 +461,10 @@ extension LocalStore {
         try write {
             guard let pending = try fetch(#Predicate<PendingActionModel> { $0.accountScope == scope && $0.entityId == entityId && $0.status == "conflict" }).first,
                   case var .object(members) = (try? JSONValue.parse(pending.payloadJSON)) ?? .null else { return }
+            let replacementKey = scopedKey(scope, newKey)
+            guard try fetch(#Predicate<PendingActionModel> { $0.key == replacementKey }).isEmpty else {
+                throw AppFailure(.submissionConflict, "La clave idempotente ya pertenece a otra operación local.", retryable: false)
+            }
             let delta = remoteRevision - (Self.request(pending)["base_revision"]?.intValue ?? remoteRevision)
             members.removeAll { $0.0 == "base_revision" }
             members.append(("base_revision", .number(String(remoteRevision))))

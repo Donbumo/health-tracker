@@ -187,6 +187,21 @@ struct PlanningInFlightIntegrationTests {
         #expect(await store.snapshot(scope).pendingCount == 1)
     }
 
+    @Test func conflictResolutionCannotReplaceAnotherQueuedIdempotencyKey() async throws {
+        let store = try LocalStore.make(inMemory: true)
+        try await seed(store)
+        try await store.editPlanOffline(scope, publicId: "qa-plan-1", name: "Before QA", description: nil, key: "first")
+        let sent = try await claim(store)
+        try await store.editPlanOffline(scope, publicId: "qa-plan-1", name: "After QA", description: nil, key: "later")
+        try await store.markPendingConflict(sent.key, errorCode: "revisionConflict")
+        await #expect(throws: AppFailure.self) {
+            try await store.rebaseConflict(scope, entityId: "qa-plan-1", remoteRevision: 5, newKey: "later")
+        }
+        #expect(await store.snapshot(scope).pendingCount == 2)
+        #expect(await store.headOfQueue(scope)?.idempotencyKey == "first")
+        #expect(await store.plan(scope, publicId: "qa-plan-1")?.name == "After QA")
+    }
+
     @Test func workoutCreateAndPatchClaimsPreservePrescriptionAndExerciseOrder() async throws {
         let store = try LocalStore.make(inMemory: true)
         try await seed(store)

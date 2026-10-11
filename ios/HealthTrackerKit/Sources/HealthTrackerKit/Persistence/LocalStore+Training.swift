@@ -536,3 +536,124 @@ extension LocalStore {
                      revision: row.revision, workoutCount: row.workoutCount, syncStatus: row.syncStatus, archivedAt: row.archivedAt)
     }
 }
+
+// MARK: Locally produced history (workout completion)
+
+/// A completed session to cache in history, from a local completion or the server's result.
+struct HistoryRow {
+    struct Set {
+        let number: Int
+        let weightKg: String?
+        let displayValue: String?
+        let displayUnit: String?
+        let loadMode: String
+        let reps: Int
+        let rir: String?
+        let rpe: String?
+        let restSeconds: Int?
+        let durationSeconds: String?
+        let distanceMeters: String?
+        let notes: String?
+    }
+
+    struct Exercise {
+        let order: Int
+        let name: String
+        let notes: String?
+        let sets: [Set]
+    }
+
+    let publicId: String
+    let clientEventId: String
+    let plannedWorkoutId: String?
+    let planId: String?
+    let planVersionId: String?
+    let name: String
+    let startedAt: String
+    let completedAt: String
+    let timezone: String
+    let durationSeconds: Int?
+    let notes: String?
+    let source: String
+    let syncStatus: String
+    let exercises: [Exercise]
+}
+
+extension HistoryRow {
+    init(completed: CompletedWorkoutDTO, publicId: String) {
+        self.init(
+            publicId: publicId, clientEventId: completed.clientEventId ?? publicId, plannedWorkoutId: completed.plannedWorkoutId,
+            planId: completed.trainingPlanId, planVersionId: completed.trainingPlanVersionId, name: "Entrenamiento",
+            startedAt: completed.startedAt, completedAt: completed.completedAt, timezone: completed.timezone,
+            durationSeconds: completed.durationSeconds, notes: completed.notes, source: "companion", syncStatus: "synced",
+            exercises: completed.exercises.map { exercise in
+                Exercise(order: exercise.exerciseOrder, name: exercise.name, notes: exercise.notes, sets: exercise.sets.map {
+                    Set(number: $0.setNumber, weightKg: LocalStore.plain($0.weightKg), displayValue: $0.displayTotal?.value,
+                        displayUnit: $0.displayTotal?.unit, loadMode: $0.loadMode ?? "direct_total", reps: $0.reps,
+                        rir: $0.rir.map(LocalStore.plain), rpe: $0.rpe.map(LocalStore.plain), restSeconds: $0.restSeconds,
+                        durationSeconds: $0.durationSeconds.map(String.init), distanceMeters: nil, notes: $0.notes)
+                })
+            }
+        )
+    }
+}
+
+extension LocalStore {
+    /// Inserts or replaces a full history session and puts it first in the unfiltered listing.
+    func insertHistory(_ scope: String, _ row: HistoryRow, now: Date) throws {
+        try deleteHistory(scope, publicId: row.publicId)
+        let session = HistorySessionModel(scope: scope, publicId: row.publicId, clientEventId: row.clientEventId)
+        let sets = row.exercises.flatMap(\.sets)
+        let volumes = sets.compactMap { set -> Decimal? in
+            guard CompletedSetDTO.comparableVolumeModes.contains(set.loadMode),
+                  let weight = set.weightKg.flatMap(LoadCalculator.parse), set.reps > 0 else { return nil }
+            return weight * Decimal(set.reps)
+        }
+        session.plannedWorkoutId = row.plannedWorkoutId
+        session.trainingPlanId = row.planId
+        session.trainingPlanVersionId = row.planVersionId
+        session.name = row.name
+        session.performedAt = row.completedAt
+        session.startedAt = row.startedAt
+        session.completedAt = row.completedAt
+        session.timezone = row.timezone
+        session.durationSeconds = row.durationSeconds
+        session.exerciseCount = row.exercises.count
+        session.setCount = sets.count
+        session.volumeKg = volumes.isEmpty ? nil : Self.plain(volumes.reduce(0, +))
+        session.volumePartial = volumes.count != sets.count
+        session.source = row.source
+        session.syncStatus = row.syncStatus
+        session.notes = row.notes
+        session.detailCached = true
+        session.updatedAt = iso(now)
+        modelContext.insert(session)
+        for exercise in row.exercises {
+            modelContext.insert(HistoryExerciseModel(scope: scope, sessionPublicId: row.publicId, exerciseOrder: exercise.order,
+                                                     exercisePublicId: nil, name: exercise.name, notes: exercise.notes))
+            for set in exercise.sets {
+                let model = HistorySetModel(scope: scope, sessionPublicId: row.publicId, exerciseOrder: exercise.order,
+                                            setNumber: set.number, loadMode: set.loadMode, reps: set.reps)
+                model.weightKg = set.weightKg
+                model.displayValue = set.displayValue
+                model.displayUnit = set.displayUnit
+                model.rir = set.rir
+                model.rpe = set.rpe
+                model.restSeconds = set.restSeconds
+                model.durationSeconds = set.durationSeconds
+                model.distanceMeters = set.distanceMeters
+                model.notes = set.notes
+                modelContext.insert(model)
+            }
+        }
+        modelContext.insert(HistoryPageModel(scope: scope, cacheKey: HistoryFilters().cacheKey, sessionPublicId: row.publicId, position: -1))
+    }
+
+    func deleteHistory(_ scope: String, publicId: String) throws {
+        let key = scopedKey(scope, publicId)
+        try modelContext.delete(model: HistorySessionModel.self, where: #Predicate { $0.key == key })
+        try modelContext.delete(model: HistoryExerciseModel.self, where: #Predicate { $0.accountScope == scope && $0.sessionPublicId == publicId })
+        try modelContext.delete(model: HistorySetModel.self, where: #Predicate { $0.accountScope == scope && $0.sessionPublicId == publicId })
+        try modelContext.delete(model: HistoryPageModel.self, where: #Predicate { $0.accountScope == scope && $0.sessionPublicId == publicId })
+    }
+}

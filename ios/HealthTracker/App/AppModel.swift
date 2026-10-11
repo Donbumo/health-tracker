@@ -22,6 +22,7 @@ final class AppModel {
     private let engine: SyncEngine
     let sync: SyncCoordinator
     let training: TrainingModel
+    let workout: WorkoutModel
     private let connectivity: ConnectivityMonitor
     private var started = false
 
@@ -34,11 +35,18 @@ final class AppModel {
         self.connectivity = connectivity
         self.sync = SyncCoordinator(session: session, engine: engine)
         self.training = TrainingModel(repository: TrainingRepository(api: session.api, store: session.store), store: session.store)
+        self.workout = WorkoutModel(repository: WorkoutRepository(api: session.api, store: session.store), store: session.store)
         self.preferences = session.preferences.values
         sync.onRunFinished = { [weak self] in Task { await self?.reloadCache() } }
         sync.onSessionInvalidated = { [weak self] code in self?.sessionInvalidated(code) }
         training.context = { [weak self] in (self?.preferences.accountScope, self?.connected ?? false) }
         training.report = { [weak self] text in self?.message = text }
+        workout.context = { [weak self] in
+            (self?.preferences.accountScope, self?.connected ?? false, self?.preferences.deviceId ?? "")
+        }
+        workout.report = { [weak self] text in self?.message = text }
+        workout.requestSync = { [weak self] trigger in self?.sync.enqueueNow(trigger) }
+        workout.onLocalChange = { [weak self] in Task { await self?.reloadCache() } }
     }
 
     static func live() -> AppModel {
@@ -55,7 +63,7 @@ final class AppModel {
         }
         let api = APIClient(preferences: preferences, tokens: tokens)
         let session = SessionService(api: api, preferences: preferences, tokens: tokens, store: store, appVersion: appVersion)
-        let engine = SyncEngine(api: api, store: store, preferences: preferences)
+        let engine = SyncEngine(api: api, store: store, preferences: preferences, handlers: CompanionHandlers.all)
         return AppModel(session: session, engine: engine, connectivity: ConnectivityMonitor())
     }
 
@@ -181,12 +189,14 @@ final class AppModel {
             recent = []
             syncSnapshot = SyncSnapshot(pendingCount: 0, conflictCount: 0, hasSyncState: false)
             await training.reload()
+            await workout.reload()
             return
         }
         planned = await session.store.plannedWorkouts(scope)
         recent = await session.store.recentSessions(scope, limit: 10)
         syncSnapshot = await session.store.snapshot(scope)
         await training.reload()
+        await workout.reload()
     }
 
     private func signedOut() {

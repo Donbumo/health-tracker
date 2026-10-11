@@ -184,4 +184,59 @@ public enum DisplayText {
         if let rest = set.restSeconds { parts.append("descanso \(rest) s") }
         return parts.isEmpty ? "Sin prescripción" : parts.joined(separator: " · ")
     }
+
+    public static func loadMode(_ value: LoadMode) -> String {
+        switch value {
+        case .directTotal: "Carga total directa"
+        case .perSide: "Carga por lado"
+        case .barPlusPerSide: "Barra más carga por lado"
+        case .machineInitialTotal: "Máquina: inicial más añadida"
+        case .machineInitialPerSide: "Máquina: carga por lado"
+        case .machineExternalPerSideInitialTotal: "Máquina: inicial total más carga externa por lado"
+        case .selectorStack: "Torre selectora"
+        case .dumbbellEach: "Mancuerna por mano"
+        case .bodyweight: "Peso corporal"
+        case .bodyweightPlus: "Peso corporal más carga"
+        case .assistance: "Peso corporal con asistencia"
+        case .durationDistance: "Duración y distancia"
+        }
+    }
+
+    public static func component(_ value: String) -> String {
+        switch value {
+        case "direct_total": "Carga total"
+        case "per_side": "Carga por lado"
+        case "bar": "Barra"
+        case "initial_total": "Carga inicial total"
+        case "added_total": "Carga añadida total"
+        case "initial_per_side": "Carga inicial por lado"
+        case "external_per_side": "Carga externa por lado"
+        case "selector_stack": "Torre seleccionada"
+        case "dumbbell_each": "Cada mancuerna"
+        case "bodyweight": "Peso corporal"
+        case "assistance": "Asistencia"
+        case "duration_seconds": "Duración"
+        case "distance_meters": "Distancia"
+        default: "Componente"
+        }
+    }
+
+    /// Editor mode for a set: its stored mode, or duration/distance when only those metrics exist.
+    public static func initialLoadMode(existing: String?, durationSeconds: Int?, distanceMeters: String?) -> LoadMode {
+        if let existing, let mode = LoadMode(rawValue: existing) { return mode }
+        return durationSeconds != nil || distanceMeters != nil ? .durationDistance : .directTotal
+    }
+
+    public static func autosaveStatus(_ state: AutosaveState) -> String {
+        switch state {
+        case .saving: "Guardando…"
+        case .saved: "Guardado"
+        case .savedLocal: "Guardado en este dispositivo"
+        case .error: "Requiere atención: no se pudo guardar localmente"
+        }
+    }
+}
+
+public enum AutosaveState: Sendable, Equatable {
+    case saving, saved, savedLocal, error
 }

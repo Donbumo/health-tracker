@@ -95,6 +95,46 @@ final class LoginSmokeUITests: XCTestCase {
         XCTAssertTrue(row.waitForExistence(timeout: 10))
     }
 
+    /// Stage 4: download today's workout, start it, complete a set and the workout; the queue drains
+    /// and history shows the synced session. Requires QA_EXPECTED_TODAY_WORKOUT and QA_EXPECTED_EXERCISE.
+    func testWorkoutCaptureCompletesAndSyncs() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let title = env["QA_EXPECTED_TODAY_WORKOUT"], let exercise = env["QA_EXPECTED_EXERCISE"] else {
+            throw XCTSkip("QA workout data not configured")
+        }
+        let app = XCUIApplication()
+        app.launch()
+        try loginIfNeeded(app, env)
+        XCTAssertTrue(app.staticTexts[title].firstMatch.waitForExistence(timeout: 20), "Today's workout missing")
+
+        let download = app.buttons["download_workout"].firstMatch
+        if download.waitForExistence(timeout: 5) { download.tap() }
+        let start = app.buttons["start_workout"].firstMatch
+        XCTAssertTrue(start.waitForExistence(timeout: 20), "Download did not finish")
+        attach(app, "11-downloaded")
+        start.tap()
+
+        XCTAssertTrue(app.staticTexts[exercise].firstMatch.waitForExistence(timeout: 15), "Workout screen did not open")
+        attach(app, "12-workout")
+        let completeSet = app.buttons["complete_set_1_1"]
+        XCTAssertTrue(completeSet.waitForExistence(timeout: 10))
+        completeSet.tap()
+        XCTAssertTrue(app.staticTexts["Completada"].firstMatch.waitForExistence(timeout: 10), "Set was not completed")
+        attach(app, "13-set-completed")
+
+        let finish = app.buttons["complete_workout"]
+        for _ in 0..<12 where !finish.isHittable { app.swipeUp() }
+        finish.tap()
+        app.buttons["Completar"].firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["Hoy"].waitForExistence(timeout: 15))
+        attach(app, "14-completed")
+
+        app.tabBars.buttons["Historial"].tap()
+        let synced = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Sincronizado")).firstMatch
+        XCTAssertTrue(synced.waitForExistence(timeout: 30), "Completed session did not sync")
+        attach(app, "15-history-synced")
+    }
+
     private func loginIfNeeded(_ app: XCUIApplication, _ env: [String: String]) throws {
         if app.navigationBars["Hoy"].waitForExistence(timeout: 8) { return }
         guard let server = env["QA_SERVER_URL"], let username = env["QA_USERNAME"], let password = env["QA_PASSWORD"] else {

@@ -1,0 +1,805 @@
+[
+ {
+  "mode": "machine_external_per_side_initial_total",
+  "unit": "lb",
+  "components": {
+   "initial_total": {
+    "value": "167",
+    "unit": "lb"
+   },
+   "external_per_side": {
+    "value": "115",
+    "unit": "lb"
+   }
+  },
+  "weight_kg": "180.08",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "machine_external_per_side_initial_total",
+   "original_input": {
+    "unit": "lb",
+    "components": {
+     "initial_total": {
+      "value": "167",
+      "unit": "lb"
+     },
+     "external_per_side": {
+      "value": "115",
+      "unit": "lb"
+     }
+    }
+   },
+   "original_unit": "lb",
+   "components": {
+    "initial_total": {
+     "value": "167",
+     "unit": "lb"
+    },
+    "external_per_side": {
+     "value": "115",
+     "unit": "lb"
+    }
+   },
+   "normalized_total_kg": "180.07617089",
+   "calculated_total_lb": "397",
+   "display_total": {
+    "value": "397",
+    "unit": "lb"
+   },
+   "bodyweight_kg": null,
+   "assistance": null,
+   "calculation_version": "1.0"
+  }
+ },
+ {
+  "mode": "machine_initial_per_side",
+  "unit": "lb",
+  "components": {
+   "initial_per_side": {
+    "value": "27",
+    "unit": "lb"
+   },
+   "external_per_side": {
+    "value": "45",
+    "unit": "lb"
+   }
+  },
+  "weight_kg": "65.32",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "machine_initial_per_side",
+   "original_input": {
+    "unit": "lb",
+    "components": {
+     "initial_per_side": {
+      "value": "27",
+      "unit": "lb"
+     },
+     "external_per_side": {
+      "value": "45",
+      "unit": "lb"
+     }
+    }
+   },
+   "original_unit": "lb",
+   "components": {
+    "initial_per_side": {
+     "value": "27",
+     "unit": "lb"
+    },
+    "external_per_side": {
+     "value": "45",
+     "unit": "lb"
+    }
+   },
+   "normalized_total_kg": "65.31730128",
+   "calculated_total_lb": "144",
+   "display_total": {
+    "value": "144",
+    "unit": "lb"
+   },
+   "bodyweight_kg": null,
+   "assistance": null,
+   "calculation_version": "1.0"
+  }
+ },
+ {
+  "mode": "machine_initial_total",
+  "unit": "lb",
+  "components": {
+   "initial_total": {
+    "value": "37",
+    "unit": "lb"
+   },
+   "added_total": {
+    "value": "45",
+    "unit": "lb"
+   }
+  },
+  "weight_kg": "37.19",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "machine_initial_total",
+   "original_input": {
+    "unit": "lb",
+    "components": {
+     "initial_total": {
+      "value": "37",
+      "unit": "lb"
+     },
+     "added_total": {
+      "value": "45",
+      "unit": "lb"
+     }
+    }
+   },
+   "original_unit": "lb",
+   "components": {
+    "initial_total": {
+     "value": "37",
+     "unit": "lb"
+    },
+    "added_total": {
+     "value": "45",
+     "unit": "lb"
+    }
+   },
+   "normalized_total_kg": "37.19457434",
+   "calculated_total_lb": "82",
+   "display_total": {
+    "value": "82",
+    "unit": "lb"
+   },
+   "bodyweight_kg": null,
+   "assistance": null,
+   "calculation_version": "1.0"
+  }
+ },
+ {
+  "mode": "bar_plus_per_side",
+  "unit": "kg",
+  "components": {
+   "bar": {
+    "value": "20",
+    "unit": "kg"
+   },
+   "per_side": {
+    "value": "45",
+    "unit": "lb"
+   }
+  },
+  "weight_kg": "60.82",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "bar_plus_per_side",
+   "original_input": {
+    "unit": "kg",
+    "components": {
+     "bar": {
+      "value": "20",
+      "unit": "kg"
+     },
+     "per_side": {
+      "value": "45",
+      "unit": "lb"
+     }
+    }
+   },
+   "original_unit": "kg",
+   "components": {
+    "bar": {
+     "value": "20",
+     "unit": "kg"
+    },
+    "per_side": {
+     "value": "45",
+     "unit": "lb"
+    }
+   },
+   "normalized_total_kg": "60.8233133",
+   "calculated_total_lb": "134.0924524369755161445947603",
+   "display_total": {
+    "value": "60.8233133",
+    "unit": "kg"
+   },
+   "bodyweight_kg": null,
+   "assistance": null,
+   "calculation_version": "1.0"
+  }
+ },
+ {
+  "mode": "direct_total",
+  "unit": "kg",
+  "components": {
+   "direct_total": {
+    "value": "0.125",
+    "unit": "kg"
+   }
+  },
+  "weight_kg": "0.13",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "direct_total",
+   "original_input": {
+    "unit": "kg",
+    "components": {
+     "direct_total": {
+      "value": "0.125",
+      "unit": "kg"
+     }
+    }
+   },
+   "original_unit": "kg",
+   "components": {
+    "direct_total": {
+     "value": "0.125",
+     "unit": "kg"
+    }
+   },
+   "normalized_total_kg": "0.125",
+   "calculated_total_lb": "0.2755778277310969759037172517",
+   "display_total": {
+    "value": "0.125",
+    "unit": "kg"
+   },
+   "bodyweight_kg": null,
+   "assistance": null,
+   "calculation_version": "1.0"
+  }
+ },
+ {
+  "mode": "direct_total",
+  "unit": "lb",
+  "components": {
+   "direct_total": {
+    "value": "100",
+    "unit": "kg"
+   }
+  },
+  "weight_kg": "100.00",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "direct_total",
+   "original_input": {
+    "unit": "lb",
+    "components": {
+     "direct_total": {
+      "value": "100",
+      "unit": "kg"
+     }
+    }
+   },
+   "original_unit": "lb",
+   "components": {
+    "direct_total": {
+     "value": "100",
+     "unit": "kg"
+    }
+   },
+   "normalized_total_kg": "100",
+   "calculated_total_lb": "220.4622621848775807229738013",
+   "display_total": {
+    "value": "220.4622621848775807229738013",
+    "unit": "lb"
+   },
+   "bodyweight_kg": null,
+   "assistance": null,
+   "calculation_version": "1.0"
+  }
+ },
+ {
+  "mode": "direct_total",
+  "unit": "kg",
+  "components": {
+   "direct_total": {
+    "value": "42.5",
+    "unit": "kg"
+   }
+  },
+  "weight_kg": "42.50",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "direct_total",
+   "original_input": {
+    "unit": "kg",
+    "components": {
+     "direct_total": {
+      "value": "42.5",
+      "unit": "kg"
+     }
+    }
+   },
+   "original_unit": "kg",
+   "components": {
+    "direct_total": {
+     "value": "42.5",
+     "unit": "kg"
+    }
+   },
+   "normalized_total_kg": "42.5",
+   "calculated_total_lb": "93.69646142857297180726386557",
+   "display_total": {
+    "value": "42.5",
+    "unit": "kg"
+   },
+   "bodyweight_kg": null,
+   "assistance": null,
+   "calculation_version": "1.0"
+  }
+ },
+ {
+  "mode": "direct_total",
+  "unit": "lb",
+  "components": {
+   "direct_total": {
+    "value": "0.001",
+    "unit": "lb"
+   }
+  },
+  "weight_kg": "0.00",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "direct_total",
+   "original_input": {
+    "unit": "lb",
+    "components": {
+     "direct_total": {
+      "value": "0.001",
+      "unit": "lb"
+     }
+    }
+   },
+   "original_unit": "lb",
+   "components": {
+    "direct_total": {
+     "value": "0.001",
+     "unit": "lb"
+    }
+   },
+   "normalized_total_kg": "0.00045359237",
+   "calculated_total_lb": "0.001",
+   "display_total": {
+    "value": "0.001",
+    "unit": "lb"
+   },
+   "bodyweight_kg": null,
+   "assistance": null,
+   "calculation_version": "1.0"
+  }
+ },
+ {
+  "mode": "dumbbell_each",
+  "unit": "lb",
+  "components": {
+   "dumbbell_each": {
+    "value": "22.5",
+    "unit": "lb"
+   }
+  },
+  "weight_kg": "20.41",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "dumbbell_each",
+   "original_input": {
+    "unit": "lb",
+    "components": {
+     "dumbbell_each": {
+      "value": "22.5",
+      "unit": "lb"
+     }
+    }
+   },
+   "original_unit": "lb",
+   "components": {
+    "dumbbell_each": {
+     "value": "22.5",
+     "unit": "lb"
+    }
+   },
+   "normalized_total_kg": "20.41165665",
+   "calculated_total_lb": "45",
+   "display_total": {
+    "value": "45",
+    "unit": "lb"
+   },
+   "bodyweight_kg": null,
+   "assistance": null,
+   "calculation_version": "1.0"
+  }
+ },
+ {
+  "mode": "assistance",
+  "unit": "kg",
+  "components": {
+   "bodyweight": {
+    "value": "60",
+    "unit": "kg"
+   },
+   "assistance": {
+    "value": "70",
+    "unit": "kg"
+   }
+  },
+  "weight_kg": "0.00",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "assistance",
+   "original_input": {
+    "unit": "kg",
+    "components": {
+     "bodyweight": {
+      "value": "60",
+      "unit": "kg"
+     },
+     "assistance": {
+      "value": "70",
+      "unit": "kg"
+     }
+    }
+   },
+   "original_unit": "kg",
+   "components": {
+    "bodyweight": {
+     "value": "60",
+     "unit": "kg"
+    },
+    "assistance": {
+     "value": "70",
+     "unit": "kg"
+    }
+   },
+   "normalized_total_kg": "0",
+   "calculated_total_lb": "0",
+   "display_total": {
+    "value": "0",
+    "unit": "kg"
+   },
+   "bodyweight_kg": "60",
+   "assistance": {
+    "value": "70",
+    "unit": "kg"
+   },
+   "calculation_version": "1.0",
+   "warnings": [
+    "assistance_is_subtracted_from_bodyweight"
+   ]
+  }
+ },
+ {
+  "mode": "assistance",
+  "unit": "lb",
+  "components": {
+   "bodyweight": {
+    "value": "75.3",
+    "unit": "kg"
+   },
+   "assistance": {
+    "value": "40",
+    "unit": "lb"
+   }
+  },
+  "weight_kg": "57.16",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "assistance",
+   "original_input": {
+    "unit": "lb",
+    "components": {
+     "bodyweight": {
+      "value": "75.3",
+      "unit": "kg"
+     },
+     "assistance": {
+      "value": "40",
+      "unit": "lb"
+     }
+    }
+   },
+   "original_unit": "lb",
+   "components": {
+    "bodyweight": {
+     "value": "75.3",
+     "unit": "kg"
+    },
+    "assistance": {
+     "value": "40",
+     "unit": "lb"
+    }
+   },
+   "normalized_total_kg": "57.1563052",
+   "calculated_total_lb": "126.0080834252128182843992724",
+   "display_total": {
+    "value": "126.0080834252128182843992724",
+    "unit": "lb"
+   },
+   "bodyweight_kg": "75.3",
+   "assistance": {
+    "value": "40",
+    "unit": "lb"
+   },
+   "calculation_version": "1.0",
+   "warnings": [
+    "assistance_is_subtracted_from_bodyweight"
+   ]
+  }
+ },
+ {
+  "mode": "bodyweight",
+  "unit": "kg",
+  "components": {
+   "bodyweight": {
+    "value": "81.25",
+    "unit": "kg"
+   }
+  },
+  "weight_kg": "81.25",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "bodyweight",
+   "original_input": {
+    "unit": "kg",
+    "components": {
+     "bodyweight": {
+      "value": "81.25",
+      "unit": "kg"
+     }
+    }
+   },
+   "original_unit": "kg",
+   "components": {
+    "bodyweight": {
+     "value": "81.25",
+     "unit": "kg"
+    }
+   },
+   "normalized_total_kg": "81.25",
+   "calculated_total_lb": "179.1255880252130343374162136",
+   "display_total": {
+    "value": "81.25",
+    "unit": "kg"
+   },
+   "bodyweight_kg": "81.25",
+   "assistance": null,
+   "calculation_version": "1.0"
+  }
+ },
+ {
+  "mode": "bodyweight_plus",
+  "unit": "lb",
+  "components": {
+   "bodyweight": {
+    "value": "80.4",
+    "unit": "kg"
+   },
+   "added_total": {
+    "value": "10",
+    "unit": "lb"
+   }
+  },
+  "weight_kg": "84.94",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "bodyweight_plus",
+   "original_input": {
+    "unit": "lb",
+    "components": {
+     "bodyweight": {
+      "value": "80.4",
+      "unit": "kg"
+     },
+     "added_total": {
+      "value": "10",
+      "unit": "lb"
+     }
+    }
+   },
+   "original_unit": "lb",
+   "components": {
+    "bodyweight": {
+     "value": "80.4",
+     "unit": "kg"
+    },
+    "added_total": {
+     "value": "10",
+     "unit": "lb"
+    }
+   },
+   "normalized_total_kg": "84.9359237",
+   "calculated_total_lb": "187.2516587966415749012709363",
+   "display_total": {
+    "value": "187.2516587966415749012709363",
+    "unit": "lb"
+   },
+   "bodyweight_kg": "80.4",
+   "assistance": null,
+   "calculation_version": "1.0"
+  }
+ },
+ {
+  "mode": "duration_distance",
+  "unit": "kg",
+  "components": {
+   "duration_seconds": {
+    "value": "600",
+    "unit": "s"
+   },
+   "distance_meters": {
+    "value": "2000.50",
+    "unit": "m"
+   }
+  },
+  "weight_kg": "0.00",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "duration_distance",
+   "original_input": {
+    "unit": "kg",
+    "components": {
+     "duration_seconds": {
+      "value": "600",
+      "unit": "s"
+     },
+     "distance_meters": {
+      "value": "2000.5",
+      "unit": "m"
+     }
+    }
+   },
+   "original_unit": "kg",
+   "components": {
+    "duration_seconds": {
+     "value": "600",
+     "unit": "s"
+    },
+    "distance_meters": {
+     "value": "2000.5",
+     "unit": "m"
+    }
+   },
+   "normalized_total_kg": "0",
+   "calculated_total_lb": "0",
+   "display_total": {
+    "value": "0",
+    "unit": "kg"
+   },
+   "bodyweight_kg": null,
+   "assistance": null,
+   "calculation_version": "1.0",
+   "warnings": [
+    "duration_distance_has_no_normalized_weight"
+   ]
+  }
+ },
+ {
+  "mode": "per_side",
+  "unit": "lb",
+  "components": {
+   "per_side": {
+    "value": "33.3",
+    "unit": "lb"
+   }
+  },
+  "weight_kg": "30.21",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "per_side",
+   "original_input": {
+    "unit": "lb",
+    "components": {
+     "per_side": {
+      "value": "33.3",
+      "unit": "lb"
+     }
+    }
+   },
+   "original_unit": "lb",
+   "components": {
+    "per_side": {
+     "value": "33.3",
+     "unit": "lb"
+    }
+   },
+   "normalized_total_kg": "30.209251842",
+   "calculated_total_lb": "66.6",
+   "display_total": {
+    "value": "66.6",
+    "unit": "lb"
+   },
+   "bodyweight_kg": null,
+   "assistance": null,
+   "calculation_version": "1.0"
+  }
+ },
+ {
+  "mode": "selector_stack",
+  "unit": "kg",
+  "components": {
+   "selector_stack": {
+    "value": "40.00",
+    "unit": "kg"
+   }
+  },
+  "weight_kg": "40.00",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "selector_stack",
+   "original_input": {
+    "unit": "kg",
+    "components": {
+     "selector_stack": {
+      "value": "40",
+      "unit": "kg"
+     }
+    }
+   },
+   "original_unit": "kg",
+   "components": {
+    "selector_stack": {
+     "value": "40",
+     "unit": "kg"
+    }
+   },
+   "normalized_total_kg": "40",
+   "calculated_total_lb": "88.18490487395103228918952054",
+   "display_total": {
+    "value": "40",
+    "unit": "kg"
+   },
+   "bodyweight_kg": null,
+   "assistance": null,
+   "calculation_version": "1.0"
+  }
+ },
+ {
+  "mode": "machine_initial_total",
+  "unit": "kg",
+  "components": {
+   "initial_total": {
+    "value": "7.77",
+    "unit": "lb"
+   },
+   "added_total": {
+    "value": "1999",
+    "unit": "lb"
+   }
+  },
+  "weight_kg": "910.26",
+  "details": {
+   "schema_version": "1.0",
+   "load_mode": "machine_initial_total",
+   "original_input": {
+    "unit": "kg",
+    "components": {
+     "initial_total": {
+      "value": "7.77",
+      "unit": "lb"
+     },
+     "added_total": {
+      "value": "1999",
+      "unit": "lb"
+     }
+    }
+   },
+   "original_unit": "kg",
+   "components": {
+    "initial_total": {
+     "value": "7.77",
+     "unit": "lb"
+    },
+    "added_total": {
+     "value": "1999",
+     "unit": "lb"
+    }
+   },
+   "normalized_total_kg": "910.2555603449",
+   "calculated_total_lb": "2006.77",
+   "display_total": {
+    "value": "910.2555603449",
+    "unit": "kg"
+   },
+   "bodyweight_kg": null,
+   "assistance": null,
+   "calculation_version": "1.0"
+  }
+ }
+]

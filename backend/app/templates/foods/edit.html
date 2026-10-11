@@ -8,6 +8,7 @@
   <section class="card form-wrap">
     <form method="POST" novalidate>
       {{ form.hidden_tag() }}
+      <input type="hidden" name="base_revision" value="{{ product.revision }}">
       
       <div class="form-group">
         {{ form.name.label }}

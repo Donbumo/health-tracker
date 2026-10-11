@@ -141,6 +141,10 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(gym_bp)
     csrf.exempt(api_v1_bp)
     app.register_blueprint(api_v1_bp)
+    from app.nutrition import nutrition_bp
+    app.register_blueprint(nutrition_bp)
+    from app.nutrition_cli import nutrition_catalog_group
+    app.cli.add_command(nutrition_catalog_group)
     register_commands(app)
     from app.catalog_cli import catalog_group
     from app.exercise_catalog import catalog_bp

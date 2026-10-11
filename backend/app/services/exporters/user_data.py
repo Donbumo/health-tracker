@@ -53,13 +53,14 @@ def _daily_balances(
     nutrition_records: list[DailyNutrition],
     energy_records: list[DailyEnergy],
 ) -> list[dict[str, Any]]:
+    from app.services.nutrition_intelligence import comparison_value
     nutrition_by_date = {record.date: record for record in nutrition_records}
     energy_by_date = {record.date: record for record in energy_records}
     balances = []
     for target_date in sorted(nutrition_by_date.keys() | energy_by_date.keys()):
         nutrition = nutrition_by_date.get(target_date)
         energy = energy_by_date.get(target_date)
-        consumed = nutrition.calories if nutrition is not None else None
+        consumed = comparison_value(nutrition, 'calories')
         expended = energy.total_calories if energy is not None else None
         balances.append(
             {
@@ -239,7 +240,7 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
 
     load_profiles = _records(ExerciseLoadProfile, user_id, ExerciseLoadProfile.id)
 
-    return {
+    document = {
         "schema_version": "1.0",
         "type": "user_data_export",
         "exported_at": datetime.now(timezone.utc).isoformat(),
@@ -255,7 +256,7 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
             "food_products": [
                 _food_product_document(product, user_id) for product in food_products
             ],
-            "recipes": [build_recipe_export_document(recipe) | {"id": recipe.id} for recipe in recipes],
+            "recipes": [build_recipe_export_document(recipe) | {"id": recipe.id} for recipe in recipes if recipe.nutrition_snapshot_json is None],
             "weigh_ins": [
                 build_weigh_in_document(record, user_id) for record in weigh_ins
             ],
@@ -300,6 +301,12 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
             ],
         },
     }
+
+    from app.services.nutrition_portability import export_bundle
+    bundle = export_bundle(user_id)
+    if bundle is not None:
+        document['data']['nutrition_intelligence'] = [bundle]
+    return document
 
 
 class UserDataJsonExporter(BaseExporter):

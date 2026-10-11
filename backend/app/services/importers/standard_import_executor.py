@@ -775,6 +775,11 @@ class StandardImportExecutor:
         _validate_ordering(data)
         _validate_recipe_references(data, user_id)
         record = db.session.get(DailyNutrition, existing_id) if existing_id else DailyNutrition(user_id=user_id)
+        if existing_id:
+            from app.models.nutrition_intelligence import MealLog
+            if db.session.execute(db.select(MealLog.id).where(MealLog.user_id==user_id, MealLog.local_date==record.date)).first():
+                raise ValueError("Legacy imports cannot overwrite consumed snapshots")
+
         if record is None or record.user_id != user_id:
             raise StandardImportError("Daily nutrition target does not belong to this user")
         record.date = date.fromisoformat(data["date"])
@@ -856,6 +861,10 @@ class StandardImportExecutor:
         ):
             if field in data:
                 setattr(record, field, _decimal(data.get(field)))
+        from app.services.food_catalog import refresh_personal_vector
+        refresh_personal_vector(record,user_id,{field:_decimal(data[field]) for field in ("calories_per_100g","protein_g_per_100g","fat_g_per_100g","carbs_g_per_100g","net_carbs_g_per_100g","fiber_g_per_100g","sodium_mg_per_100g") if field in data})
+        if existing_id:
+            record.revision += 1
         if not record.source:
             record.source = document.get("source_type", "uploaded")
         record.raw_payload_json = document
@@ -866,6 +875,10 @@ class StandardImportExecutor:
         record = db.session.get(Recipe, existing_id) if existing_id else Recipe(user_id=user_id)
         if record is None or record.user_id != user_id:
             raise StandardImportError("Recipe target does not belong to this user")
+        if existing_id and record.nutrition_snapshot_json is not None:
+            raise StandardImportError("A versioned meal template requires Nutrition Intelligence 2.0 import/edit")
+        if existing_id:
+            record.revision += 1
         record.name = document["name"].strip()
         if "description" in document:
             record.description = _optional_text(document.get("description"))

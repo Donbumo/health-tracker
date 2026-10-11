@@ -62,8 +62,9 @@ reintento tras un commit del servidor cuyo ACK se pierde.
 La rama auxiliar `codex/nutrition-ios-integration-gates` ejecuta el HEAD exacto de
 #17 en `macos-15`, Xcode 16.4, Swift Package en macOS y simulador iOS y las cuatro
 pruebas UI contra Flask/SQLite temporal. Conserva logs, versiones y `.xcresult`.
-El runner amplía las esperas UI y confirma el foco del teclado; conserva las
-aserciones funcionales. El informe de integración registra los resultados y SHA.
+Los tests UI permiten el arranque más lento del runner y usan la transición
+«Siguiente» del formulario para enfocar la contraseña; conservan las aserciones
+funcionales. El informe de integración registra los resultados y SHA.
 
 No equivale a QA físico de iPhone, ejecución real de BGAppRefreshTask ni pruebas
 de la app contra MariaDB en un dispositivo. No autoriza despliegue al NAS.

@@ -8,13 +8,16 @@ actor PlanningRequestGate: HTTPTransport {
     let inner: any HTTPTransport
     let method: String
     let path: String
+    let loseFirstAcknowledgement: Bool
+    private(set) var requests: [URLRequest] = []
     var held: URLRequest?
     private var reached: CheckedContinuation<URLRequest, Never>?
     private var release: CheckedContinuation<Void, Never>?
     private var used = false
 
-    init(inner: any HTTPTransport, method: String, path: String) {
+    init(inner: any HTTPTransport, method: String, path: String, loseFirstAcknowledgement: Bool = false) {
         self.inner = inner; self.method = method; self.path = path
+        self.loseFirstAcknowledgement = loseFirstAcknowledgement
     }
 
     func waitForRequest() async -> URLRequest {
@@ -25,14 +28,17 @@ actor PlanningRequestGate: HTTPTransport {
     func resume() { release?.resume(); release = nil }
 
     func send(_ request: URLRequest) async throws -> HTTPResult {
+        requests.append(request)
         if !used, request.httpMethod == method, request.url?.path == path {
             used = true
+            if loseFirstAcknowledgement { _ = try await inner.send(request) }
             held = request
-            await withCheckedContinuation { continuation in
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
                 release = continuation
                 reached?.resume(returning: request)
                 reached = nil
             }
+            if loseFirstAcknowledgement { throw URLError(.networkConnectionLost) }
         }
         return try await inner.send(request)
     }
@@ -161,6 +167,23 @@ struct PlanningInFlightIntegrationTests {
         #expect(try body(tail)["base_revision"] == .number("6"))
         #expect(try body(tail)["name"] == .string("After QA"))
         #expect(await store.plan(scope, publicId: "qa-plan-1")?.revision == 7)
+    }
+
+    @Test func acceptingARemotePlanConflictKeepsUnrelatedWorkoutEdits() async throws {
+        let store = try LocalStore.make(inMemory: true)
+        try await seed(store)
+        try await store.editPlanOffline(scope, publicId: "qa-plan-1", name: "Before QA", description: nil, key: "plan-patch")
+        let sent = try await claim(store)
+        try await store.saveWorkoutOffline(scope, workoutId: "qa-workout-1", name: "After QA", notes: nil, exercises: [], key: "workout-patch")
+        try await store.markPendingConflict(sent.key, errorCode: "revisionConflict")
+        try await store.acceptRemotePlan(scope, entityId: "qa-plan-1", remote: QAFixtures.decode(MobilePlanDTO.self, TrainingFixtures.plan(name: "Remote QA", revision: 5)))
+        #expect(await store.plan(scope, publicId: "qa-plan-1")?.name == "Remote QA")
+        #expect(await store.plan(scope, publicId: "qa-plan-1")?.syncStatus == "pending")
+        #expect(await store.planWorkout(scope, publicId: "qa-workout-1")?.name == "After QA")
+        #expect(await store.planWorkout(scope, publicId: "qa-workout-1")?.syncStatus == "pending")
+        #expect(await store.headOfQueue(scope)?.idempotencyKey == "workout-patch")
+        try await store.completePending(sent, scope: scope)
+        #expect(await store.snapshot(scope).pendingCount == 1)
     }
 
     @Test func workoutCreateAndPatchClaimsPreservePrescriptionAndExerciseOrder() async throws {

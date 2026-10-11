@@ -372,18 +372,65 @@ extension LocalStore {
     /// "Usar servidor" for a plan or workout: drop local work and take the remote plan (nil = deleted remotely).
     public func acceptRemotePlan(_ scope: String, entityId: String, remote: MobilePlanDTO?) throws {
         try write {
-            try dropLocalPlanningWork(scope, entityId: entityId)
+            let rows = try fetch(#Predicate<PendingActionModel> { $0.accountScope == scope })
+            // Accepting one conflict does not authorize discarding edits to other workouts.
+            let rejectedCreates = rows.filter { $0.entityId == entityId && $0.actionType == "planning_workout_create" && $0.status == "conflict" }
+            let rejectedWorkoutIds = Set(rejectedCreates.compactMap { Self.request($0)["public_id"]?.stringValue })
+            let discarded = rows.filter { row in (row.entityId == entityId && row.actionType != "planning_workout_create")
+                || rejectedCreates.contains(where: { $0.key == row.key })
+                || rejectedWorkoutIds.contains(row.entityId)
+                || (row.actionType == "planning_workout_create" && Self.request(row)["public_id"]?.stringValue == entityId)
+            }
+            let discardedKeys = Set(discarded.map(\.key))
+            discarded.forEach(modelContext.delete)
+            let conflictKey = scopedKey(scope, entityId)
+            try modelContext.delete(model: PlanningConflictModel.self, where: #Predicate { $0.key == conflictKey })
             guard let remote else {
-                try deletePlanChildren(scope, planPublicId: entityId)
                 let key = scopedKey(scope, entityId)
-                try modelContext.delete(model: PlanModel.self, where: #Predicate { $0.key == key })
+                if let workout = try fetch(#Predicate<PlanWorkoutModel> { $0.key == key }).first {
+                    try removePlanningWorkout(scope, workout.publicId)
+                } else {
+                    // Explicitly accepting a deleted plan includes its descendants.
+                    let ids = Set(try fetch(#Predicate<PlanWorkoutModel> { $0.accountScope == scope && $0.planPublicId == entityId }).map(\.publicId))
+                    for row in rows where row.entityId == entityId || ids.contains(row.entityId) { modelContext.delete(row) }
+                    try deletePlanChildren(scope, planPublicId: entityId)
+                    try modelContext.delete(model: PlanModel.self, where: #Predicate { $0.key == key })
+                }
                 return
             }
-            try dropLocalPlanningWork(scope, entityId: remote.publicId)
-            let key = scopedKey(scope, remote.publicId)
-            try fetch(#Predicate<PlanModel> { $0.key == key }).first?.syncStatus = "synced"
+            let remaining = rows.filter { !discardedKeys.contains($0.key) }
+            let protectedIds = Set(remaining.compactMap { row -> String? in
+                if row.actionType == "planning_workout_patch" { return row.entityId }
+                if row.actionType == "planning_workout_create" { return Self.request(row)["public_id"]?.stringValue }
+                return nil
+            })
+            let plan = try planModel(scope, remote.publicId) ?? PlanModel(scope: scope, publicId: remote.publicId)
+            if plan.modelContext == nil { modelContext.insert(plan) }
+            let ownPlanPending = remaining.contains { $0.entityId == remote.publicId && $0.actionType.hasPrefix("planning_plan_") }
+            if !ownPlanPending { plan.update(from: remote, syncStatus: "synced") }
+            let remoteIds = Set((remote.workouts ?? []).map(\.publicId))
+            let planId = remote.publicId
+            let localWorkouts = try fetch(#Predicate<PlanWorkoutModel> { $0.accountScope == scope && $0.planPublicId == planId })
+            for workout in localWorkouts where !protectedIds.contains(workout.publicId) && !remoteIds.contains(workout.publicId) {
+                try removePlanningWorkout(scope, workout.publicId)
+            }
+            for workout in remote.workouts ?? [] where !protectedIds.contains(workout.publicId) {
+                try removePlanningWorkout(scope, workout.publicId)
+                modelContext.insert(PlanWorkoutModel(scope: scope, planPublicId: remote.publicId, dto: workout))
+                for exercise in workout.exercises {
+                    modelContext.insert(PlanExerciseModel(scope: scope, workoutPublicId: workout.publicId, dto: exercise))
+                    exercise.sets.forEach { modelContext.insert(PlanSetModel(scope: scope, workoutPublicId: workout.publicId, exerciseRowId: exercise.id, dto: $0)) }
+                }
+            }
+            if ownPlanPending || localWorkouts.contains(where: { protectedIds.contains($0.publicId) }) { plan.syncStatus = "pending" }
         }
-        if let remote { try applyPlan(scope, remote) }
+    }
+
+    private func removePlanningWorkout(_ scope: String, _ id: String) throws {
+        let key = scopedKey(scope, id)
+        try modelContext.delete(model: PlanWorkoutModel.self, where: #Predicate { $0.key == key })
+        try modelContext.delete(model: PlanExerciseModel.self, where: #Predicate { $0.accountScope == scope && $0.workoutPublicId == id })
+        try modelContext.delete(model: PlanSetModel.self, where: #Predicate { $0.accountScope == scope && $0.workoutPublicId == id })
     }
 
     /// "Usar servidor" for a schedule or package conflict (nil = deleted remotely).

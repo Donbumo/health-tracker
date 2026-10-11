@@ -1,0 +1,101 @@
+name: iOS integration gates
+
+on:
+  push:
+    branches: [codex/nutrition-ios-integration-gates]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    name: Native PR ${{ matrix.pr }} against Nutrition
+    runs-on: macos-15
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - pr: 12
+            head: 32dc6ac0151cb7dede4ee702b703484b3fccc76b
+          - pr: 14
+            head: d4156da5ae9cce6f5e4f0990e06f05ed99b0efad
+          - pr: 15
+            head: cd8c543c24c2276f0cecc087006901307d2c7cc6
+          - pr: 16
+            head: b389ffe1553ad8f0b41729604ca032fda41e66be
+          - pr: 17
+            head: cb664a9ace2160f2adbe46763cee7935dd688fd4
+    env:
+      FLASK_SKIP_DOTENV: '1'
+      NUTRITION_HEAD: 518deebc769550c9f4259fa9db3f49107df113ee
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare exact integration tree
+        env:
+          PR_NUMBER: ${{ matrix.pr }}
+          PR_HEAD: ${{ matrix.head }}
+        run: |
+          cp scripts/integration/ios_qa_app.py "$RUNNER_TEMP/ios_qa_app.py"
+          git fetch origin "refs/pull/$PR_NUMBER/head"
+          test "$(git rev-parse FETCH_HEAD)" = "$PR_HEAD"
+          git checkout --detach "$PR_HEAD"
+          git -c user.name='Integration QA' -c user.email='qa@example.invalid' merge --no-commit --no-ff "$NUTRITION_HEAD"
+          git diff --check
+          git rev-parse HEAD
+          git write-tree
+          xcodebuild -version
+      - name: Swift Package tests on macOS
+        working-directory: ios/HealthTrackerKit
+        run: swift test
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare backend and simulator
+        run: |
+          python -m pip install -r backend/requirements-dev.txt
+          brew install xcodegen
+          cd ios && xcodegen generate && cd ..
+          xcrun simctl list devices available -j > "$RUNNER_TEMP/devices.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          data=json.loads((Path(os.environ['RUNNER_TEMP'])/'devices.json').read_text())
+          device=next(d for runtime, devices in data['devices'].items() if 'iOS' in runtime for d in devices if 'iPhone' in d['name'])
+          with open(os.environ['GITHUB_ENV'], 'a') as out:
+              out.write('SIMULATOR_ID='+device['udid']+'\n')
+          PY
+          HT_QA_CHECKOUT="$GITHUB_WORKSPACE" python "$RUNNER_TEMP/ios_qa_app.py" > "$RUNNER_TEMP/backend.log" 2>&1 &
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8026/api/v1/health > /dev/null; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: Swift Package tests on iOS Simulator
+        working-directory: ios/HealthTrackerKit
+        run: xcodebuild -scheme HealthTrackerKit -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -resultBundlePath "$RUNNER_TEMP/package.xcresult" CODE_SIGNING_ALLOWED=NO test
+      - name: SwiftUI tests against disposable Flask backend
+        working-directory: ios
+        env:
+          TEST_RUNNER_QA_SERVER_URL: http://127.0.0.1:8026
+          TEST_RUNNER_QA_USERNAME: ios-ci-qa
+          TEST_RUNNER_QA_PASSWORD: fictional-ios-ci-qa-password
+          TEST_RUNNER_QA_EXPECTED_SESSION: Rutina CI QA
+          TEST_RUNNER_QA_EXPECTED_EXERCISE: Sentadilla QA
+          TEST_RUNNER_QA_EXPECTED_TODAY_WORKOUT: Fuerza CI QA
+          TEST_RUNNER_QA_EXPECTED_CATALOG_EXERCISE: Sentadilla QA
+        run: xcodebuild -project HealthTracker.xcodeproj -scheme HealthTracker -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -parallel-testing-enabled NO -resultBundlePath "$RUNNER_TEMP/app.xcresult" CODE_SIGNING_ALLOWED=NO test
+      - name: Preserve native test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-pr-${{ matrix.pr }}-evidence
+          path: |
+            ${{ runner.temp }}/package.xcresult
+            ${{ runner.temp }}/app.xcresult
+            ${{ runner.temp }}/backend.log
+          if-no-files-found: ignore

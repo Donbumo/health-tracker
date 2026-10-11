@@ -48,6 +48,7 @@ private struct TodayView: View {
                             .foregroundStyle(Theme.textMuted)
                     }
                 }
+                .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("today_card")
 
                 if !upcoming.isEmpty {

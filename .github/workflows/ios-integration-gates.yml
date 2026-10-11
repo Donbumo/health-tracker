@@ -19,7 +19,7 @@ jobs:
       matrix:
         include:
           - pr: 17
-            head: 2cc0159e08b12484d5e45b9aaa23be50a927c95b
+            head: e45722570eb7d81549aea2cd27cc007e3a13329b
     env:
       FLASK_SKIP_DOTENV: '1'
       NUTRITION_HEAD: 518deebc769550c9f4259fa9db3f49107df113ee

@@ -6,6 +6,12 @@ struct HomeView: View {
         TabView {
             NavigationStack { TodayView() }
                 .tabItem { Label("Hoy", systemImage: "sun.max") }
+            NavigationStack { PlanView() }
+                .tabItem { Label("Plan", systemImage: "list.bullet.rectangle") }
+            NavigationStack { HistoryView() }
+                .tabItem { Label("Historial", systemImage: "clock.arrow.circlepath") }
+            NavigationStack { TrainingProgressView() }
+                .tabItem { Label("Progreso", systemImage: "chart.line.uptrend.xyaxis") }
             NavigationStack { SettingsView() }
                 .tabItem { Label("Ajustes", systemImage: "gearshape") }
         }

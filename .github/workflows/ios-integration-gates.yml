@@ -18,8 +18,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - pr: 14
-            head: fee5c943bf3c611667df57ef0fa0bc404d356d0d
+          - pr: 16
+            head: 1856846b2952ca2347d8ddce8e4a055a2f03c397
     env:
       FLASK_SKIP_DOTENV: '1'
       NUTRITION_HEAD: 518deebc769550c9f4259fa9db3f49107df113ee

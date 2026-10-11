@@ -53,6 +53,7 @@ MAX_JSON_ARRAY_ITEMS = 1000
 MAX_JSON_STRING_LENGTH = 10000
 MAX_JSON_OBJECT_KEYS = 2000
 MAX_JSON_TOTAL_NODES = 50000
+MAX_NUTRITION_JSON_TOTAL_NODES = 500000
 SCHEMA_VERSION = "1.0"
 RESTORE_TOKEN_VERSION = "1"
 RESTORE_MODE = "account_restore"
@@ -69,6 +70,7 @@ RESTORABLE_SECTIONS = (
     "exercise_load_profiles",
     "activities",
     "routes",
+    "nutrition_intelligence",
 )
 UNSUPPORTED_SECTIONS = ("uploads", "daily_balances", "export_records")
 
@@ -454,6 +456,13 @@ class AccountRestoreService:
         id_maps: dict[str, dict[int, int]] | None = None,
         known_product_keys: set[tuple[str, str | None]] | None = None,
     ) -> RestoreOperation:
+        if section == "nutrition_intelligence":
+            from app.services.nutrition_portability import plan_bundle
+            try:
+                action = plan_bundle(item, user_id)
+                return RestoreOperation(action, section, index, "Nutrition Intelligence 2.0", model="MealLog")
+            except Exception as error:
+                return RestoreOperation("invalid", section, index, "Nutrition Intelligence 2.0", errors=(safe_error(error),))
         source_id = _source_id(item)
         try:
             normalized = self._normalized_item(
@@ -717,6 +726,9 @@ class AccountRestoreService:
         return None
 
     def _same(self, section: str, existing: Any, item: dict[str, Any], *, user_id: int) -> bool:
+        if section == "daily_nutrition":
+            from app.services.exporters.wellness import build_daily_nutrition_document
+            return build_daily_nutrition_document(existing, user_id) == item
         if section == "training_plans":
             existing_hashes = {version.sha256 for version in existing.versions}
             return all(
@@ -864,6 +876,12 @@ class AccountRestoreService:
             db.session.flush()
             committed[f"exercise_load_profiles:{index}"] = profile.id
 
+        from app.services.nutrition_portability import restore_bundle
+        for index, bundle in enumerate(data.get("nutrition_intelligence") or []):
+            if operation_map.get(("nutrition_intelligence", index), {}).get("operation") != "skip":
+                restore_bundle(bundle, user_id, id_maps)
+                committed[f"nutrition_intelligence:{index}"] = user_id
+
         exported_user = payload.get("user") or {}
         destination_user = db.session.get(User, user_id)
         preferred_unit = exported_user.get("preferred_load_unit")
@@ -885,6 +903,10 @@ class AccountRestoreService:
 
     def _apply_food_product(self, document: dict[str, Any], *, user_id: int) -> FoodProduct:
         record = self._find_existing("food_products", document, user_id=user_id) or FoodProduct(user_id=user_id)
+        if record.id is not None:
+            from app.services.food_catalog import refresh_personal_vector
+            refresh_personal_vector(record, user_id, document)
+            record.revision += 1
         for field in (
             "name",
             "brand",
@@ -910,6 +932,10 @@ class AccountRestoreService:
 
     def _apply_recipe(self, document: dict[str, Any], *, user_id: int) -> Recipe:
         record = self._find_existing("recipes", document, user_id=user_id) or Recipe(user_id=user_id)
+        if record.nutrition_snapshot_json is not None:
+            raise AccountRestoreError("A full nutrition template requires the versioned nutrition restore section")
+        if record.id is not None:
+            record.revision += 1
         record.name = document["name"].strip()
         for field in ("description", "notes"):
             if field in document:
@@ -997,6 +1023,10 @@ class AccountRestoreService:
     def _apply_daily_nutrition(self, document: dict[str, Any], *, user_id: int) -> DailyNutrition:
         data = document["data"]
         record = self._find_existing("daily_nutrition", document, user_id=user_id) or DailyNutrition(user_id=user_id)
+        if record.id is not None:
+            from app.models.nutrition_intelligence import MealLog
+            if db.session.execute(db.select(MealLog.id).where(MealLog.user_id==user_id, MealLog.local_date==date.fromisoformat(data['date']))).first():
+                raise AccountRestoreError("Existing consumed snapshots cannot be replaced by a legacy daily document")
         record.date = date.fromisoformat(data["date"])
         record.source = data.get("source", document["source_type"]).strip()
         record.notes = data.get("notes")
@@ -1485,11 +1515,15 @@ def _safe_exported_user(payload: dict[str, Any]) -> dict[str, Any] | None:
 
 def _validate_json_limits(value: Any) -> None:
     node_count = 0
+    nutrition_nodes = 0
 
-    def walk(item: Any, depth: int) -> None:
-        nonlocal node_count
-        node_count += 1
-        if node_count > MAX_JSON_TOTAL_NODES:
+    def walk(item: Any, depth: int, path: tuple = ()) -> None:
+        nonlocal node_count, nutrition_nodes
+        if path[:2] == ('data', 'nutrition_intelligence'):
+            nutrition_nodes += 1
+        else:
+            node_count += 1
+        if node_count > MAX_JSON_TOTAL_NODES or nutrition_nodes > MAX_NUTRITION_JSON_TOTAL_NODES:
             raise AccountRestoreError("Restore JSON contains too many values")
         if depth > MAX_JSON_DEPTH:
             raise AccountRestoreError("Restore JSON is too deeply nested")
@@ -1501,7 +1535,7 @@ def _validate_json_limits(value: Any) -> None:
             if len(item) > MAX_JSON_ARRAY_ITEMS:
                 raise AccountRestoreError("Restore JSON contains an array that is too large")
             for child in item:
-                walk(child, depth + 1)
+                walk(child, depth + 1, path + ('[]',))
             return
         if isinstance(item, dict):
             if len(item) > MAX_JSON_OBJECT_KEYS:
@@ -1511,7 +1545,7 @@ def _validate_json_limits(value: Any) -> None:
                     raise AccountRestoreError("Restore JSON object keys must be strings")
                 if len(key) > MAX_JSON_STRING_LENGTH:
                     raise AccountRestoreError("Restore JSON contains an object key that is too long")
-                walk(child, depth + 1)
+                walk(child, depth + 1, path + (key,))
 
     walk(value, 0)
 

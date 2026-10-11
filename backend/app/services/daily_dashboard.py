@@ -202,7 +202,7 @@ def _activity_summary(user_id: int, target_date: date, app_timezone: ZoneInfo) -
 def _completion_summary(balance: dict, weight: dict, sessions: list[dict]) -> dict:
     nutrition_state = _domain_state(
         balance["nutrition"],
-        balance["calories_consumed"],
+        balance.get("calories_comparable", balance["calories_consumed"]),
     )
     energy_state = _domain_state(
         balance["energy"],

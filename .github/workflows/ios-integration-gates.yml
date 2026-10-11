@@ -125,9 +125,28 @@ jobs:
         run: |
           cp scripts/integration/PlanningInFlightTests.swift "$RUNNER_TEMP/PlanningInFlightTests.swift"
           git fetch origin refs/pull/17/head
-          test "$(git rev-parse FETCH_HEAD)" = cb664a9ace2160f2adbe46763cee7935dd688fd4
+          git merge-base --is-ancestor cb664a9ace2160f2adbe46763cee7935dd688fd4 FETCH_HEAD
           git checkout --detach cb664a9ace2160f2adbe46763cee7935dd688fd4
           git -c user.name='Integration QA' -c user.email='qa@example.invalid' merge --no-commit --no-ff 518deebc769550c9f4259fa9db3f49107df113ee
+          test "$(git write-tree)" = fa287404811e9415fbc7227f4aa0ec6f2e252616
+          sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
           cp "$RUNNER_TEMP/PlanningInFlightTests.swift" ios/HealthTrackerKit/Tests/HealthTrackerKitTests/
           cd ios/HealthTrackerKit
-          swift test --filter PlanningInFlightIntegrationTests
+          set +e
+          swift test --filter PlanningInFlightIntegrationTests > "$RUNNER_TEMP/historical-p1.log" 2>&1
+          result=$?
+          set -e
+          test "$result" = 1
+          python - <<'PY'
+          import os, re
+          from pathlib import Path
+          log = (Path(os.environ['RUNNER_TEMP']) / 'historical-p1.log').read_text()
+          assert 'editDuringCreateFlightSurvivesAcknowledgement() failed' in log
+          assert re.search(r'Test run with 1 test failed .* with 3 issues', log)
+          print('Historical P1 reproduced: immutable payload, remaining edit, and pending state assertions all fail.')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: historical-stage5-p1
+          path: ${{ runner.temp }}/historical-p1.log

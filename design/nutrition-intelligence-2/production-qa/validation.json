@@ -1,0 +1,76 @@
+{
+  "date": "2026-10-09",
+  "branch": "feature/nutrition-intelligence-2",
+  "head_design_base": "31c80154eaaa673bb12c5f2e594a715747d3c82b",
+  "production_flag_default": false,
+  "backend_final": {
+    "passed": 1217,
+    "skipped": 34,
+    "warnings": 1,
+    "seconds": 281.62
+  },
+  "focal_final": {
+    "passed": 37,
+    "skipped": 0,
+    "seconds": 6.91,
+    "scope": "nutrition intelligence and migration after MariaDB downgrade fix"
+  },
+  "compileall": "pass",
+  "compose_config_fictional_explicit_env": "pass",
+  "sqlite_additive_migration_boundary": "pass",
+  "sqlite_metadata_check": "pass",
+  "alembic_heads": [
+    "20261009_0044"
+  ],
+  "mariadb": {
+    "status": "pass",
+    "version": "11.4",
+    "existing_instance": true,
+    "schema": "nutrition_intelligence_qa_20261009",
+    "qa_user": "progression_qa",
+    "global_privileges_added": false,
+    "migration_head": "20261009_0044",
+    "downgrade_before_consumption": "pass",
+    "upgrade_repeat_before_and_after_consumption": "pass",
+    "metadata_tables_indexes_foreign_keys": "pass",
+    "isolations": [
+      "READ COMMITTED",
+      "REPEATABLE READ"
+    ],
+    "concurrency": "mariadb-results.json",
+    "persistence_compatibility": "mariadb-persistence-results.json"
+  },
+  "pr_ready": true,
+  "nas_touched": false,
+  "persistent_user_data_touched": false,
+  "screenshots_data": "fictional QA only",
+  "ui": {
+    "combinations": 116,
+    "functional_checks": 12,
+    "errors": [],
+    "external_requests": [],
+    "screenshots": 48,
+    "viewport_extras": 2,
+    "touch_targets_min_px": 44,
+    "widths": [
+      360,
+      390,
+      430,
+      768,
+      1024,
+      1366
+    ],
+    "themes": [
+      "dark",
+      "light"
+    ]
+  },
+  "png_files": 50,
+  "diff_check": "pass",
+  "local_report_links": "pass",
+  "delivery": {
+    "commit_message": "feat: add nutrition intelligence and reusable meals",
+    "branch": "feature/nutrition-intelligence-2",
+    "sha_and_clean_status": "verified after this report is committed; see final delivery response"
+  }
+}

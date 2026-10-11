@@ -1,0 +1,29 @@
+{
+  "reviewed_subset_stage_ms": 136.452,
+  "reviewed_subset_foods": 37,
+  "engine": "SQLite temporary on Windows",
+  "data": "fictional QA only",
+  "nas_measured": false,
+  "results": [
+    {
+      "catalog_foods": 40,
+      "search_median_ms": 0.721,
+      "search_max_ms": 5.451,
+      "search_queries_max": 3,
+      "builder_ingredients": 40,
+      "builder_ms": 6.238,
+      "builder_queries": 3,
+      "insert_ms": 2.25
+    },
+    {
+      "catalog_foods": 10000,
+      "search_median_ms": 3.203,
+      "search_max_ms": 5.964,
+      "search_queries_max": 3,
+      "builder_ingredients": 40,
+      "builder_ms": 4.263,
+      "builder_queries": 3,
+      "insert_ms": 88.145
+    }
+  ]
+}

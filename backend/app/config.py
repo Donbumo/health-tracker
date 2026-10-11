@@ -121,6 +121,8 @@ class Config:
     ACTIVITY_FILE_MAX_BYTES = int(os.getenv("ACTIVITY_FILE_MAX_MB", "10")) * 1024 * 1024
     ACTIVITY_USER_MAX_BYTES = int(os.getenv("ACTIVITY_USER_MAX_MB", "250")) * 1024 * 1024
 
+    NUTRITION_INTELLIGENCE_ENABLED = _as_bool(os.getenv("NUTRITION_INTELLIGENCE_ENABLED"), False)
+
     AI_ENABLED = _as_bool(os.getenv("AI_ENABLED"), False)
     AI_PROVIDER = os.getenv("AI_PROVIDER", "").strip().casefold()
     AI_MODEL = os.getenv("AI_MODEL", "").strip()

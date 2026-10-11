@@ -261,6 +261,8 @@ def update_recipe_from_products(
     """
     if recipe.user_id != user_id:
         raise RecipeServiceError("Recipe does not belong to this user")
+    if recipe.nutrition_snapshot_json is not None:
+        raise RecipeServiceError("Edita esta comida desde Nutrition Intelligence para conservar sus micros y snapshots")
 
     recipe_name = _required_text(name, "name")
     recipe_servings = _positive_decimal(servings, "servings")
@@ -281,6 +283,8 @@ def update_recipe_from_products(
         ingredients=ingredients,
     )
 
+    recipe.revision += 1
+    recipe.nutrition_snapshot_json = None
     recipe.name = recipe_name
     recipe.description = _optional_text(description)
     recipe.servings = recipe_servings
@@ -325,6 +329,8 @@ def duplicate_recipe_from_existing(
     """
     if recipe.user_id != user_id:
         raise RecipeServiceError("Recipe does not belong to this user")
+    if recipe.nutrition_snapshot_json is not None:
+        raise RecipeServiceError("Usa y guarda esta comida desde Nutrition Intelligence para conservar el snapshot completo")
 
     duplicate_name = _optional_text(name)
     if duplicate_name is None:

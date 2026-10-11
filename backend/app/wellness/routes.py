@@ -225,6 +225,8 @@ def nutrition_detail(record_id: int):
 @login_required
 def nutrition_export(record_id: int, format_name: str):
     record = _user_nutrition_or_404(record_id)
+    if record.authority is not None:
+        abort(409, description="Este día requiere export de cuenta/backup 2.0 para conservar micros, autoridad y snapshots.")
     exporter = NUTRITION_EXPORTERS.get(format_name)
     if exporter is None:
         abort(404)
@@ -332,7 +334,7 @@ def manual_nutrition():
     ).scalars().all()
     recipes = db.session.execute(
         db.select(Recipe)
-        .where(Recipe.user_id == current_user.id, Recipe.is_active.is_(True))
+        .where(Recipe.user_id == current_user.id, Recipe.is_active.is_(True), Recipe.nutrition_snapshot_json.is_(None))
         .order_by(Recipe.name.asc())
     ).scalars().all()
     form.food_product_id.choices = [(0, "— Ninguno —")] + [(p.id, p.name) for p in products]

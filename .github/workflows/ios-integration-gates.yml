@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 jobs:
   native:
@@ -19,7 +20,7 @@ jobs:
       matrix:
         include:
           - pr: 17
-            head: e452671950aaf391e76b74721d9e1100d5134d3e
+            head: 3936331c1250683aff896fcd1c6e5a3b93fbb159
     env:
       FLASK_SKIP_DOTENV: '1'
       NUTRITION_HEAD: 518deebc769550c9f4259fa9db3f49107df113ee
@@ -112,6 +113,28 @@ jobs:
             ${{ runner.temp }}/swift-package.log
             ${{ runner.temp }}/versions.txt
           if-no-files-found: ignore
+      - name: Publish integration status on the exact PR head
+        if: always()
+        env:
+          GH_STATUS_TOKEN: ${{ github.token }}
+          TESTED_HEAD: ${{ matrix.head }}
+          GATE_RESULT: ${{ job.status }}
+          GATE_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python - <<'PY'
+          import json, os, urllib.request
+          state = 'success' if os.environ['GATE_RESULT'] == 'success' else 'failure'
+          body = json.dumps({'state': state, 'context': 'iOS stage 5 / native + Flask QA',
+              'description': 'macOS, iOS Simulator, SwiftUI and Flask QA: ' + state,
+              'target_url': os.environ['GATE_URL']}).encode()
+          request = urllib.request.Request(
+              'https://api.github.com/repos/Donbumo/health-tracker/statuses/' + os.environ['TESTED_HEAD'],
+              data=body, headers={'Authorization': 'Bearer ' + os.environ['GH_STATUS_TOKEN'],
+              'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json'}, method='POST')
+          with urllib.request.urlopen(request) as response:
+              assert response.status == 201
+          print('Published ' + state + ' for the exact tested PR head.')
+          PY
   planning-regression:
     if: ${{ contains(github.event.head_commit.message, '[planning-regression]') }}
     runs-on: macos-15

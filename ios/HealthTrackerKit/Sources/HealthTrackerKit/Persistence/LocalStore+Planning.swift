@@ -63,15 +63,16 @@ extension LocalStore {
             guard let plan = try planModel(scope, publicId) else {
                 throw AppFailure(.localStorageError, "La rutina no está disponible localmente.", retryable: false)
             }
-            let pendingCreate = try pendingModel(scope, entityId: publicId, type: "planning_plan_create")
-            let existingPatch = try pendingModel(scope, entityId: publicId, type: "planning_plan_patch")
+            let pendingCreate = try pendingModel(scope, entityId: publicId, type: "planning_plan_create").flatMap { Self.untouched($0) ? $0 : nil }
+            let existingPatch = try mutableTail(scope, entityId: publicId, type: "planning_plan_patch")
             let baseRevision = existingPatch.flatMap { Self.request($0)["base_revision"]?.intValue } ?? plan.revision
             var payload: [(String, JSONValue)] = [
                 ("base_revision", .number(String(baseRevision))), ("name", .string(trimmed)),
                 ("description", normalizedDescription.map(JSONValue.string) ?? .null),
             ]
             if let status { payload.append(("status", .string(status))) }
-            let foldedIntoCreate = pendingCreate != nil && status == nil
+            let hasPatch = try pendingModel(scope, entityId: publicId, type: "planning_plan_patch") != nil
+            let foldedIntoCreate = pendingCreate != nil && status == nil && !hasPatch
             plan.name = trimmed
             plan.planDescription = normalizedDescription
             if let status {
@@ -87,7 +88,7 @@ extension LocalStore {
                     ("description", normalizedDescription.map(JSONValue.string) ?? .null),
                 ]))
             } else if let existingPatch {
-                try replacePayload(existingPatch, .object(payload))
+                try replacePayload(existingPatch, Self.merging(Self.request(existingPatch), with: .object(payload)))
             } else {
                 try insertPending(scope, actionType: "planning_plan_patch", entityId: publicId, idempotencyKey: key, payloadJSON: JSONValue.object(payload).encoded(), now: now)
             }
@@ -171,8 +172,8 @@ extension LocalStore {
             }
             if workout.name == trimmed, workout.notes == normalizedNotes, planWorkout(scope, publicId: workoutId)?.exercises == ordered { return false }
             let pendingCreate = try fetch(#Predicate<PendingActionModel> { $0.accountScope == scope && $0.actionType == "planning_workout_create" })
-                .first { Self.request($0)["public_id"]?.stringValue == workoutId }
-            let existingPatch = try pendingModel(scope, entityId: workoutId, type: "planning_workout_patch")
+                .first { Self.untouched($0) && Self.request($0)["public_id"]?.stringValue == workoutId }
+            let existingPatch = try mutableTail(scope, entityId: workoutId, type: "planning_workout_patch")
             let baseRevision = existingPatch.flatMap { Self.request($0)["base_revision"]?.intValue } ?? workout.revision
             let payload = Self.workoutPatchPayload(baseRevision: baseRevision, name: trimmed, notes: normalizedNotes, exercises: ordered)
             try modelContext.delete(model: PlanExerciseModel.self, where: #Predicate { $0.accountScope == scope && $0.workoutPublicId == workoutId })
@@ -247,7 +248,7 @@ extension LocalStore {
             let patch = try pendingModel(scope, entityId: scheduledId, type: "planning_schedule_patch")
             let patchBase = patch.flatMap { Self.request($0)["base_revision"]?.intValue }
             let canDiscard = patch.map(Self.untouched) ?? false
-            let base = patchBase.map { canDiscard ? $0 : $0 + 1 } ?? planned.revision
+            let base = canDiscard ? (patchBase ?? planned.revision) : planned.revision
             if canDiscard, let patch { modelContext.delete(patch) }
             planned.status = "cancelled"
             planned.deleted = false
@@ -280,10 +281,10 @@ extension LocalStore {
                 ]))
                 return
             }
-            let patch = try pendingModel(scope, entityId: scheduledId, type: "planning_schedule_patch")
+            let patch = try mutableTail(scope, entityId: scheduledId, type: "planning_schedule_patch")
             let patchBase = patch.flatMap { Self.request($0)["base_revision"]?.intValue }
             let canCoalesce = patch.map(Self.untouched) ?? false
-            let base = patchBase.map { canCoalesce ? $0 : $0 + 1 } ?? planned.revision
+            let base = patchBase ?? planned.revision
             let payload: JSONValue = .object([
                 ("base_revision", .number(String(base))), ("scheduled_for_date", .string(date)), ("timezone", .string(timezone)),
             ])
@@ -291,6 +292,7 @@ extension LocalStore {
             planned.timezone = timezone
             planned.status = "locally_pending"
             planned.updatedAt = iso(now)
+            if !canCoalesce { planned.revision += 1 }
             if let patch, canCoalesce {
                 try replacePayload(patch, payload)
             } else {
@@ -403,26 +405,43 @@ extension LocalStore {
         try write {
             guard let pending = try fetch(#Predicate<PendingActionModel> { $0.accountScope == scope && $0.entityId == entityId && $0.status == "conflict" }).first,
                   case var .object(members) = (try? JSONValue.parse(pending.payloadJSON)) ?? .null else { return }
+            let delta = remoteRevision - (Self.request(pending)["base_revision"]?.intValue ?? remoteRevision)
             members.removeAll { $0.0 == "base_revision" }
             members.append(("base_revision", .number(String(remoteRevision))))
             let payload = JSONValue.object(members)
-            pending.idempotencyKey = newKey
-            pending.key = scopedKey(scope, newKey)
-            pending.payloadJSON = payload.encoded()
-            pending.payloadHash = CanonicalJSON.sha256(payload)
-            pending.status = "pending"
-            pending.attemptCount = 0
-            pending.notBefore = .distantPast
-            pending.lastErrorCode = nil
+            // Explicit conflict resolution creates a new request generation at the same FIFO slot.
+            // The rejected generation is never rewritten or acknowledged under the replacement key.
+            let replacement = PendingActionModel(sequence: pending.sequence, scope: scope, actionType: pending.actionType,
+                                                  entityId: entityId, idempotencyKey: newKey, payloadJSON: payload.encoded(),
+                                                  payloadHash: CanonicalJSON.sha256(payload), createdAt: pending.createdAt)
+            let sequence = pending.sequence
+            let planRevision = ["planning_plan_patch", "planning_workout_create"].contains(pending.actionType)
+            let later = try fetch(#Predicate<PendingActionModel> { $0.accountScope == scope && $0.sequence > sequence })
+            for row in later where row.entityId == entityId && (planRevision
+                ? ["planning_plan_patch", "planning_workout_create"].contains(row.actionType)
+                : (pending.actionType.hasPrefix("planning_schedule") || pending.actionType == "planning_cancel_schedule")
+                    ? ["planning_schedule_patch", "planning_cancel_schedule"].contains(row.actionType)
+                    : row.actionType == pending.actionType) {
+                if let base = Self.request(row)["base_revision"]?.intValue {
+                    try replacePayload(row, Self.merging(Self.request(row), with: .object([("base_revision", .number(String(base + delta)))])))
+                }
+            }
+            modelContext.delete(pending)
+            modelContext.insert(replacement)
             let conflictKey = scopedKey(scope, entityId)
             try modelContext.delete(model: PlanningConflictModel.self, where: #Predicate { $0.key == conflictKey })
             let entityKey = scopedKey(scope, entityId)
             if let workout = try fetch(#Predicate<PlanWorkoutModel> { $0.key == entityKey }).first {
+                workout.revision += delta
                 workout.syncStatus = "pending"
                 try planModel(scope, workout.planPublicId)?.syncStatus = "pending"
             }
-            try planModel(scope, entityId)?.syncStatus = "pending"
-            try fetch(#Predicate<PlannedWorkoutModel> { $0.key == entityKey }).first?.status = "locally_pending"
+            if let plan = try planModel(scope, entityId) { plan.revision += delta; plan.syncStatus = "pending" }
+            if let schedule = try fetch(#Predicate<PlannedWorkoutModel> { $0.key == entityKey }).first {
+                schedule.revision += delta
+                schedule.status = later.contains(where: { $0.entityId == entityId && $0.actionType == "planning_cancel_schedule" })
+                    ? "cancelled" : "locally_pending"
+            }
         }
     }
 
@@ -441,34 +460,74 @@ extension LocalStore {
     /// Visible sync state for the entity behind a planning action (android `markPlanningSyncStatus`).
     public func markPlanningSyncStatus(_ scope: String, action: PendingAction, status: String) throws {
         try write {
+            guard try matchesPending(scope, action) != nil else { return }
+            try setPlanningSyncStatus(scope, action: action, status: status)
+        }
+    }
+
+    /// Called within the ACK transaction, excluding just that operation, never later local work.
+    func setPlanningSyncStatus(_ scope: String, action: PendingAction, status: String) throws {
+            let remaining = try fetch(#Predicate<PendingActionModel> { $0.accountScope == scope })
+                .filter { $0.key != action.key }
+            func visible(_ relevant: [PendingActionModel]) -> String {
+                if status == "conflict" { return "conflict" }
+                if relevant.contains(where: { $0.status == "conflict" }) { return "conflict" }
+                if !relevant.isEmpty { return "pending" }
+                return status
+            }
+            func workoutWork(_ id: String) -> [PendingActionModel] {
+                remaining.filter { row in
+                    if row.actionType == "planning_workout_patch" { return row.entityId == id }
+                    if row.actionType == "planning_workout_create" { return Self.request(row)["public_id"]?.stringValue == id }
+                    if row.actionType == "planning_plan_patch", let value = Self.request(row)["workout_order"], case let .array(order) = value {
+                        return order.contains(.string(id))
+                    }
+                    return false
+                }
+            }
+            func planWork(_ id: String) throws -> [PendingActionModel] {
+                let ids = Set(try fetch(#Predicate<PlanWorkoutModel> { $0.accountScope == scope && $0.planPublicId == id }).map(\.publicId))
+                return remaining.filter {
+                    ["planning_plan_create", "planning_plan_patch", "planning_workout_create"].contains($0.actionType) && $0.entityId == id
+                        || $0.actionType == "planning_workout_patch" && ids.contains($0.entityId)
+                }
+            }
             let entityKey = scopedKey(scope, action.entityId)
             switch action.actionType {
             case "planning_plan_create", "planning_plan_patch":
-                try planModel(scope, action.entityId)?.syncStatus = status
+                try planModel(scope, action.entityId)?.syncStatus = visible(planWork(action.entityId))
+                if let value = (try? JSONValue.parse(action.payloadJSON))?["workout_order"], case let .array(order) = value {
+                    for value in order {
+                        guard let id = value.stringValue else { continue }
+                        let key = scopedKey(scope, id)
+                        try fetch(#Predicate<PlanWorkoutModel> { $0.key == key }).first?.syncStatus = visible(workoutWork(id))
+                    }
+                }
             case "planning_workout_create":
-                try planModel(scope, action.entityId)?.syncStatus = status
+                try planModel(scope, action.entityId)?.syncStatus = visible(planWork(action.entityId))
                 if let workoutId = (try? JSONValue.parse(action.payloadJSON))?["public_id"]?.stringValue {
                     let workoutKey = scopedKey(scope, workoutId)
-                    try fetch(#Predicate<PlanWorkoutModel> { $0.key == workoutKey }).first?.syncStatus = status
+                    try fetch(#Predicate<PlanWorkoutModel> { $0.key == workoutKey }).first?.syncStatus = visible(workoutWork(workoutId))
                 }
             case "planning_workout_patch":
                 if let workout = try fetch(#Predicate<PlanWorkoutModel> { $0.key == entityKey }).first {
-                    workout.syncStatus = status
-                    try planModel(scope, workout.planPublicId)?.syncStatus = status
+                    workout.syncStatus = visible(workoutWork(workout.publicId))
+                    try planModel(scope, workout.planPublicId)?.syncStatus = visible(planWork(workout.planPublicId))
                 }
             case "planning_schedule", "planning_schedule_patch", "planning_cancel_schedule":
                 let cancel = action.actionType == "planning_cancel_schedule"
-                let visible = switch status {
+                let scheduleWork = remaining.filter { $0.entityId == action.entityId && $0.actionType.hasPrefix("planning_") }
+                let nextStatus = visible(scheduleWork)
+                let visible = switch nextStatus {
                 case "syncing": "syncing"
                 case "conflict": "conflict"
                 case "synced": cancel ? "cancelled" : "planned"
-                default: cancel ? "cancelled" : "locally_pending"
+                default: cancel || scheduleWork.contains(where: { $0.actionType == "planning_cancel_schedule" }) ? "cancelled" : "locally_pending"
                 }
                 try fetch(#Predicate<PlannedWorkoutModel> { $0.key == entityKey }).first?.status = visible
             default:
                 break
             }
-        }
     }
 
     public func recordPlanningConflict(_ scope: String, entityId: String, conflictType: String, remoteName: String?, remoteRevision: Int?, now: Date = Date()) throws {
@@ -492,14 +551,19 @@ extension LocalStore {
         }
     }
 
-    public func applyScheduleResult(_ scope: String, id: String, date: String, timezone: String, status: String, revision: Int, now: Date = Date()) throws {
+    public func applyScheduleResult(_ scope: String, action: PendingAction, date: String, timezone: String, status: String, revision: Int, now: Date = Date()) throws {
         try write {
+            guard try matchesPending(scope, action) != nil else { return }
+            let id = action.entityId
             let key = scopedKey(scope, id)
             guard let planned = try fetch(#Predicate<PlannedWorkoutModel> { $0.key == key }).first else { return }
-            planned.scheduledForDate = date
-            planned.timezone = timezone
-            planned.status = status
-            planned.revision = revision
+            let queued = try fetch(#Predicate<PendingActionModel> { $0.accountScope == scope && $0.entityId == id })
+            if !queued.contains(where: { $0.key != action.key }) {
+                planned.scheduledForDate = date
+                planned.timezone = timezone
+                planned.status = status
+            }
+            planned.revision = max(planned.revision, revision)
             planned.updatedAt = iso(now)
         }
     }
@@ -507,6 +571,14 @@ extension LocalStore {
     public func deletePlanned(_ scope: String, id: String) throws {
         try write {
             let key = scopedKey(scope, id)
+            try modelContext.delete(model: PlannedWorkoutModel.self, where: #Predicate { $0.key == key })
+        }
+    }
+
+    public func deletePlanned(_ scope: String, action: PendingAction) throws {
+        try write {
+            guard try matchesPending(scope, action) != nil else { return }
+            let key = scopedKey(scope, action.entityId)
             try modelContext.delete(model: PlannedWorkoutModel.self, where: #Predicate { $0.key == key })
         }
     }
@@ -520,7 +592,21 @@ extension LocalStore {
 
     private func pendingModel(_ scope: String, entityId: String, type: String) throws -> PendingActionModel? {
         try fetch(#Predicate<PendingActionModel> { $0.accountScope == scope && $0.entityId == entityId && $0.actionType == type },
-                  sort: [SortDescriptor(\.sequence)]).first
+                  sort: [SortDescriptor(\.sequence, order: .reverse)]).first
+    }
+
+    /// Coalesce only the unsent FIFO tail. Crossing another operation could change its base revision.
+    private func mutableTail(_ scope: String, entityId: String, type: String) throws -> PendingActionModel? {
+        guard let tail = try fetch(#Predicate<PendingActionModel> { $0.accountScope == scope },
+                                   sort: [SortDescriptor(\.sequence, order: .reverse)], limit: 1).first,
+              tail.entityId == entityId, tail.actionType == type, Self.untouched(tail) else { return nil }
+        return tail
+    }
+
+    private static func merging(_ original: JSONValue, with update: JSONValue) -> JSONValue {
+        guard case let .object(old) = original, case let .object(new) = update else { return update }
+        let keys = Set(new.map(\.0))
+        return .object(old.filter { !keys.contains($0.0) } + new)
     }
 
     private func dropLocalPlanningWork(_ scope: String, entityId: String) throws {
@@ -530,6 +616,9 @@ extension LocalStore {
     }
 
     private func replacePayload(_ pending: PendingActionModel, _ payload: JSONValue) throws {
+        guard Self.untouched(pending) else {
+            throw AppFailure(.submissionConflict, "La operación ya fue reclamada para sincronizar.", retryable: false)
+        }
         pending.payloadJSON = payload.encoded()
         pending.payloadHash = CanonicalJSON.sha256(payload)
     }

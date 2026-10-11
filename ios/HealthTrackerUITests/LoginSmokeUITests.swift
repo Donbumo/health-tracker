@@ -68,7 +68,9 @@ final class LoginSmokeUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts[session].firstMatch.waitForExistence(timeout: 20), "Seeded plan not listed")
         app.staticTexts[session].firstMatch.tap()
         XCTAssertTrue(app.navigationBars["Rutina"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.staticTexts[session].firstMatch.waitForExistence(timeout: 10))
+        let planName = app.textFields["plan_name_field"]
+        XCTAssertTrue(planName.waitForExistence(timeout: 10))
+        XCTAssertEqual(planName.value as? String, session)
         attach(app, "06-plan")
 
         app.tabBars.buttons["Historial"].tap()

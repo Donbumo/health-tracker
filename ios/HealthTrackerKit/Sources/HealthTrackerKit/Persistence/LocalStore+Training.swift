@@ -195,7 +195,7 @@ public struct PlanWorkout: Sendable, Equatable, Identifiable {
 
 /// Android `protectLocalPlanningState`: a locally edited plan is never overwritten while planning work is queued.
 public func protectLocalPlanningState(_ syncStatus: String?, hasQueuedPlanningWork: Bool) -> Bool {
-    hasQueuedPlanningWork && ["pending", "conflict"].contains(syncStatus ?? "")
+    hasQueuedPlanningWork && ["pending", "syncing", "conflict"].contains(syncStatus ?? "")
 }
 
 // MARK: Writes and reads
@@ -483,7 +483,7 @@ extension LocalStore {
         try write {
             let key = scopedKey(scope, dto.publicId)
             let local = try fetch(#Predicate<PlanModel> { $0.key == key }).first
-            if ["pending", "conflict"].contains(local?.syncStatus ?? "") { return false }
+            if ["pending", "syncing", "conflict"].contains(local?.syncStatus ?? "") { return false }
             let plan = local ?? {
                 let created = PlanModel(scope: scope, publicId: dto.publicId)
                 modelContext.insert(created)

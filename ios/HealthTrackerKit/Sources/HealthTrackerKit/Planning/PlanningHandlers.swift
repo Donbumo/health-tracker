@@ -16,17 +16,17 @@ public enum PlanningHandlers {
                 throw AppFailure(.localStorageError, "La programación pendiente no puede recuperarse.", retryable: false)
             }
             let response = try await api.schedulePlanWorkout(workoutId, request, key: action.idempotencyKey)
-            try await store.applyScheduleResult(scope, id: action.entityId, date: response.scheduledForDate, timezone: response.timezone,
+            try await store.applyScheduleResult(scope, action: action, date: response.scheduledForDate, timezone: response.timezone,
                                                 status: response.status, revision: response.revision)
         },
         "planning_schedule_patch": Handler { action, scope, api, store in
             let response = try await api.reschedulePlannedWorkout(action.entityId, try body(action), key: action.idempotencyKey)
-            try await store.applyScheduleResult(scope, id: action.entityId, date: response.scheduledForDate, timezone: response.timezone,
+            try await store.applyScheduleResult(scope, action: action, date: response.scheduledForDate, timezone: response.timezone,
                                                 status: response.status, revision: response.revision)
         },
         "planning_cancel_schedule": Handler { action, scope, api, store in
             try await api.cancelScheduledWorkout(action.entityId, try body(action), key: action.idempotencyKey)
-            try await store.deletePlanned(scope, id: action.entityId)
+            try await store.deletePlanned(scope, action: action)
         },
     ]
 
@@ -48,9 +48,7 @@ public enum PlanningHandlers {
             try await store.markPlanningSyncStatus(scope, action: action, status: "syncing")
             do {
                 try await send(action, scope, api, store)
-                if action.actionType != "planning_cancel_schedule" {
-                    try await store.markPlanningSyncStatus(scope, action: action, status: "synced")
-                }
+                // SyncEngine commits the ACK and recomputes pending state atomically.
             } catch let failure as AppFailure {
                 if failure.retryable {
                     try await store.markPlanningSyncStatus(scope, action: action, status: "pending")

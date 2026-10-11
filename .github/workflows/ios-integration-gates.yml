@@ -19,10 +19,12 @@ jobs:
       matrix:
         include:
           - pr: 17
-            head: 9ab9b2c3b9baf835697558e786b66f8214b2d80e
+            head: 2cc0159e08b12484d5e45b9aaa23be50a927c95b
     env:
       FLASK_SKIP_DOTENV: '1'
       NUTRITION_HEAD: 518deebc769550c9f4259fa9db3f49107df113ee
+      HT_PLANNING_FLASK_QA_URL: http://127.0.0.1:8026
+      TEST_RUNNER_HT_PLANNING_FLASK_QA_URL: http://127.0.0.1:8026
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,7 +43,9 @@ jobs:
           git diff --check
           git rev-parse HEAD
           git write-tree
-          xcodebuild -version
+          sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+          xcodebuild -version | tee "$RUNNER_TEMP/versions.txt"
+          swift --version | tee -a "$RUNNER_TEMP/versions.txt"
           # GitHub simulator login completed after the original 20s UI wait.
           # Only the injected QA wait changes; application and package sources stay exact.
           python - <<'PY'
@@ -56,10 +60,6 @@ jobs:
           text = text.replace(focus, '        secure.tap()\n        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 10))\n        secure.tap()\n        secure.typeText(password)')
           path.write_text(text)
           PY
-      - name: Swift Package tests on macOS
-        if: ${{ !contains(github.event.head_commit.message, '[simulator-signing]') }}
-        working-directory: ios/HealthTrackerKit
-        run: swift test
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -87,6 +87,11 @@ jobs:
         run: |
           defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false
           xcrun simctl bootstatus "$SIMULATOR_ID" -b
+      - name: Swift Package tests on macOS including real Flask convergence
+        working-directory: ios/HealthTrackerKit
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee "$RUNNER_TEMP/swift-package.log"
       - name: Swift Package tests on iOS Simulator
         if: ${{ !contains(github.event.head_commit.message, '[simulator-signing]') }}
         working-directory: ios/HealthTrackerKit
@@ -118,6 +123,8 @@ jobs:
             ${{ runner.temp }}/package.xcresult
             ${{ runner.temp }}/app.xcresult
             ${{ runner.temp }}/backend.log
+            ${{ runner.temp }}/swift-package.log
+            ${{ runner.temp }}/versions.txt
           if-no-files-found: ignore
   planning-regression:
     if: ${{ contains(github.event.head_commit.message, '[planning-regression]') }}

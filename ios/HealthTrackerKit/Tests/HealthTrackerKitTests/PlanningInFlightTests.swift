@@ -180,6 +180,7 @@ struct PlanningInFlightIntegrationTests {
         #expect(await store.plan(scope, publicId: "qa-plan-1")?.name == "Remote QA")
         #expect(await store.plan(scope, publicId: "qa-plan-1")?.syncStatus == "pending")
         #expect(await store.planWorkout(scope, publicId: "qa-workout-1")?.name == "After QA")
+        #expect(await store.plan(scope, publicId: "qa-plan-1")?.revision == 6)
         #expect(await store.planWorkout(scope, publicId: "qa-workout-1")?.syncStatus == "pending")
         #expect(await store.headOfQueue(scope)?.idempotencyKey == "workout-patch")
         try await store.completePending(sent, scope: scope)
@@ -266,6 +267,21 @@ struct PlanningInFlightIntegrationTests {
         #expect(await store.plannedWorkout(scope, id: "qa-planned-1")?.revision == 4)
     }
 
+    @Test func remoteDeletionKeepsAQueuedScheduleEditAsAVisibleConflict() async throws {
+        let store = try LocalStore.make(inMemory: true)
+        try await store.applyBootstrap(scope, QAFixtures.decode(BootstrapResponse.self, envelope: QAFixtures.bootstrap()))
+        try await store.rescheduleWorkoutOffline(scope, scheduledId: "qa-planned-1", date: "2026-10-21", timezone: "UTC", key: "patch")
+        let sent = try await claim(store)
+        let page = try QAFixtures.decode(PullResponse.self, envelope: QAFixtures.pull([
+            QAFixtures.change("planned_workout", id: "qa-planned-1", operation: "delete", revision: 3, payload: nil),
+        ], next: "after-delete"))
+        try await store.applyPullPage(scope, page, deviceId: "qa-device")
+        #expect(await store.plannedWorkout(scope, id: "qa-planned-1")?.scheduledForDate == "2026-10-21")
+        #expect(await store.plannedWorkout(scope, id: "qa-planned-1")?.status == "conflict")
+        #expect(await store.headOfQueue(scope)?.payloadJSON == sent.payloadJSON)
+        #expect(await store.planningConflict(scope, entityId: "qa-planned-1")?.changedFields == "remote_deleted")
+    }
+
     @Test func multipleEntitiesAndIdenticalKeysAreIsolatedAcrossUsersAndServers() async throws {
         let store = try LocalStore.make(inMemory: true)
         let scopes = [CanonicalJSON.accountScope(serverURL: "https://qa-a.invalid", userPublicId: "qa-1"),
@@ -317,6 +333,56 @@ struct PlanningInFlightIntegrationTests {
         #expect(await h.store.plan(account, publicId: id)?.name == "After QA 2")
         #expect(await h.store.plan(account, publicId: id)?.syncStatus == "synced")
         #expect(await h.store.snapshot(account).pendingCount == 0)
+    }
+
+    @Test(arguments: [503, 409])
+    func HTTPFailureDuringAnEditPreservesTheFrozenHeadAndItsTail(status: Int) async throws {
+        let h = try Harness()
+        let account = try await h.login().scope
+        try await seed(h.store, scope: account)
+        try await h.store.editPlanOffline(account, publicId: "qa-plan-1", name: "Before QA", description: nil, key: "first")
+        let path = "/api/v1/mobile/plans/qa-plan-1"
+        let error = status == 503 ? "server_error" : "revision_conflict"
+        h.transport.on("PATCH", path, status: status, json: #"{"error":{"code":"\#(error)","message":"Fictional QA"}}"#)
+        if status == 409 {
+            h.transport.on("GET", path, json: #"{"data":\#(TrainingFixtures.plan(name: "Remote QA", revision: 5, withWorkouts: false))}"#)
+        }
+        let gate = PlanningRequestGate(inner: h.transport, method: "PATCH", path: path)
+        let api = APIClient(preferences: h.preferences, tokens: h.tokens, transport: gate)
+        let clock = Clock()
+        let engine = SyncEngine(api: api, store: h.store, preferences: h.preferences, handlers: PlanningHandlers.all,
+                                now: { clock.now }, jitter: { _ in 0 })
+        let run = Task { try await engine.synchronize(scope: account) }
+        let request = await gate.waitForRequest()
+        try await h.store.editPlanOffline(account, publicId: "qa-plan-1", name: "After QA", description: nil, key: "later")
+        await gate.resume()
+        await #expect(throws: AppFailure.self) { try await run.value }
+        #expect(await h.store.snapshot(account).pendingCount == 2)
+        #expect(await h.store.plan(account, publicId: "qa-plan-1")?.name == "After QA")
+        if status == 409 {
+            #expect(await h.store.headOfQueue(account)?.status == "conflict")
+            try await h.store.rebaseConflict(account, entityId: "qa-plan-1", remoteRevision: 5, newKey: "resolved")
+        } else {
+            #expect(await h.store.headOfQueue(account)?.status == "pending")
+            clock.advance(31)
+        }
+        h.transport.on("PATCH", path, json: #"{"data":{"revision":2}}"#)
+        h.transport.on("PATCH", path, json: #"{"data":{"revision":3}}"#)
+        h.transport.on("GET", "/api/v1/sync/pull", json: QAFixtures.pull([], next: "done"))
+        h.transport.on("GET", "/api/v1/sync/status", json: QAFixtures.status(deviceId: h.preferences.values.deviceId))
+        try await engine.synchronize(scope: account)
+        let sent = h.transport.requests.filter { $0.httpMethod == "PATCH" && $0.url?.path == path }
+        #expect(sent.count == 3)
+        if status == 503 {
+            #expect(sent[1].httpBody == request.httpBody)
+            #expect(sent[1].value(forHTTPHeaderField: "Idempotency-Key") == request.value(forHTTPHeaderField: "Idempotency-Key"))
+        } else {
+            #expect(try JSONValue.parse(try #require(sent[1].httpBody))["base_revision"] == .number("5"))
+            #expect(try JSONValue.parse(try #require(sent[2].httpBody))["base_revision"] == .number("6"))
+        }
+        #expect(try JSONValue.parse(try #require(sent[2].httpBody))["name"] == .string("After QA"))
+        #expect(await h.store.snapshot(account).pendingCount == 0)
+        #expect(await h.store.plan(account, publicId: "qa-plan-1")?.syncStatus == "synced")
     }
 }
 

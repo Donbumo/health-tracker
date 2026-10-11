@@ -173,7 +173,14 @@ public actor LocalStore: AccountStore {
         if change.operation == "delete" {
             if change.entityType == "planned_workout" {
                 let key = scopedKey(scope, change.entityId)
-                try modelContext.delete(model: PlannedWorkoutModel.self, where: #Predicate { $0.key == key })
+                if protectedIds.contains(change.entityId), let local = try fetch(#Predicate<PlannedWorkoutModel> { $0.key == key }).first {
+                    local.status = "conflict"
+                    try upsertConflict(PlanningConflictModel(scope: scope, entityId: change.entityId, entityType: "schedule",
+                        localRevision: local.revision, serverRevision: change.revision, changedFields: "remote_deleted",
+                        localName: "\(local.title) · \(local.scheduledForDate)", remoteName: nil, createdAt: iso(now)))
+                } else {
+                    try modelContext.delete(model: PlannedWorkoutModel.self, where: #Predicate { $0.key == key })
+                }
             }
             return
         }

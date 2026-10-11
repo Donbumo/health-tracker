@@ -411,6 +411,14 @@ extension LocalStore {
             let remoteIds = Set((remote.workouts ?? []).map(\.publicId))
             let planId = remote.publicId
             let localWorkouts = try fetch(#Predicate<PlanWorkoutModel> { $0.accountScope == scope && $0.planPublicId == planId })
+            if !ownPlanPending {
+                let ids = Set(localWorkouts.map(\.publicId))
+                plan.revision = remote.revision + remaining.filter {
+                    $0.actionType == "planning_workout_create" && $0.entityId == planId
+                        || $0.actionType == "planning_workout_patch" && ids.contains($0.entityId)
+                }.count
+                plan.workoutCount = remoteIds.count + localWorkouts.filter { protectedIds.contains($0.publicId) && !remoteIds.contains($0.publicId) }.count
+            }
             for workout in localWorkouts where !protectedIds.contains(workout.publicId) && !remoteIds.contains(workout.publicId) {
                 try removePlanningWorkout(scope, workout.publicId)
             }

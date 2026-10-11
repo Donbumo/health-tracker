@@ -4,6 +4,8 @@ Cliente iOS nativo (SwiftUI, iOS 17+) equivalente al companion Android de `andro
 
 ## Stack
 
+La corrección P1 de la cola y sus regresiones están documentadas en [QA de durabilidad de Etapa 5](QA_STAGE5_QUEUE.md).
+
 - Xcode 16.4+, Swift 6 (concurrencia estricta), iOS 17 mínimo.
 - Proyecto generado con [XcodeGen](https://github.com/yonaskolb/XcodeGen) desde `project.yml` (el `.xcodeproj` no se versiona).
 - `HealthTrackerKit/`: paquete Swift con toda la lógica sin UI (red, sesión, validación, seguridad). Testeable en macOS y simulador.

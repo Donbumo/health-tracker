@@ -189,6 +189,7 @@ class ImportHubPreviewForm(FlaskForm):
             ("weigh_in_batch", "Pesajes (JSON)"),
             ("daily_energy", "Energía diaria (JSON)"),
             ("daily_nutrition", "Nutrición diaria (JSON)"),
+            ("nutrition_import", "Nutrición revisada 2.1 (JSON)"),
             ("food_products", "Alimentos/productos (JSON)"),
             ("recipe", "Receta (JSON)"),
             ("recipe_bundle", "Varias recetas (JSON)"),

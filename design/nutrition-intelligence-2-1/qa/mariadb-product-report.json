@@ -1,0 +1,23 @@
+{
+  "scope": "QA synthetic only; focused queries; no DDL",
+  "isolations": [
+    {
+      "level": "READ COMMITTED",
+      "word_boundary_rank": "pass",
+      "tortilla_vs_chips": "pass",
+      "rice_identity": "pass",
+      "JSON_shared_reference_retention": "pass",
+      "explicit_unconfirmed_original_deletion": "pass",
+      "head": "20261013_0045"
+    },
+    {
+      "level": "REPEATABLE READ",
+      "word_boundary_rank": "pass",
+      "tortilla_vs_chips": "pass",
+      "rice_identity": "pass",
+      "JSON_shared_reference_retention": "pass",
+      "explicit_unconfirmed_original_deletion": "pass",
+      "head": "20261013_0045"
+    }
+  ]
+}

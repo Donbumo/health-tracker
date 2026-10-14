@@ -1,0 +1,87 @@
+[
+  {
+    "file": "ambiguous-unit.json",
+    "fixture": "QA synthetic",
+    "scenario": "ambiguous-unit"
+  },
+  {
+    "file": "app.csv",
+    "fixture": "QA synthetic",
+    "scenario": "app"
+  },
+  {
+    "file": "compound-macros.json",
+    "fixture": "QA synthetic",
+    "scenario": "compound-macros"
+  },
+  {
+    "file": "date-conflict.json",
+    "fixture": "QA synthetic",
+    "scenario": "date-conflict"
+  },
+  {
+    "file": "diet-prescribed.pdf",
+    "fixture": "QA synthetic",
+    "scenario": "diet-prescribed"
+  },
+  {
+    "file": "diet-scanned.pdf",
+    "fixture": "QA synthetic",
+    "scenario": "diet-scanned"
+  },
+  {
+    "file": "diet.xlsx",
+    "fixture": "QA synthetic",
+    "scenario": "diet"
+  },
+  {
+    "file": "duplicate.json",
+    "fixture": "QA synthetic",
+    "scenario": "duplicate"
+  },
+  {
+    "file": "external.json",
+    "fixture": "QA synthetic",
+    "scenario": "external"
+  },
+  {
+    "file": "internal.json",
+    "fixture": "QA synthetic",
+    "scenario": "internal"
+  },
+  {
+    "file": "label.jpg",
+    "fixture": "QA synthetic",
+    "scenario": "label"
+  },
+  {
+    "file": "label.png",
+    "fixture": "QA synthetic",
+    "scenario": "label"
+  },
+  {
+    "file": "label.webp",
+    "fixture": "QA synthetic",
+    "scenario": "label"
+  },
+  {
+    "file": "missing-brand.json",
+    "fixture": "QA synthetic",
+    "scenario": "missing-brand"
+  },
+  {
+    "file": "nutrition-export.zip",
+    "fixture": "QA synthetic",
+    "scenario": "nutrition-export"
+  },
+  {
+    "file": "prescribed-no-consumption.json",
+    "fixture": "QA synthetic",
+    "scenario": "prescribed-no-consumption"
+  },
+  {
+    "file": "table.tsv",
+    "fixture": "QA synthetic",
+    "scenario": "table"
+  }
+]

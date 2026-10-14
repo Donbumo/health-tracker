@@ -1,0 +1,6 @@
+# Only these explicitly synthetic QA fixtures override the personal-file guards.
+!fixtures/app.csv
+!fixtures/diet.xlsx
+!fixtures/diet-prescribed.pdf
+!fixtures/diet-scanned.pdf
+!fixtures/nutrition-export.zip

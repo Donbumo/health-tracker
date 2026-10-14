@@ -56,6 +56,7 @@ DEFAULT_CONFIRMATION_MAX_AGE_SECONDS = 15 * 60
 
 
 TARGET_SCHEMAS = {
+    "nutrition_import": "nutrition_import_2_1",
     "weigh_in_batch": "weigh_in",
     "weigh_in": "weigh_in",
     "food_products": "food_product",
@@ -326,7 +327,7 @@ class StandardImportExecutor:
                 db.session.flush()
                 committed_operations.append(
                     PlannedOperation(
-                        operation=planned.operation,
+                        operation='skip' if planned.target_type=='nutrition_import' and getattr(record,'_nutrition_import_replay',False) else planned.operation,
                         target_type=planned.target_type,
                         document_index=planned.document_index,
                         label=planned.label,
@@ -397,6 +398,12 @@ class StandardImportExecutor:
         try:
             validate_json_document(document, schema_name)
             self._validate_document_owner(document, user_id=user_id, schema_name=schema_name)
+            if target_type == 'nutrition_import':
+                from app.services.nutrition_import import validate_document
+                try:
+                    validate_document(document, user_id)
+                except ValueError as error:
+                    raise StandardImportError(str(error)) from error
             if schema_name == "completed_workout":
                 from app.services.workout_loads import validate_completed_workout_loads
 
@@ -440,7 +447,7 @@ class StandardImportExecutor:
                 existing_id=existing.id,
             )
 
-        if target_type == "completed_workout":
+        if target_type in {"completed_workout", "nutrition_import"}:
             return PlannedOperation(
                 "conflict",
                 target_type,
@@ -448,7 +455,7 @@ class StandardImportExecutor:
                 label,
                 model=model,
                 existing_id=existing.id,
-                errors=("Completed workout updates are not supported safely yet.",),
+                errors=("El evento existente difiere; no se sobrescribe historial.",) if target_type=='nutrition_import' else ("Completed workout updates are not supported safely yet.",),
             )
 
         return PlannedOperation(
@@ -556,6 +563,10 @@ class StandardImportExecutor:
         user_id: int,
         target_type: str,
     ) -> Any | None:
+        if target_type == 'nutrition_import':
+            from app.models import NutritionImportReceipt
+            return db.session.execute(db.select(NutritionImportReceipt).where(
+                NutritionImportReceipt.user_id==user_id, NutritionImportReceipt.event_key==document['data']['event_key'])).scalar_one_or_none()
         if target_type in {"weigh_in", "weigh_in_batch"}:
             data = document["data"]
             recorded_at = datetime.fromisoformat(data["recorded_at"].replace("Z", "+00:00"))
@@ -691,6 +702,9 @@ class StandardImportExecutor:
         operation: str,
         existing_id: int | None,
     ) -> Any:
+        if target_type == 'nutrition_import':
+            from app.services.nutrition_import import apply_document
+            return apply_document(document,user_id)
         if target_type in {"weigh_in", "weigh_in_batch"}:
             return self._apply_weigh_in(document, user_id, existing_id)
         if target_type == "daily_energy":
@@ -840,6 +854,8 @@ class StandardImportExecutor:
         record = db.session.get(FoodProduct, existing_id) if existing_id else FoodProduct(user_id=user_id)
         if record is None or record.user_id != user_id:
             raise StandardImportError("Food product target does not belong to this user")
+        from app.services.food_catalog import refresh_personal_vector
+        refresh_personal_vector(record,user_id,{field:_decimal(data[field]) for field in ("calories_per_100g","protein_g_per_100g","fat_g_per_100g","carbs_g_per_100g","net_carbs_g_per_100g","fiber_g_per_100g","sodium_mg_per_100g") if field in data})
         for field in (
             "name",
             "brand",
@@ -861,8 +877,6 @@ class StandardImportExecutor:
         ):
             if field in data:
                 setattr(record, field, _decimal(data.get(field)))
-        from app.services.food_catalog import refresh_personal_vector
-        refresh_personal_vector(record,user_id,{field:_decimal(data[field]) for field in ("calories_per_100g","protein_g_per_100g","fat_g_per_100g","carbs_g_per_100g","net_carbs_g_per_100g","fiber_g_per_100g","sodium_mg_per_100g") if field in data})
         if existing_id:
             record.revision += 1
         if not record.source:

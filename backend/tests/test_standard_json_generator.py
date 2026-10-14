@@ -841,6 +841,7 @@ def test_generate_medical_lab_documents_with_flat_markers(app):
 
 def test_supported_targets_include_final_phase_5b_set():
     assert SUPPORTED_TARGETS == {
+        "nutrition_import",
         "weigh_in_batch",
         "food_products",
         "daily_energy",

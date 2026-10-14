@@ -1,0 +1,593 @@
+[
+  {
+    "query": "arroz",
+    "results": 50,
+    "ms": 187.839,
+    "first": [
+      "Arroz blanco cocido",
+      "Beverages, rice milk, unsweetened",
+      "Bread, rice"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "arroz blanco cocido",
+    "results": 23,
+    "ms": 90.345,
+    "first": [
+      "Arroz blanco cocido",
+      "Rice, white, cooked, NS as to fat",
+      "Rice, white, cooked, as ingredient"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "arroz integral",
+    "results": 50,
+    "ms": 94.074,
+    "first": [
+      "Rice, brown, cooked, NS as to fat",
+      "Rice, brown, cooked, as ingredient",
+      "Rice, brown, cooked, fat added, NS as to fat type"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "rice raw",
+    "results": 13,
+    "ms": 88.021,
+    "first": [
+      "Rice, black, unenriched, raw",
+      "Rice, brown, long grain, unenriched, raw",
+      "Rice, brown, long-grain, raw (Includes foods for USDA's Food Distribution Program)"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "rice cooked",
+    "results": 50,
+    "ms": 89.007,
+    "first": [
+      "Rice, brown, cooked, NS as to fat",
+      "Rice, brown, cooked, as ingredient",
+      "Rice, brown, cooked, fat added, NS as to fat type"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "pollo",
+    "results": 50,
+    "ms": 90.998,
+    "first": [
+      "Pechuga pollo asada",
+      "APPLEBEE'S, chicken tenders platter",
+      "APPLEBEE'S, chicken tenders, from kids' menu"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "pechuga pollo cocida",
+    "results": 48,
+    "ms": 91.42,
+    "first": [
+      "Pechuga pollo asada",
+      "Chicken breast, baked or broiled, skin eaten, from pre-cooked",
+      "Chicken breast, baked or broiled, skin not eaten, from pre-cooked"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "chicken raw",
+    "results": 50,
+    "ms": 93.297,
+    "first": [
+      "Chicken, breast, boneless, skinless, raw",
+      "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
+      "Chicken, broilers or fryers, back, meat only, raw"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "chicken roasted",
+    "results": 50,
+    "ms": 91.752,
+    "first": [
+      "Chicken breast, baked, broiled, or roasted, skin eaten, from raw",
+      "Chicken breast, baked, broiled, or roasted, skin not eaten, from raw",
+      "Chicken breast, oven-roasted, fat-free, sliced"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "frijol",
+    "results": 50,
+    "ms": 96.057,
+    "first": [
+      "Frijol negro cocido",
+      "Frijol pinto cocido",
+      "Baked beans"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "frijoles negros",
+    "results": 27,
+    "ms": 96.205,
+    "first": [
+      "Frijol negro cocido",
+      "Beans, Dry, Black (0% moisture)",
+      "Beans, black turtle, mature seeds, canned"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "frijoles pintos",
+    "results": 27,
+    "ms": 90.043,
+    "first": [
+      "Frijol pinto cocido",
+      "Beans, Dry, Pinto (0% moisture)",
+      "Beans, pinto, canned, drained solids"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "tortilla",
+    "results": 50,
+    "ms": 91.434,
+    "first": [
+      "Tortilla de maíz",
+      "Tortilla, NFS",
+      "Tortilla, blue corn, Sakwavikaviki (Hopi)"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "tortilla maiz",
+    "results": 13,
+    "ms": 92.603,
+    "first": [
+      "Tortilla de maíz",
+      "Tortilla, blue corn, Sakwavikaviki (Hopi)",
+      "Tortilla, corn"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "tortilla harina",
+    "results": 14,
+    "ms": 90.411,
+    "first": [
+      "Tortilla, flour",
+      "Tortillas, ready-to-bake or -fry, flour, refrigerated",
+      "Tortillas, ready-to-bake or -fry, flour, shelf stable"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "avena",
+    "results": 50,
+    "ms": 91.17,
+    "first": [
+      "Avena seca",
+      "Bagel, oat bran",
+      "Bagels, oat bran"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "oats raw",
+    "results": 2,
+    "ms": 87.06,
+    "first": [
+      "Oats, raw",
+      "Oat bran, raw"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "leche",
+    "results": 50,
+    "ms": 89.036,
+    "first": [
+      "Leche Santa Clara Entera",
+      "Leche Ultra Pasteurizada Entera",
+      "Leche de almendras"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "yogur",
+    "results": 50,
+    "ms": 86.377,
+    "first": [
+      "Yogur natural entero",
+      "Yogurt parfait, lowfat, with fruit and granola",
+      "Yogurt parfait, with fruit"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "queso",
+    "results": 50,
+    "ms": 87.21,
+    "first": [
+      "Queso Anejo, aged Mexican cheese",
+      "Queso Asadero",
+      "Queso Fresco"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "huevo",
+    "results": 50,
+    "ms": 86.343,
+    "first": [
+      "Huevo cocido",
+      "BURGER KING, CROISSAN'WICH with Egg and Cheese",
+      "BURGER KING, CROISSAN'WICH with Sausage, Egg and Cheese"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "aguacate",
+    "results": 8,
+    "ms": 84.568,
+    "first": [
+      "Aguacate crudo",
+      "Avocado dressing",
+      "Avocado, Hass, peeled, raw"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "atun",
+    "results": 50,
+    "ms": 87.473,
+    "first": [
+      "Atún aleta amarilla en hojuelas en agua",
+      "Atún en agua escurrido",
+      "Fast foods, submarine sandwich, tuna on white bread with lettuce and tomato"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "salmon",
+    "results": 50,
+    "ms": 86.041,
+    "first": [
+      "Salmon cake sandwich",
+      "Salmon nuggets, breaded, frozen, heated",
+      "Salmon nuggets, cooked as purchased, unheated"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "papa",
+    "results": 50,
+    "ms": 87.071,
+    "first": [
+      "PAPA JOHN'S 14\" Cheese Pizza, Original Crust",
+      "PAPA JOHN'S 14\" Cheese Pizza, Thin Crust",
+      "PAPA JOHN'S 14\" Pepperoni Pizza, Original Crust"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "platano",
+    "results": 50,
+    "ms": 86.362,
+    "first": [
+      "Plátano crudo",
+      "Baby Toddler bananas, Stage 1",
+      "Baby Toddler bananas, Stage 2"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "lentejas",
+    "results": 16,
+    "ms": 82.913,
+    "first": [
+      "Lenteja cocida",
+      "Lentils, NFS",
+      "Lentils, dry"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "garbanzos",
+    "results": 15,
+    "ms": 82.576,
+    "first": [
+      "Chickpeas (garbanzo beans, bengal gram), canned, sodium added, drained and rinsed",
+      "Chickpeas (garbanzo beans, bengal gram), mature seeds, canned, drained solids",
+      "Chickpeas (garbanzo beans, bengal gram), mature seeds, canned, drained, rinsed in tap water"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "cebolla",
+    "results": 50,
+    "ms": 86.133,
+    "first": [
+      "Cebolla cruda",
+      "APPLEBEE'S, crunchy onion rings",
+      "BURGER KING, Onion Rings"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "espinaca",
+    "results": 50,
+    "ms": 88.89,
+    "first": [
+      "Espinaca cruda",
+      "Babyfood, vegetables, spinach, creamed, strained",
+      "Cannelloni, cheese- and spinach-filled, no sauce"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "cacahuate",
+    "results": 50,
+    "ms": 90.294,
+    "first": [
+      "Cacahuate crudo",
+      "Candies, NESTLE, GOOBERS Chocolate Covered Peanuts",
+      "Candies, milk chocolate coated peanuts"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "cerdo",
+    "results": 50,
+    "ms": 87.202,
+    "first": [
+      "Babyfood, meat, pork, strained",
+      "Bacon or side pork, fresh, cooked",
+      "Barbecue loaf, pork, beef"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "nopal",
+    "results": 2,
+    "ms": 83.721,
+    "first": [
+      "Nopal cocido",
+      "Nopales, raw"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "zanahoria",
+    "results": 50,
+    "ms": 92.868,
+    "first": [
+      "Zanahoria cruda",
+      "Baby Toddler carrots, Stage 1",
+      "Baby Toddler carrots, Stage 2"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "calabaza",
+    "results": 50,
+    "ms": 93.574,
+    "first": [
+      "Baby Toddler squash, Stage 1",
+      "Baby Toddler squash, Stage 2",
+      "Babyfood, GERBER, 2nd Foods, apple, carrot and squash, organic"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "calabacita",
+    "results": 13,
+    "ms": 84.49,
+    "first": [
+      "Calabacita cocida",
+      "Bread, zucchini",
+      "Cake or cupcake, zucchini"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "chile",
+    "results": 50,
+    "ms": 88.561,
+    "first": [
+      "Chile jalapeño crudo",
+      "APPLEBEE'S, chili",
+      "Beans, chili, barbecue, ranch style, cooked"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "pepino",
+    "results": 19,
+    "ms": 84.991,
+    "first": [
+      "Pepino con piel",
+      "Cucumber and vegetable namasu",
+      "Cucumber salad made with cucumber and vinegar"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "naranja",
+    "results": 50,
+    "ms": 85.901,
+    "first": [
+      "Naranja cruda",
+      "Babyfood, GERBER, Banana with orange medley",
+      "Babyfood, cereal, high protein, with apple and orange, dry"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "fresas",
+    "results": 9,
+    "ms": 83.525,
+    "first": [
+      "Cereals ready-to-eat, POST, HONEY BUNCHES OF OATS, with real strawberries",
+      "Fresa cruda",
+      "Strawberries, canned"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "piña",
+    "results": 50,
+    "ms": 87.519,
+    "first": [
+      "Pina Colada",
+      "Pina Colada, nonalcoholic",
+      "Piña cruda"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "mango",
+    "results": 18,
+    "ms": 84.495,
+    "first": [
+      "Mango crudo",
+      "Mango nectar",
+      "Mango nectar, canned"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "pavo",
+    "results": 50,
+    "ms": 92.134,
+    "first": [
+      "Asian chicken or turkey garden salad with crispy noodles, chicken and/or turkey, lettuce, fruit, nuts, crispy noodles, no dressing",
+      "Asian chicken or turkey garden salad, chicken and/or turkey, lettuce, fruit, nuts, no dressing",
+      "Baby Toddler turkey"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "brocoli",
+    "results": 50,
+    "ms": 86.581,
+    "first": [
+      "Brócoli cocido",
+      "Babyfood, dinner, broccoli and chicken, junior",
+      "Babyfood, mashed cheddar potatoes and broccoli, toddlers"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "papaya",
+    "results": 11,
+    "ms": 84.681,
+    "first": [
+      "Papaya cruda",
+      "Papaya juice, 100%",
+      "Papaya nectar"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "guayaba",
+    "results": 12,
+    "ms": 87.265,
+    "first": [
+      "Babyfood, fruit, guava and papaya with tapioca, strained",
+      "Beverages, V8 SPLASH Juice Drinks, Guava Passion Fruit",
+      "Fruit salad, (pineapple and papaya and banana and guava), tropical, canned, heavy syrup, solids and liquids"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "quinoa",
+    "results": 8,
+    "ms": 88.143,
+    "first": [
+      "Quinoa, NS as to fat",
+      "Quinoa, cooked",
+      "Quinoa, fat added"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "camaron",
+    "results": 50,
+    "ms": 91.872,
+    "first": [
+      "APPLEBEE'S, Double Crunch Shrimp",
+      "CRACKER BARREL, country fried shrimp platter",
+      "Crustaceans, shrimp, cooked"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "coca",
+    "results": 14,
+    "ms": 89.708,
+    "first": [
+      "Coca Cola",
+      "Coca cola",
+      "Coca cola"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "bimbo",
+    "results": 19,
+    "ms": 84.14,
+    "first": [
+      "Cake, pound, Bimbo Bakeries USA, Panque Casero, home baked style",
+      "Cero Cero Multigrano",
+      "Cero cero multigrano"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "nestle",
+    "results": 25,
+    "ms": 84.284,
+    "first": [
+      "Beverages, Cocoa mix, NESTLE, Hot Cocoa Mix Rich Chocolate With Marshmallows",
+      "Beverages, NESTLE, Boost plus, nutritional drink, ready-to-drink",
+      "Candies, NESTLE, 100 GRAND Bar"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "Premier Protein",
+    "results": 0,
+    "ms": 84.264,
+    "first": [],
+    "review": "not present in bounded local sample; explicit external lookup/manual review available"
+  },
+  {
+    "query": "QA ficticio",
+    "results": 1,
+    "ms": 85.709,
+    "first": [
+      "QA ficticio · ingrediente sin datos"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  },
+  {
+    "query": "THIS_FOOD_DOES_NOT_EXIST_QA",
+    "results": 0,
+    "ms": 78.435,
+    "first": [],
+    "review": "not present in bounded local sample; explicit external lookup/manual review available"
+  },
+  {
+    "query": "0013000001243",
+    "results": 1,
+    "ms": 81.758,
+    "first": [
+      "Tomato Ketchup"
+    ],
+    "review": "candidate identities only; no automatic equivalence"
+  }
+]

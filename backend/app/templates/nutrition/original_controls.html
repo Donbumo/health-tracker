@@ -1,0 +1,12 @@
+<details class="ni-card ni-original-controls"{% if row.state=='cancelled' %} open{% endif %}>
+  <summary>Archivo original y retención · {{ 'disponible' if original_policy.available else 'sin archivo adjunto' }}</summary>
+  <p>{{ original_policy.reason }}</p>
+  {% if original_policy.available %}<a href="{{ url_for('main.download_account_upload',upload_id=row.source_json.upload_id) }}">Descargar original</a>{% endif %}
+  {% if original_policy.can_delete and enabled %}
+  <form method="post" action="{{ url_for('nutrition.delete_original',key=row.public_id) }}">
+    {{ csrf() }}<input type="hidden" name="revision" value="{{ row.revision }}">
+    <label class="ni-check"><input type="checkbox" name="confirmed" value="yes" required> Entiendo que el original se elimina de forma permanente y se cierra la revisión. El texto extraído y la evidencia permanecen.</label>
+    <button class="button danger">Eliminar original y cerrar revisión</button>
+  </form>
+  {% endif %}
+</details>

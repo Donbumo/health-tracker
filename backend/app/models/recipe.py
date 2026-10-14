@@ -103,6 +103,11 @@ class Recipe(db.Model):
 
     def totals(self) -> dict[str, Decimal | None]:
         """Return recipe totals calculated from ingredient macro snapshots."""
+        if self.nutrition_snapshot_json and self.nutrition_snapshot_json.get('declared_nutrition'):
+            from app.services.nutrition_math import LEGACY
+            summary=self.nutrition_snapshot_json['summary']
+            return {field:Decimal(summary[key]['value']) if summary[key]['value'] is not None else None
+                    for key,field in LEGACY.items() if field!='sugar_g'}
         return {
             "calories": _sum_metric(
                 [

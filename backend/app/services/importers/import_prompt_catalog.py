@@ -16,6 +16,7 @@ from flask import current_app, has_app_context
 
 
 TARGET_ORDER = (
+    "nutrition_import",
     "weigh_in_batch",
     "food_products",
     "daily_energy",
@@ -129,7 +130,7 @@ class ImportPromptCatalog:
             f"Objetivo: crear un JSON estándar para {spec.friendly_name}.",
             "",
             "Reglas estrictas:",
-            *[f"- {rule}" for rule in GENERAL_RULES],
+            *[f"- {rule}" for rule in GENERAL_RULES if spec.target_type!='nutrition_import' or ('marcador' not in rule and 'REEMPLAZAR_' not in rule)],
             "",
             f"Target: {spec.target_type}",
             f"Schema: {spec.schema_name}.schema.json",
@@ -200,6 +201,19 @@ def _collect_required_paths(schema: dict[str, Any], prefix: str, paths: list[str
 
 
 _SPECS: dict[str, PromptTargetSpec] = {
+    "nutrition_import": PromptTargetSpec(
+        target_type="nutrition_import", schema_name="nutrition_import_2_1",
+        friendly_name="alimentación revisada: planes, productos y consumos",
+        purpose="Preparar una estructura incompleta para la revisión nutricional local; nunca confirmar por IA.",
+        structure="Un documento nutrition_import 2.1; la aplicación deriva el owner y los hashes del archivo.",
+        required_notes=("schema_version", "type", "source_type", "data"),
+        optional_notes=("Conservar declaración original, evidencia de fila/página y composición por separado.",),
+        common_errors=("No inventar IDs, revisiones, unidades, cantidades, hashes ni user_id.",
+            "No establecer confirmed=true: requiere revisión explícita humana en la aplicación.",
+            "Un plan prescrito nunca es un consumo. Si falta un campo, dejarlo ausente para que la validación lo informe.",
+            "No convertir porcentajes de referencia en micronutrientes absolutos ni inventar densidad."),
+        template={"schema_version":"2.1","type":"nutrition_import","source_type":"uploaded","data":{"entries":[]}},
+    ),
     "weigh_in_batch": PromptTargetSpec(
         target_type="weigh_in_batch",
         schema_name="weigh_in",

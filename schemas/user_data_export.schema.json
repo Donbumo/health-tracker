@@ -138,7 +138,10 @@
             "additionalProperties": false,
             "properties": {
               "schema_version": {
-                "const": "2.0"
+                "enum": [
+                  "2.0",
+                  "2.1"
+                ]
               },
               "type": {
                 "const": "nutrition_intelligence"
@@ -202,6 +205,98 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "basis_amount": {
+                          "type": "string",
+                          "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]{1,12})?$"
+                        },
+                        "basis_unit": {
+                          "enum": [
+                            "g",
+                            "ml"
+                          ]
+                        },
+                        "barcode": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "maxLength": 32
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "aliases": {
+                              "type": "array",
+                              "maxItems": 100,
+                              "items": {
+                                "type": "string",
+                                "maxLength": 1000
+                              }
+                            },
+                            "brand": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 200
+                            },
+                            "barcode": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 32
+                            },
+                            "food_type": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 64
+                            },
+                            "preparation_state": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "maxLength": 16
+                            },
+                            "language": {
+                              "type": "string",
+                              "maxLength": 32
+                            },
+                            "quality": {
+                              "type": "string",
+                              "maxLength": 64
+                            },
+                            "net_content_text": {
+                              "type": "string",
+                              "maxLength": 200
+                            },
+                            "ingredient_text": {
+                              "type": "string",
+                              "maxLength": 10000
+                            },
+                            "limitations": {
+                              "type": "string",
+                              "maxLength": 10000
+                            },
+                            "license": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "attribution": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            }
+                          }
+                        },
+                        "provenance": {
+                          "type": "object"
                         }
                       },
                       "required": [
@@ -368,6 +463,68 @@
                   ]
                 },
                 "maxItems": 1000
+              },
+              "plans": {
+                "type": "array",
+                "maxItems": 1000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "identity",
+                    "revision",
+                    "name",
+                    "snapshot"
+                  ],
+                  "properties": {
+                    "identity": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "snapshot": {
+                      "$ref": "#/$defs/ni_plan"
+                    }
+                  }
+                }
+              },
+              "receipts": {
+                "type": "array",
+                "maxItems": 1000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "event_key",
+                    "source_sha256",
+                    "document",
+                    "result"
+                  ],
+                  "properties": {
+                    "event_key": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "source_sha256": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "document": {
+                      "type": "object"
+                    },
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
               }
             },
             "required": [
@@ -663,6 +820,78 @@
         "catalog_sha256": {
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "aliases": {
+              "type": "array",
+              "maxItems": 100,
+              "items": {
+                "type": "string",
+                "maxLength": 1000
+              }
+            },
+            "brand": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 200
+            },
+            "barcode": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 32
+            },
+            "food_type": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 64
+            },
+            "preparation_state": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 16
+            },
+            "language": {
+              "type": "string",
+              "maxLength": 32
+            },
+            "quality": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "net_content_text": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "ingredient_text": {
+              "type": "string",
+              "maxLength": 10000
+            },
+            "limitations": {
+              "type": "string",
+              "maxLength": 10000
+            },
+            "license": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "attribution": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
         }
       },
       "required": [
@@ -988,10 +1217,16 @@
       "additionalProperties": false,
       "properties": {
         "schema_version": {
-          "const": "2.0"
+          "enum": [
+            "2.0",
+            "2.1"
+          ]
         },
         "calculation_method": {
-          "const": "decimal_scaled_v1"
+          "enum": [
+            "decimal_scaled_v1",
+            "decimal_declared_composition_v1"
+          ]
         },
         "name": {
           "type": "string",
@@ -1047,6 +1282,23 @@
         "save_base_revision": {
           "type": "integer",
           "minimum": 1
+        },
+        "declared_nutrition": {
+          "$ref": "#/$defs/ni_declaration"
+        },
+        "composition": {
+          "$ref": "#/$defs/ni_composition"
+        },
+        "composition_summary": {
+          "$ref": "#/$defs/ni_summary"
+        },
+        "portion_factor": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]{1,12})?$"
+        },
+        "plan_identity": {
+          "type": "string",
+          "format": "uuid"
         }
       },
       "required": [
@@ -1058,6 +1310,27 @@
         "timezone",
         "ingredients",
         "summary"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "declared_nutrition"
+            ]
+          },
+          "then": {
+            "required": [
+              "composition",
+              "composition_summary",
+              "portion_factor"
+            ],
+            "properties": {
+              "schema_version": {
+                "const": "2.1"
+              }
+            }
+          }
+        }
       ]
     },
     "ni_coord": {
@@ -1214,249 +1487,246 @@
         "included_items"
       ]
     },
-    "nutrition_intelligence": {
+    "ni_declaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basis_amount",
+        "basis_unit",
+        "nutrients",
+        "confirmed",
+        "provenance"
+      ],
+      "properties": {
+        "basis_amount": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]{1,12})?$"
+        },
+        "basis_unit": {
+          "enum": [
+            "g",
+            "ml",
+            "portion"
+          ]
+        },
+        "nutrients": {
+          "$ref": "#/$defs/ni_vector"
+        },
+        "confirmed": {
+          "const": true
+        },
+        "provenance": {
+          "type": "object"
+        },
+        "original_values": {
+          "type": "object",
+          "maxProperties": 50
+        }
+      }
+    },
+    "ni_composition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "complete",
+        "total_mass_g"
+      ],
+      "properties": {
+        "complete": {
+          "type": "boolean"
+        },
+        "total_mass_g": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]{1,12})?$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "yield_factor": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]{1,12})?$"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 10000
+        },
+        "missing_components": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        }
+      }
+    },
+    "ni_plan_meal": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "schema_version": {
-          "const": "2.0"
+          "enum": [
+            "2.0",
+            "2.1"
+          ]
         },
-        "type": {
-          "const": "nutrition_intelligence"
+        "calculation_method": {
+          "enum": [
+            "decimal_scaled_v1",
+            "decimal_declared_composition_v1"
+          ]
         },
-        "foods": {
+        "name": {
+          "type": "string",
+          "maxLength": 200,
+          "minLength": 1
+        },
+        "local_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "meal_type": {
+          "enum": [
+            "breakfast",
+            "lunch",
+            "dinner",
+            "snack",
+            "other"
+          ]
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "ingredients": {
           "type": "array",
           "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "source_id": {
-                "type": "integer",
-                "minimum": 1
-              },
-              "identity": {
-                "type": "string",
-                "format": "uuid"
-              },
-              "revision": {
-                "type": "integer",
-                "minimum": 1
-              },
-              "name": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "brand": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "maxLength": 200
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "nutrition": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "nutrients": {
-                    "$ref": "#/$defs/ni_vector"
-                  },
-                  "servings": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/$defs/ni_serving"
-                    },
-                    "maxItems": 100
-                  },
-                  "density_g_ml": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "pattern": "^[0-9]+(?:\\.[0-9]+)?(?:E[+-]?[0-9]+)?$",
-                        "maxLength": 80
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  }
-                },
-                "required": [
-                  "nutrients",
-                  "servings",
-                  "density_g_ml"
-                ]
-              }
-            },
-            "required": [
-              "source_id",
-              "identity",
-              "revision",
-              "name",
-              "brand",
-              "nutrition"
-            ]
+            "$ref": "#/$defs/ni_ingredient"
           },
-          "maxItems": 1000
+          "maxItems": 100
         },
-        "templates": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "source_id": {
-                "type": "integer",
-                "minimum": 1
-              },
-              "identity": {
-                "type": "string",
-                "format": "uuid"
-              },
-              "revision": {
-                "type": "integer",
-                "minimum": 1
-              },
-              "name": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "snapshot": {
-                "$ref": "#/$defs/ni_snapshot"
-              }
-            },
-            "required": [
-              "source_id",
-              "identity",
-              "revision",
-              "name",
-              "snapshot"
-            ]
-          },
-          "maxItems": 1000
+        "summary": {
+          "$ref": "#/$defs/ni_summary"
         },
-        "logs": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "identity": {
-                "type": "string",
-                "format": "uuid"
-              },
-              "client_event_id": {
-                "type": "string",
-                "format": "uuid"
-              },
-              "revision": {
-                "type": "integer",
-                "minimum": 1
-              },
-              "local_date": {
-                "type": "string",
-                "format": "date"
-              },
-              "consumed_at": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "format": "date-time"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "timezone": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "recipe_id": {
-                "anyOf": [
-                  {
-                    "type": "integer",
-                    "minimum": 1
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "meal_order": {
-                "type": "integer",
-                "minimum": 1
-              },
-              "item_order": {
-                "type": "integer",
-                "minimum": 1
-              },
-              "snapshot": {
-                "$ref": "#/$defs/ni_snapshot"
-              }
+        "recipe_id": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1
             },
-            "required": [
-              "identity",
-              "client_event_id",
-              "revision",
-              "local_date",
-              "consumed_at",
-              "timezone",
-              "recipe_id",
-              "meal_order",
-              "item_order",
-              "snapshot"
-            ]
-          },
-          "maxItems": 1000
+            {
+              "type": "null"
+            }
+          ]
         },
-        "authorities": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "date": {
-                "type": "string",
-                "format": "date"
-              },
-              "authority": {
-                "enum": [
-                  "derived",
-                  "disjoint_aggregate"
-                ]
-              },
-              "baseline": {
-                "anyOf": [
-                  {
-                    "$ref": "#/$defs/ni_baseline"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              }
-            },
-            "required": [
-              "date",
-              "authority",
-              "baseline"
-            ]
-          },
-          "maxItems": 1000
+        "recipe_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "save_target": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "save_base_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "declared_nutrition": {
+          "$ref": "#/$defs/ni_declaration"
+        },
+        "composition": {
+          "$ref": "#/$defs/ni_composition"
+        },
+        "composition_summary": {
+          "$ref": "#/$defs/ni_summary"
+        },
+        "portion_factor": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9][0-9]*)(?:\\.[0-9]{1,12})?$"
+        },
+        "plan_identity": {
+          "type": "string",
+          "format": "uuid"
         }
       },
       "required": [
         "schema_version",
-        "type",
-        "foods",
-        "templates",
-        "logs",
-        "authorities"
+        "calculation_method",
+        "name",
+        "meal_type",
+        "ingredients",
+        "summary"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "declared_nutrition"
+            ]
+          },
+          "then": {
+            "required": [
+              "composition",
+              "composition_summary",
+              "portion_factor"
+            ],
+            "properties": {
+              "schema_version": {
+                "const": "2.1"
+              }
+            }
+          }
+        }
       ]
+    },
+    "ni_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "name",
+        "meals",
+        "provenance"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "2.1"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "meals": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 250,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "snapshot"
+            ],
+            "properties": {
+              "planned_for": {
+                "type": "string",
+                "maxLength": 100
+              },
+              "snapshot": {
+                "$ref": "#/$defs/ni_plan_meal"
+              }
+            }
+          }
+        },
+        "provenance": {
+          "type": "object"
+        }
+      }
     }
   }
 }

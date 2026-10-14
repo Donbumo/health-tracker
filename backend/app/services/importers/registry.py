@@ -40,6 +40,15 @@ class ImportAdapterRegistry:
 def _specs() -> tuple[ImportAdapterSpec, ...]:
     return (
         ImportAdapterSpec(
+            adapter_id="nutrition_sources", label="Nutrición: documento, tabla o etiqueta",
+            data_domains=("nutrition_import",),
+            file_extensions=(".json", ".csv", ".tsv", ".txt", ".xlsx", ".pdf", ".jpg", ".jpeg", ".png", ".webp", ".zip"),
+            mime_types=("application/json", "text/csv", "text/plain", "application/pdf", "image/jpeg", "image/png", "image/webp", "application/zip", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+            schema_version="2.1", max_bytes=10*1024*1024,
+            capabilities=("signature_detect", "local_ocr", "preview", "validate", "deduplicate", "confirm", "atomic"),
+            unsupported_fields=("encrypted_pdf", "active_pdf", "xlsx_formulas", "nested_zip", "unconfirmed_units", "unreviewed_composition"),
+        ),
+        ImportAdapterSpec(
             adapter_id="standard_json",
             label="JSON de Health Tracker o JSON asistido",
             data_domains=tuple(sorted(SUPPORTED_TARGETS)),

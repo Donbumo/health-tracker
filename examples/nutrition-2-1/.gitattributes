@@ -1,0 +1,2 @@
+# Preserve PDF bytes and xref offsets; these are synthetic binary fixtures.
+fixtures/*.pdf binary

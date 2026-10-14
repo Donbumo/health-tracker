@@ -1,0 +1,64 @@
+{
+  "retrieved": "2026-10-13",
+  "sources": [
+    {
+      "source": "usda_sr_legacy",
+      "revision": "2018-04-full-ni21-v1",
+      "foods": 7793,
+      "file": "usda_sr_legacy.json",
+      "normalized_bytes": 33571065,
+      "normalized_sha256": "7e53ad32dba83bc8c332ee88ef3246098fe90a1d127bd2ee666bcf995e6fbca2",
+      "original_bytes": 6074592,
+      "original_sha256": "b80817294b8850530aaedf2e515c02593b1824f763a0ff356e5c2081643e6fd0",
+      "url": "https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_sr_legacy_food_csv_2018-04.zip",
+      "license": "CC0-1.0",
+      "nutrient_values": 188622,
+      "servings": 14449,
+      "empty_vectors": 0
+    },
+    {
+      "source": "usda_foundation",
+      "revision": "2026-04-30-ni21-v1",
+      "foods": 363,
+      "file": "usda_foundation.json",
+      "normalized_bytes": 1016243,
+      "normalized_sha256": "b08be8837d9023bd58857716e87f84b1e96e3a2872c533e729a070467abba0a3",
+      "original_bytes": 469303,
+      "original_sha256": "186e988ec542e913f51ef62b86a47758e8cdd0d1dc3889e7b055581f3c09c77a",
+      "url": "https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_foundation_food_json_2026-04-30.zip",
+      "license": "CC0-1.0",
+      "nutrient_values": 5124,
+      "servings": 383,
+      "empty_vectors": 1
+    },
+    {
+      "source": "usda_fndds",
+      "revision": "2021-2023-ni21-v1",
+      "foods": 5432,
+      "file": "usda_fndds.json",
+      "normalized_bytes": 28386353,
+      "normalized_sha256": "22563319ce5d90a0478c5e896efd4e69105d4a85fc6de3bac6fb30a48c452db6",
+      "original_bytes": 3835292,
+      "original_sha256": "dfb06ae7ddc397ccd570b91c14b75438ab2ba39f64f22d321f61d4a52a77f3eb",
+      "url": "https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_survey_food_json_2024-10-31.zip",
+      "license": "CC0-1.0",
+      "nutrient_values": 146637,
+      "servings": 22193,
+      "empty_vectors": 1
+    },
+    {
+      "source": "open_food_facts",
+      "revision": "2026-10-13-mx100-ni21-v2",
+      "foods": 97,
+      "file": "open_food_facts.json",
+      "normalized_bytes": 306498,
+      "normalized_sha256": "58272d2120a059530b86103b99f9ab367269ce261bdef01b32119aa99557388e",
+      "license": "ODbL-1.0",
+      "attribution": "Open Food Facts contributors",
+      "requested_products": 100,
+      "rejected_missing_identity_or_basis": 3,
+      "original_sha256": "f28d2c7bf636ce655984ec9e4cf791f4b44ab4bca2c525aebacde949a18ddcfc",
+      "url": "https://world.openfoodfacts.org/api/v2/search?countries_tags_en=mexico&page_size=100"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ from tests.conftest import login
 
 
 EXPECTED_TARGETS = {
+    "nutrition_import",
     "weigh_in_batch",
     "food_products",
     "daily_energy",
@@ -70,6 +71,9 @@ def test_import_prompt_catalog_required_and_type_match_schema(app, target_type):
     assert "schema_version" in template
     for required_path in entry["required"]:
         root_key = required_path.split(".", maxsplit=1)[0].replace("[]", "")
+        if target_type=='nutrition_import' and root_key=='user_id':
+            assert 'user_id' not in template  # server-derived, never a dummy ID
+            continue
         assert root_key in template or root_key in {"markers", "ingredients", "recipes"}
 
 

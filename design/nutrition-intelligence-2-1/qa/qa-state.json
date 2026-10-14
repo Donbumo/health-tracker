@@ -1,0 +1,34 @@
+{
+  "username": "nutrition-qa",
+  "port": 8025,
+  "food": "catalog:78e20265-a24e-5b0b-b1de-1cb70f341440",
+  "rice": "catalog:267f3553-b6fa-5f62-8b61-a575c032e4bc",
+  "draft": "f88bd733-4c2a-4b3c-8e8c-34653ae930da",
+  "import": "8408cef8-6b95-467c-b24e-945c4283f284",
+  "label": "6f92069c-0ef2-45f7-a3f2-5f58f2576f73",
+  "retention": "0a328b4a-1ca4-4161-8c5b-3448fc7a179b",
+  "catalog": [
+    {
+      "source": "open_food_facts",
+      "foods": 97,
+      "seconds": 0.031
+    },
+    {
+      "source": "usda_fndds",
+      "foods": 5432,
+      "seconds": 3.191
+    },
+    {
+      "source": "usda_foundation",
+      "foods": 363,
+      "seconds": 0.156
+    },
+    {
+      "source": "usda_sr_legacy",
+      "foods": 7793,
+      "seconds": 4.215
+    }
+  ],
+  "history_days": 30,
+  "data": "QA synthetic only"
+}

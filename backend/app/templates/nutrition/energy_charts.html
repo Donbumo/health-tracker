@@ -1,0 +1,27 @@
+<section class="ni-energy-trends" aria-label="Gráficas temporales de energía">
+  <p>Datos diarios y media móvil de hasta 7 días. Las medias usan sólo días comparables;
+    los huecos no son cero y los subtotales parciales no se usan para calcular balance.</p>
+  <div class="ni-chart-legend"><span>● Diario completo</span><span>◇ Subtotal parcial</span><span>— Media móvil 7 días</span><span>× Sin dato comparable</span></div>
+  {% for chart in charts %}
+  <article class="ni-card ni-energy-chart" data-series="{{ chart.key }}">
+    <header class="ni-heading"><h3>{{ chart.label }}</h3><p>{{ chart.known_days }} días comparables{% if chart.partial_days %} · {{ chart.partial_days }} parciales{% endif %}</p></header>
+    {% if chart.has_values %}<svg viewBox="0 0 704 280" role="img" aria-labelledby="ni-chart-{{ chart.key }}-title ni-chart-{{ chart.key }}-desc">
+      <title id="ni-chart-{{ chart.key }}-title">{{ chart.label }} · {{ start }} — {{ target }}</title>
+      <desc id="ni-chart-{{ chart.key }}-desc">Valores reales en kcal, media móvil visible, huecos sin interpolar datos diarios. Desglose accesible en valores diarios.</desc>
+      <line class="ni-chart-axis" x1="124" x2="676" y1="{{ chart.zero_y }}" y2="{{ chart.zero_y }}"/>
+      <text x="3" y="24">{{ chart.high|nutrient_value }}</text><text x="3" y="183">{{ chart.low|nutrient_value }}</text>
+      {% if 58<chart.zero_y<148 %}<text x="3" y="{{ chart.zero_y }}">0</text>{% endif %}
+      {% for path in chart.paths.daily %}<polyline class="ni-chart-daily" points="{{ path }}"/>{% endfor %}
+      {% for path in chart.paths.rolling %}<polyline class="ni-chart-rolling" points="{{ path }}"/>{% endfor %}
+      {% for sample in chart.samples %}
+        {% if sample.y is not none %}
+          {% if sample.state=='partial' %}<path class="ni-chart-partial" d="M {{ sample.x }} {{ sample.y-5 }} l 5 5 l -5 5 l -5 -5 Z"><title>{{ sample.date }} · subtotal parcial {{ sample.value|nutrient_value }} kcal</title></path>
+          {% else %}<circle class="ni-chart-point" cx="{{ sample.x }}" cy="{{ sample.y }}" r="3"><title>{{ sample.date }} · {{ sample.value|nutrient_value }} kcal · completo</title></circle>{% endif %}
+        {% else %}<text class="ni-chart-gap" x="{{ sample.x }}" y="220" text-anchor="middle"><title>{{ sample.date }} · sin dato comparable</title>×</text>{% endif %}
+      {% endfor %}
+      <text x="124" y="268">{{ start.strftime('%d/%m') }}</text><text x="676" y="268" text-anchor="end">{{ target.strftime('%d/%m') }}</text>
+    </svg>{% else %}<p class="ni-empty">Sin datos para graficar en este período. No se representa una ingesta, gasto ni balance de cero.</p>{% endif %}
+    {% set last=chart.samples[-1] %}<p>Media móvil al {{ target }}: <strong>{{ last.rolling|nutrient_value }}{% if last.rolling is not none %} kcal{% endif %}</strong> · {{ last.rolling_days }}/7 días comparables.</p>
+  </article>
+  {% endfor %}
+</section>

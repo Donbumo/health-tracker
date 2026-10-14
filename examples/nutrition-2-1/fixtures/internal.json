@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "record_type": "daily_nutrition",
+  "user_id": 1,
+  "source_type": "uploaded",
+  "data": {
+    "date": "2026-10-05",
+    "calories_kcal": 450,
+    "protein_g": 35,
+    "meals": [
+      {
+        "meal_type": "lunch",
+        "items": [
+          {
+            "name": "Arroz con pollo QA",
+            "calories_kcal": 450,
+            "protein_g": 35,
+            "quantity": 300,
+            "unit": "g"
+          }
+        ]
+      }
+    ]
+  }
+}

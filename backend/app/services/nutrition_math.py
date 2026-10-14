@@ -162,3 +162,83 @@ def summarize(ingredients):
             "coverage_method": "mass_weighted_v1", "known_items": len(known),
             "total_items": len(ingredients), "sources": sources}
     return output
+
+
+@precise
+def snapshot_summary(snapshot):
+    """Confirmed source values and ingredient estimates remain independent.
+
+    Only an explicit portion factor scales declared values. Editing ingredient
+    ratios never coerces their calculations to match the original macros.
+    """
+    calculated = summarize(snapshot['ingredients'])
+    declaration = snapshot.get('declared_nutrition')
+    if declaration is None and not snapshot.get('composition'):
+        return calculated
+    if declaration is not None and declaration.get('confirmed') is not True:
+        raise NutritionError('Confirma valores y unidades declarados antes de consumir.')
+    vector = validate_vector(declaration.get('nutrients', {})) if declaration else {}
+    if declaration is not None:
+        decimal(declaration['basis_amount'], positive=True)
+        if declaration.get('basis_unit') not in {'g','ml','portion'}:
+            raise NutritionError('Base de origen no válida.')
+    factor = decimal(snapshot.get('portion_factor', '1'), positive=True)
+    composition = snapshot.get('composition') or {}
+    declared_mass = composition.get('total_mass_g')
+    expected_mass = decimal(declared_mass, positive=True) * factor if declared_mass is not None else None
+    if expected_mass is not None and expected_mass>=Decimal('1000000000'):
+        raise NutritionError('La masa declarada supera la capacidad del formato de receta.')
+    masses = [entry['normalized'].get('mass_g') for entry in snapshot['ingredients']]
+    known_mass = sum((Decimal(mass) for mass in masses if mass is not None), Decimal(0))
+    yield_factor=decimal(composition['yield_factor'],positive=True) if composition.get('yield_factor') is not None else None
+    if expected_mass and known_mass>expected_mass and (yield_factor is None or known_mass*yield_factor>expected_mass+Decimal('0.001')):
+        raise NutritionError('La masa vinculada supera la porción declarada. Revisa componentes y rendimiento explícito; no cuentes un plato junto con sus ingredientes.')
+    complete = composition.get('complete') is True
+    if complete and (expected_mass is None or any(mass is None for mass in masses) or abs(known_mass-expected_mass)>Decimal('0.001')):
+        raise NutritionError('La composición completa exige masa total explícita y balanceada; revisa rendimiento y cantidades.')
+    import copy
+    result = copy.deepcopy(calculated)
+    for key, item in result.items():
+        if not complete:
+            item['state'] = 'partial' if item['value'] is not None else 'unknown'
+            # A full-looking sum is not proof that oil/sauce/water was accounted
+            # for. Without composition confirmation never display 100%.
+            item['total_weight'] = str(expected_mass) if expected_mass is not None else None
+            item['coverage'] = (str(Decimal(item['known_weight'])*100/expected_mass)
+                                if expected_mass and item['known_weight'] is not None
+                                and Decimal(item['known_weight'])<expected_mass else None)
+        original = vector.get(key)
+        if original and original['state']=='known':
+            item.update(value=str(Decimal(original['value'])*factor), state='complete',
+                        known_weight=str(expected_mass) if expected_mass is not None else None,
+                        total_weight=str(expected_mass) if expected_mass is not None else None,
+                        coverage='100' if expected_mass is not None else None,
+                        known_items=len(snapshot['ingredients']), total_items=len(snapshot['ingredients']))
+            item['sources'] = sorted(set(item['sources']) | {'confirmed_source_declaration'})
+    return result
+
+
+@precise
+def summarize_parts(parts):
+    """Aggregate effective meal summaries without losing declared authority.
+
+    Partial subtotals stay partial; none is never converted into a zero.
+    """
+    output = {}
+    for key, (_, unit, _) in NUTRIENTS.items():
+        values = [part[key] for part in parts]
+        available = [item for item in values if item['value'] is not None]
+        subtotal = sum((Decimal(item['value']) for item in available), Decimal(0)) if available else None
+        denominator = sum((Decimal(item['total_weight']) for item in values), Decimal(0)) if values and all(item['total_weight'] is not None for item in values) else None
+        numerator = sum((Decimal(item['known_weight']) for item in values), Decimal(0)) if values and all(item['known_weight'] is not None for item in values) else None
+        complete = bool(values) and all(item['state']=='complete' for item in values)
+        unresolved_coverage = any(item['coverage'] is None and item['state']!='complete' for item in values)
+        coverage = numerator*100/denominator if denominator and numerator is not None and not unresolved_coverage else None
+        output[key] = {'value':str(subtotal) if subtotal is not None else None,'unit':unit,
+            'state':'complete' if complete else 'partial' if subtotal is not None else 'unknown',
+            'known_weight':str(numerator) if numerator is not None else None,
+            'total_weight':str(denominator) if denominator is not None else None,
+            'coverage':str(coverage) if coverage is not None else None,'coverage_method':'mass_weighted_v1',
+            'known_items':sum(item['known_items'] for item in values),'total_items':sum(item['total_items'] for item in values),
+            'sources':sorted({source for item in values for source in item['sources']})}
+    return output

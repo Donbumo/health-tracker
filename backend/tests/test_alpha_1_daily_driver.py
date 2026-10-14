@@ -305,6 +305,7 @@ def test_pwa_contract_caches_only_static_assets(app, client):
 def test_import_adapter_registry_matches_visible_supported_pipelines(app, client, user):
     registry = ImportAdapterRegistry()
     assert {spec.adapter_id for spec in registry.specs} == {
+        "nutrition_sources",
         "standard_json",
         "activity_files",
         "wellness_csv",

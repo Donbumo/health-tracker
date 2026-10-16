@@ -188,15 +188,15 @@ def test_official_account_export_restore_roundtrip(app,user,enabled):
     assert db.session.query(MealLog).filter_by(user_id=target_id).count()==1
 
 
-def test_web_pages_no_fixtures_photo_or_text_ai(app,client,user,enabled):
+def test_web_pages_and_local_extraction_entry(app,client,user,enabled):
     from tests.conftest import login
     login(client)
     for path in ['/nutrition/','/nutrition/add','/nutrition/foods','/nutrition/foods/'+enabled,
                  '/nutrition/saved','/nutrition/micronutrients','/nutrition/my-food']:
         response=client.get(path)
         assert response.status_code==200,(path,response.text)
-    assert 'No disponible' in client.get('/nutrition/add').text
-    assert 'upload' not in client.get('/nutrition/add').text
+    assert 'localmente' in client.get('/nutrition/add').text
+    assert '/nutrition/import' in client.get('/nutrition/add').text
     draft=ready(user,enabled);db.session.commit()
     response=client.get('/nutrition/drafts/'+draft.public_id)
     assert response.status_code==200 and '0 pendientes' in response.text

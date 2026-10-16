@@ -34,7 +34,8 @@ class CatalogFood(db.Model):
     __tablename__ = "catalog_foods"
     __table_args__ = (
         db.UniqueConstraint("catalog_revision_id", "source_food_id", name="uq_catalog_food_identity"),
-        db.Index("ix_catalog_food_search", "catalog_revision_id", "name"),)
+        db.Index("ix_catalog_food_search", "catalog_revision_id", "name"),
+        db.Index("ix_catalog_food_barcode", "catalog_revision_id", "barcode"),)
     id = db.Column(db.Integer, primary_key=True)
     public_id = db.Column(db.String(36), nullable=False, unique=True, default=uid)
     catalog_revision_id = db.Column(db.Integer, db.ForeignKey("food_catalog_revisions.id"), nullable=False)
@@ -43,6 +44,11 @@ class CatalogFood(db.Model):
     name = db.Column(db.String(200), nullable=False)
     preparation = db.Column(db.String(200), nullable=False)
     snapshot_json = db.Column(db.JSON, nullable=False)
+    search_text = db.Column(db.Text, nullable=True)
+    brand = db.Column(db.String(200), nullable=True)
+    barcode = db.Column(db.String(32), nullable=True)
+    food_type = db.Column(db.String(64), nullable=True)
+    preparation_state = db.Column(db.String(16), nullable=True)
 
 
 class Nutrient(db.Model):
@@ -109,4 +115,47 @@ class MealLog(db.Model):
     projection_item_id = db.Column(db.Integer, db.ForeignKey("nutrition_items.id", ondelete="RESTRICT"), nullable=False, unique=True)
     recipe_id = db.Column(db.Integer, db.ForeignKey("recipes.id", ondelete="SET NULL"))
     snapshot_json = db.Column(db.JSON, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+
+class NutritionImportDraft(db.Model):
+    """Private review state; never a consumption or a prescribed plan by itself."""
+    __tablename__ = 'nutrition_import_drafts'
+    __table_args__ = (db.Index('ix_nutrition_import_owner_state', 'user_id', 'state'),)
+    id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(36), nullable=False, unique=True, default=uid)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    revision = db.Column(db.Integer, nullable=False, default=1, server_default='1')
+    state = db.Column(db.String(16), nullable=False, default='pending')
+    source_sha256 = db.Column(db.String(64), nullable=False)
+    source_json = db.Column(db.JSON, nullable=False)
+    review_json = db.Column(db.JSON, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+
+class NutritionPlan(db.Model):
+    """Prescribed/imported meals, independent from the consumed DailyNutrition."""
+    __tablename__ = 'nutrition_plans'
+    __table_args__ = (db.Index('ix_nutrition_plan_owner', 'user_id', 'is_active'),)
+    id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(36), nullable=False, unique=True, default=uid)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    name = db.Column(db.String(200), nullable=False)
+    revision = db.Column(db.Integer, nullable=False, default=1, server_default='1')
+    is_active = db.Column(db.Boolean, nullable=False, default=True, server_default=db.true())
+    snapshot_json = db.Column(db.JSON, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+
+class NutritionImportReceipt(db.Model):
+    """Owner-local file/event dedupe; different reviews never overwrite history."""
+    __tablename__ = 'nutrition_import_receipts'
+    __table_args__ = (db.UniqueConstraint('user_id', 'event_key', name='uq_nutrition_import_event'),)
+    id = db.Column(db.Integer, primary_key=True)
+    public_id = db.Column(db.String(36), nullable=False, unique=True, default=uid)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
+    event_key = db.Column(db.String(64), nullable=False)
+    source_sha256 = db.Column(db.String(64), nullable=False)
+    raw_payload_json = db.Column(db.JSON, nullable=False)
+    result_json = db.Column(db.JSON, nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))

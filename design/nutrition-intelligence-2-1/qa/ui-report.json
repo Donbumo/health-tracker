@@ -1,0 +1,2059 @@
+{
+  "data": "QA synthetic only",
+  "combinations": 252,
+  "checks": [
+    {
+      "view": "history",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "empty_today",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_week",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_month",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "catalog",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "pdf_import",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "compound_review",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_label",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "upload_camera",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "private_product",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "meal_review",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_identity",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_composition",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_declaration",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_confirmation",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_products_page6",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_recipes_page6",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "off_prefill",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "original_retention",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "confirmed_retention",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "history",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "empty_today",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_week",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_month",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "catalog",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "pdf_import",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "compound_review",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_label",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "upload_camera",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "private_product",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "meal_review",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_identity",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_composition",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_declaration",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_confirmation",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_products_page6",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_recipes_page6",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "off_prefill",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "original_retention",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "confirmed_retention",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "history",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "empty_today",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_week",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_month",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "catalog",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "pdf_import",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "compound_review",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_label",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "upload_camera",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "private_product",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "meal_review",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_identity",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_composition",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_declaration",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_confirmation",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_products_page6",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_recipes_page6",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "off_prefill",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "original_retention",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "confirmed_retention",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "history",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "empty_today",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_week",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_month",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "catalog",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "pdf_import",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "compound_review",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_label",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "upload_camera",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "private_product",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "meal_review",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_identity",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_composition",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_declaration",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_confirmation",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_products_page6",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_recipes_page6",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "off_prefill",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "original_retention",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "confirmed_retention",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "history",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "empty_today",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_week",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_month",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "catalog",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "pdf_import",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "compound_review",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_label",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "upload_camera",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "private_product",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "meal_review",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_identity",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_composition",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_declaration",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_confirmation",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_products_page6",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_recipes_page6",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "off_prefill",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "original_retention",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "confirmed_retention",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "history",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "empty_today",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_week",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_month",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "catalog",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "pdf_import",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "compound_review",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_label",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "upload_camera",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "private_product",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "meal_review",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_identity",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_composition",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_declaration",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_confirmation",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_products_page6",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_recipes_page6",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "off_prefill",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "original_retention",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "confirmed_retention",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "history",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "empty_today",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_week",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_month",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "catalog",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "pdf_import",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "compound_review",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_label",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "upload_camera",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "private_product",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "meal_review",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_identity",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_composition",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_declaration",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_confirmation",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_products_page6",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_recipes_page6",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "off_prefill",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "original_retention",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "confirmed_retention",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "history",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "empty_today",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_week",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_month",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "catalog",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "pdf_import",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "compound_review",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_label",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "upload_camera",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "private_product",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "meal_review",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_identity",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_composition",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_declaration",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_confirmation",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_products_page6",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_recipes_page6",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "off_prefill",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "original_retention",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "confirmed_retention",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "history",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "empty_today",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_week",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_month",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "catalog",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "pdf_import",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "compound_review",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_label",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "upload_camera",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "private_product",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "meal_review",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_identity",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_composition",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_declaration",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_confirmation",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_products_page6",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_recipes_page6",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "off_prefill",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "original_retention",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "confirmed_retention",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "history",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "empty_today",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_week",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_month",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "catalog",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "pdf_import",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "compound_review",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_label",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "upload_camera",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "private_product",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "meal_review",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_identity",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_composition",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_declaration",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_confirmation",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_products_page6",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_recipes_page6",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "off_prefill",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "original_retention",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "confirmed_retention",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "history",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "empty_today",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_week",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_month",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "catalog",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "pdf_import",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "compound_review",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_label",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "upload_camera",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "private_product",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "meal_review",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_identity",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_composition",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_declaration",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_confirmation",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_products_page6",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_recipes_page6",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "off_prefill",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "original_retention",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "confirmed_retention",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "history",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "empty_today",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_week",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "dashboard_month",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "catalog",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "pdf_import",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "compound_review",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_label",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "upload_camera",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "private_product",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "meal_review",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_identity",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_composition",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "import_declaration",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "photo_confirmation",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_products_page6",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "library_recipes_page6",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "off_prefill",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "original_retention",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "view": "confirmed_retention",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "keyboard": "visible focus",
+      "overflow": false
+    },
+    {
+      "flow": "legacy_new_partial_gap_zero_and_rolling_arithmetic",
+      "status": "pass"
+    },
+    {
+      "flow": "photo_local_OCR_to_private_product",
+      "status": "pass",
+      "basis": "100 ml",
+      "consumption": "none"
+    },
+    {
+      "flow": "private_ml_product_signed_revision_edit",
+      "status": "pass",
+      "revision": 2
+    },
+    {
+      "flow": "PDF_to_reviewed_plan_real_food_ids",
+      "status": "pass",
+      "linked_foods": 2,
+      "consumption": "none"
+    },
+    {
+      "flow": "OFF_synthetic_proposal_prefill_review_confirm_private_ml",
+      "status": "pass",
+      "network": "synthetic upstream fixture; no external request"
+    },
+    {
+      "flow": "library_more_than_100_products_and_recipes_paging_search",
+      "status": "pass",
+      "synthetic_records_each": 125
+    },
+    {
+      "flow": "unconfirmed_original_delete_confirmed_retention",
+      "status": "pass"
+    }
+  ],
+  "errors": [],
+  "external_requests": []
+}

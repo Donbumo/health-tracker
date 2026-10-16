@@ -1,0 +1,13 @@
+{
+  "records": [
+    {
+      "name": "Arroz con pollo QA",
+      "amount": "300",
+      "unit": "g",
+      "date": "2026-10-05",
+      "meal_type": "lunch",
+      "kcal": 450,
+      "protein_g": 35
+    }
+  ]
+}

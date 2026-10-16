@@ -1,0 +1,869 @@
+{
+  "data": "public catalog; synthetic owner",
+  "repeat_each_query": 5,
+  "ranking_contract": "Lexical candidates only; no merge or automatic identity selection",
+  "cases": [
+    {
+      "query": "tortilla de maíz",
+      "expected_sr_identity": "175036",
+      "expected_rank": 1,
+      "timings_ms": [
+        86.692,
+        85.925,
+        84.559,
+        84.911,
+        84.63
+      ],
+      "top_5": [
+        {
+          "name": "Tortilla de maíz",
+          "preparation": "Tortillas, ready-to-bake or -fry, corn",
+          "source": "usda_sr_legacy",
+          "source_food_id": "175036",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Tortilla, blue corn, Sakwavikaviki (Hopi)",
+          "preparation": "Tortilla, blue corn, Sakwavikaviki (Hopi)",
+          "source": "usda_sr_legacy",
+          "source_food_id": "169829",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Tortilla, corn",
+          "preparation": "Tortilla, corn",
+          "source": "usda_fndds",
+          "source_food_id": "2707823",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Tortillas, ready-to-bake or -fry, corn, without added salt",
+          "preparation": "Tortillas, ready-to-bake or -fry, corn, without added salt",
+          "source": "usda_sr_legacy",
+          "source_food_id": "173241",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Snacks, tortilla chips, plain, white corn, salted",
+          "preparation": "Snacks, tortilla chips, plain, white corn, salted",
+          "source": "usda_sr_legacy",
+          "source_food_id": "167558",
+          "state": "unspecified",
+          "brand": null
+        }
+      ],
+      "candidates": 13
+    },
+    {
+      "query": "tortilla de maiz",
+      "expected_sr_identity": "175036",
+      "expected_rank": 1,
+      "timings_ms": [
+        85.649,
+        84.129,
+        84.189,
+        84.239,
+        87.959
+      ],
+      "top_5": [
+        {
+          "name": "Tortilla de maíz",
+          "preparation": "Tortillas, ready-to-bake or -fry, corn",
+          "source": "usda_sr_legacy",
+          "source_food_id": "175036",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Tortilla, blue corn, Sakwavikaviki (Hopi)",
+          "preparation": "Tortilla, blue corn, Sakwavikaviki (Hopi)",
+          "source": "usda_sr_legacy",
+          "source_food_id": "169829",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Tortilla, corn",
+          "preparation": "Tortilla, corn",
+          "source": "usda_fndds",
+          "source_food_id": "2707823",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Tortillas, ready-to-bake or -fry, corn, without added salt",
+          "preparation": "Tortillas, ready-to-bake or -fry, corn, without added salt",
+          "source": "usda_sr_legacy",
+          "source_food_id": "173241",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Snacks, tortilla chips, plain, white corn, salted",
+          "preparation": "Snacks, tortilla chips, plain, white corn, salted",
+          "source": "usda_sr_legacy",
+          "source_food_id": "167558",
+          "state": "unspecified",
+          "brand": null
+        }
+      ],
+      "candidates": 13
+    },
+    {
+      "query": "tortilla maíz",
+      "expected_sr_identity": "175036",
+      "expected_rank": 1,
+      "timings_ms": [
+        88.905,
+        86.602,
+        88.773,
+        85.235,
+        87.503
+      ],
+      "top_5": [
+        {
+          "name": "Tortilla de maíz",
+          "preparation": "Tortillas, ready-to-bake or -fry, corn",
+          "source": "usda_sr_legacy",
+          "source_food_id": "175036",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Tortilla, blue corn, Sakwavikaviki (Hopi)",
+          "preparation": "Tortilla, blue corn, Sakwavikaviki (Hopi)",
+          "source": "usda_sr_legacy",
+          "source_food_id": "169829",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Tortilla, corn",
+          "preparation": "Tortilla, corn",
+          "source": "usda_fndds",
+          "source_food_id": "2707823",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Tortillas, ready-to-bake or -fry, corn, without added salt",
+          "preparation": "Tortillas, ready-to-bake or -fry, corn, without added salt",
+          "source": "usda_sr_legacy",
+          "source_food_id": "173241",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Snacks, tortilla chips, plain, white corn, salted",
+          "preparation": "Snacks, tortilla chips, plain, white corn, salted",
+          "source": "usda_sr_legacy",
+          "source_food_id": "167558",
+          "state": "unspecified",
+          "brand": null
+        }
+      ],
+      "candidates": 13
+    },
+    {
+      "query": "totopos",
+      "expected_sr_identity": null,
+      "expected_rank": null,
+      "timings_ms": [
+        92.561,
+        97.951,
+        92.278,
+        87.064,
+        87.049
+      ],
+      "top_5": [
+        {
+          "name": "Snacks, tortilla chips, light (baked with less oil)",
+          "preparation": "Snacks, tortilla chips, light (baked with less oil)",
+          "source": "usda_sr_legacy",
+          "source_food_id": "168137",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Snacks, tortilla chips, low fat, made with olestra, nacho cheese",
+          "preparation": "Snacks, tortilla chips, low fat, made with olestra, nacho cheese",
+          "source": "usda_sr_legacy",
+          "source_food_id": "168863",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Snacks, tortilla chips, low fat, unsalted",
+          "preparation": "Snacks, tortilla chips, low fat, unsalted",
+          "source": "usda_sr_legacy",
+          "source_food_id": "170254",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Snacks, tortilla chips, nacho cheese",
+          "preparation": "Snacks, tortilla chips, nacho cheese",
+          "source": "usda_sr_legacy",
+          "source_food_id": "167559",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Snacks, tortilla chips, nacho-flavor, made with enriched masa flour",
+          "preparation": "Snacks, tortilla chips, nacho-flavor, made with enriched masa flour",
+          "source": "usda_sr_legacy",
+          "source_food_id": "170256",
+          "state": "unspecified",
+          "brand": null
+        }
+      ],
+      "candidates": 21
+    },
+    {
+      "query": "arroz blanco cocido",
+      "expected_sr_identity": "169757",
+      "expected_rank": 1,
+      "timings_ms": [
+        87.542,
+        88.143,
+        87.763,
+        91.158,
+        90.014
+      ],
+      "top_5": [
+        {
+          "name": "Arroz blanco cocido",
+          "preparation": "Rice, white, long-grain, regular, unenriched, cooked without salt",
+          "source": "usda_sr_legacy",
+          "source_food_id": "169757",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Rice, white, cooked, NS as to fat",
+          "preparation": "Rice, white, cooked, NS as to fat",
+          "source": "usda_fndds",
+          "source_food_id": "2708403",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Rice, white, cooked, as ingredient",
+          "preparation": "Rice, white, cooked, as ingredient",
+          "source": "usda_fndds",
+          "source_food_id": "2710788",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Rice, white, cooked, fat added, NS as to fat type",
+          "preparation": "Rice, white, cooked, fat added, NS as to fat type",
+          "source": "usda_fndds",
+          "source_food_id": "2708407",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Rice, white, cooked, glutinous",
+          "preparation": "Rice, white, cooked, glutinous",
+          "source": "usda_fndds",
+          "source_food_id": "2708422",
+          "state": "cooked",
+          "brand": null
+        }
+      ],
+      "candidates": 23
+    },
+    {
+      "query": "white rice cooked",
+      "expected_sr_identity": null,
+      "expected_rank": null,
+      "timings_ms": [
+        88.969,
+        88.0,
+        91.246,
+        87.418,
+        88.339
+      ],
+      "top_5": [
+        {
+          "name": "Arroz blanco cocido",
+          "preparation": "Rice, white, long-grain, regular, unenriched, cooked without salt",
+          "source": "usda_sr_legacy",
+          "source_food_id": "169757",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Rice, white, cooked, NS as to fat",
+          "preparation": "Rice, white, cooked, NS as to fat",
+          "source": "usda_fndds",
+          "source_food_id": "2708403",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Rice, white, cooked, as ingredient",
+          "preparation": "Rice, white, cooked, as ingredient",
+          "source": "usda_fndds",
+          "source_food_id": "2710788",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Rice, white, cooked, fat added, NS as to fat type",
+          "preparation": "Rice, white, cooked, fat added, NS as to fat type",
+          "source": "usda_fndds",
+          "source_food_id": "2708407",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Rice, white, cooked, glutinous",
+          "preparation": "Rice, white, cooked, glutinous",
+          "source": "usda_fndds",
+          "source_food_id": "2708422",
+          "state": "cooked",
+          "brand": null
+        }
+      ],
+      "candidates": 23
+    },
+    {
+      "query": "pollo crudo",
+      "expected_sr_identity": null,
+      "expected_rank": null,
+      "timings_ms": [
+        90.185,
+        89.316,
+        88.903,
+        89.039,
+        89.185
+      ],
+      "top_5": [
+        {
+          "name": "Chicken, breast, boneless, skinless, raw",
+          "preparation": "Chicken, breast, boneless, skinless, raw",
+          "source": "usda_foundation",
+          "source_food_id": "2646170",
+          "state": "raw",
+          "brand": null
+        },
+        {
+          "name": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
+          "preparation": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
+          "source": "usda_sr_legacy",
+          "source_food_id": "171077",
+          "state": "raw",
+          "brand": null
+        },
+        {
+          "name": "Chicken, broilers or fryers, back, meat only, raw",
+          "preparation": "Chicken, broilers or fryers, back, meat only, raw",
+          "source": "usda_sr_legacy",
+          "source_food_id": "171073",
+          "state": "raw",
+          "brand": null
+        },
+        {
+          "name": "Chicken, broilers or fryers, dark meat, drumstick, meat only, raw",
+          "preparation": "Chicken, broilers or fryers, dark meat, drumstick, meat only, raw",
+          "source": "usda_sr_legacy",
+          "source_food_id": "173614",
+          "state": "raw",
+          "brand": null
+        },
+        {
+          "name": "Chicken, broilers or fryers, dark meat, meat only, raw",
+          "preparation": "Chicken, broilers or fryers, dark meat, meat only, raw",
+          "source": "usda_sr_legacy",
+          "source_food_id": "171067",
+          "state": "raw",
+          "brand": null
+        }
+      ],
+      "candidates": 50
+    },
+    {
+      "query": "pollo cocido",
+      "expected_sr_identity": "171477",
+      "expected_rank": 1,
+      "timings_ms": [
+        93.258,
+        90.594,
+        90.777,
+        190.061,
+        92.162
+      ],
+      "top_5": [
+        {
+          "name": "Pechuga pollo asada",
+          "preparation": "Chicken, broilers or fryers, breast, meat only, cooked, roasted",
+          "source": "usda_sr_legacy",
+          "source_food_id": "171477",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Chicken breast, baked or broiled, skin eaten, from pre-cooked",
+          "preparation": "Chicken breast, baked or broiled, skin eaten, from pre-cooked",
+          "source": "usda_fndds",
+          "source_food_id": "2705957",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Chicken breast, baked or broiled, skin not eaten, from pre-cooked",
+          "preparation": "Chicken breast, baked or broiled, skin not eaten, from pre-cooked",
+          "source": "usda_fndds",
+          "source_food_id": "2705958",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Chicken breast, baked, broiled, or roasted, skin eaten, from raw",
+          "preparation": "Chicken breast, baked, broiled, or roasted, skin eaten, from raw",
+          "source": "usda_fndds",
+          "source_food_id": "2705955",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Chicken breast, baked, broiled, or roasted, skin not eaten, from raw",
+          "preparation": "Chicken breast, baked, broiled, or roasted, skin not eaten, from raw",
+          "source": "usda_fndds",
+          "source_food_id": "2705956",
+          "state": "cooked",
+          "brand": null
+        }
+      ],
+      "candidates": 50
+    },
+    {
+      "query": "frijoles",
+      "expected_sr_identity": "173735",
+      "expected_rank": 1,
+      "timings_ms": [
+        91.25,
+        98.385,
+        101.843,
+        94.643,
+        91.963
+      ],
+      "top_5": [
+        {
+          "name": "Frijol negro cocido",
+          "preparation": "Beans, black, mature seeds, cooked, boiled, without salt",
+          "source": "usda_sr_legacy",
+          "source_food_id": "173735",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Frijol pinto cocido",
+          "preparation": "Beans, pinto, mature seeds, cooked, boiled, without salt",
+          "source": "usda_sr_legacy",
+          "source_food_id": "175200",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Baked beans",
+          "preparation": "Baked beans",
+          "source": "usda_fndds",
+          "source_food_id": "2707390",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Baked beans, reduced sodium",
+          "preparation": "Baked beans, reduced sodium",
+          "source": "usda_fndds",
+          "source_food_id": "2707410",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Baked beans, vegetarian",
+          "preparation": "Baked beans, vegetarian",
+          "source": "usda_fndds",
+          "source_food_id": "2707391",
+          "state": "cooked",
+          "brand": null
+        }
+      ],
+      "candidates": 50
+    },
+    {
+      "query": "frijoles negros",
+      "expected_sr_identity": "173735",
+      "expected_rank": 1,
+      "timings_ms": [
+        89.814,
+        89.83,
+        91.192,
+        89.795,
+        89.737
+      ],
+      "top_5": [
+        {
+          "name": "Frijol negro cocido",
+          "preparation": "Beans, black, mature seeds, cooked, boiled, without salt",
+          "source": "usda_sr_legacy",
+          "source_food_id": "173735",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Beans, Dry, Black (0% moisture)",
+          "preparation": "Beans, Dry, Black (0% moisture)",
+          "source": "usda_foundation",
+          "source_food_id": "747444",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Beans, black turtle, mature seeds, canned",
+          "preparation": "Beans, black turtle, mature seeds, canned",
+          "source": "usda_sr_legacy",
+          "source_food_id": "175188",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Beans, black turtle, mature seeds, cooked, boiled, without salt",
+          "preparation": "Beans, black turtle, mature seeds, cooked, boiled, without salt",
+          "source": "usda_sr_legacy",
+          "source_food_id": "175187",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Beans, black turtle, mature seeds, raw",
+          "preparation": "Beans, black turtle, mature seeds, raw",
+          "source": "usda_sr_legacy",
+          "source_food_id": "175186",
+          "state": "raw",
+          "brand": null
+        }
+      ],
+      "candidates": 27
+    },
+    {
+      "query": "frijoles pintos",
+      "expected_sr_identity": "175200",
+      "expected_rank": 1,
+      "timings_ms": [
+        89.007,
+        89.21,
+        91.437,
+        90.81,
+        91.231
+      ],
+      "top_5": [
+        {
+          "name": "Frijol pinto cocido",
+          "preparation": "Beans, pinto, mature seeds, cooked, boiled, without salt",
+          "source": "usda_sr_legacy",
+          "source_food_id": "175200",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Beans, Dry, Pinto (0% moisture)",
+          "preparation": "Beans, Dry, Pinto (0% moisture)",
+          "source": "usda_foundation",
+          "source_food_id": "747445",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Beans, pinto, canned, drained solids",
+          "preparation": "Beans, pinto, canned, drained solids",
+          "source": "usda_sr_legacy",
+          "source_food_id": "174286",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Beans, pinto, immature seeds, frozen, cooked, boiled, drained, without salt",
+          "preparation": "Beans, pinto, immature seeds, frozen, cooked, boiled, drained, without salt",
+          "source": "usda_sr_legacy",
+          "source_food_id": "169959",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Beans, pinto, immature seeds, frozen, unprepared",
+          "preparation": "Beans, pinto, immature seeds, frozen, unprepared",
+          "source": "usda_sr_legacy",
+          "source_food_id": "169958",
+          "state": "unspecified",
+          "brand": null
+        }
+      ],
+      "candidates": 27
+    },
+    {
+      "query": "avena",
+      "expected_sr_identity": "169705",
+      "expected_rank": 1,
+      "timings_ms": [
+        90.949,
+        93.271,
+        91.352,
+        92.097,
+        93.887
+      ],
+      "top_5": [
+        {
+          "name": "Avena seca",
+          "preparation": "Oats (Includes foods for USDA's Food Distribution Program)",
+          "source": "usda_sr_legacy",
+          "source_food_id": "169705",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Bagel, oat bran",
+          "preparation": "Bagel, oat bran",
+          "source": "usda_fndds",
+          "source_food_id": "2707772",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Bagels, oat bran",
+          "preparation": "Bagels, oat bran",
+          "source": "usda_sr_legacy",
+          "source_food_id": "172666",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Beverages, drink mix, QUAKER OATS, GATORADE, orange flavor, powder",
+          "preparation": "Beverages, drink mix, QUAKER OATS, GATORADE, orange flavor, powder",
+          "source": "usda_sr_legacy",
+          "source_food_id": "173659",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Bread, oat bran",
+          "preparation": "Bread, oat bran",
+          "source": "usda_fndds",
+          "source_food_id": "2707770",
+          "state": "unspecified",
+          "brand": null
+        }
+      ],
+      "candidates": 50
+    },
+    {
+      "query": "avena seca",
+      "expected_sr_identity": "169705",
+      "expected_rank": 1,
+      "timings_ms": [
+        87.894,
+        87.82,
+        89.085,
+        88.138,
+        88.349
+      ],
+      "top_5": [
+        {
+          "name": "Avena seca",
+          "preparation": "Oats (Includes foods for USDA's Food Distribution Program)",
+          "source": "usda_sr_legacy",
+          "source_food_id": "169705",
+          "state": "unspecified",
+          "brand": null
+        }
+      ],
+      "candidates": 1
+    },
+    {
+      "query": "coca",
+      "expected_sr_identity": null,
+      "expected_rank": null,
+      "timings_ms": [
+        84.99,
+        85.506,
+        84.733,
+        86.434,
+        85.08
+      ],
+      "top_5": [
+        {
+          "name": "Coca Cola",
+          "preparation": "Producto comercial · revisar etiqueta",
+          "source": "open_food_facts",
+          "source_food_id": "7501055371655",
+          "state": "unspecified",
+          "brand": "Coca Cola"
+        },
+        {
+          "name": "Coca cola",
+          "preparation": "Producto comercial · revisar etiqueta",
+          "source": "open_food_facts",
+          "source_food_id": "75007614",
+          "state": "unspecified",
+          "brand": "Coca-Cola"
+        },
+        {
+          "name": "Coca cola",
+          "preparation": "Producto comercial · revisar etiqueta",
+          "source": "open_food_facts",
+          "source_food_id": "7501055304745",
+          "state": "unspecified",
+          "brand": "Coca-cola"
+        },
+        {
+          "name": "Coca-Cola 2.5L retornable",
+          "preparation": "Producto comercial · revisar etiqueta",
+          "source": "open_food_facts",
+          "source_food_id": "7501055310227",
+          "state": "unspecified",
+          "brand": "Coca-Cola"
+        },
+        {
+          "name": "Coca-Cola chubby SA",
+          "preparation": "Producto comercial · revisar etiqueta",
+          "source": "open_food_facts",
+          "source_food_id": "7501055356256",
+          "state": "unspecified",
+          "brand": "Coca-Cola"
+        }
+      ],
+      "candidates": 14
+    },
+    {
+      "query": "bimbo",
+      "expected_sr_identity": null,
+      "expected_rank": null,
+      "timings_ms": [
+        85.451,
+        84.234,
+        84.466,
+        84.763,
+        84.054
+      ],
+      "top_5": [
+        {
+          "name": "Cake, pound, Bimbo Bakeries USA, Panque Casero, home baked style",
+          "preparation": "Cake, pound, Bimbo Bakeries USA, Panque Casero, home baked style",
+          "source": "usda_sr_legacy",
+          "source_food_id": "167937",
+          "state": "cooked",
+          "brand": null
+        },
+        {
+          "name": "Cero Cero Multigrano",
+          "preparation": "Producto comercial · revisar etiqueta",
+          "source": "open_food_facts",
+          "source_food_id": "7500810028636",
+          "state": "unspecified",
+          "brand": "BIMBO"
+        },
+        {
+          "name": "Cero cero multigrano",
+          "preparation": "Producto comercial · revisar etiqueta",
+          "source": "open_food_facts",
+          "source_food_id": "7501000131440",
+          "state": "unspecified",
+          "brand": "Bimbo"
+        },
+        {
+          "name": "Oroweat granos enterps multigrano",
+          "preparation": "Producto comercial · revisar etiqueta",
+          "source": "open_food_facts",
+          "source_food_id": "7501000375417",
+          "state": "unspecified",
+          "brand": "Bimbo, Grupo Bimbo"
+        },
+        {
+          "name": "Pan Blanco",
+          "preparation": "Producto comercial · revisar etiqueta",
+          "source": "open_food_facts",
+          "source_food_id": "7500810029183",
+          "state": "unspecified",
+          "brand": "Bimbo"
+        }
+      ],
+      "candidates": 19
+    },
+    {
+      "query": "nestle",
+      "expected_sr_identity": null,
+      "expected_rank": null,
+      "timings_ms": [
+        88.951,
+        85.608,
+        84.907,
+        86.083,
+        85.903
+      ],
+      "top_5": [
+        {
+          "name": "Beverages, Cocoa mix, NESTLE, Hot Cocoa Mix Rich Chocolate With Marshmallows",
+          "preparation": "Beverages, Cocoa mix, NESTLE, Hot Cocoa Mix Rich Chocolate With Marshmallows",
+          "source": "usda_sr_legacy",
+          "source_food_id": "174124",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Beverages, NESTLE, Boost plus, nutritional drink, ready-to-drink",
+          "preparation": "Beverages, NESTLE, Boost plus, nutritional drink, ready-to-drink",
+          "source": "usda_sr_legacy",
+          "source_food_id": "173169",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Candies, NESTLE, 100 GRAND Bar",
+          "preparation": "Candies, NESTLE, 100 GRAND Bar",
+          "source": "usda_sr_legacy",
+          "source_food_id": "168761",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Candies, NESTLE, AFTER EIGHT Mints",
+          "preparation": "Candies, NESTLE, AFTER EIGHT Mints",
+          "source": "usda_sr_legacy",
+          "source_food_id": "168766",
+          "state": "unspecified",
+          "brand": null
+        },
+        {
+          "name": "Candies, NESTLE, BABY RUTH Bar",
+          "preparation": "Candies, NESTLE, BABY RUTH Bar",
+          "source": "usda_sr_legacy",
+          "source_food_id": "167582",
+          "state": "unspecified",
+          "brand": null
+        }
+      ],
+      "candidates": 25
+    },
+    {
+      "query": "THIS_FOOD_DOES_NOT_EXIST_QA",
+      "expected_sr_identity": null,
+      "expected_rank": null,
+      "timings_ms": [
+        78.915,
+        79.912,
+        77.81,
+        78.961,
+        78.491
+      ],
+      "top_5": [],
+      "candidates": 0
+    }
+  ]
+}

@@ -13,7 +13,7 @@ from app.extensions import db
 from app.models import User, DailyNutrition, NutritionMeal, NutritionItem, Recipe, RecipeIngredient, FoodProduct
 from app.models.nutrition_intelligence import MealDraft, MealLog
 from app.services.food_catalog import detail, details
-from app.services.nutrition_math import NutritionError, NUTRIENTS, LEGACY, PRODUCT, ingredient, summarize, decimal
+from app.services.nutrition_math import NutritionError, NUTRIENTS, LEGACY, PRODUCT, ingredient, summarize, decimal, snapshot_summary, summarize_parts
 
 
 def enabled():
@@ -60,7 +60,7 @@ def make_snapshot(entries, name, target, meal_type, timezone_name):
         raise NutritionError("Fecha o zona horaria inválida.") from error
     if meal_type not in {"breakfast","lunch","dinner","snack","other"}:
         raise NutritionError("Momento de comida inválido.")
-    return {"schema_version":"2.0", "calculation_method":"decimal_scaled_v1",
+    return {"schema_version":"2.1" if any(entry['food'].get('metadata') for entry in entries) else "2.0", "calculation_method":"decimal_scaled_v1",
         "name":name.strip(), "local_date":target, "meal_type":meal_type, "timezone":timezone_name,
         "ingredients":entries, "summary":summarize(entries)}
 
@@ -97,6 +97,12 @@ def mutate_draft(user_id, key, revision, action, data):
             raise NutritionError("Máximo 100 ingredientes.")
         food = detail(user_id,data["ref"],data.get("food_revision"))
         entries.append(ingredient(food,data["amount"],data["unit"],data.get("serving_id") or None))
+    elif action == 'portion':
+        previous = decimal(snapshot.get('portion_factor','1'), positive=True)
+        factor = decimal(data['portion_factor'], positive=True)
+        entries[:] = [ingredient(e['food'], str(Decimal(e['amount'])*factor/previous), e['unit'], e.get('serving_id')) for e in entries]
+        snapshot['portion_factor'] = str(factor)
+        accepted.clear()
     elif action in {"amount","accept","remove"}:
         index = int(data["index"])
         if index < 0 or index >= len(entries):
@@ -110,10 +116,15 @@ def mutate_draft(user_id, key, revision, action, data):
             entries.pop(index)
             accepted = {a if a<index else a-1 for a in accepted if a != index}
     elif action == "metadata":
-        snapshot = dict(snapshot, **make_snapshot(entries,data["name"],data["date"],data["meal_type"],snapshot["timezone"]))
+        checked = make_snapshot(entries,data["name"],data["date"],data["meal_type"],snapshot["timezone"])
+        snapshot.update({k:checked[k] for k in ('name','local_date','meal_type','timezone')})
     else:
         raise NutritionError("Acción inválida.")
-    snapshot["summary"] = summarize(entries)
+    if snapshot.get('composition') and action in {'add','amount','remove'}:
+        snapshot['composition'] = dict(snapshot['composition'], complete=False)
+    snapshot["summary"] = snapshot_summary(snapshot)
+    if snapshot.get('declared_nutrition') or snapshot.get('composition'):
+        snapshot['composition_summary'] = summarize(entries)
     row.snapshot_json, row.accepted_json = snapshot, sorted(accepted)
     row.revision += 1
     db.session.flush()
@@ -185,7 +196,10 @@ def confirm(user_id, token, *, authority=None):
     snapshot = copy.deepcopy(row.snapshot_json)
     # Only server-owned food snapshots are inputs; never trust client totals.
     entries = [ingredient(e["food"],e["amount"],e["unit"],e.get("serving_id")) for e in snapshot["ingredients"]]
-    snapshot["ingredients"], snapshot["summary"] = entries, summarize(entries)
+    snapshot["ingredients"] = entries
+    snapshot["summary"] = snapshot_summary(snapshot)
+    if snapshot.get('declared_nutrition') or snapshot.get('composition'):
+        snapshot['composition_summary'] = summarize(entries)
     target = date.fromisoformat(snapshot["local_date"])
     day = db.session.execute(db.select(DailyNutrition).where(DailyNutrition.user_id==user_id,
         DailyNutrition.date==target).with_for_update().execution_options(populate_existing=True)).scalar_one_or_none()
@@ -261,7 +275,8 @@ def save_template(user_id,key, revision, *, recipe_key=None, base_revision=None)
     # A saved draft keeps the optimistic revision for subsequent explicit edits.
     draft.snapshot_json = dict(doc, recipe_id=recipe.id, recipe_revision=recipe.revision,
         save_target=recipe.public_id, save_base_revision=recipe.revision)
-    recipe.yield_weight_g = sum((Decimal(e['normalized']['mass_g']) for e in doc['ingredients']),Decimal(0))
+    declared_mass=(doc.get('composition') or {}).get('total_mass_g')
+    recipe.yield_weight_g = Decimal(declared_mass)*Decimal(doc.get('portion_factor','1')) if declared_mass is not None else sum((Decimal(e['normalized']['mass_g']) for e in doc['ingredients']),Decimal(0))
     for index,e in enumerate(doc['ingredients'],1):
         mass = Decimal(e['normalized']['mass_g'])
         fields = {column:Decimal(e['contribution'][n]['value'])*100/mass if e['contribution'][n]['state']=='known' else None for n,column in PRODUCT.items()}
@@ -321,14 +336,16 @@ def daily_summary(user_id,target,lock=False):
     excluded=set(baseline.get('included_item_ids',[])) if day.authority=='disjoint_aggregate' else set()
     items=day_items(day,lock=lock)
     legacy=[i for i in items if i.id not in projections and i.id not in excluded]
-    entries=[e for l in logs for e in l.snapshot_json['ingredients']]+[legacy_ingredient(i) for i in legacy]
+    entries=[legacy_ingredient(i) for i in legacy]
+    from app.services.nutrition_import import aggregate_summary
+    declared_aggregate=aggregate_summary(user_id,target) if day.authority in {None,'disjoint_aggregate'} else None
     if day.authority=='disjoint_aggregate' or not items:
         totals=baseline.get('original_totals',{}) if day.authority=='disjoint_aggregate' else {c:str(getattr(day,c)) if getattr(day,c) is not None else None for c in LEGACY.values()}
         pseudo=type('LegacyValues',(),dict(name='Agregado legacy',**{c:totals.get(c) for c in LEGACY.values()}))()
-        entries.append(legacy_ingredient(pseudo))
-    summary=summarize(entries)
+        if declared_aggregate is None:entries.append(legacy_ingredient(pseudo))
+    summary=summarize_parts([l.snapshot_json['summary'] for l in logs] + ([summarize(entries)] if entries else []) + ([declared_aggregate] if declared_aggregate else []))
     # Legacy daily totals remain authoritative where their detailed basis is unavailable.
-    if day.authority is None:
+    if day.authority is None and declared_aggregate is None:
         for nutrient,field in LEGACY.items():
             value=getattr(day,field)
             summary[nutrient]['value']=str(value) if value is not None else None
@@ -381,7 +398,8 @@ def restore_recipe_snapshot(user_id, name, snapshot, revision, existing=None):
     db.session.add(recipe)
     recipe.revision=revision
     recipe.nutrition_snapshot_json=copy.deepcopy(snapshot)
-    recipe.yield_weight_g=sum((Decimal(e['normalized']['mass_g']) for e in snapshot['ingredients']),Decimal(0))
+    declared_mass=(snapshot.get('composition') or {}).get('total_mass_g')
+    recipe.yield_weight_g=Decimal(declared_mass)*Decimal(snapshot.get('portion_factor','1')) if declared_mass is not None else sum((Decimal(e['normalized']['mass_g']) for e in snapshot['ingredients']),Decimal(0))
     for index,e in enumerate(snapshot['ingredients'],1):
         mass=Decimal(e['normalized']['mass_g'])
         fields={column:Decimal(e['contribution'][n]['value'])*100/mass if e['contribution'][n]['state']=='known' else None for n,column in PRODUCT.items()}

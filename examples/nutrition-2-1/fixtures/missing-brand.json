@@ -1,0 +1,11 @@
+{
+  "products": [
+    {
+      "name": "QA producto no catalogado",
+      "amount": "30",
+      "unit": "g",
+      "calories_per_100g": 100,
+      "protein_g_per_100g": 0
+    }
+  ]
+}

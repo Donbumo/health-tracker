@@ -1,0 +1,705 @@
+{
+  "date": "2026-10-14",
+  "data": "Synthetic account; real public catalog. No writes.",
+  "checks": [
+    {
+      "case": "day",
+      "date": "2026-10-12",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "summary_bottom": 385,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": "final-first-day-dark-390.png"
+    },
+    {
+      "case": "empty",
+      "date": "2026-10-14",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "summary_bottom": 431,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": "final-first-empty-dark-390.png"
+    },
+    {
+      "case": "partial",
+      "date": "2026-10-08",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "summary_bottom": 385,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": "final-first-partial-dark-390.png"
+    },
+    {
+      "case": "legacy",
+      "date": "2026-09-13",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "summary_bottom": 385,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": "final-first-legacy-dark-390.png"
+    },
+    {
+      "case": "zero",
+      "date": "2026-09-25",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "summary_bottom": 385,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": "final-first-zero-dark-390.png"
+    },
+    {
+      "case": "day",
+      "date": "2026-10-12",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "summary_bottom": 373,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": null
+    },
+    {
+      "case": "empty",
+      "date": "2026-10-14",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "summary_bottom": 399,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": null
+    },
+    {
+      "case": "partial",
+      "date": "2026-10-08",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "summary_bottom": 373,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": null
+    },
+    {
+      "case": "legacy",
+      "date": "2026-09-13",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "summary_bottom": 373,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": null
+    },
+    {
+      "case": "zero",
+      "date": "2026-09-25",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "summary_bottom": 373,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": null
+    },
+    {
+      "case": "day",
+      "date": "2026-10-12",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "summary_bottom": 385,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": "final-first-day-light-390.png"
+    },
+    {
+      "case": "empty",
+      "date": "2026-10-14",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "summary_bottom": 431,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": "final-first-empty-light-390.png"
+    },
+    {
+      "case": "partial",
+      "date": "2026-10-08",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "summary_bottom": 385,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": "final-first-partial-light-390.png"
+    },
+    {
+      "case": "legacy",
+      "date": "2026-09-13",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "summary_bottom": 385,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": "final-first-legacy-light-390.png"
+    },
+    {
+      "case": "zero",
+      "date": "2026-09-25",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "summary_bottom": 385,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": "final-first-zero-light-390.png"
+    },
+    {
+      "case": "day",
+      "date": "2026-10-12",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "summary_bottom": 373,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": null
+    },
+    {
+      "case": "empty",
+      "date": "2026-10-14",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "summary_bottom": 399,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": null
+    },
+    {
+      "case": "partial",
+      "date": "2026-10-08",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "summary_bottom": 373,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": null
+    },
+    {
+      "case": "legacy",
+      "date": "2026-09-13",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "summary_bottom": 373,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": null
+    },
+    {
+      "case": "zero",
+      "date": "2026-09-25",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "summary_bottom": 373,
+      "overflow": false,
+      "keyboard": "visible focus",
+      "screenshot": null
+    }
+  ],
+  "queries": [
+    {
+      "query": "arroz integral",
+      "candidates_in_first_page": 50,
+      "top_5": [
+        {
+          "name": "Rice, brown, cooked, NS as to fat",
+          "ref": "catalog:47e20f55-7a76-5bce-8409-f3f0031461c0",
+          "description": "Rice, brown, cooked, NS as to fat\n\nRice, brown, cooked, NS as to fat\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2708409\n\nCatálogo"
+        },
+        {
+          "name": "Rice, brown, cooked, as ingredient",
+          "ref": "catalog:61107651-4d5e-5b64-9c5d-ba3872462a14",
+          "description": "Rice, brown, cooked, as ingredient\n\nRice, brown, cooked, as ingredient\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2710789\n\nCatálogo"
+        },
+        {
+          "name": "Rice, brown, cooked, fat added, NS as to fat type",
+          "ref": "catalog:fa6bf0b8-d28e-562f-bbf1-7e3c2c130b25",
+          "description": "Rice, brown, cooked, fat added, NS as to fat type\n\nRice, brown, cooked, fat added, NS as to fat type\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2708413\n\nCatálogo"
+        },
+        {
+          "name": "Rice, brown, cooked, no added fat",
+          "ref": "catalog:c72e9b48-50f6-594f-be99-5aa8a15b968e",
+          "description": "Rice, brown, cooked, no added fat\n\nRice, brown, cooked, no added fat\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2708414\n\nCatálogo"
+        },
+        {
+          "name": "Rice, brown, long grain, unenriched, raw",
+          "ref": "catalog:36de7add-6517-595d-8633-d423bb3ff3ae",
+          "description": "Rice, brown, long grain, unenriched, raw\n\nRice, brown, long grain, unenriched, raw\n\nUSDA Foundation · Crudo\n\nIdentidad de fuente: 2512380\n\nCatálogo"
+        }
+      ],
+      "http_page_timings_ms": [
+        132.01,
+        125.1,
+        119.76
+      ]
+    },
+    {
+      "query": "arroz integral cocido",
+      "candidates_in_first_page": 15,
+      "top_5": [
+        {
+          "name": "Rice, brown, cooked, NS as to fat",
+          "ref": "catalog:47e20f55-7a76-5bce-8409-f3f0031461c0",
+          "description": "Rice, brown, cooked, NS as to fat\n\nRice, brown, cooked, NS as to fat\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2708409\n\nCatálogo"
+        },
+        {
+          "name": "Rice, brown, cooked, as ingredient",
+          "ref": "catalog:61107651-4d5e-5b64-9c5d-ba3872462a14",
+          "description": "Rice, brown, cooked, as ingredient\n\nRice, brown, cooked, as ingredient\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2710789\n\nCatálogo"
+        },
+        {
+          "name": "Rice, brown, cooked, fat added, NS as to fat type",
+          "ref": "catalog:fa6bf0b8-d28e-562f-bbf1-7e3c2c130b25",
+          "description": "Rice, brown, cooked, fat added, NS as to fat type\n\nRice, brown, cooked, fat added, NS as to fat type\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2708413\n\nCatálogo"
+        },
+        {
+          "name": "Rice, brown, cooked, no added fat",
+          "ref": "catalog:c72e9b48-50f6-594f-be99-5aa8a15b968e",
+          "description": "Rice, brown, cooked, no added fat\n\nRice, brown, cooked, no added fat\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2708414\n\nCatálogo"
+        },
+        {
+          "name": "Rice, brown, long-grain, cooked (Includes foods for USDA's Food Distribution Program)",
+          "ref": "catalog:3b31e5c8-9544-5be9-9a71-538e01c555e9",
+          "description": "Rice, brown, long-grain, cooked (Includes foods for USDA's Food Distribution Program)\n\nRice, brown, long-grain, cooked (Includes foods for USDA's Food Distribution Program)\n\nUSDA SR Legacy · Cocido\n\nIdentidad de fuente: 169704\n\nCatálogo"
+        }
+      ],
+      "http_page_timings_ms": [
+        117.76,
+        116.97,
+        120.22
+      ]
+    },
+    {
+      "query": "arroz integral crudo",
+      "candidates_in_first_page": 3,
+      "top_5": [
+        {
+          "name": "Rice, brown, long grain, unenriched, raw",
+          "ref": "catalog:36de7add-6517-595d-8633-d423bb3ff3ae",
+          "description": "Rice, brown, long grain, unenriched, raw\n\nRice, brown, long grain, unenriched, raw\n\nUSDA Foundation · Crudo\n\nIdentidad de fuente: 2512380\n\nCatálogo"
+        },
+        {
+          "name": "Rice, brown, long-grain, raw (Includes foods for USDA's Food Distribution Program)",
+          "ref": "catalog:dcf7b571-40f0-5e44-b8e6-2ccfffa474d7",
+          "description": "Rice, brown, long-grain, raw (Includes foods for USDA's Food Distribution Program)\n\nRice, brown, long-grain, raw (Includes foods for USDA's Food Distribution Program)\n\nUSDA SR Legacy · Crudo\n\nIdentidad de fuente: 169703\n\nCatálogo"
+        },
+        {
+          "name": "Rice, brown, medium-grain, raw (Includes foods for USDA's Food Distribution Program)",
+          "ref": "catalog:57ad0f05-5807-5f52-b49e-3fd3fe03613a",
+          "description": "Rice, brown, medium-grain, raw (Includes foods for USDA's Food Distribution Program)\n\nRice, brown, medium-grain, raw (Includes foods for USDA's Food Distribution Program)\n\nUSDA SR Legacy · Crudo\n\nIdentidad de fuente: 169706\n\nCatálogo"
+        }
+      ],
+      "http_page_timings_ms": [
+        122.71,
+        133.92,
+        117.26
+      ]
+    },
+    {
+      "query": "brown rice",
+      "candidates_in_first_page": 50,
+      "top_5": [
+        {
+          "name": "Rice, brown, cooked, NS as to fat",
+          "ref": "catalog:47e20f55-7a76-5bce-8409-f3f0031461c0",
+          "description": "Rice, brown, cooked, NS as to fat\n\nRice, brown, cooked, NS as to fat\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2708409\n\nCatálogo"
+        },
+        {
+          "name": "Rice, brown, cooked, as ingredient",
+          "ref": "catalog:61107651-4d5e-5b64-9c5d-ba3872462a14",
+          "description": "Rice, brown, cooked, as ingredient\n\nRice, brown, cooked, as ingredient\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2710789\n\nCatálogo"
+        },
+        {
+          "name": "Rice, brown, cooked, fat added, NS as to fat type",
+          "ref": "catalog:fa6bf0b8-d28e-562f-bbf1-7e3c2c130b25",
+          "description": "Rice, brown, cooked, fat added, NS as to fat type\n\nRice, brown, cooked, fat added, NS as to fat type\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2708413\n\nCatálogo"
+        },
+        {
+          "name": "Rice, brown, cooked, no added fat",
+          "ref": "catalog:c72e9b48-50f6-594f-be99-5aa8a15b968e",
+          "description": "Rice, brown, cooked, no added fat\n\nRice, brown, cooked, no added fat\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2708414\n\nCatálogo"
+        },
+        {
+          "name": "Rice, brown, long grain, unenriched, raw",
+          "ref": "catalog:36de7add-6517-595d-8633-d423bb3ff3ae",
+          "description": "Rice, brown, long grain, unenriched, raw\n\nRice, brown, long grain, unenriched, raw\n\nUSDA Foundation · Crudo\n\nIdentidad de fuente: 2512380\n\nCatálogo"
+        }
+      ],
+      "http_page_timings_ms": [
+        121.2,
+        117.83,
+        119.5
+      ]
+    },
+    {
+      "query": "harina de arroz integral",
+      "candidates_in_first_page": 8,
+      "top_5": [
+        {
+          "name": "Flour, rice, brown",
+          "ref": "catalog:86f58d1e-264d-5d6c-95a0-667927988d8d",
+          "description": "Flour, rice, brown\n\nFlour, rice, brown\n\nUSDA Foundation · Estado sin especificar\n\nIdentidad de fuente: 1104812\n\nCatálogo"
+        },
+        {
+          "name": "Pasta, gluten-free, brown rice flour, cooked, TINKYADA",
+          "ref": "catalog:a05886ed-39ea-5e63-ad30-d27981ff8bd3",
+          "description": "Pasta, gluten-free, brown rice flour, cooked, TINKYADA\n\nPasta, gluten-free, brown rice flour, cooked, TINKYADA\n\nUSDA SR Legacy · Cocido\n\nIdentidad de fuente: 172026\n\nCatálogo"
+        },
+        {
+          "name": "Rice flour, brown",
+          "ref": "catalog:a9a93130-52cf-5512-89b8-1ec78f834f51",
+          "description": "Rice flour, brown\n\nRice flour, brown\n\nUSDA SR Legacy · Estado sin especificar\n\nIdentidad de fuente: 168898\n\nCatálogo"
+        },
+        {
+          "name": "Bread, gluten-free, white, made with tapioca starch and brown rice flour",
+          "ref": "catalog:7cc3eb8f-ae4b-540d-a2e7-139d7cbd9cf0",
+          "description": "Bread, gluten-free, white, made with tapioca starch and brown rice flour\n\nBread, gluten-free, white, made with tapioca starch and brown rice flour\n\nUSDA SR Legacy · Estado sin especificar\n\nIdentidad de fuente: 174101\n\nCatálogo"
+        },
+        {
+          "name": "Bread, gluten-free, whole grain, made with tapioca starch and brown rice flour",
+          "ref": "catalog:1af139c1-0ecf-51dc-899f-552e69b9f6ef",
+          "description": "Bread, gluten-free, whole grain, made with tapioca starch and brown rice flour\n\nBread, gluten-free, whole grain, made with tapioca starch and brown rice flour\n\nUSDA SR Legacy · Estado sin especificar\n\nIdentidad de fuente: 174102\n\nCatálogo"
+        }
+      ],
+      "http_page_timings_ms": [
+        116.3,
+        116.44,
+        111.95
+      ]
+    },
+    {
+      "query": "brown rice pasta",
+      "candidates_in_first_page": 1,
+      "top_5": [
+        {
+          "name": "Pasta, gluten-free, brown rice flour, cooked, TINKYADA",
+          "ref": "catalog:a05886ed-39ea-5e63-ad30-d27981ff8bd3",
+          "description": "Pasta, gluten-free, brown rice flour, cooked, TINKYADA\n\nPasta, gluten-free, brown rice flour, cooked, TINKYADA\n\nUSDA SR Legacy · Cocido\n\nIdentidad de fuente: 172026\n\nCatálogo"
+        }
+      ],
+      "http_page_timings_ms": [
+        113.07,
+        112.75,
+        111.17
+      ]
+    },
+    {
+      "query": "arroz blanco cocido",
+      "candidates_in_first_page": 23,
+      "top_5": [
+        {
+          "name": "Arroz blanco cocido",
+          "ref": "catalog:267f3553-b6fa-5f62-8b61-a575c032e4bc",
+          "description": "Arroz blanco cocido\n\nRice, white, long-grain, regular, unenriched, cooked without salt\n\nUSDA SR Legacy · Cocido\n\nIdentidad de fuente: 169757\n\nCatálogo"
+        },
+        {
+          "name": "Rice, white, cooked, NS as to fat",
+          "ref": "catalog:c7f4f271-ab26-5af7-ae74-226c5d7b36bc",
+          "description": "Rice, white, cooked, NS as to fat\n\nRice, white, cooked, NS as to fat\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2708403\n\nCatálogo"
+        },
+        {
+          "name": "Rice, white, cooked, as ingredient",
+          "ref": "catalog:c9b5af26-c5c5-58d6-a57a-dfc5072ce00e",
+          "description": "Rice, white, cooked, as ingredient\n\nRice, white, cooked, as ingredient\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2710788\n\nCatálogo"
+        },
+        {
+          "name": "Rice, white, cooked, fat added, NS as to fat type",
+          "ref": "catalog:0584c8a5-6a6f-5da9-aa4a-0ad016f3dd74",
+          "description": "Rice, white, cooked, fat added, NS as to fat type\n\nRice, white, cooked, fat added, NS as to fat type\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2708407\n\nCatálogo"
+        },
+        {
+          "name": "Rice, white, cooked, glutinous",
+          "ref": "catalog:fb13356a-6fdc-50ea-ab80-f5cd12e33d39",
+          "description": "Rice, white, cooked, glutinous\n\nRice, white, cooked, glutinous\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2708422\n\nCatálogo"
+        }
+      ],
+      "http_page_timings_ms": [
+        114.55,
+        116.07,
+        118.76
+      ]
+    },
+    {
+      "query": "tortilla de maíz",
+      "candidates_in_first_page": 13,
+      "top_5": [
+        {
+          "name": "Tortilla de maíz",
+          "ref": "catalog:f711c344-2e74-5c08-b62c-cd36c274470d",
+          "description": "Tortilla de maíz\n\nTortillas, ready-to-bake or -fry, corn\n\nUSDA SR Legacy · Estado sin especificar\n\nIdentidad de fuente: 175036\n\nCatálogo"
+        },
+        {
+          "name": "Tortilla, blue corn, Sakwavikaviki (Hopi)",
+          "ref": "catalog:10b0c553-2161-5e35-ade1-2ca0a223d210",
+          "description": "Tortilla, blue corn, Sakwavikaviki (Hopi)\n\nTortilla, blue corn, Sakwavikaviki (Hopi)\n\nUSDA SR Legacy · Estado sin especificar\n\nIdentidad de fuente: 169829\n\nCatálogo"
+        },
+        {
+          "name": "Tortilla, corn",
+          "ref": "catalog:5bf513c0-40c1-55c0-9a58-0737dcfb719f",
+          "description": "Tortilla, corn\n\nTortilla, corn\n\nUSDA FNDDS · Estado sin especificar\n\nIdentidad de fuente: 2707823\n\nCatálogo"
+        },
+        {
+          "name": "Tortillas, ready-to-bake or -fry, corn, without added salt",
+          "ref": "catalog:1bc5ab8a-90fe-5716-bee8-98b38ab4290b",
+          "description": "Tortillas, ready-to-bake or -fry, corn, without added salt\n\nTortillas, ready-to-bake or -fry, corn, without added salt\n\nUSDA SR Legacy · Estado sin especificar\n\nIdentidad de fuente: 173241\n\nCatálogo"
+        },
+        {
+          "name": "Snacks, tortilla chips, plain, white corn, salted",
+          "ref": "catalog:3d9db40f-e3ef-5611-8aa2-079f7628f405",
+          "description": "Snacks, tortilla chips, plain, white corn, salted\n\nSnacks, tortilla chips, plain, white corn, salted\n\nUSDA SR Legacy · Estado sin especificar\n\nIdentidad de fuente: 167558\n\nCatálogo"
+        }
+      ],
+      "http_page_timings_ms": [
+        112.03,
+        119.47,
+        110.95
+      ]
+    },
+    {
+      "query": "totopos",
+      "candidates_in_first_page": 21,
+      "top_5": [
+        {
+          "name": "Snacks, tortilla chips, light (baked with less oil)",
+          "ref": "catalog:208e36cf-7925-55cf-bb45-be99f9128e2c",
+          "description": "Snacks, tortilla chips, light (baked with less oil)\n\nSnacks, tortilla chips, light (baked with less oil)\n\nUSDA SR Legacy · Cocido\n\nIdentidad de fuente: 168137\n\nCatálogo"
+        },
+        {
+          "name": "Snacks, tortilla chips, low fat, made with olestra, nacho cheese",
+          "ref": "catalog:a2599fe2-80f9-5215-8370-92db299d00ee",
+          "description": "Snacks, tortilla chips, low fat, made with olestra, nacho cheese\n\nSnacks, tortilla chips, low fat, made with olestra, nacho cheese\n\nUSDA SR Legacy · Estado sin especificar\n\nIdentidad de fuente: 168863\n\nCatálogo"
+        },
+        {
+          "name": "Snacks, tortilla chips, low fat, unsalted",
+          "ref": "catalog:2e1d8902-a93c-5ab7-a5b7-0ce1a83d9e0b",
+          "description": "Snacks, tortilla chips, low fat, unsalted\n\nSnacks, tortilla chips, low fat, unsalted\n\nUSDA SR Legacy · Estado sin especificar\n\nIdentidad de fuente: 170254\n\nCatálogo"
+        },
+        {
+          "name": "Snacks, tortilla chips, nacho cheese",
+          "ref": "catalog:7dbe114d-dc66-5e1f-b8a4-85c1e6e63791",
+          "description": "Snacks, tortilla chips, nacho cheese\n\nSnacks, tortilla chips, nacho cheese\n\nUSDA SR Legacy · Estado sin especificar\n\nIdentidad de fuente: 167559\n\nCatálogo"
+        },
+        {
+          "name": "Snacks, tortilla chips, nacho-flavor, made with enriched masa flour",
+          "ref": "catalog:14810927-5d69-5716-9b5c-bb3c4c8b30ef",
+          "description": "Snacks, tortilla chips, nacho-flavor, made with enriched masa flour\n\nSnacks, tortilla chips, nacho-flavor, made with enriched masa flour\n\nUSDA SR Legacy · Estado sin especificar\n\nIdentidad de fuente: 170256\n\nCatálogo"
+        }
+      ],
+      "http_page_timings_ms": [
+        114.85,
+        114.59,
+        114.05
+      ]
+    },
+    {
+      "query": "pollo crudo",
+      "candidates_in_first_page": 50,
+      "top_5": [
+        {
+          "name": "Chicken, breast, boneless, skinless, raw",
+          "ref": "catalog:81e81658-3856-57cb-8cc4-0cdba4ee7391",
+          "description": "Chicken, breast, boneless, skinless, raw\n\nChicken, breast, boneless, skinless, raw\n\nUSDA Foundation · Crudo\n\nIdentidad de fuente: 2646170\n\nCatálogo"
+        },
+        {
+          "name": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw",
+          "ref": "catalog:3ea2cf30-b4c4-52a1-8b42-df429c0a266a",
+          "description": "Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw\n\nChicken, broiler or fryers, breast, skinless, boneless, meat only, raw\n\nUSDA SR Legacy · Crudo\n\nIdentidad de fuente: 171077\n\nCatálogo"
+        },
+        {
+          "name": "Chicken, broilers or fryers, back, meat only, raw",
+          "ref": "catalog:21ea127b-2c53-5d15-a9a4-e68b6ff3f709",
+          "description": "Chicken, broilers or fryers, back, meat only, raw\n\nChicken, broilers or fryers, back, meat only, raw\n\nUSDA SR Legacy · Crudo\n\nIdentidad de fuente: 171073\n\nCatálogo"
+        },
+        {
+          "name": "Chicken, broilers or fryers, dark meat, drumstick, meat only, raw",
+          "ref": "catalog:cbe6668f-cefc-5d79-ac5d-1209e0f0d637",
+          "description": "Chicken, broilers or fryers, dark meat, drumstick, meat only, raw\n\nChicken, broilers or fryers, dark meat, drumstick, meat only, raw\n\nUSDA SR Legacy · Crudo\n\nIdentidad de fuente: 173614\n\nCatálogo"
+        },
+        {
+          "name": "Chicken, broilers or fryers, dark meat, meat only, raw",
+          "ref": "catalog:d0c9309a-7fc9-51e3-9965-375674e7e5ee",
+          "description": "Chicken, broilers or fryers, dark meat, meat only, raw\n\nChicken, broilers or fryers, dark meat, meat only, raw\n\nUSDA SR Legacy · Crudo\n\nIdentidad de fuente: 171067\n\nCatálogo"
+        }
+      ],
+      "http_page_timings_ms": [
+        117.4,
+        119.78,
+        119.31
+      ]
+    },
+    {
+      "query": "pollo cocido",
+      "candidates_in_first_page": 50,
+      "top_5": [
+        {
+          "name": "Pechuga pollo asada",
+          "ref": "catalog:78e20265-a24e-5b0b-b1de-1cb70f341440",
+          "description": "Pechuga pollo asada\n\nChicken, broilers or fryers, breast, meat only, cooked, roasted\n\nUSDA SR Legacy · Cocido\n\nIdentidad de fuente: 171477\n\nCatálogo"
+        },
+        {
+          "name": "Chicken breast, baked or broiled, skin eaten, from pre-cooked",
+          "ref": "catalog:88696c9c-a4ff-5a7a-a7c2-927f7487283a",
+          "description": "Chicken breast, baked or broiled, skin eaten, from pre-cooked\n\nChicken breast, baked or broiled, skin eaten, from pre-cooked\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2705957\n\nCatálogo"
+        },
+        {
+          "name": "Chicken breast, baked or broiled, skin not eaten, from pre-cooked",
+          "ref": "catalog:21a4cfd9-f20f-5451-b19a-3be695e38434",
+          "description": "Chicken breast, baked or broiled, skin not eaten, from pre-cooked\n\nChicken breast, baked or broiled, skin not eaten, from pre-cooked\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2705958\n\nCatálogo"
+        },
+        {
+          "name": "Chicken breast, baked, broiled, or roasted, skin eaten, from raw",
+          "ref": "catalog:f2ba0f80-1688-55cc-b660-fa7b2fbad088",
+          "description": "Chicken breast, baked, broiled, or roasted, skin eaten, from raw\n\nChicken breast, baked, broiled, or roasted, skin eaten, from raw\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2705955\n\nCatálogo"
+        },
+        {
+          "name": "Chicken breast, baked, broiled, or roasted, skin not eaten, from raw",
+          "ref": "catalog:3cc857bb-3a1b-5a6a-9bcd-3f5159cf3660",
+          "description": "Chicken breast, baked, broiled, or roasted, skin not eaten, from raw\n\nChicken breast, baked, broiled, or roasted, skin not eaten, from raw\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2705956\n\nCatálogo"
+        }
+      ],
+      "http_page_timings_ms": [
+        122.05,
+        121.39,
+        133.43
+      ]
+    },
+    {
+      "query": "frijoles",
+      "candidates_in_first_page": 50,
+      "top_5": [
+        {
+          "name": "Frijol negro cocido",
+          "ref": "catalog:89b92684-1390-5daa-888b-1008e6a14a1e",
+          "description": "Frijol negro cocido\n\nBeans, black, mature seeds, cooked, boiled, without salt\n\nUSDA SR Legacy · Cocido\n\nIdentidad de fuente: 173735\n\nCatálogo"
+        },
+        {
+          "name": "Frijol pinto cocido",
+          "ref": "catalog:ec1e51fb-f1e7-5a15-a7b6-4c1269c6eae2",
+          "description": "Frijol pinto cocido\n\nBeans, pinto, mature seeds, cooked, boiled, without salt\n\nUSDA SR Legacy · Cocido\n\nIdentidad de fuente: 175200\n\nCatálogo"
+        },
+        {
+          "name": "Baked beans",
+          "ref": "catalog:445e787c-5aaf-5a3e-81a2-718fe519fbe6",
+          "description": "Baked beans\n\nBaked beans\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2707390\n\nCatálogo"
+        },
+        {
+          "name": "Baked beans, reduced sodium",
+          "ref": "catalog:01a69456-3652-5f47-872c-255bffce307b",
+          "description": "Baked beans, reduced sodium\n\nBaked beans, reduced sodium\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2707410\n\nCatálogo"
+        },
+        {
+          "name": "Baked beans, vegetarian",
+          "ref": "catalog:679beb61-aafd-5ff1-a85b-032c884a7096",
+          "description": "Baked beans, vegetarian\n\nBaked beans, vegetarian\n\nUSDA FNDDS · Cocido\n\nIdentidad de fuente: 2707391\n\nCatálogo"
+        }
+      ],
+      "http_page_timings_ms": [
+        125.99,
+        126.42,
+        119.48
+      ]
+    },
+    {
+      "query": "avena",
+      "candidates_in_first_page": 50,
+      "top_5": [
+        {
+          "name": "Avena seca",
+          "ref": "catalog:9329783c-b6fd-5153-a77e-6431b210a499",
+          "description": "Avena seca\n\nOats (Includes foods for USDA's Food Distribution Program)\n\nUSDA SR Legacy · Estado sin especificar\n\nIdentidad de fuente: 169705\n\nCatálogo"
+        },
+        {
+          "name": "Bagel, oat bran",
+          "ref": "catalog:bdd49785-9de2-5ce4-a131-1595161e438b",
+          "description": "Bagel, oat bran\n\nBagel, oat bran\n\nUSDA FNDDS · Estado sin especificar\n\nIdentidad de fuente: 2707772\n\nCatálogo"
+        },
+        {
+          "name": "Bagels, oat bran",
+          "ref": "catalog:ca4cded9-1acb-521e-a770-169607a985fc",
+          "description": "Bagels, oat bran\n\nBagels, oat bran\n\nUSDA SR Legacy · Estado sin especificar\n\nIdentidad de fuente: 172666\n\nCatálogo"
+        },
+        {
+          "name": "Beverages, drink mix, QUAKER OATS, GATORADE, orange flavor, powder",
+          "ref": "catalog:a4cff1bf-60c4-5a2a-a434-ab888f4f38c5",
+          "description": "Beverages, drink mix, QUAKER OATS, GATORADE, orange flavor, powder\n\nBeverages, drink mix, QUAKER OATS, GATORADE, orange flavor, powder\n\nUSDA SR Legacy · Estado sin especificar\n\nIdentidad de fuente: 173659\n\nCatálogo"
+        },
+        {
+          "name": "Bread, oat bran",
+          "ref": "catalog:e38105c6-face-5597-a671-02e7ad3095a3",
+          "description": "Bread, oat bran\n\nBread, oat bran\n\nUSDA FNDDS · Estado sin especificar\n\nIdentidad de fuente: 2707770\n\nCatálogo"
+        }
+      ],
+      "http_page_timings_ms": [
+        122.81,
+        120.72,
+        125.54
+      ]
+    },
+    {
+      "query": "bimbo",
+      "candidates_in_first_page": 19,
+      "top_5": [
+        {
+          "name": "Cake, pound, Bimbo Bakeries USA, Panque Casero, home baked style",
+          "ref": "catalog:24708baa-fe7c-56e2-8a00-442fdf0299d9",
+          "description": "Cake, pound, Bimbo Bakeries USA, Panque Casero, home baked style\n\nCake, pound, Bimbo Bakeries USA, Panque Casero, home baked style\n\nUSDA SR Legacy · Cocido\n\nIdentidad de fuente: 167937\n\nCatálogo"
+        },
+        {
+          "name": "Cero Cero Multigrano",
+          "ref": "catalog:a9178ca2-3ba1-567f-8664-933c2983aff0",
+          "description": "Cero Cero Multigrano\n\nProducto comercial · revisar etiqueta\n\nOpen Food Facts · Estado sin especificar\n\nBIMBO\n\nIdentidad de fuente: 7500810028636\n\nCatálogo"
+        },
+        {
+          "name": "Cero cero multigrano",
+          "ref": "catalog:5080a890-e79d-5c75-b46f-1ca3f6f8bf6a",
+          "description": "Cero cero multigrano\n\nProducto comercial · revisar etiqueta\n\nOpen Food Facts · Estado sin especificar\n\nBimbo\n\nIdentidad de fuente: 7501000131440\n\nCatálogo"
+        },
+        {
+          "name": "Oroweat granos enterps multigrano",
+          "ref": "catalog:9899824a-f9bd-5d30-baec-c50b2b1af892",
+          "description": "Oroweat granos enterps multigrano\n\nProducto comercial · revisar etiqueta\n\nOpen Food Facts · Estado sin especificar\n\nBimbo, Grupo Bimbo\n\nIdentidad de fuente: 7501000375417\n\nCatálogo"
+        },
+        {
+          "name": "Pan Blanco",
+          "ref": "catalog:a59a086c-d0e0-5b64-8b1e-a0890a923df9",
+          "description": "Pan Blanco\n\nProducto comercial · revisar etiqueta\n\nOpen Food Facts · Estado sin especificar\n\nBimbo\n\nIdentidad de fuente: 7500810029183\n\nCatálogo"
+        }
+      ],
+      "http_page_timings_ms": [
+        113.5,
+        119.81,
+        116.99
+      ]
+    }
+  ],
+  "errors": [],
+  "external_requests": [],
+  "measurement": "Three full Flask HTML page loads per query; not raw SQL latency."
+}

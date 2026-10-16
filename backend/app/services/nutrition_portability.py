@@ -11,8 +11,8 @@ from uuid import uuid5, NAMESPACE_URL
 from sqlalchemy.orm import selectinload
 from app.extensions import db
 from app.models import FoodProduct, Recipe, DailyNutrition, NutritionMeal, NutritionItem
-from app.models.nutrition_intelligence import MealLog
-from app.services.nutrition_math import NutritionError, ingredient, summarize, LEGACY, validate_vector
+from app.models.nutrition_intelligence import MealLog, NutritionPlan, NutritionImportReceipt
+from app.services.nutrition_math import NutritionError, ingredient, summarize, snapshot_summary, LEGACY, validate_vector
 from app.services.nutrition_intelligence import hash_document, lock_owner, recalculate
 from app.services.validation import validate_json_document
 
@@ -22,7 +22,9 @@ def export_bundle(user_id):
     foods=db.session.execute(db.select(FoodProduct).where(FoodProduct.user_id==user_id)).scalars().all()
     recipes=db.session.execute(db.select(Recipe).where(Recipe.user_id==user_id,Recipe.nutrition_snapshot_json.is_not(None))).scalars().all()
     days=db.session.execute(db.select(DailyNutrition).where(DailyNutrition.user_id==user_id,DailyNutrition.authority.is_not(None))).scalars().all()
-    if not (logs or any(p.nutrition_json is not None for p in foods) or recipes or days):
+    plans=db.session.execute(db.select(NutritionPlan).where(NutritionPlan.user_id==user_id)).scalars().all()
+    receipts=db.session.execute(db.select(NutritionImportReceipt).where(NutritionImportReceipt.user_id==user_id)).scalars().all()
+    if not (logs or any(p.nutrition_json is not None for p in foods) or recipes or days or plans or receipts):
         return None
     log_rows=[]
     owned_items=db.session.execute(db.select(NutritionItem).where(NutritionItem.user_id==user_id)
@@ -49,22 +51,29 @@ def export_bundle(user_id):
         {'source_id':p.id,'identity':p.public_id,'revision':p.revision,'name':p.name,'brand':p.brand,'nutrition':p.nutrition_json or {'nutrients':{},'servings':[],'density_g_ml':None}} for p in foods],
         'templates':[{'source_id':r.id,'identity':r.public_id,'revision':r.revision,'name':r.name,'snapshot':copy.deepcopy(r.nutrition_snapshot_json)} for r in recipes],
         'logs':log_rows,'authorities':authority}
+    if plans or receipts or any(log.snapshot_json.get('schema_version')=='2.1' for log in logs) or any(recipe.nutrition_snapshot_json.get('schema_version')=='2.1' for recipe in recipes) or any(any(key in (food.nutrition_json or {}) for key in ('basis_amount','basis_unit','barcode','metadata')) for food in foods):
+        bundle['schema_version']='2.1'
+        bundle['plans']=[{'identity':p.public_id,'revision':p.revision,'name':p.name,'snapshot':copy.deepcopy(p.snapshot_json)} for p in plans]
+        bundle['receipts']=[{'event_key':r.event_key,'source_sha256':r.source_sha256,'document':copy.deepcopy(r.raw_payload_json),'result':copy.deepcopy(r.result_json)} for r in receipts]
     validate_bundle(bundle)
     return bundle
 
 
-def validate_snapshot(snapshot):
-    try:
-        date.fromisoformat(snapshot['local_date'])
-        ZoneInfo(snapshot['timezone'])
-    except (ValueError, TypeError, ZoneInfoNotFoundError) as error:
-        raise NutritionError('Fecha o zona horaria del snapshot inválida.') from error
+def validate_snapshot(snapshot,plan=False):
+    if not plan:
+        try:
+            date.fromisoformat(snapshot['local_date'])
+            ZoneInfo(snapshot['timezone'])
+        except (ValueError, TypeError, ZoneInfoNotFoundError) as error:
+            raise NutritionError('Fecha o zona horaria del snapshot inválida.') from error
     entries=snapshot['ingredients']
     if not entries or len(entries)>100:
         raise NutritionError('Snapshot requiere ingredientes válidos.')
     calculated=[ingredient(e['food'],e['amount'],e['unit'],e.get('serving_id')) for e in entries]
-    if hash_document(calculated)!=hash_document(entries) or hash_document(summarize(calculated))!=hash_document(snapshot['summary']):
+    if hash_document(calculated)!=hash_document(entries) or hash_document(snapshot_summary(dict(snapshot,ingredients=calculated)))!=hash_document(snapshot['summary']):
         raise NutritionError('Snapshot y cálculo no coinciden; no se importan totales del cliente.')
+    if snapshot.get('composition_summary') and hash_document(summarize(calculated))!=hash_document(snapshot['composition_summary']):
+        raise NutritionError('Composición calculada del snapshot no coincide.')
 
 
 def validate_bundle(bundle):
@@ -73,6 +82,15 @@ def validate_bundle(bundle):
         validate_vector(food['nutrition'].get('nutrients',{}))
     for row in bundle['templates']+bundle['logs']:
         validate_snapshot(row['snapshot'])
+    for plan in bundle.get('plans',[]):
+        for meal in plan['snapshot']['meals']:validate_snapshot(meal['snapshot'],plan=True)
+    for receipt in bundle.get('receipts',[]):
+        validate_json_document(receipt['document'],'nutrition_import_2_1')
+        if receipt['event_key']!=receipt['document']['data']['event_key'] or receipt['source_sha256']!=receipt['document']['data']['source_sha256']:
+            raise NutritionError('Identidad de recibo y documento no coincide.')
+    for section,key in [('plans','identity'),('receipts','event_key')]:
+        keys=[r[key] for r in bundle.get(section,[])]
+        if len(keys)!=len(set(keys)):raise NutritionError('Identidades duplicadas en export.')
     for section, key in [('foods','identity'),('templates','identity'),('logs','identity'),('authorities','date')]:
         values=[r[key] for r in bundle[section]]
         if len(values)!=len(set(values)):
@@ -113,9 +131,29 @@ def semantic_snapshot(snapshot):
     return hash_document(value)
 
 
+def semantic_receipt(document):
+    value=copy.deepcopy(document);value['user_id']=None
+    value['data'].pop('plan_identity',None)
+    for entry in value['data']['entries']:
+        for binding in entry['bindings']:
+            if binding.get('ref','').startswith('user:'):binding['ref']=None
+    return hash_document(value)
+
+
 def plan_bundle(bundle,user_id):
     validate_bundle(bundle)
     all_existing=True
+    for row in bundle.get('plans',[]):
+        destination=str(uuid5(NAMESPACE_URL,f'health-tracker/nutrition-plan/{user_id}/{row["identity"]}'))
+        existing=db.session.execute(db.select(NutritionPlan).where(NutritionPlan.user_id==user_id,NutritionPlan.public_id.in_([row['identity'],destination]))).scalar_one_or_none()
+        if existing:
+            a=[semantic_snapshot(m['snapshot']) for m in existing.snapshot_json['meals']];b=[semantic_snapshot(m['snapshot']) for m in row['snapshot']['meals']]
+            if a!=b or existing.revision!=row['revision']:raise NutritionError('Plan existente difiere; no sobrescribir.',409)
+        else:all_existing=False
+    for row in bundle.get('receipts',[]):
+        existing=db.session.execute(db.select(NutritionImportReceipt).where(NutritionImportReceipt.user_id==user_id,NutritionImportReceipt.event_key==row['event_key'])).scalar_one_or_none()
+        if existing and (existing.source_sha256!=row['source_sha256'] or semantic_receipt(existing.raw_payload_json)!=semantic_receipt(row['document'])):raise NutritionError('Recibo existente difiere; no sobrescribir procedencia.',409)
+        if not existing:all_existing=False
     for row in bundle['logs']:
         existing=db.session.execute(db.select(MealLog).where(MealLog.user_id==user_id,MealLog.client_event_id==row['client_event_id'])).scalar_one_or_none()
         if existing and not same_event(existing,row):
@@ -215,6 +253,28 @@ def restore_bundle(bundle,user_id,id_maps):
                 keys.append(item.id)
             baseline['included_item_ids']=keys
         day.authority,day.authority_baseline_json=row['authority'],baseline
+    for row in bundle.get('plans',[]):
+        destination=str(uuid5(NAMESPACE_URL,f'health-tracker/nutrition-plan/{user_id}/{row["identity"]}'))
+        existing=db.session.execute(db.select(NutritionPlan).where(NutritionPlan.user_id==user_id,NutritionPlan.public_id.in_([row['identity'],destination]))).scalar_one_or_none()
+        if not existing:
+            snapshot=copy.deepcopy(row['snapshot'])
+            for meal in snapshot['meals']:meal['snapshot']=remap(meal['snapshot'])
+            db.session.add(NutritionPlan(user_id=user_id,public_id=destination,name=row['name'],revision=row['revision'],snapshot_json=snapshot))
+    for row in bundle.get('receipts',[]):
+        existing=db.session.execute(db.select(NutritionImportReceipt).where(NutritionImportReceipt.user_id==user_id,NutritionImportReceipt.event_key==row['event_key'])).scalar_one_or_none()
+        if not existing:
+            document=copy.deepcopy(row['document']);document['user_id']=user_id
+            if document['data'].get('plan_identity'):
+                identity=document['data']['plan_identity']
+                if not any(plan['identity']==identity for plan in bundle.get('plans',[])):raise NutritionError('Falta plan de la revisión incluida en export.')
+                document['data']['plan_identity']=str(uuid5(NAMESPACE_URL,f'health-tracker/nutrition-plan/{user_id}/{identity}'))
+            for entry in document['data']['entries']:
+                for binding in entry['bindings']:
+                    if binding.get('ref','').startswith('user:'):
+                        old=binding['ref'][5:]
+                        if old not in food_refs:raise NutritionError('Falta remapeo privado del recibo.')
+                        binding['ref']='user:'+food_refs[old]
+            db.session.add(NutritionImportReceipt(user_id=user_id,event_key=row['event_key'],source_sha256=row['source_sha256'],raw_payload_json=document,result_json=copy.deepcopy(row['result'])))
     db.session.flush()
     for day in days.values():
         recalculate(day)

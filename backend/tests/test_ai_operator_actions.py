@@ -605,7 +605,13 @@ def test_natural_multi_action_plan_has_zero_writes_then_supports_partial_workflo
 
         plan_logs = [record.getMessage() for record in caplog.records if "ai_plan_prepared" in record.getMessage()]
         assert plan_logs
-        assert all(value not in " ".join(plan_logs) for value in ("82.5", "520", "160"))
+        # A random plan UUID can contain digits such as "520" without logging
+        # clinical data. Exclude only that validated opaque identifier; keep
+        # checking every other character of the log for the actual values.
+        import re
+        redacted_logs=re.sub(r'\bplan_id=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b',
+            'plan_id=opaque'," ".join(plan_logs))
+        assert all(value not in redacted_logs for value in ("82.5", "520", "160"))
 
         service = AIConversationService()
         body, food, goal_draft = drafts

@@ -1,0 +1,14 @@
+{
+  "plan": [
+    {
+      "name": "Arroz con pollo QA",
+      "amount": "300",
+      "unit": "g",
+      "date": "Lunes prescrito",
+      "meal_type": "lunch",
+      "kcal": 450,
+      "protein_g": 35
+    }
+  ],
+  "classification": "prescribed"
+}

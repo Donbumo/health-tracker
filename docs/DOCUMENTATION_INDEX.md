@@ -14,6 +14,9 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 
 ## Uso diario y web
 
+- Nutrition Experience 2.1 (implementación local, pendiente de revisión): [implementación](NUTRITION_EXPERIENCE_2_1_IMPLEMENTATION.md), [QA/compatibilidad](NUTRITION_EXPERIENCE_2_1_QA.md), [catálogo](NUTRITION_EXPERIENCE_2_1_CATALOG.md), [importación](NUTRITION_EXPERIENCE_2_1_IMPORT.md) y [comparación visual](NUTRITION_EXPERIENCE_2_1_VISUAL.md).
+- Corrección final Nutrition 2.1: [NUTRITION_EXPERIENCE_2_1_FINAL_REVIEW.md](NUTRITION_EXPERIENCE_2_1_FINAL_REVIEW.md), seis ajustes de producto, evidencia y stop gate.
+
 - Implementación Nutrition Intelligence 2.0: [NUTRITION_INTELLIGENCE_2_IMPLEMENTATION.md](NUTRITION_INTELLIGENCE_2_IMPLEMENTATION.md), contratos productivos, QA y gates; [NUTRITION_CATALOG_EVALUATION.md](NUTRITION_CATALOG_EVALUATION.md), muestra reproducible y decisión de fuente.
 
 - Nutrition Intelligence 2.0 (base de diseño aprobada): [NUTRITION_INTELLIGENCE_2.md](NUTRITION_INTELLIGENCE_2.md), auditoría, contratos conceptuales y convivencia legacy; [NUTRITION_CATALOG_SOURCES.md](NUTRITION_CATALOG_SOURCES.md), comparación documental de fuentes locales; [NUTRITION_INTELLIGENCE_2_QA.md](NUTRITION_INTELLIGENCE_2_QA.md), prototipo, capturas y gate de revisión.

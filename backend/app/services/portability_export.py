@@ -628,11 +628,13 @@ def create_export(user: User, payload: dict, raw_idempotency_key: str) -> tuple[
         raise PortabilityExportError("idempotency_required", "Se requiere Idempotency-Key.")
     sections, start, end, include_attachments, include_medical_attachments, identifiable, include_activity_series, include_activity_coordinates = _request(payload)
     if set(sections) & {"nutrition_entries", "custom_foods"}:
-        from app.models.nutrition_intelligence import MealLog
+        from app.models.nutrition_intelligence import MealLog, NutritionPlan, NutritionImportReceipt
         has_snapshots = db.session.execute(db.select(MealLog.id).where(MealLog.user_id==user.id).limit(1)).first()
         has_vectors = db.session.execute(db.select(FoodProduct.id).where(FoodProduct.user_id==user.id, FoodProduct.nutrition_json.is_not(None)).limit(1)).first()
-        if has_snapshots or has_vectors:
-            raise PortabilityExportError("snapshot_format_required", "Portable v1 no conserva micros/snapshots. Usa export completo de cuenta o backup con Nutrition Intelligence 2.0.", 409)
+        has_plans = db.session.execute(db.select(NutritionPlan.id).where(NutritionPlan.user_id==user.id).limit(1)).first()
+        has_receipts = db.session.execute(db.select(NutritionImportReceipt.id).where(NutritionImportReceipt.user_id==user.id).limit(1)).first()
+        if has_snapshots or has_vectors or has_plans or has_receipts:
+            raise PortabilityExportError("snapshot_format_required", "Portable v1 no conserva micros/snapshots/planes. Usa export completo de cuenta o backup con Nutrition Intelligence.", 409)
     normalized = {"sections": sections, "date_from": start.isoformat() if start else None, "date_to": end.isoformat() if end else None,
         "include_attachments": include_attachments, "include_medical_attachments": include_medical_attachments,
         "include_identifiable_profile": identifiable, "include_activity_series": include_activity_series,

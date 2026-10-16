@@ -1,0 +1,546 @@
+{
+  "data": "QA synthetic only",
+  "period_consistency": "7 vs 30 day moving windows pass",
+  "points": [
+    {
+      "date": "2026-09-13",
+      "intake": "1200.000",
+      "state": "complete",
+      "expended": null,
+      "balance": null,
+      "rolling": {
+        "intake": "1200.000",
+        "expended": null,
+        "balance": null
+      },
+      "rolling_days": {
+        "intake": 1,
+        "expended": 0,
+        "balance": 0
+      },
+      "legacy": true
+    },
+    {
+      "date": "2026-09-14",
+      "intake": "247.500",
+      "state": "complete",
+      "expended": "2101.00",
+      "balance": "-1853.500",
+      "rolling": {
+        "intake": "723.750",
+        "expended": "2101.00",
+        "balance": "-1853.500"
+      },
+      "rolling_days": {
+        "intake": 2,
+        "expended": 1,
+        "balance": 1
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-09-15",
+      "intake": "247.500",
+      "state": "complete",
+      "expended": "2102.00",
+      "balance": "-1854.500",
+      "rolling": {
+        "intake": "565.000",
+        "expended": "2101.50",
+        "balance": "-1854.000"
+      },
+      "rolling_days": {
+        "intake": 3,
+        "expended": 2,
+        "balance": 2
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-09-16",
+      "intake": "1230.000",
+      "state": "complete",
+      "expended": "2103.00",
+      "balance": "-873.000",
+      "rolling": {
+        "intake": "731.250",
+        "expended": "2102.00",
+        "balance": "-1527.000"
+      },
+      "rolling_days": {
+        "intake": 4,
+        "expended": 3,
+        "balance": 3
+      },
+      "legacy": true
+    },
+    {
+      "date": "2026-09-17",
+      "intake": null,
+      "state": "unknown",
+      "expended": null,
+      "balance": null,
+      "rolling": {
+        "intake": "731.250",
+        "expended": "2102.00",
+        "balance": "-1527.000"
+      },
+      "rolling_days": {
+        "intake": 4,
+        "expended": 3,
+        "balance": 3
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-09-18",
+      "intake": "247.500",
+      "state": "partial",
+      "expended": "2105.00",
+      "balance": null,
+      "rolling": {
+        "intake": "731.250",
+        "expended": "2102.75",
+        "balance": "-1527.000"
+      },
+      "rolling_days": {
+        "intake": 4,
+        "expended": 4,
+        "balance": 3
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-09-19",
+      "intake": "1260.000",
+      "state": "complete",
+      "expended": "2106.00",
+      "balance": "-846.000",
+      "rolling": {
+        "intake": "837.000",
+        "expended": "2103.40",
+        "balance": "-1356.750"
+      },
+      "rolling_days": {
+        "intake": 5,
+        "expended": 5,
+        "balance": 4
+      },
+      "legacy": true
+    },
+    {
+      "date": "2026-09-20",
+      "intake": "247.500",
+      "state": "complete",
+      "expended": "2107.00",
+      "balance": "-1859.500",
+      "rolling": {
+        "intake": "646.500",
+        "expended": "2104.00",
+        "balance": "-1457.300"
+      },
+      "rolling_days": {
+        "intake": 5,
+        "expended": 6,
+        "balance": 5
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-09-21",
+      "intake": "247.500",
+      "state": "complete",
+      "expended": null,
+      "balance": null,
+      "rolling": {
+        "intake": "646.500",
+        "expended": "2104.60",
+        "balance": "-1358.250"
+      },
+      "rolling_days": {
+        "intake": 5,
+        "expended": 5,
+        "balance": 4
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-09-22",
+      "intake": "1290.000",
+      "state": "complete",
+      "expended": "2109.00",
+      "balance": "-819.000",
+      "rolling": {
+        "intake": "855.000",
+        "expended": "2106.00",
+        "balance": "-1099.375"
+      },
+      "rolling_days": {
+        "intake": 5,
+        "expended": 5,
+        "balance": 4
+      },
+      "legacy": true
+    },
+    {
+      "date": "2026-09-23",
+      "intake": "247.500",
+      "state": "partial",
+      "expended": "2110.00",
+      "balance": null,
+      "rolling": {
+        "intake": "761.250",
+        "expended": "2107.40",
+        "balance": "-1174.833333333333333333333333"
+      },
+      "rolling_days": {
+        "intake": 4,
+        "expended": 5,
+        "balance": 3
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-09-24",
+      "intake": "247.500",
+      "state": "complete",
+      "expended": "2111.00",
+      "balance": "-1863.500",
+      "rolling": {
+        "intake": "658.500",
+        "expended": "2108.00",
+        "balance": "-1347.000"
+      },
+      "rolling_days": {
+        "intake": 5,
+        "expended": 6,
+        "balance": 4
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-09-25",
+      "intake": "0.000",
+      "state": "complete",
+      "expended": null,
+      "balance": null,
+      "rolling": {
+        "intake": "548.750",
+        "expended": "2108.60",
+        "balance": "-1347.000"
+      },
+      "rolling_days": {
+        "intake": 6,
+        "expended": 5,
+        "balance": 4
+      },
+      "legacy": true
+    },
+    {
+      "date": "2026-09-26",
+      "intake": "247.500",
+      "state": "complete",
+      "expended": "2113.00",
+      "balance": "-1865.500",
+      "rolling": {
+        "intake": "380.000",
+        "expended": "2110.00",
+        "balance": "-1601.875"
+      },
+      "rolling_days": {
+        "intake": 6,
+        "expended": 5,
+        "balance": 4
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-09-27",
+      "intake": "247.500",
+      "state": "complete",
+      "expended": "2114.00",
+      "balance": "-1866.500",
+      "rolling": {
+        "intake": "380.000",
+        "expended": "2111.40",
+        "balance": "-1603.625"
+      },
+      "rolling_days": {
+        "intake": 6,
+        "expended": 5,
+        "balance": 4
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-09-28",
+      "intake": "1350.000",
+      "state": "complete",
+      "expended": "2115.00",
+      "balance": "-765.000",
+      "rolling": {
+        "intake": "563.750",
+        "expended": "2112.00",
+        "balance": "-1435.900"
+      },
+      "rolling_days": {
+        "intake": 6,
+        "expended": 6,
+        "balance": 5
+      },
+      "legacy": true
+    },
+    {
+      "date": "2026-09-29",
+      "intake": "247.500",
+      "state": "complete",
+      "expended": null,
+      "balance": null,
+      "rolling": {
+        "intake": "390.000",
+        "expended": "2112.60",
+        "balance": "-1590.125"
+      },
+      "rolling_days": {
+        "intake": 6,
+        "expended": 5,
+        "balance": 4
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-09-30",
+      "intake": null,
+      "state": "unknown",
+      "expended": "2117.00",
+      "balance": null,
+      "rolling": {
+        "intake": "390.000",
+        "expended": "2114.00",
+        "balance": "-1590.125"
+      },
+      "rolling_days": {
+        "intake": 6,
+        "expended": 5,
+        "balance": 4
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-10-01",
+      "intake": "1380.000",
+      "state": "complete",
+      "expended": "2118.00",
+      "balance": "-738.000",
+      "rolling": {
+        "intake": "578.750",
+        "expended": "2115.40",
+        "balance": "-1308.750"
+      },
+      "rolling_days": {
+        "intake": 6,
+        "expended": 5,
+        "balance": 4
+      },
+      "legacy": true
+    },
+    {
+      "date": "2026-10-02",
+      "intake": "247.500",
+      "state": "complete",
+      "expended": "2119.00",
+      "balance": "-1871.500",
+      "rolling": {
+        "intake": "620.000",
+        "expended": "2116.00",
+        "balance": "-1421.300"
+      },
+      "rolling_days": {
+        "intake": 6,
+        "expended": 6,
+        "balance": 5
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-10-03",
+      "intake": "247.500",
+      "state": "partial",
+      "expended": null,
+      "balance": null,
+      "rolling": {
+        "intake": "694.500",
+        "expended": "2116.60",
+        "balance": "-1310.250"
+      },
+      "rolling_days": {
+        "intake": 5,
+        "expended": 5,
+        "balance": 4
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-10-04",
+      "intake": "1410.000",
+      "state": "complete",
+      "expended": "2121.00",
+      "balance": "-711.000",
+      "rolling": {
+        "intake": "927.000",
+        "expended": "2118.00",
+        "balance": "-1021.375"
+      },
+      "rolling_days": {
+        "intake": 5,
+        "expended": 5,
+        "balance": 4
+      },
+      "legacy": true
+    },
+    {
+      "date": "2026-10-05",
+      "intake": "247.500",
+      "state": "complete",
+      "expended": "2122.00",
+      "balance": "-1874.500",
+      "rolling": {
+        "intake": "706.500",
+        "expended": "2119.40",
+        "balance": "-1298.750"
+      },
+      "rolling_days": {
+        "intake": 5,
+        "expended": 5,
+        "balance": 4
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-10-06",
+      "intake": "247.500",
+      "state": "complete",
+      "expended": "2123.00",
+      "balance": "-1875.500",
+      "rolling": {
+        "intake": "706.500",
+        "expended": "2120.00",
+        "balance": "-1414.100"
+      },
+      "rolling_days": {
+        "intake": 5,
+        "expended": 6,
+        "balance": 5
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-10-07",
+      "intake": "1440.000",
+      "state": "complete",
+      "expended": null,
+      "balance": null,
+      "rolling": {
+        "intake": "828.750",
+        "expended": "2120.60",
+        "balance": "-1414.100"
+      },
+      "rolling_days": {
+        "intake": 6,
+        "expended": 5,
+        "balance": 5
+      },
+      "legacy": true
+    },
+    {
+      "date": "2026-10-08",
+      "intake": "247.500",
+      "state": "partial",
+      "expended": "2125.00",
+      "balance": null,
+      "rolling": {
+        "intake": "718.500",
+        "expended": "2122.00",
+        "balance": "-1583.125"
+      },
+      "rolling_days": {
+        "intake": 5,
+        "expended": 5,
+        "balance": 4
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-10-09",
+      "intake": null,
+      "state": "unknown",
+      "expended": "2126.00",
+      "balance": null,
+      "rolling": {
+        "intake": "836.250",
+        "expended": "2123.40",
+        "balance": "-1487.000"
+      },
+      "rolling_days": {
+        "intake": 4,
+        "expended": 5,
+        "balance": 3
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-10-10",
+      "intake": "1470.000",
+      "state": "complete",
+      "expended": "2127.00",
+      "balance": "-657.000",
+      "rolling": {
+        "intake": "963.000",
+        "expended": "2124.00",
+        "balance": "-1279.500"
+      },
+      "rolling_days": {
+        "intake": 5,
+        "expended": 6,
+        "balance": 4
+      },
+      "legacy": true
+    },
+    {
+      "date": "2026-10-11",
+      "intake": "247.500",
+      "state": "complete",
+      "expended": null,
+      "balance": null,
+      "rolling": {
+        "intake": "730.500",
+        "expended": "2124.60",
+        "balance": "-1469.000"
+      },
+      "rolling_days": {
+        "intake": 5,
+        "expended": 5,
+        "balance": 3
+      },
+      "legacy": false
+    },
+    {
+      "date": "2026-10-12",
+      "intake": "247.500",
+      "state": "complete",
+      "expended": "2129.00",
+      "balance": "-1881.500",
+      "rolling": {
+        "intake": "730.500",
+        "expended": "2126.00",
+        "balance": "-1471.333333333333333333333333"
+      },
+      "rolling_days": {
+        "intake": 5,
+        "expended": 5,
+        "balance": 3
+      },
+      "legacy": false
+    }
+  ]
+}

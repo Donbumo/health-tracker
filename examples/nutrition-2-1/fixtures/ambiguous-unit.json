@@ -1,0 +1,10 @@
+{
+  "records": [
+    {
+      "name": "QA taza de arroz",
+      "amount": "1",
+      "unit": "cup",
+      "protein": 3
+    }
+  ]
+}

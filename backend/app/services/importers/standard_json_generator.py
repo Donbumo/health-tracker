@@ -40,6 +40,7 @@ from app.services.validation import JsonSchemaValidationError, validate_json_doc
 
 
 SUPPORTED_TARGETS = {
+    "nutrition_import",
     "weigh_in_batch",
     "food_products",
     "daily_energy",
@@ -152,6 +153,16 @@ class StandardJsonGenerator:
         source_type: str,
         default_timezone: str,
     ) -> tuple[list[dict[str, Any]], list[str], str]:
+        if target_type == 'nutrition_import':
+            import copy
+            documents=[]
+            for record in records:
+                if record.get('type') != 'nutrition_import':
+                    raise StandardJsonGenerationError('La importación nutricional requiere vínculos, unidades y destino revisados; no se completan campos ausentes.')
+                document=copy.deepcopy(record)
+                document['user_id']=user_id
+                documents.append(document)
+            return documents, [], 'nutrition_import_2_1'
         if target_type == "weigh_in_batch":
             generated_documents, warnings = self._generate_weigh_ins(
                 records=records,

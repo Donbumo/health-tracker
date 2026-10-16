@@ -92,7 +92,9 @@ def edit_food(id: int):
         from app.services.food_catalog import refresh_personal_vector
         from app.services.nutrition_math import PRODUCT
         changes={column:_decimal(getattr(form,column).data) for column in PRODUCT.values() if getattr(product,column)!=_decimal(getattr(form,column).data)}
-        refresh_personal_vector(product,current_user.id,changes)
+        from app.services.nutrition_math import NutritionError
+        try:refresh_personal_vector(product,current_user.id,changes)
+        except NutritionError as error:abort(error.status,description=str(error))
         product.revision += 1
 
         product.name = form.name.data.strip()

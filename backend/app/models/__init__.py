@@ -140,4 +140,4 @@ __all__ = [
     "AIActionDraft",
 ]
 
-from app.models.nutrition_intelligence import (FoodCatalogSource, FoodCatalogRevision, CatalogFood, Nutrient, FoodNutrient, FoodServing, MealDraft, MealLog)
+from app.models.nutrition_intelligence import (FoodCatalogSource, FoodCatalogRevision, CatalogFood, Nutrient, FoodNutrient, FoodServing, MealDraft, MealLog, NutritionImportDraft, NutritionPlan, NutritionImportReceipt)

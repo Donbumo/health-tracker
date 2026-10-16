@@ -431,7 +431,11 @@ def patch_food(user_id: int, public_id: str, payload: dict) -> FoodProduct:
     _check_revision(record.revision, payload.get("base_revision"))
     changes = _food_values(payload, creating=False)
     from app.services.food_catalog import refresh_personal_vector
-    refresh_personal_vector(record,user_id,changes)
+    from app.services.nutrition_math import NutritionError
+    try:
+        refresh_personal_vector(record,user_id,changes)
+    except NutritionError as error:
+        raise MobileSyncError('invalid_request',str(error),error.status) from error
     for field, value in changes.items():
         setattr(record, field, value)
     record.revision += 1

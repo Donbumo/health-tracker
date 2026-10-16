@@ -17,6 +17,7 @@ from app.services.validation import JsonSchemaValidationError, validate_json_doc
 
 
 DEFAULT_SCHEMA_CANDIDATES: tuple[tuple[str, str], ...] = (
+    ("nutrition_import", "nutrition_import_2_1"),
     ("weigh_in", "weigh_in"),
     ("daily_nutrition", "daily_nutrition"),
     ("daily_energy", "daily_energy"),

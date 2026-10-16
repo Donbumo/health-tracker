@@ -1,0 +1,59 @@
+{
+  "data": "QA synthetic only",
+  "schema": "nutrition_intelligence_qa_20261009",
+  "isolations": [
+    {
+      "level": "READ COMMITTED",
+      "concurrent_import_replay": "pass",
+      "receipts": 1,
+      "logs": 1,
+      "declared_450_not_double_counted": "pass",
+      "changed_event_conflict": "pass",
+      "owner_only": "pass",
+      "plan_not_consumed": "pass",
+      "JSON_restore": "pass",
+      "ZIP_restore": "pass",
+      "0045_destructive_rollback_blocked": "pass",
+      "flag_off_history": "pass"
+    },
+    {
+      "level": "REPEATABLE READ",
+      "concurrent_import_replay": "pass",
+      "receipts": 1,
+      "logs": 1,
+      "declared_450_not_double_counted": "pass",
+      "changed_event_conflict": "pass",
+      "owner_only": "pass",
+      "plan_not_consumed": "pass",
+      "JSON_restore": "pass",
+      "ZIP_restore": "pass",
+      "0045_destructive_rollback_blocked": "pass",
+      "flag_off_history": "pass"
+    }
+  ],
+  "migration": {
+    "from": "20261013_0045",
+    "head": "20261013_0045",
+    "db_check": "pass",
+    "repeated_upgrade": "no-op",
+    "existing_QA_snapshots_preserved": 75
+  },
+  "catalog": [
+    {
+      "source": "open_food_facts",
+      "foods": 97
+    },
+    {
+      "source": "usda_fndds",
+      "foods": 5432
+    },
+    {
+      "source": "usda_foundation",
+      "foods": 363
+    },
+    {
+      "source": "usda_sr_legacy",
+      "foods": 7793
+    }
+  ]
+}

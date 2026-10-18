@@ -488,7 +488,7 @@ def _serialize_records(
                 data[field] = getattr(row, field)
             output["custom_foods"].append(_record("custom_foods", row.public_id, data, row.revision))
     if "steps" in sections:
-        rows = [row for row in _query(DailyEnergy, user.id, DailyEnergy.date, DailyEnergy.public_id) if row.steps is not None and _in_range(row.date, start, end)]
+        rows = [row for row in _query(DailyEnergy, user.id, DailyEnergy.date, DailyEnergy.public_id) if row.steps is not None and row.deleted_at is None and _in_range(row.date, start, end)]
         output["steps"] = []
         for row in rows:
             source = _safe_source(row.source); sources.setdefault(source, set()).add("steps")

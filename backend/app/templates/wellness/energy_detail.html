@@ -1,11 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Energía {{ record.date.isoformat() }} · Health Tracker{% endblock %}
 {% block content %}
+  {% set labels = {'total_calories':'Calorías totales', 'active_calories':'Calorías activas', 'resting_calories':'Calorías de reposo', 'steps':'Pasos', 'distance_meters':'Distancia (m)', 'notes':'Notas'} %}
   <section class="page-heading">
-    <div><h1>Energía {{ record.date.isoformat() }}</h1><p>Fuente: {{ record.source }}</p></div>
-    <div class="page-actions"><a class="button" href="{{ url_for('wellness.energy_export', record_id=record.id, format_name='json') }}">JSON</a><a class="button button-secondary" href="{{ url_for('wellness.energy_export', record_id=record.id, format_name='csv') }}">CSV</a><a class="button button-secondary" href="{{ url_for('wellness.energy_list') }}">Volver</a></div>
+    <div><h1>Energía {{ record.date.isoformat() }}</h1><p>Fuente: {{ 'Conciliación por campo' if record.source == 'reconciled' else record.source }}</p></div>
+    <div class="page-actions"><a class="button" href="{{ url_for('wellness.energy_edit', record_id=record.id) }}">Editar día</a><a class="button button-secondary" href="{{ url_for('wellness.energy_delete', record_id=record.id) }}">Eliminar día</a><a class="button" href="{{ url_for('wellness.energy_export', record_id=record.id, format_name='json') }}">JSON</a><a class="button button-secondary" href="{{ url_for('wellness.energy_export', record_id=record.id, format_name='csv') }}">CSV</a><a class="button button-secondary" href="{{ url_for('wellness.energy_list') }}">Volver</a></div>
   </section>
+  {% if record.conflicts %}<section class="card"><h2>Fuentes en conflicto</h2><p>No se calcula con valores contradictorios. Edita el día para confirmar una corrección por campo; las fuentes no se suman.</p>
+  <ul>{% for field, values in record.conflicts.items() %}<li>{{ labels[field] }}: {{ values|join(' / ') }}</li>{% endfor %}</ul></section>{% endif %}
   <section class="card">
+    <p>JSON conserva las evidencias y revisiones. CSV contiene la vista diaria; no incluye la auditoría de fuentes.</p>
     <dl class="metadata">
       <dt>Calorías totales</dt><dd>{{ record.total_calories if record.total_calories is not none else '—' }}</dd>
       <dt>Calorías activas</dt><dd>{{ record.active_calories if record.active_calories is not none else '—' }}</dd>
@@ -16,4 +20,9 @@
       {% if record.notes %}<dt>Notas</dt><dd>{{ record.notes }}</dd>{% endif %}
     </dl>
   </section>
+  <section class="card"><h2>Evidencias conservadas</h2><p>Una representación diaria; cada fuente conserva identidad y revisión. Retirar una fuente no elimina su auditoría ni sus archivos originales.</p>
+  {% for source in record.evidence %}<details><summary>{{ source.source }} · revisión {{ source.revision }}</summary>
+    <dl class="metadata"><dt>Total (kcal)</dt><dd>{{ source.total_calories if source.total_calories is not none else 'Desconocido' }}</dd><dt>Activas (kcal)</dt><dd>{{ source.active_calories if source.active_calories is not none else 'Desconocido' }}</dd><dt>Reposo (kcal)</dt><dd>{{ source.resting_calories if source.resting_calories is not none else 'Desconocido' }}</dd><dt>Pasos</dt><dd>{{ source.steps if source.steps is not none else 'Desconocido' }}</dd><dt>Distancia (m)</dt><dd>{{ source.distance_meters if source.distance_meters is not none else 'Desconocido' }}</dd></dl>
+    <a class="button button-secondary" href="{{ url_for('wellness.energy_delete', record_id=record.id, source=source.public_id) }}">Retirar esta fuente</a>
+  </details>{% endfor %}</section>
 {% endblock %}

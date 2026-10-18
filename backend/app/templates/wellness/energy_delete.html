@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Confirmar eliminación · Health Tracker{% endblock %}
+{% block content %}
+<section class="card"><h1>Confirmar eliminación</h1>
+  {% if source %}<p>Se retirará únicamente la evidencia de {{ source.source }} del {{ record.date.isoformat() }}. Las demás fuentes seguirán disponibles.</p>
+  {% else %}<p>Se retirará el día {{ record.date.isoformat() }} completo, con todas sus fuentes, del historial activo.</p>{% endif %}
+  <p>Esta acción es distinta de borrar solo pasos desde el móvil. Se conservarán evidencias de auditoría y los originales; no se eliminarán archivos.</p>
+  <form method="post">{{ form.hidden_tag() }}<div class="field"><label class="checkbox">{{ form.confirm() }} {{ form.confirm.label.text }}</label>{% for error in form.confirm.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+    {{ form.submit(class_='button') }} <a class="button button-secondary" href="{{ url_for('wellness.energy_detail', record_id=record.id) }}">Cancelar</a>
+  </form>
+</section>
+{% endblock %}

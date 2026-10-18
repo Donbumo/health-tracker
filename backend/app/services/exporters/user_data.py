@@ -212,6 +212,8 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
     weigh_ins = _records(WeighIn, user_id, WeighIn.recorded_at, WeighIn.id)
     nutrition = _records(DailyNutrition, user_id, DailyNutrition.date, DailyNutrition.id)
     energy = _records(DailyEnergy, user_id, DailyEnergy.date, DailyEnergy.id)
+    from app.services.energy_days import views
+    canonical_energy = views(user_id)
     food_products = _records(FoodProduct, user_id, FoodProduct.id)
     recipes = _records(Recipe, user_id, Recipe.id)
     plans = _records(TrainingPlan, user_id, TrainingPlan.created_at, TrainingPlan.id)
@@ -267,7 +269,7 @@ def build_user_data_document(user: User, user_id: int) -> dict[str, Any]:
             "daily_energy": [
                 build_daily_energy_document(record, user_id) for record in energy
             ],
-            "daily_balances": _daily_balances(nutrition, energy),
+            "daily_balances": _daily_balances(nutrition, canonical_energy),
             "training_plans": [
                 _training_plan_document(plan, user_id) for plan in plans
             ],

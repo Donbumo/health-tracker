@@ -1,0 +1,42 @@
+{
+  "baseline": "500589bbafa6d730536595cb7d115f72ebdfe462",
+  "scope": "synthetic QA only",
+  "isolations": {
+    "READ COMMITTED": {
+      "partial_then_full_different_source_rows": 2,
+      "renamed_replay": "rejected same date/source instead of merge",
+      "additional_values": "rejected same date/source instead of merge",
+      "public_null": "invalid",
+      "internal_explicit_null_erases": true,
+      "mobile_before_rows": 2,
+      "mobile_after_rows": 2,
+      "daily_vs_trend_disagree": true,
+      "edit_route": 404,
+      "delete_route": 404,
+      "concurrent_sources": [
+        "committed",
+        "committed"
+      ],
+      "same_file_replay": true,
+      "same_values_other_source": "preserved as second daily row (not canonical)"
+    },
+    "REPEATABLE READ": {
+      "partial_then_full_different_source_rows": 2,
+      "renamed_replay": "rejected same date/source instead of merge",
+      "additional_values": "rejected same date/source instead of merge",
+      "public_null": "invalid",
+      "internal_explicit_null_erases": true,
+      "mobile_before_rows": 2,
+      "mobile_after_rows": 2,
+      "daily_vs_trend_disagree": true,
+      "edit_route": 404,
+      "delete_route": 404,
+      "concurrent_sources": [
+        "committed",
+        "committed"
+      ],
+      "same_file_replay": true,
+      "same_values_other_source": "preserved as second daily row (not canonical)"
+    }
+  }
+}

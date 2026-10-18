@@ -2,6 +2,8 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms import (
     DateField,
+    BooleanField,
+    HiddenField,
     DecimalField,
     IntegerField,
     SelectField,
@@ -77,6 +79,27 @@ class DailyEnergyManualForm(FlaskForm):
             self.total_calories.errors.append("Ingresa al menos una métrica.")
             return False
         return valid
+
+
+class DailyEnergyEditForm(DailyEnergyManualForm):
+    base_revision = HiddenField("Revisión", validators=[DataRequired()])
+    clear_total_calories = BooleanField("Vaciar calorías totales")
+    clear_active_calories = BooleanField("Vaciar calorías activas")
+    clear_resting_calories = BooleanField("Vaciar calorías de reposo")
+    clear_steps = BooleanField("Vaciar pasos")
+    clear_distance_meters = BooleanField("Vaciar distancia")
+    clear_notes = BooleanField("Vaciar notas")
+    submit = SubmitField("Guardar corrección revisada")
+
+    def validate(self, extra_validators=None):
+        return FlaskForm.validate(self, extra_validators=extra_validators)
+
+
+class DailyEnergyDeleteForm(FlaskForm):
+    base_revision = HiddenField("Revisión", validators=[DataRequired()])
+    source_public_id = HiddenField()
+    confirm = BooleanField("Confirmo la eliminación indicada", validators=[DataRequired()])
+    submit = SubmitField("Confirmar eliminación")
 
 
 class DailyNutritionManualForm(FlaskForm):

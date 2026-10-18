@@ -445,7 +445,9 @@ def test_owner_isolation_hides_conversations_and_tool_data(app, client, user):
     metrics = detail["messages"][0]["tool_calls"][0]["result"]["metrics"]
     assert metrics["entries"] == 0
     assert metrics["latest"] is None
-    assert "199" not in json.dumps(detail)
+    # UUIDs and timestamp microseconds may legitimately contain these digits.
+    # Assert against domain metrics and message text, not incidental identifiers.
+    assert "199" not in json.dumps({'metrics': metrics, 'content':[message['content'] for message in detail['messages']]})
 
 
 def test_ai_api_requires_bearer_and_never_uses_web_cookie(app, client, user):
@@ -587,8 +589,8 @@ def test_steps_missing_is_null_not_zero_and_sources_are_not_silently_merged(app,
         f"/api/v1/ai/conversations/{conversation_id}", headers=_auth(token)
     ).get_json()["data"]
     second_result = detail["messages"][2]["tool_calls"][0]["result"]
-    assert second_result["metrics"]["total"] == 4200
-    assert second_result["metrics"]["days_with_data"] == 1
+    assert second_result["metrics"]["total"] is None  # conflicting sources need explicit review
+    assert second_result["metrics"]["days_with_data"] == 0
 
 
 def test_provider_failure_is_safe_persistent_and_does_not_log_secret(app, client, user, caplog):

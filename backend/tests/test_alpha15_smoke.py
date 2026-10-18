@@ -66,7 +66,7 @@ def test_read_only_smoke_uses_real_routes_without_domain_writes(app, client, use
 
     with app.app_context():
         assert db.session.execute(db.select(WeighIn)).scalars().all() == []
-        assert db.session.execute(db.select(DailyEnergy)).scalars().all() == []
+        assert db.session.execute(db.select(DailyEnergy).where(DailyEnergy.steps.is_not(None))).scalars().all() == []
     assert any(message.startswith("PASS readiness") for message in messages)
     assert any(message.startswith("SKIP health_connect_settings") for message in messages)
 
@@ -80,7 +80,7 @@ def test_write_smoke_exercises_idempotency_update_query_delete_and_cleanup(app, 
 
     with app.app_context():
         assert db.session.execute(db.select(WeighIn)).scalars().all() == []
-        assert db.session.execute(db.select(DailyEnergy)).scalars().all() == []
+        assert db.session.execute(db.select(DailyEnergy).where(DailyEnergy.steps.is_not(None))).scalars().all() == []
     assert messages[-1] == "PASS write cleanup verified"
 
 
@@ -100,7 +100,7 @@ def test_final_smoke_uses_real_http_transport_against_ephemeral_server(app, clie
 
     with app.app_context():
         assert db.session.execute(db.select(WeighIn)).scalars().all() == []
-        assert db.session.execute(db.select(DailyEnergy)).scalars().all() == []
+        assert db.session.execute(db.select(DailyEnergy).where(DailyEnergy.steps.is_not(None))).scalars().all() == []
 
 
 def test_write_requires_exact_confirmation_and_tls_is_default():

@@ -6,17 +6,8 @@ from app.services.nutrition_intelligence import comparison_value
 
 
 def effective_energy_record(user_id: int, target_date: date) -> DailyEnergy | None:
-    """Choose one daily source without merging potentially overlapping devices.
-
-    A manual correction has explicit precedence. Otherwise the most recently
-    updated source wins deterministically while every source remains preserved.
-    """
-    records = db.session.execute(
-        db.select(DailyEnergy)
-        .where(DailyEnergy.user_id == user_id, DailyEnergy.date == target_date)
-        .order_by(DailyEnergy.updated_at.desc(), DailyEnergy.id.desc())
-    ).scalars().all()
-    return next((item for item in records if item.source == "manual"), records[0] if records else None)
+    from app.services.energy_days import view
+    return view(user_id, target_date)
 
 
 def daily_balance(user_id: int, target_date: date) -> dict:

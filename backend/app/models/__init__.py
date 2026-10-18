@@ -1,4 +1,5 @@
 from app.models.daily_energy import DailyEnergy
+from app.models.energy_day import EnergyDay, EnergyEvidenceEvent
 from app.models.activity import (
     Activity,
     ActivityDuplicateCandidate,

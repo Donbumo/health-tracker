@@ -1112,6 +1112,17 @@ class BackupRestoreCoordinator:
             for item in account_result.get("operations", [])
         }
         data = account_payload.get("data") or {}
+        # Account metadata is restored before raw ZIP members. Re-link energy
+        # evidence by owner + verified content hash only after those members exist.
+        from app.models import DailyEnergy, EnergyEvidenceEvent
+        for model in (DailyEnergy, EnergyEvidenceEvent):
+            rows = db.session.scalars(db.select(model).where(model.user_id == user_id, model.source_file_id.is_(None), model.source_file_sha256.is_not(None)))
+            for record in rows:
+                file = db.session.scalar(db.select(UploadedFile).where(UploadedFile.user_id == user_id, UploadedFile.sha256 == record.source_file_sha256))
+                if file is not None:
+                    used = db.session.scalar(db.select(DailyEnergy.id).where(DailyEnergy.source_file_id == file.id)) if model is DailyEnergy else None
+                    if used is None:
+                        record.source_file_id = file.id
         for section, model in (("activities", Activity), ("routes", Route)):
             for index, document in enumerate(data.get(section) or []):
                 source_file_id = document.get("source_file_id")

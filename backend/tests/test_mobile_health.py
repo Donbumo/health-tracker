@@ -316,7 +316,7 @@ def test_steps_crud_source_coexistence_precedence_ranges_and_idempotency(app, cl
     ).get_json()["data"]["items"]
     assert {(item["source"], item["steps"]) for item in listing} == {("manual", 8500), ("import", 7000)}
     today = client.get(f"/api/v1/mobile/health/today?date={DAY}", headers=_headers(token)).get_json()["data"]
-    assert today["steps"]["value"] == 8500 and today["steps"]["source"] == "manual"
+    assert today["steps"]["value"] is None  # conflicting sources require explicit review
 
     updated = client.patch(
         f"/api/v1/mobile/steps/{step['id']}",
@@ -522,8 +522,7 @@ def test_health_connect_sources_coexist_are_idempotent_and_can_detach(app, clien
         f"/api/v1/mobile/health/today?date={DAY}&timezone=America%2FMexico_City",
         headers=_headers(token),
     ).get_json()["data"]
-    assert today["steps"]["value"] == 5000
-    assert today["steps"]["source"] == "manual"
+    assert today["steps"]["value"] is None  # sources remain preserved without silent precedence
 
 
 def test_health_identity_migration_upgrade_and_downgrade_are_reversible(tmp_path):

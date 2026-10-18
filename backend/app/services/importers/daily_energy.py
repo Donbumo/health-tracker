@@ -1,10 +1,8 @@
-from datetime import date
-from decimal import Decimal
-
 from app.extensions import db
 from app.models import DailyEnergy, UploadedFile
 from app.services.importers.base import ImporterError, load_json_source
 from app.services.validation import validate_json_document
+from app.services.energy_days import upsert_document, EnergyConflict
 
 
 class DailyEnergyImportError(ValueError):
@@ -39,41 +37,14 @@ def import_daily_energy_file(
     validate_json_document(document, "daily_energy")
     if document["user_id"] != user_id:
         raise DailyEnergyImportError("Daily energy document does not belong to this user")
-    if document["source_type"] != source_file.source_type:
+    if document["source_type"] != source_file.source_type and document['schema_version'] != '1.1':
         raise DailyEnergyImportError("Daily energy source type does not match its file")
 
-    data = document["data"]
-    record_date = date.fromisoformat(data["date"])
-    source = data.get("source", document["source_type"]).strip()
-    if not source:
-        raise DailyEnergyImportError("Daily energy source must not be blank")
-    same_date = db.session.execute(
-        db.select(DailyEnergy).where(
-            DailyEnergy.user_id == user_id,
-            DailyEnergy.date == record_date,
-            DailyEnergy.source == source,
-        )
-    ).scalar_one_or_none()
-    if same_date is not None:
-        raise DailyEnergyImportError("Daily energy already exists for this date and source")
-
-    def decimal_value(field: str) -> Decimal | None:
-        value = data.get(field)
-        return Decimal(str(value)) if value is not None else None
-
-    record = DailyEnergy(
-        user_id=user_id,
-        date=record_date,
-        total_calories=decimal_value("total_expenditure_kcal"),
-        active_calories=decimal_value("active_expenditure_kcal"),
-        resting_calories=decimal_value("resting_expenditure_kcal"),
-        steps=data.get("steps"),
-        distance_meters=decimal_value("distance_meters"),
-        source=source,
-        source_file_id=source_file.id,
-        notes=data.get("notes"),
-        raw_payload_json=document,
-    )
-    db.session.add(record)
-    db.session.commit()
-    return record, False
+    try:
+        record = upsert_document(document, user_id, source_file=source_file)
+        duplicate = record._energy_replay
+        db.session.commit()
+        return record, duplicate
+    except EnergyConflict as error:
+        db.session.rollback()
+        raise DailyEnergyImportError(str(error)) from error

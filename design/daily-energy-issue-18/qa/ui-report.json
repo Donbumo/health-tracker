@@ -1,0 +1,505 @@
+{
+  "scope": "Real Flask, fictional QA only",
+  "checks": 60,
+  "cases": [
+    {
+      "name": "list",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "detail",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "edit",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "conflict",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "delete",
+      "width": 360,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "list",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "detail",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "edit",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "conflict",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "delete",
+      "width": 390,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "list",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "detail",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "edit",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "conflict",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "delete",
+      "width": 430,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "list",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "detail",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "edit",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "conflict",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "delete",
+      "width": 768,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "list",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "detail",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "edit",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "conflict",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "delete",
+      "width": 1024,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "list",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "detail",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "edit",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "conflict",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "delete",
+      "width": 1366,
+      "theme": "dark",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "list",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "detail",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "edit",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "conflict",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "delete",
+      "width": 360,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "list",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "detail",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "edit",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "conflict",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "delete",
+      "width": 390,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "list",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "detail",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "edit",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "conflict",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "delete",
+      "width": 430,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "list",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "detail",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "edit",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "conflict",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "delete",
+      "width": 768,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "list",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "detail",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "edit",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "conflict",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "delete",
+      "width": 1024,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "list",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "detail",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "edit",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "conflict",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    },
+    {
+      "name": "delete",
+      "width": 1366,
+      "theme": "light",
+      "status": "pass",
+      "overflow": false,
+      "keyboard": "visible focus"
+    }
+  ],
+  "keyboard_fields": [
+    "total_calories",
+    "clear_total_calories",
+    "active_calories",
+    "clear_active_calories",
+    "resting_calories",
+    "clear_resting_calories",
+    "steps",
+    "clear_steps",
+    "distance_meters",
+    "clear_distance_meters",
+    "notes",
+    "clear_notes",
+    "submit"
+  ],
+  "keyboard_checkbox": "Space toggles clear_steps; no accidental clear",
+  "edit": "CSRF form updates steps; expenditure preserved",
+  "delete": "explicit confirmation removes only the selected day",
+  "browserErrors": []
+}

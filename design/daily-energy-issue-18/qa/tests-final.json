@@ -1,0 +1,42 @@
+{
+  "backend_final": {
+    "tests": 1331,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 34,
+    "passed": 1297,
+    "seconds": 330.621
+  },
+  "docker_focal_final": {
+    "tests": 135,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 135,
+    "seconds": 43.27
+  },
+  "backend_warnings": 1,
+  "skip_reasons": {
+    "MariaDB activity concurrency runs only in Docker": 1,
+    "MariaDB activity E2E runs only in Docker": 1,
+    "Requires disposable local MariaDB": 1,
+    "MariaDB AI integration runs only in Docker": 2,
+    "MariaDB AI concurrency runs only in Docker": 1,
+    "MariaDB Operator integration runs only in Docker": 1,
+    "Explicit disposable strength MariaDB required": 8,
+    "MariaDB companion concurrency contract runs only in Docker": 1,
+    "MariaDB dashboard integration runs only in Docker": 1,
+    "MariaDB medical E2E runs only in Docker": 1,
+    "MariaDB portability concurrency runs only in Docker": 1,
+    "MariaDB engagement concurrency runs only in Docker": 1,
+    "Explicit isolated MariaDB QA schema required": 10,
+    "Isolated MariaDB concurrency gate": 1,
+    "MariaDB medical concurrency contract runs only in the Docker suite": 1,
+    "MariaDB concurrency contract runs only in the Docker suite": 1,
+    "MariaDB double-submit race runs only in the Docker suite": 1
+  },
+  "mariadb": "11.4.12; RC and RR passed; head 20261018_0046",
+  "visual_cases": 60,
+  "production_access": "read-only preflight; no production writes",
+  "manual_device_smoke": "Android/iOS physical smoke not performed"
+}

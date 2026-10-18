@@ -1,0 +1,10 @@
+{
+  "scope": "ephemeral SQLite full 0045 schema fixture; no historical migration rewriting",
+  "upgrade": "0045 to 0046",
+  "single_head": "20261018_0046",
+  "db_check": "pass",
+  "repeated_upgrade": "safe no-op",
+  "duplicate_source_rows": 2,
+  "canonical_days": 1,
+  "historical_empty_chain_limitation": "0015 is MariaDB-only; existing FK ALTER limitation, outside hotfix"
+}

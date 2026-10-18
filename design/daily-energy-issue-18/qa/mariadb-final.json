@@ -1,0 +1,38 @@
+{
+  "scope": "LOCAL isolated QA; synthetic fixtures only",
+  "migration": {
+    "current": "20261018_0046",
+    "repeat": "already at head",
+    "db_check": "pass",
+    "repeated_upgrade": "safe no-op"
+  },
+  "isolations": {
+    "READ COMMITTED": {
+      "concurrent_sources": "2 identities, 1 canonical day",
+      "concurrent_review": [
+        "stale",
+        "success"
+      ],
+      "same_event_revision": "unchanged",
+      "null_zero": "preserved",
+      "source_conflict": "unknown with evidence",
+      "ownership": "pass",
+      "rollback": "registry/evidence/events atomic",
+      "mobile": "stable UUID; create/patch/delete/recreate/replay retains expenditure"
+    },
+    "REPEATABLE READ": {
+      "concurrent_sources": "2 identities, 1 canonical day",
+      "concurrent_review": [
+        "stale",
+        "success"
+      ],
+      "same_event_revision": "unchanged",
+      "null_zero": "preserved",
+      "source_conflict": "unknown with evidence",
+      "ownership": "pass",
+      "rollback": "registry/evidence/events atomic",
+      "mobile": "stable UUID; create/patch/delete/recreate/replay retains expenditure"
+    }
+  },
+  "mariadb": "11.4.12-MariaDB-ubu2404"
+}

@@ -278,7 +278,9 @@ def test_daily_energy_commit_update_batch_invalid_and_user_isolation(app, user):
         assert first["inserts"] == 1
         assert repeated["skips"] == 1
         assert updated["updates"] == 1
-        assert int(record.total_calories) == 2510
+        assert int(record.total_calories) == 2420
+        from app.services.energy_days import view
+        assert view(user, record.date).total_calories is None  # both source values retained
         assert int(record.active_calories) == 610
         assert record.notes == "QA ficticia de energia"
         assert mixed["committed"] is False

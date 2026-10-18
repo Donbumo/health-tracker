@@ -22,6 +22,7 @@ from app.models import (
     WeighIn,
 )
 from app.services.daily_balance import effective_energy_record
+from app.services import energy_days
 from app.services.mobile_sync import MobileSyncError, rfc3339
 from app.services.engagement import active_goal_targets
 
@@ -836,6 +837,7 @@ def list_steps(user_id: int, *, start: date, end: date, limit: int) -> dict:
             DailyEnergy.user_id == user_id,
             DailyEnergy.date.between(start, end),
             DailyEnergy.steps.is_not(None),
+            DailyEnergy.deleted_at.is_(None),
         ).order_by(DailyEnergy.date.desc(), DailyEnergy.source, DailyEnergy.public_id).limit(limit)
     ).scalars().all()
     return {"items": [serialize_step(item) for item in rows], "from": start.isoformat(), "to": end.isoformat()}
@@ -846,9 +848,10 @@ def _owned_step(user_id: int, public_id: str, *, lock=False) -> DailyEnergy:
         DailyEnergy.user_id == user_id,
         DailyEnergy.public_id == _uuid(public_id),
         DailyEnergy.steps.is_not(None),
+        DailyEnergy.deleted_at.is_(None),
     )
     if lock:
-        statement = statement.with_for_update()
+        statement = statement.with_for_update().execution_options(populate_existing=True)
     record = db.session.execute(statement).scalar_one_or_none()
     if record is None:
         raise MobileSyncError("not_found", "Registro de pasos no encontrado.", 404)
@@ -858,31 +861,53 @@ def _owned_step(user_id: int, public_id: str, *, lock=False) -> DailyEnergy:
 def create_steps(user_id: int, payload: dict) -> DailyEnergy:
     if set(payload) - {"public_id", "date", "steps", "source", "client_event_id"}:
         raise MobileSyncError("invalid_request", "El registro de pasos contiene campos desconocidos.")
+    energy_days.lock_owner(user_id)
     target = _date(payload.get("date"))
     count = _integer(payload.get("steps"), field="steps", minimum=0, maximum=10_000_000)
+    day = energy_days.registered_day(user_id, target)
+    if day is not None and day.deleted_at is not None:
+        raise MobileSyncError("conflict", "El día fue eliminado. Requiere una restauración revisada.", 409)
     source = payload.get("source", "manual")
     if source not in STEP_SOURCES:
         raise MobileSyncError("invalid_request", "source no es válido para pasos.")
     client_event_id = payload.get("client_event_id")
     if client_event_id is not None:
         client_event_id = _uuid(client_event_id, "client_event_id")
+        remembered = energy_days.step_event(user_id, client_event_id)
+        if remembered is not None:
+            incoming = {'date':target.isoformat(), 'steps':count, 'source':source}
+            if remembered.payload_json.get('incoming') != incoming:
+                raise MobileSyncError("conflict", "El evento de pasos ya existe con otro contenido.", 409)
+            existing = db.session.scalar(db.select(DailyEnergy).where(DailyEnergy.user_id == user_id, DailyEnergy.public_id == remembered.evidence_public_id).with_for_update().execution_options(populate_existing=True))
+            if existing is None or existing.deleted_at is not None or existing.steps is None:
+                raise MobileSyncError("conflict", "El evento corresponde a pasos eliminados; no se restaura automáticamente.", 409)
+            return existing
         existing = db.session.execute(db.select(DailyEnergy).where(
             DailyEnergy.user_id == user_id,
             DailyEnergy.client_event_id == client_event_id,
-        )).scalar_one_or_none()
+        ).with_for_update().execution_options(populate_existing=True)).scalar_one_or_none()
         if existing is not None:
+            if existing.date != target or existing.steps != count or existing.source != source or existing.deleted_at is not None:
+                raise MobileSyncError("conflict", "El evento de pasos ya existe con otro contenido.", 409)
             return existing
     duplicate = db.session.execute(
         db.select(DailyEnergy).where(
             DailyEnergy.user_id == user_id, DailyEnergy.date == target, DailyEnergy.source == source
-        )
+        ).with_for_update().execution_options(populate_existing=True)
     ).scalar_one_or_none()
     if duplicate:
+        if duplicate.deleted_at is not None:
+            raise MobileSyncError("conflict", "El registro fue eliminado explícitamente.", 409)
+        before = energy_days.snapshot(duplicate)
         if duplicate.steps is None:
             duplicate.steps = count
             duplicate.revision += 1
             duplicate.updated_at = datetime.now(timezone.utc)
+            if duplicate.client_event_id is None:
+                duplicate.client_event_id = client_event_id
             db.session.flush()
+            energy_days.changed_source(duplicate, "create_steps", before=before)
+            energy_days.remember_step_event(duplicate, client_event_id, {'date':target.isoformat(), 'steps':count, 'source':source})
             return duplicate
         raise MobileSyncError("duplicate", "Ya existe esa fuente para ese día.", 409)
     public_id = _uuid(payload.get("public_id") or str(uuid.uuid4()))
@@ -894,13 +919,17 @@ def create_steps(user_id: int, payload: dict) -> DailyEnergy:
     )
     db.session.add(record)
     db.session.flush()
+    energy_days.changed_source(record, "create_steps")
+    energy_days.remember_step_event(record, client_event_id, {'date':target.isoformat(), 'steps':count, 'source':source})
     return record
 
 
 def patch_steps(user_id: int, public_id: str, payload: dict) -> DailyEnergy:
     if set(payload) - {"base_revision", "date", "steps", "client_event_id"}:
         raise MobileSyncError("invalid_request", "La corrección contiene campos desconocidos.")
+    energy_days.lock_owner(user_id)
     record = _owned_step(user_id, public_id, lock=True)
+    before = energy_days.snapshot(record)
     _check_revision(record.revision, payload.get("base_revision"))
     if payload.get("client_event_id") is not None:
         client_event_id = _uuid(payload["client_event_id"], "client_event_id")
@@ -909,6 +938,10 @@ def patch_steps(user_id: int, public_id: str, payload: dict) -> DailyEnergy:
         record.client_event_id = client_event_id
     if "date" in payload:
         target = _date(payload["date"])
+        if target != record.date and any(value is not None for value in (record.total_calories, record.active_calories, record.resting_calories, record.distance_meters)):
+            raise MobileSyncError("conflict", "La fuente contiene otras métricas. Corrige la fecha desde Energía diaria para revisarlas juntas.", 409)
+        if target != record.date and energy_days.registered_day(user_id, target) is not None:
+            raise MobileSyncError("duplicate", "La fecha destino ya tiene un día registrado.", 409)
         duplicate = db.session.execute(
             db.select(DailyEnergy.id).where(
                 DailyEnergy.user_id == user_id,
@@ -919,29 +952,33 @@ def patch_steps(user_id: int, public_id: str, payload: dict) -> DailyEnergy:
         ).scalar_one_or_none()
         if duplicate:
             raise MobileSyncError("duplicate", "Ya existe esa fuente para el día seleccionado.", 409)
+        if target != record.date:
+            old_day = energy_days.registered_day(user_id, record.date, create=True)
+            old_day.revision += 1
         record.date = target
     if "steps" in payload:
         record.steps = _integer(payload["steps"], field="steps", minimum=0, maximum=10_000_000)
     record.revision += 1
     record.updated_at = datetime.now(timezone.utc)
     db.session.flush()
+    energy_days.changed_source(record, "patch_steps", before=before)
     return record
 
 
 def delete_steps(user_id: int, public_id: str, payload: dict) -> dict:
     if set(payload) != {"base_revision"}:
         raise MobileSyncError("invalid_request", "Se requiere base_revision.")
+    energy_days.lock_owner(user_id)
     record = _owned_step(user_id, public_id, lock=True)
+    before = energy_days.snapshot(record)
     _check_revision(record.revision, payload["base_revision"])
     revision = record.revision + 1
-    # Preserve unrelated energy values from imported or richer records.
-    if any(value is not None for value in (record.total_calories, record.active_calories, record.resting_calories, record.distance_meters)):
-        record.steps = None
-        record.revision = revision
-        record.updated_at = datetime.now(timezone.utc)
-    else:
-        db.session.delete(record)
+    # A source tombstone preserves its public identity, expenditure and audit.
+    record.steps = None
+    record.revision = revision
+    record.updated_at = datetime.now(timezone.utc)
     db.session.flush()
+    energy_days.changed_source(record, "delete_steps", before=before)
     return {"id": record.public_id, "deleted": True, "revision": revision}
 
 
@@ -1014,7 +1051,7 @@ def health_today(user_id: int, target: date, timezone_name: str | None) -> dict:
         },
         "steps": {
             "value": energy.steps if energy else None,
-            "source": energy.source if energy else None,
+            "source": (energy.field_sources['steps'].source if energy and energy.field_sources.get('steps') else 'user_override' if energy and energy.steps is not None else None),
             "goal": int(goals["daily_steps"].target_value) if "daily_steps" in goals else None,
             "entry_id": energy.public_id if energy and energy.steps is not None else None,
         },
@@ -1027,7 +1064,7 @@ def health_today(user_id: int, target: date, timezone_name: str | None) -> dict:
             ],
         },
         "sync_status": "authoritative",
-        "updated_at": rfc3339(max(updated_values)) if updated_values else None,
+        "updated_at": rfc3339(max(updated_values, key=lambda value: value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value)) if updated_values else None,
     }
 
 
@@ -1053,18 +1090,7 @@ def health_progress(user_id: int, start: date, end: date, timezone_name: str | N
             DailyNutrition.user_id == user_id, DailyNutrition.date.between(start, end)
         )
     ).scalars().all()
-    energy = db.session.execute(
-        db.select(DailyEnergy).where(
-            DailyEnergy.user_id == user_id,
-            DailyEnergy.date.between(start, end),
-            DailyEnergy.steps.is_not(None),
-        ).order_by(DailyEnergy.updated_at.desc(), DailyEnergy.id.desc())
-    ).scalars().all()
-    effective_steps = {}
-    for record in energy:
-        existing = effective_steps.get(record.date)
-        if existing is None or record.source == "manual":
-            effective_steps[record.date] = record
+    effective_steps = {row.date: row for row in energy_days.views(user_id, start=start, end=end)}
     weight_by_date = {}
     for record in weights:
         value = record.recorded_at
@@ -1087,7 +1113,7 @@ def health_progress(user_id: int, start: date, end: date, timezone_name: str | N
             "carbohydrate_g": _number(day.total_carbs_g if day and day.total_carbs_g is not None else day.net_carbs_g if day else None),
             "fat_g": _number(day.fat_g) if day else None,
             "weight_source": weight.source if weight else None,
-            "steps_source": step.source if step else None,
+            "steps_source": (step.field_sources['steps'].source if step and step.field_sources.get('steps') else 'user_override' if step and step.steps is not None else None),
         })
         current += timedelta(days=1)
     return {"from": start.isoformat(), "to": end.isoformat(), "timezone": zone.key, "points": points}

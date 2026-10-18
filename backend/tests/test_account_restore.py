@@ -558,6 +558,11 @@ SEMANTICALLY_IGNORED_EXPORT_FIELDS = {
 def _semantic_user_data_export(document: dict) -> dict:
     """Normalize account exports while preserving domain values and semantic refs."""
     normalized = json.loads(json.dumps(document, sort_keys=True))
+    # Only current energy source identities may remap on a global UUID
+    # collision. UUIDs inside the immutable event payload must stay exact.
+    for energy in normalized.get('data', {}).get('daily_energy', []):
+        for source in energy.get('evidence', {}).get('sources', []):
+            source.pop('public_id', None)
     training_plan_names = {
         plan["id"]: plan["name"]
         for plan in normalized["data"].get("training_plans", [])

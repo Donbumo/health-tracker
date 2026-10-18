@@ -2,7 +2,16 @@
 
 Índice de reglas y guías: [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md).
 
-## Estado actual
+## Estado actual — Energía diaria, issue #18
+
+- Base verificada: `500589bbafa6d730536595cb7d115f72ebdfe462`, Nutrition 2.1 desplegada en 0045. Preflight NAS exclusivamente de lectura; no se recuperaron aún datos reales.
+- Rama `fix/daily-energy-issue-18`: canónico por propietario/fecha, evidencias e identidades móviles conservadas, revisión explícita, edición/borrado confirmado y migración aditiva 0046.
+- Alcance, pruebas, capturas, compatibilidad y riesgos de rollback en [DAILY_ENERGY_ISSUE_18.md](DAILY_ENERGY_ISSUE_18.md).
+- Gate del usuario: PR para revisión; sin merge/despliegue hasta revisar resultados. La recuperación exige nueva comparación owner-only, backup consistente nuevo y restore aislado antes de DDL/escrituras. Mantener todos los backups anteriores.
+- No cerrar #18 automáticamente al merge: sólo después del smoke y recuperación productivos. Energy Experience 2.0 empieza en rama separada únicamente después de ese cierre; no se ha iniciado.
+- No cambiar flags productivos, catálogo, snapshots de Nutrition ni DB/volúmenes del NAS. Nunca downgrade destructivo de 0046 después de decisiones/tombstones nuevos.
+
+## Contexto anterior — Gym
 
 - Base productiva: `d143a07c92c5a93c97040a69ead9449251d29025`, PR #8 desplegado previamente.
 - Rama `fix/gym-import-draft-persistence`: borradores normalizados persistentes para el flujo de importación Gym.

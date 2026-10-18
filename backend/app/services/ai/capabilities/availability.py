@@ -34,6 +34,7 @@ class AICapabilityAvailabilityService:
             "steps": self._count(
                 DailyEnergy,
                 DailyEnergy.user_id == user_id,
+                DailyEnergy.deleted_at.is_(None),
                 DailyEnergy.steps.is_not(None),
             ),
             "activities": self._count(
@@ -44,6 +45,7 @@ class AICapabilityAvailabilityService:
             "energy": self._count(
                 DailyEnergy,
                 DailyEnergy.user_id == user_id,
+                DailyEnergy.deleted_at.is_(None),
                 or_(
                     DailyEnergy.total_calories.is_not(None),
                     DailyEnergy.active_calories.is_not(None),

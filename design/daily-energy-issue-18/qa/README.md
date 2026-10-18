@@ -16,3 +16,11 @@ Capturas finales: edición y conflicto móvil 390 en dark/light, confirmación m
 Reproducir con el venv y la instancia MariaDB QA existentes. `scripts/energy/qa_app.py` crea únicamente un SQLite temporal y reutiliza el puerto QA 8025; `ui_qa.cjs` usa Playwright existente. Los scripts MariaDB corren dentro de la imagen QA, red local existente, con el archivo privado de conexión suministrado mediante `--env-file`; montar este directorio como `/evidence` y los scripts como sólo lectura. Verifican schema/usuario QA antes de escribir. El smoke HTTP requiere Gunicorn dentro del mismo contenedor, sin publicar un puerto nuevo.
 
 No incluir archivos de conexión, dumps, tokens, reportes personales, perfiles del navegador ni logs de producción. El informe principal y el gate de recuperación están en `docs/DAILY_ENERGY_ISSUE_18.md`.
+
+## Cierre de controles PR #21
+
+`review-controls.json`: tres tests nuevos (JSON completo, ZIP completo, entrada 1.0), 154 focales PASS; cuenta con múltiples fuentes, contradicción/resolución, fuente y día eliminados, cuatro originales, móvil con revisiones/aliases, segunda importación y bloqueo del backup obsoleto. Ejecutados además con MariaDB RC/RR.
+
+Recuperación real QA: 0045 completo, copia/checksum/restore, interrupción DDL con head aún 0045, recuperación hacia adelante en copia aislada, bloqueo DML, backup posterior a nuevas escrituras y restore de 80 tablas idénticas y originales. Imagen compatible guardada y recargada; fallo/reinicio Gunicorn con smoke HTTP de energía y Nutrition. Scripts `recovery_0046_qa.py`, `recovery_0046_qa.ps1` y `recovery_service_smoke.py`; procedimiento en `docs/ENERGY_0046_RECOVERY_RUNBOOK.md`. No se modificó la aplicación ni se repitió la suite completa; sin cambios UI, capturas anteriores vigentes. No se accedió a NAS ni producción.
+
+Imagen, dumps, originales y manifests de tabla permanecen privados fuera del repositorio. El informe agregado sólo publica resultados y checksums de fixtures sintéticos/imagen. No acredita preflight, backup, permisos o PITR productivos: esos gates deben repetirse tras autorización.

@@ -1,7 +1,7 @@
 # Energía diaria — corrección P0 del issue #18
 
 Fecha: 18 de octubre de 2026. Base: `500589bbafa6d730536595cb7d115f72ebdfe462`.
-Rama: `fix/daily-energy-issue-18`. Estado: entrega para revisión; **sin merge, despliegue ni recuperación productiva aplicada**.
+Rama: `fix/daily-energy-issue-18`. Estado: PR #21, dos controles finales validados en QA LOCAL; **sin merge, despliegue ni recuperación productiva aplicada**.
 
 Referencia: [issue #18 y sus dos comentarios](https://github.com/Donbumo/health-tracker/issues/18).
 No usar cierre automático del issue al fusionar: su cierre exige recuperación y smoke productivos posteriores.
@@ -79,9 +79,23 @@ Fixtures ficticias únicamente. Scripts en `scripts/energy/`; resultados y seis 
 
 Reproducibilidad: usar exclusivamente el schema QA existente y su archivo de conexión privado mediante `--env-file`; no incluirlo en Git ni en paquetes de evidencia. El script MariaDB valida nombre exacto de schema, usuario QA y revisión antes de escribir. No crea stacks, volúmenes, usuarios ni bases; si ya está en 0046 sólo prueba el no-op. Para la reproducción anterior se usa la imagen baseline 0045 existente. El servidor visual usa el venv existente, almacenamiento temporal y el puerto QA 8025; no abre la DB local personal.
 
+## Cierre de revisión del PR #21
+
+HEAD de aplicación revisado: `3ffeba6118292e053a5ae80230a5eb14f6a3cb59`. En este cierre sólo se añaden pruebas, scripts QA, evidencia y documentación. **No fue necesario modificar código productivo**, modelos, formularios, migración 0046 ni schemas.
+
+**Control 1 — PASS.** `test_energy_account_roundtrip.py` combina cuatro originales distintos, pasos parciales y gasto en fuentes diferentes, contradicción, resolución confirmada, fuente retirada y otro día completamente eliminado, revisiones/eventos móviles y nutrición legacy. Export de cuenta JSON 1.1 y ZIP hacia otro propietario, confirmación y segunda importación: valores/payloads, decisiones, claves/eventos y hashes idénticos; UUID vivos remapeados sin autoridad cruzada, UUID históricos intactos. Los bytes raw se verifican por SHA256; sin referencias a archivos de otro propietario. Un canónico por fecha, día eliminado retenido, mismas series y medias móviles, balance ficticio -450, sin duplicación. Replay móvil conserva UUID/revisión destino. Backup anterior bloqueado después de nueva revisión o eliminación. Entrada de cuenta JSON 1.0 repetida y null/cero PASS.
+
+El formato de cuenta por fuente **no causó un error** en este caso combinado: cada documento conserva evidencia, incluso tombstones, y comparte la revisión del día; los balances exportados y lectores usan la proyección canónica. No se sustituyó por una lista de proyecciones activas que perdería fuentes/días eliminados. No se creó otro formato.
+
+**Control 2 — PASS en QA aislado.** [Runbook operativo 0046](ENERGY_0046_RECOVERY_RUNBOOK.md). Bootstrap real 0045, dump consistente y checksums; restore en schema vacío; fallo inyectado después de DDL confirmado con Alembic todavía en 0045; origen parcial conservado y respaldado, sin reintento ciego. Recuperación en copia previa verificada, upgrade original 0046, hashes de todas las columnas originales intactos y `db check`. Nuevas revisiones/eventos/tombstones, bloqueo DML comprobado (1142), dump actual y restore con storage independiente: **80 tablas idénticas**, originales por hash, catálogo/recetas/MealLog conservados. Imagen compatible construida, guardada, checksum y `docker image load` comprobados. Gunicorn real detenido/reiniciado sobre 0046 posterior a nuevas escrituras; HTTP de energía y Nutrition 2.1 PASS.
+
+Gates finales de este cierre: **154 pruebas focales PASS, 1 warning esperado por ZIP duplicado de seguridad (42,27 s)**; E2E completo JSON/ZIP, replay móvil, entrada 1.0 y rechazo obsoleto en MariaDB 11.4 **READ COMMITTED y REPEATABLE READ**; regresión concurrente RC/RR PASS; `db check`, compileall y Compose PASS. La suite anterior de 1297 PASS se conserva como evidencia previa y no se repitió: no cambió código funcional. Capturas existentes vigentes, sin cambios UI.
+
+Resultados agregados y checksums no sensibles: `design/daily-energy-issue-18/qa/review-controls.json`. Los dumps, originales, archivo de imagen y manifests privados permanecen fuera de Git. Las tres bases de recuperación QA y la imagen se conservan; el contenedor web de smoke quedó detenido. No se accedió al NAS ni a la DB local principal durante este cierre.
+
 ## Preflight productivo y recuperación pendiente
 
-Lectura exclusivamente: Windows, origin/master y NAS coinciden en la base citada; NAS sigue en 0045, Nutrition habilitado y lookup externo deshabilitado. Se identificó una sola cuenta candidata al comparar las evidencias exactas del issue. El día 10 tiene un completo correcto y un parcial; 11 y 12 aún difieren del reporte. Las filas observadas no tienen modificaciones posteriores al reporte original. No se publican IDs, cuenta, valores adicionales ni payloads personales.
+Preflight de la entrega anterior, no repetido en este cierre: Windows, origin/master y NAS coincidían en la base citada; NAS sigue en 0045, Nutrition habilitado y lookup externo deshabilitado. Se identificó una sola cuenta candidata al comparar las evidencias exactas del issue. El día 10 tiene un completo correcto y un parcial; 11 y 12 aún difieren del reporte. Las filas observadas no tienen modificaciones posteriores al reporte original. No se publican IDs, cuenta, valores adicionales ni payloads personales.
 
 Tras revisión del PR y autorización de integración/despliegue:
 
@@ -93,10 +107,10 @@ Tras revisión del PR y autorización de integración/despliegue:
 6. Verificar una representación por día, identidades/evidencias retenidas, gastos/balances/tendencias, Nutrition/Gym/AI/móvil, HTTPS/healthz y ausencia de SQL/5xx. Pruebas de escritura sólo con QA seguro.
 7. Publicar resultado en el issue sin nuevos datos personales y cerrarlo **después** del smoke productivo. Sólo entonces iniciar `feature/energy-experience-2-0` separada.
 
-## Rollback y límites de integración
+## Recuperación y límites de integración
 
-0046 no ofrece downgrade destructivo: perdería decisiones, tombstones y procedencia. La imagen anterior se conserva, pero su entrypoint normal no conoce el head 0046: no basta con sustituir el tag y recrear web. Antes de nuevas escrituras, cualquier vuelta a 0045 exige un procedimiento controlado que no ejecute migraciones desconocidas y validación previa. **Después de utilizar revisión/eliminación canónica, una imagen 0045 no interpreta esas decisiones y no es un rollback funcional seguro.** En ese estado, suspender escrituras y usar una imagen compatible con 0046, o una corrección hacia delante que conserve el modelo. Un restore completo requiere decisión explícita sobre las escrituras posteriores al backup; nunca se aplica automáticamente.
+Aplicar [ENERGY_0046_RECOVERY_RUNBOOK.md](ENERGY_0046_RECOVERY_RUNBOOK.md): recuperación hacia adelante con imagen 0046 compatible y bloqueo de escritores. Para DDL parcial, conservar el origen fallido y recuperar en un destino vacío desde una copia consistente verificada, ejecutar allí el upgrade original y conmutar conexión/storage sólo tras aprobación. Nunca downgrade, stamp, eliminación de tablas ni restauración automática sobre el origen. Después de nuevas escrituras, conservar el estado actual, no el backup previo al DDL.
 
-MariaDB usa DDL no transaccional. El upgrade repetido probado es el no-op sobre head confirmado; no se presenta como recuperación automática de DDL parcial. Si falla una fase, inventariar revisión/tablas/columnas/índices y contrastar con backup antes de continuar; no reintentar a ciegas, forzar stamp ni eliminar tablas de evidencia.
+Ambos controles tienen evidencia QA suficiente para **solicitar autorización final**, no para declarar recuperada producción. Antes del despliegue siguen siendo obligatorios inventario y backup/restore productivos nuevos, permisos específicos y posibilidad de conmutar schema/storage. Si falta esa capacidad o no se pueden recuperar todas las escrituras confirmadas después de un daño de DB/storage, mantener mantenimiento y bloquear despliegue. No se ha validado PITR productivo ni medido un RTO real. Smoke físico Android/iOS pendiente por separado.
 
-El PR debe revisar expresamente esa limitación, el cambio de política de conflictos y JSON 1.1. No se declara producción recuperada ni el issue cerrado en esta entrega. Energy Experience 2.0 permanece condicionado al cierre productivo de A.
+Mantener abierto #18; reconciliación de datos reales y smoke productivos requieren la siguiente autorización. Energy Experience 2.0 sigue condicionada a ese cierre, en otra rama. Sin merge ni NAS en esta entrega.

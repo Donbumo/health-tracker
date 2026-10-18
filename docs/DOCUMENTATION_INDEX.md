@@ -14,6 +14,7 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 
 ## Uso diario y web
 
+- Recuperación 0046: [ENERGY_0046_RECOVERY_RUNBOOK.md](ENERGY_0046_RECOVERY_RUNBOOK.md), backup consistente, DDL parcial, imagen compatible, nuevas escrituras y validación QA aislada.
 - Corrección P0 Energía diaria: [DAILY_ENERGY_ISSUE_18.md](DAILY_ENERGY_ISSUE_18.md), canónico/evidencias, 0046, QA y gate de recuperación productiva.
 
 - Nutrition Experience 2.1 (implementación local, pendiente de revisión): [implementación](NUTRITION_EXPERIENCE_2_1_IMPLEMENTATION.md), [QA/compatibilidad](NUTRITION_EXPERIENCE_2_1_QA.md), [catálogo](NUTRITION_EXPERIENCE_2_1_CATALOG.md), [importación](NUTRITION_EXPERIENCE_2_1_IMPORT.md) y [comparación visual](NUTRITION_EXPERIENCE_2_1_VISUAL.md).

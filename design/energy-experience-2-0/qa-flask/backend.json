@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "scope": "backend final application code; synthetic fixtures only",
+  "new_focal": {
+    "passed": 16
+  },
+  "affected_regression": {
+    "passed": 73
+  },
+  "full_suite": {
+    "passed": 1316,
+    "skipped": 34,
+    "warnings": 1,
+    "seconds": 320.62,
+    "warning": "Intentional duplicate ZIP entry in a negative backup validation test"
+  },
+  "compileall": "PASS",
+  "compose_config": "PASS",
+  "migration_changes": false,
+  "public_schema_changes": false,
+  "domain_writers_changed": false,
+  "nutrition_services_changed": false,
+  "production_access": false,
+  "nas_access": false
+}

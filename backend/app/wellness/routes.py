@@ -86,6 +86,26 @@ def energy_list():
     return render_template("wellness/energy_list.html", records=records)
 
 
+@wellness_bp.get("/energy")
+@login_required
+def energy_experience():
+    from app.services.energy_history import consultation, local_today
+    today, timezone_name = local_today(current_user, current_app.config['APP_TIMEZONE'])
+    try:
+        target = date.fromisoformat(request.args['date']) if request.args.get('date') else today
+        # Leave room for warm-up and adjacent month/day links at date bounds.
+        if not 1900 <= target.year <= 9998:
+            raise ValueError()
+        period = int(request.args.get('period', 30))
+        if period not in (7, 30, 90):
+            raise ValueError()
+    except ValueError:
+        abort(400, description='Fecha o período inválidos. Usa 7, 30 o 90 días.')
+    return render_template('wellness/energy_experience.html',
+                           **consultation(current_user.id, target, period),
+                           today=today, timezone_name=timezone_name)
+
+
 @wellness_bp.route("/daily-energy/import", methods=["GET", "POST"])
 @login_required
 def energy_import():

@@ -2,7 +2,7 @@
 {% block title %}Energía diaria · Health Tracker{% endblock %}
 {% block content %}
   <section class="page-heading">
-    <div><h1>Energía diaria</h1><p>Gasto energético registrado por fecha.</p></div>
+    <div><h1>Energía diaria</h1><p>Gasto energético registrado por fecha.</p><a href="{{ url_for('wellness.energy_experience') }}">Abrir nueva consulta de Energía</a></div>
     <div class="page-actions"><a class="button" href="{{ url_for('wellness.manual_energy') }}">Captura manual</a><a class="button button-secondary" href="{{ url_for('wellness.energy_import') }}">Importar JSON</a></div>
   </section>
   <section class="card">

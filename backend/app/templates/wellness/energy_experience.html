@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Energía · Health Tracker{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/energy_experience.css') }}">{% endblock %}
+{% macro value(number, unit='kcal') %}{% if number is not none %}{{ number|nutrient_value }} <small>{{ unit }}</small>{% else %}—{% endif %}{% endmacro %}
+{% macro day_link(day) %}{{ url_for('wellness.energy_experience', date=day.isoformat(), period=period) }}{% endmacro %}
+{% macro plot(chart) %}
+<article class="ee-card ee-chart" data-series="{{ chart.key }}">
+  <header><h3>{{ chart.label }}</h3><p class="ee-muted">{{ chart.known_days }}/{{ period }} días conocidos{% if chart.partial_days %} · {{ chart.partial_days }} parciales{% endif %} · {{ chart.unit }}</p></header>
+  {% if chart.has_values %}
+  <svg viewBox="0 0 704 235" role="img" aria-labelledby="ee-{{ chart.key }}-title ee-{{ chart.key }}-desc">
+    <title id="ee-{{ chart.key }}-title">{{ chart.label }} · {{ start }} — {{ target }}</title>
+    <desc id="ee-{{ chart.key }}-desc">Barras diarias, cero marcado y línea de media móvil. Los huecos no son cero. Datos, estados, fuentes y denominadores en la tabla equivalente.</desc>
+    <text x="2" y="24">{{ chart.high|nutrient_value }}</text><text x="2" y="195">{{ chart.low|nutrient_value }}</text>
+    <line class="ee-axis" x1="106" x2="676" y1="{{ chart.zero_y }}" y2="{{ chart.zero_y }}"/>
+    {% if 40 < chart.zero_y < 160 %}<text x="75" y="{{ chart.zero_y }}">0</text>{% endif %}
+    {% for p in chart.samples %}
+      {% if p.value is not none %}
+        {% if p.state == 'partial' %}<path class="ee-partial" d="M {{ p.x }} {{ p.y-5 }} l 5 5 l -5 5 l -5 -5 Z"><title>{{ p.date }} · subtotal parcial {{ p.value|nutrient_value }} {{ chart.unit }}</title></path>
+        {% else %}<rect class="ee-bar" x="{{ p.x-p.width/2 }}" y="{{ p.bar_y }}" width="{{ p.width }}" height="{{ p.bar_height }}"><title>{{ p.date }} · {{ p.value|nutrient_value }} {{ chart.unit }} · {{ states[p.state] }}</title></rect>{% endif %}
+      {% else %}<text class="ee-gap" x="{{ p.x }}" y="205" text-anchor="middle"><title>{{ p.date }} · {{ states[p.state] }}</title>{{ '!' if p.state == 'conflict' else '×' }}</text>{% endif %}
+    {% endfor %}
+    {% for path in chart.paths %}<polyline class="ee-rolling" points="{{ path }}"/>{% endfor %}
+    <text x="106" y="230">{{ start.strftime('%d/%m') }}</text><text x="676" y="230" text-anchor="end">{{ target.strftime('%d/%m') }}</text>
+  </svg>
+  {% else %}<p class="ee-empty">Sin observaciones conocidas. Los datos ausentes o en conflicto no se dibujan como cero.</p>{% endif %}
+  {% set last=chart.samples[-1] %}<p>Media móvil al {{ target }}: <strong>{{ value(last.rolling, chart.unit) }}</strong> · {{ last.rolling_days }}/7 días conocidos.</p>
+  <details><summary>Tabla equivalente · {{ chart.label }}</summary><div class="ee-table" tabindex="0" role="region" aria-label="Datos de {{ chart.label }}"><table>
+    <caption>{{ chart.label }} · observaciones y media móvil de 7 días</caption>
+    <thead><tr><th scope="col">Fecha</th><th scope="col">Valor</th><th scope="col">Estado</th><th scope="col">Fuente</th><th scope="col">Media</th><th scope="col">Días conocidos</th></tr></thead>
+    <tbody>{% for p in chart.samples %}<tr><th scope="row">{{ p.date }}</th><td>{{ value(p.value, chart.unit) }}</td><td>{{ states[p.state] }}</td><td>{{ p.source }}</td><td>{{ value(p.rolling, chart.unit) }}</td><td>{{ p.rolling_days }}/7</td></tr>{% endfor %}</tbody>
+  </table></div></details>
+</article>
+{% endmacro %}
+{% block content %}
+<div class="ee-page">
+  <header class="ee-heading"><div><p class="ee-eyebrow">ACTIVIDAD DIARIA</p><h1>Energía</h1></div><a href="{{ url_for('wellness.energy_list') }}">Volver a interfaz actual</a></header>
+  <form method="get" class="ee-date" aria-label="Fecha y período">
+    <a class="button button-secondary" href="{{ day_link(previous) }}" aria-label="Día anterior">‹</a>
+    <label>Fecha<input type="date" name="date" min="1900-01-01" max="9998-12-31" value="{{ target }}" required></label>
+    <a class="button button-secondary" href="{{ day_link(next) }}" aria-label="Día siguiente">›</a>
+    <label>Período<select name="period">{% for n in [7,30,90] %}<option value="{{ n }}"{% if period==n %} selected{% endif %}>{{ n }} días</option>{% endfor %}</select></label>
+    <button class="button" type="submit">Consultar</button><a href="{{ day_link(today) }}">Hoy</a>
+  </form>
+  <section class="ee-summary" aria-label="Resumen diario">
+    <article class="ee-card ee-hero"><h2>Gasto total</h2><p class="ee-number" id="ee-expended">{{ value(selected.total_calories if selected else none) }}</p><p>{{ states[fields[0].state] }}</p><p class="ee-muted">{{ fields[0].source }}</p></article>
+    <article class="ee-card"><h2>Ingesta</h2><p class="ee-number">{{ value(nutrition_point['values'].calories) }}</p><p>{{ 'Subtotal conocido · ingesta parcial' if nutrition_point.states.calories=='partial' else 'Nutrition 2.1 · contexto' if nutrition_point.comparisons.calories is not none else 'Sin ingesta comparable' }}</p></article>
+    <article class="ee-card"><h2>Balance</h2><p class="ee-number">{{ value(nutrition_point.balance) }}</p><p>{{ 'Ingesta comparable − gasto' if nutrition_point.balance is not none else 'No calculable · faltan datos comparables' }}</p></article>
+  </section>
+  <div class="ee-state" role="status">
+    <strong>{{ target }} · {% if day_state=='unknown' %}{{ 'Hoy no hay registro de energía.' if target==today else 'Sin registro de energía para esta fecha.' }}{% elif day_state=='partial' %}Actividad parcial; gasto desconocido.{% elif day_state=='conflict' %}{{ selected.conflicts|length }} campos pendientes de revisión.{% else %}Gasto conocido.{% endif %}</strong>
+    {% if latest and latest.date!=target %}<a href="{{ day_link(latest.date) }}">Último registro · {{ latest.date }} · {% if latest.total_calories is not none %}{{ value(latest.total_calories) }}{% else %}{{ 'gasto en conflicto' if latest.conflicts else 'gasto desconocido' }}{% endif %}</a>{% endif %}
+    <span class="ee-muted">Zona: {{ timezone_name }}. Consultar no modifica registros.</span>
+  </div>
+  <nav class="ee-links" aria-label="Secciones de Energía"><a href="#ee-trends">Tendencias</a><a href="#ee-calendar">Calendario</a><a href="#ee-activity">Actividad y fuentes</a></nav>
+  <section id="ee-trends"><h2>Gasto y contexto nutricional</h2><p class="ee-muted">■ Observación diaria · ◇ Subtotal parcial · × Ausente · ! Conflicto · línea discontinua: media móvil 7 días. Cero conocido se marca sobre el eje.</p>
+    <p class="ee-muted">La cobertura mide disponibilidad de datos; no precisión ni cumplimiento. Cada media muestra su denominador sobre 7 días. Seis días previos de calentamiento; huecos sin rellenar, parciales fuera del balance.</p>
+    <div class="ee-main-charts">{% for c in charts %}{{ plot(c) }}{% endfor %}</div>
+    <h2>Tendencias energéticas y de actividad</h2><p>Únicamente métricas con observaciones o medias conocidas. Totales y componentes son independientes: nunca se suman ni se infieren calorías desde pasos.</p>
+    <div class="ee-trends">{% for c in trends %}{{ plot(c) }}{% else %}<p>Sin métricas conocidas en este período.</p>{% endfor %}</div>
+  </section>
+  <section id="ee-calendar" class="ee-card"><header class="ee-calendar-heading"><a class="button button-secondary" href="{{ day_link(previous_month) }}#ee-calendar" aria-label="Mes anterior">‹</a><h2>{{ target.strftime('%m / %Y') }}</h2><a class="button button-secondary" href="{{ day_link(next_month) }}#ee-calendar" aria-label="Mes siguiente">›</a></header>
+    <p>✓ Gasto conocido · 0 Cero conocido · ≈ Parcial · ! Conflicto · — Sin energía</p>
+    <div class="ee-calendar">{% for label in ['L','M','X','J','V','S','D'] %}<span aria-hidden="true">{{ label }}</span>{% endfor %}
+    {% for week in calendar_weeks %}{% for cell in week %}{% if cell %}<a href="{{ day_link(cell.date) }}#ee-calendar" class="ee-day ee-{{ cell.state }}{% if cell.date==target %} is-selected{% endif %}"{% if cell.date==target %} aria-current="date"{% endif %} aria-label="{{ cell.date }} · {{ states[cell.state] }}"><span>{{ cell.date.day }}</span><small>{{ {'known':'✓','zero':'0','partial':'≈','conflict':'!','unknown':'—'}[cell.state] }}</small></a>{% else %}<span></span>{% endif %}{% endfor %}{% endfor %}</div>
+  </section>
+  <section id="ee-activity" class="ee-card"><h2>Actividad y procedencia del día</h2><dl class="ee-fields">{% for f in fields %}<div><dt>{{ f.label }}</dt><dd>{{ value(f.value,f.unit) }}</dd><p>{{ states[f.state] }} · {{ f.source }}</p></div>{% endfor %}</dl>
+    {% if selected %}<p>Las fuentes se conservan por separado. No se suman entre dispositivos.</p><a class="button button-secondary" href="{{ url_for('wellness.energy_detail',record_id=selected.id) }}">Ver fuentes y acciones actuales</a>{% endif %}
+  </section>
+  <nav class="ee-links" aria-label="Acciones existentes"><a href="{{ url_for('wellness.manual_energy') }}">Captura manual</a><a href="{{ url_for('wellness.energy_import') }}">Importar JSON</a><a href="{{ url_for('main.import_hub') }}">Import Hub</a><a href="{{ url_for('wellness.energy_list') }}">Listado actual</a></nav>
+</div>
+{% endblock %}

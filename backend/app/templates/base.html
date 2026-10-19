@@ -9,6 +9,7 @@
   <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v='ai-operator-mobile-1') }}">
+  {% block page_styles %}{% endblock %}
 </head>
 <body>
   {% set current_endpoint = request.endpoint or '' %}
@@ -44,7 +45,7 @@
         {{ nav_link('wellness.balance', 'Balance diario', 'wellness.balance') }}
         {{ nav_link('body.list_weigh_ins', 'Peso y composición', 'body.') }}
         {% if config.NUTRITION_INTELLIGENCE_ENABLED %}{{ nav_link('nutrition.today', 'Nutrición', 'nutrition.') }}{% else %}{{ nav_link('wellness.nutrition_list', 'Nutrición', 'wellness.nutrition') }}{% endif %}
-        {{ nav_link('wellness.energy_list', 'Energía', 'wellness.energy') }}
+        {{ nav_link('wellness.energy_experience', 'Energía', 'wellness.energy') }}
         {{ nav_link('activities.list_activities', 'Actividades', 'activities.activity') }}
         {{ nav_link('activities.list_routes', 'Rutas', 'activities.route') }}
         {{ nav_link('foods.list_foods', 'Alacena', 'foods.') }}

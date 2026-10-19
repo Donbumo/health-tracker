@@ -1,0 +1,314 @@
+{
+  "scope": "real Flask HTTP; temporary SQLite; fictional QA fixtures; not prototype or production",
+  "status": "PASS",
+  "viewport_checks": 36,
+  "checks": [
+    {
+      "theme": "dark",
+      "width": 360,
+      "period": 7,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "period": 30,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "period": 90,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "period": 7,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "period": 30,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "period": 90,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "period": 7,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "period": 30,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "period": 90,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "period": 7,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "period": 30,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "period": 90,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "period": 7,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "period": 30,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "period": 90,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "period": 7,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "period": 30,
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "period": 90,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "period": 7,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "period": 30,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "period": 90,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "period": 7,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "period": 30,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "period": 90,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "period": 7,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "period": 30,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "period": 90,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "period": 7,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "period": 30,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "period": 90,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "period": 7,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "period": 30,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "period": 90,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "period": 7,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "period": 30,
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "period": 90,
+      "status": "PASS"
+    }
+  ],
+  "contrast": [
+    {
+      "theme": "dark",
+      "pairs": [
+        {
+          "fg": "--text",
+          "bg": "--surface",
+          "min": 4.5,
+          "ratio": 14.652888784598737
+        },
+        {
+          "fg": "--text-muted",
+          "bg": "--surface",
+          "min": 4.5,
+          "ratio": 8.878687112193633
+        },
+        {
+          "fg": "--text",
+          "bg": "--primary-soft",
+          "min": 4.5,
+          "ratio": 10.989556467398815
+        },
+        {
+          "fg": "--warning-text",
+          "bg": "--warning-bg",
+          "min": 4.5,
+          "ratio": 10.265340909161383
+        },
+        {
+          "fg": "--primary",
+          "bg": "--surface",
+          "min": 3,
+          "ratio": 8.044853623335616
+        },
+        {
+          "fg": "--text",
+          "bg": "--surface",
+          "min": 3,
+          "ratio": 14.652888784598737
+        }
+      ]
+    },
+    {
+      "theme": "light",
+      "pairs": [
+        {
+          "fg": "--text",
+          "bg": "--surface",
+          "min": 4.5,
+          "ratio": 16.268480224545662
+        },
+        {
+          "fg": "--text-muted",
+          "bg": "--surface",
+          "min": 4.5,
+          "ratio": 6.357607659477405
+        },
+        {
+          "fg": "--text",
+          "bg": "--primary-soft",
+          "min": 4.5,
+          "ratio": 14.17795139153423
+        },
+        {
+          "fg": "--warning-text",
+          "bg": "--warning-bg",
+          "min": 4.5,
+          "ratio": 8.147351692651375
+        },
+        {
+          "fg": "--primary",
+          "bg": "--surface",
+          "min": 3,
+          "ratio": 7.562998081458594
+        },
+        {
+          "fg": "--text",
+          "bg": "--surface",
+          "min": 3,
+          "ratio": 16.268480224545662
+        }
+      ]
+    }
+  ],
+  "screenshots": 14,
+  "javascript_errors": [],
+  "http_errors": [],
+  "keyboard": "Tab, native date focus, links/forms, disclosure and scrollable table PASS",
+  "states": "known, zero, partial, conflict, missing, today empty/latest, month/year navigation PASS",
+  "charts": "daily bars, visible rolling means, denominators, signed zero axis, equivalent tables PASS",
+  "limitations": "Not full WCAG audit or physical Android/iOS smoke."
+}

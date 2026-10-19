@@ -1,0 +1,376 @@
+{
+  "scope": "local standalone synthetic design; no application/server or production writes",
+  "base_application_commit": "9e2f2dc7fea728bfec3c8abf1aed6bc7bb428852",
+  "viewport_checks": 60,
+  "checks": [
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "overview",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "calendar",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "sources",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "import",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "history",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "overview",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "calendar",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "sources",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "import",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "history",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "overview",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "calendar",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "sources",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "import",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "history",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "overview",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "calendar",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "sources",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "import",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "history",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "overview",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "calendar",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "sources",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "import",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "history",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "overview",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "calendar",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "sources",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "import",
+      "overflow": false
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "history",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "overview",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "calendar",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "sources",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "import",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "history",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "overview",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "calendar",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "sources",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "import",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "history",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "overview",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "calendar",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "sources",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "import",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "history",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "overview",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "calendar",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "sources",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "import",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "history",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "overview",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "calendar",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "sources",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "import",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "history",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "overview",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "calendar",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "sources",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "import",
+      "overflow": false
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "history",
+      "overflow": false
+    }
+  ],
+  "screenshots": 10,
+  "keyboard": "Tab, visible focus, arrow/Home/End tabs, native radio/checkbox, Escape dialog PASS",
+  "states": "known/partial/conflict/unknown/zero, empty today with latest, signed balance and visible moving means PASS",
+  "review_confirmation": "disabled until explicit review; originals remain separate; prototype only",
+  "import": "preview and review do not change local data; confirmation creates partial activity, no inferred expenditure",
+  "external_requests": 0,
+  "javascript_errors": [],
+  "production_tests": "not repeated; prototype only",
+  "status": "PASS"
+}

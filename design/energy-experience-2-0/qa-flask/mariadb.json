@@ -1,0 +1,38 @@
+{
+  "scope": "existing LOCAL isolated MariaDB; synthetic owners only",
+  "head": "20261018_0046",
+  "isolations": {
+    "READ COMMITTED": {
+      "status": "PASS",
+      "periods": [
+        7,
+        30,
+        90
+      ],
+      "historical_days": 125,
+      "parity": "Nutrition daily/rolling/denominators and Daily Balance identical",
+      "complementary_conflicting_resolved_retired_deleted_zero_partial": "PASS",
+      "owner_isolation": "PASS",
+      "http_get": "200; forged owner ignored",
+      "domain_fingerprint": "unchanged",
+      "write_statements": 0,
+      "db_check": "PASS"
+    },
+    "REPEATABLE READ": {
+      "status": "PASS",
+      "periods": [
+        7,
+        30,
+        90
+      ],
+      "historical_days": 125,
+      "parity": "Nutrition daily/rolling/denominators and Daily Balance identical",
+      "complementary_conflicting_resolved_retired_deleted_zero_partial": "PASS",
+      "owner_isolation": "PASS",
+      "http_get": "200; forged owner ignored",
+      "domain_fingerprint": "unchanged",
+      "write_statements": 0,
+      "db_check": "PASS"
+    }
+  }
+}

@@ -726,6 +726,21 @@ class AccountRestoreService:
         return None
 
     def _same(self, section: str, existing: Any, item: dict[str, Any], *, user_id: int) -> bool:
+        if section == "daily_energy":
+            from app.services.exporters.wellness import build_daily_energy_document
+            exported = build_daily_energy_document(existing, user_id)
+            if 'evidence' not in item:
+                exported.pop('evidence', None)
+                return exported == item or existing.raw_payload_json == item
+            # Global UUID collision on restore into another account is remapped;
+            # audit payload UUIDs remain historical and must compare exactly.
+            import copy
+            normalized = copy.deepcopy(item)
+            identities = {source['source']: source['public_id'] for source in exported['evidence']['sources']}
+            for source in normalized['evidence']['sources']:
+                if source['source'] in identities:
+                    source['public_id'] = identities[source['source']]
+            return exported == normalized
         if section == "daily_nutrition":
             from app.services.exporters.wellness import build_daily_nutrition_document
             return build_daily_nutrition_document(existing, user_id) == item
@@ -1006,19 +1021,8 @@ class AccountRestoreService:
         return record
 
     def _apply_daily_energy(self, document: dict[str, Any], *, user_id: int) -> DailyEnergy:
-        data = document["data"]
-        record = self._find_existing("daily_energy", document, user_id=user_id) or DailyEnergy(user_id=user_id)
-        record.date = date.fromisoformat(data["date"])
-        record.total_calories = _decimal(data.get("total_expenditure_kcal"))
-        record.active_calories = _decimal(data.get("active_expenditure_kcal"))
-        record.resting_calories = _decimal(data.get("resting_expenditure_kcal"))
-        record.steps = data.get("steps")
-        record.distance_meters = _decimal(data.get("distance_meters"))
-        record.source = data.get("source", document["source_type"]).strip()
-        record.notes = data.get("notes")
-        record.raw_payload_json = document
-        db.session.add(record)
-        return record
+        from app.services.energy_days import upsert_document
+        return upsert_document(document, user_id)
 
     def _apply_daily_nutrition(self, document: dict[str, Any], *, user_id: int) -> DailyNutrition:
         data = document["data"]

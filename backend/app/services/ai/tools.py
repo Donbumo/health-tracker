@@ -214,6 +214,7 @@ class AIProvenanceService:
                 db.select(DailyEnergy.source, db.func.count(DailyEnergy.id))
                 .where(
                     DailyEnergy.user_id == user_id,
+                    DailyEnergy.deleted_at.is_(None),
                     DailyEnergy.date.between(
                         date_range.start_date, date_range.end_date
                     ),

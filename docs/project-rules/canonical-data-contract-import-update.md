@@ -256,7 +256,7 @@ Cada módulo debe definir su llave natural o lógica de deduplicación.
 | Pesajes | user_id + recorded_at |
 | Nutrición diaria | user_id + date |
 | Comida individual | user_id + date + meal_type + optional timestamp/name |
-| Gasto energético diario | user_id + date + source_type |
+| Gasto energético diario | user_id + date canónico; user_id + date + source para evidencia e identidad móvil (ver `../DAILY_ENERGY_ISSUE_18.md`) |
 | Alacena/productos | user_id + normalized_name + brand opcional + serving/base macro hash opcional |
 | Recetas | user_id + normalized_name + version o ingredient_hash |
 | Rutinas | user_id + plan_name + version |

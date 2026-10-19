@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Corregir energía · Health Tracker{% endblock %}
+{% block content %}
+<section class="page-heading"><div><h1>Corregir energía del día</h1><p>{{ record.date.isoformat() }} · revisión {{ record.revision }}. Las evidencias originales se conservan.</p></div></section>
+<section class="card">
+  <p>Los campos precargados no modificados se conservan. Para quitar un valor, marca «Vaciar». Un valor nuevo resuelve explícitamente el conflicto de ese campo.</p>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="field">{{ form.date.label }}{{ form.date() }}{% for error in form.date.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+    {% for name in ['total_calories', 'active_calories', 'resting_calories', 'steps', 'distance_meters', 'notes'] %}
+      {% set field = form[name] %}{% set clear = form['clear_' ~ name] %}
+      <div class="field">{{ field.label }}{{ field() }}
+        {% if name in record.conflicts %}<p>Conflicto pendiente: {{ record.conflicts[name]|join(' / ') }}. Revisa las fuentes antes de elegir.</p>{% endif %}
+        <label class="checkbox">{{ clear() }} {{ clear.label.text }}</label>
+        {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+      </div>
+    {% endfor %}
+    {{ form.submit(class_='button') }} <a class="button button-secondary" href="{{ url_for('wellness.energy_detail', record_id=record.id) }}">Cancelar</a>
+  </form>
+</section>
+{% endblock %}

@@ -328,10 +328,10 @@ def test_dashboard_summary_contract_preserves_decimal_nulls_units_and_coverage(a
         "previous_label": None,
     }
     assert result["summary"]["energy"]["consumed_total"] == "2100.000"
-    assert result["summary"]["energy"]["expended_total"] == "1800.00"
-    assert result["summary"]["energy"]["balance_total"] == "300.000"
+    assert result["summary"]["energy"]["expended_total"] == "1000.00"
+    assert result["summary"]["energy"]["balance_total"] == "100.000"
     assert result["trends"]["energy"][1]["consumed_rolling_7d"] == "1050.00"
-    assert result["trends"]["energy"][1]["expended_rolling_7d"] == "900.00"
+    assert result["trends"]["energy"][1]["expended_rolling_7d"] == "1000.00"
     assert result["summary"]["nutrition"]["averages"]["fat"]["average"] == "42.50"
     assert result["summary"]["nutrition"]["averages"]["net_carbs"]["average"] == "92.50"
     assert result["summary"]["protein"]["goal_total"] == "385.000"
@@ -352,7 +352,7 @@ def test_dashboard_summary_contract_preserves_decimal_nulls_units_and_coverage(a
     assert result["summary"]["training"]["calories"] == "250.00"
     assert result["trends"]["energy"][2]["consumed"] is None
     assert result["coverage"]["nutrition_days"] == 2
-    assert result["coverage"]["energy_days"] == 2
+    assert result["coverage"]["energy_days"] == 1
     assert result["coverage"]["weight_entries"] == 2
     assert result["coverage"]["steps_days"] == 2
     assert {goal["type"] for goal in result["goals"]} >= {

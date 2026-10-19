@@ -1,0 +1,165 @@
+{
+  "date": "2026-10-18",
+  "reviewed_application_commit": "3ffeba6118292e053a5ae80230a5eb14f6a3cb59",
+  "scope": "LOCAL synthetic QA only; no NAS, main local DB, production, merge or issue closure",
+  "production_code_changes": false,
+  "migration_and_public_schema_changes": false,
+  "control1": {
+    "result": "PASS",
+    "account_export": "existing per-source 1.1 documents preserve all evidence including retired sources and fully deleted days; canonical balances derive from one day",
+    "new_tests": "backend/tests/test_energy_account_roundtrip.py",
+    "fixtures": "four distinct originals; complementary steps and expenditure; contradiction; confirmed review; source and day tombstones; mobile create/patch/patch revisions; legacy intake",
+    "invariants": [
+      "all source values/raw payloads/revisions/client_event_ids retained",
+      "live UUID collisions remapped owner-only; immutable event payload UUIDs unchanged",
+      "identical review/conflicts/event keys and payloads",
+      "original bytes SHA256 verified; no foreign-owner file references",
+      "second JSON/ZIP restore no extra sources/events/revisions/files",
+      "one canonical registry per date; tombstoned day stays deleted",
+      "identical history points including rolling windows and gaps; balance -450 for synthetic 2000/2450",
+      "mobile alias replay after restore retains destination UUID/revision",
+      "old backup cannot overwrite later review or deletion"
+    ],
+    "mariadb": {
+      "READ COMMITTED": {
+        "JSON_1_1_full_account": "PASS",
+        "ZIP_originals": "PASS",
+        "second_restore": "PASS",
+        "stale_review_and_delete": "blocked PASS",
+        "JSON_1_0": "PASS",
+        "mobile_uuid_events_revisions": "PASS",
+        "owner_only": "PASS",
+        "balance_trends_no_double_count": "PASS"
+      },
+      "REPEATABLE READ": {
+        "JSON_1_1_full_account": "PASS",
+        "ZIP_originals": "PASS",
+        "second_restore": "PASS",
+        "stale_review_and_delete": "blocked PASS",
+        "JSON_1_0": "PASS",
+        "mobile_uuid_events_revisions": "PASS",
+        "owner_only": "PASS",
+        "balance_trends_no_double_count": "PASS"
+      }
+    },
+    "JSON_1_0": "PASS; account restore twice and null vs zero"
+  },
+  "control2": {
+    "result": "PASS in isolated QA; production preflight and authorization remain mandatory",
+    "baseline_clone": {
+      "head": "20261013_0045",
+      "all_tables_and_original_columns_identical": true
+    },
+    "interrupted_ddl": {
+      "head": "20261013_0045",
+      "partial_ddl_committed": true,
+      "original_columns_identical": true,
+      "action": "retained failed schema; recover into preverified isolated clone; no blind retry"
+    },
+    "forward_upgrade": {
+      "from": "20261013_0045",
+      "to": "20261018_0046",
+      "db_check": "PASS",
+      "repeat_upgrade": "no-op PASS",
+      "all_original_columns_catalog_nutrition_snapshots": "identical",
+      "canonical_days": 1,
+      "sources": 3
+    },
+    "write_freeze": {
+      "write_attempt": "denied 1142",
+      "reads": "available",
+      "scope": "isolated QA schema only"
+    },
+    "postwrite_restore": {
+      "head": "20261018_0046",
+      "all_tables_identical": true,
+      "original_bytes_and_hashes": "PASS",
+      "events_revisions_tombstones_uuids_nutrition_snapshots_catalog": "identical",
+      "db_check": "PASS",
+      "flask_healthz": "PASS"
+    },
+    "service_restart": {
+      "head": "20261018_0046",
+      "http": "Gunicorn real; loopback only",
+      "healthz_login_csrf": "PASS",
+      "energy_history_conflict_steps": "PASS",
+      "nutrition_21_dashboard_micros_saved": "PASS",
+      "historical_snapshot": "identical",
+      "new_events_and_tombstones": "retained"
+    },
+    "pre_ddl_checksums": {
+      "consistent": "InnoDB single-transaction; all QA writers stopped",
+      "sql_sha256": "bafccf60c8a96fea9f40538be385ba7f757e2187ebc08f65284f3963c522b7fb",
+      "files_sha256": "b22cd655dae6349ef43fd071e35a4e7981bed0282b532e0e98323a7069448ce3",
+      "target": "fresh empty isolated QA schema"
+    },
+    "postwrite_checksums": {
+      "files_sha256": "d216f13ac32180a4c3a5db74ee43959e9e2659bb1ed88a73b638aaaa9e7bf75c",
+      "consistent": "InnoDB single-transaction; all QA writers stopped",
+      "target": "fresh empty isolated QA schema",
+      "sql_sha256": "b3e0e97b3bf3fcebac251b7263f818092cace3d02439dae9e503924964ac71b4"
+    },
+    "partial_state_backup_sha256": "2cd6bb8c71e4d11bbda38aaa9bb8938d7ac001a54183332794369d2df7083c1d",
+    "retained_compatible_image": {
+      "image_id": "sha256:43be26c78077768188a565b195dc17fa10a726ea0bf49628da6c8ee539219c52",
+      "archive_sha256": "5d1320b3aa777945edf2e2a583b35c8523a87e00d9d6de73960b1bc9f9b511ea",
+      "architecture": "linux/amd64",
+      "archive_load": "PASS; original image ID retained"
+    },
+    "postwrite_compared_tables": 80,
+    "postwrite_counts": {
+      "daily_energy": 50,
+      "energy_days": 21,
+      "energy_evidence_events": 154,
+      "meal_logs": 1,
+      "uploaded_files": 31
+    },
+    "runbook": "docs/ENERGY_0046_RECOVERY_RUNBOOK.md"
+  },
+  "regression": {
+    "focused_passed": 154,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 42.263,
+    "warning": "intentional duplicate ZIP member security test; not a production warning",
+    "full_suite": "previous 1297 PASS retained; not rerun because application code unchanged",
+    "concurrency": {
+      "READ COMMITTED": {
+        "concurrent_sources": "2 identities, 1 canonical day",
+        "concurrent_review": [
+          "stale",
+          "success"
+        ],
+        "same_event_revision": "unchanged",
+        "null_zero": "preserved",
+        "source_conflict": "unknown with evidence",
+        "ownership": "pass",
+        "rollback": "registry/evidence/events atomic",
+        "mobile": "stable UUID; create/patch/delete/recreate/replay retains expenditure"
+      },
+      "REPEATABLE READ": {
+        "concurrent_sources": "2 identities, 1 canonical day",
+        "concurrent_review": [
+          "stale",
+          "success"
+        ],
+        "same_event_revision": "unchanged",
+        "null_zero": "preserved",
+        "source_conflict": "unknown with evidence",
+        "ownership": "pass",
+        "rollback": "registry/evidence/events atomic",
+        "mobile": "stable UUID; create/patch/delete/recreate/replay retains expenditure"
+      }
+    },
+    "compileall": "PASS",
+    "compose_config": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "remaining_gates": [
+    "explicit squash/deployment authorization",
+    "new production preflight, write freeze, backup/checksum and isolated restore immediately before DDL",
+    "approve ability to provision/switch recovery schema and coordinated storage in production; otherwise block deployment",
+    "no proven PITR for catastrophic loss of unreadable latest state: stop, never discard confirmed writes",
+    "physical Android/iOS smoke remains separate; schema/API compatibility covered by focused tests"
+  ]
+}

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 import csv
 import hashlib
@@ -191,6 +191,10 @@ class RealFileImportService:
         plan: dict[str, Any],
         max_age: int = 15 * 60,
     ) -> None:
+        if target_type == 'daily_energy' and plan.get('energy_state') is not None:
+            from app.services.energy_days import lock_owner, state_fingerprint
+            lock_owner(user_id)
+            plan = {**plan, 'energy_state':state_fingerprint(user_id, [date.fromisoformat(day) for day in plan['energy_state']], lock=True)}
         try:
             data = _serializer().loads(token, salt=REAL_FILE_TOKEN_SALT, max_age=max_age)
         except SignatureExpired as error:
@@ -228,6 +232,7 @@ class RealFileImportService:
             user_id=user_id,
             target_type=preview["target_type"],
             confirmed=True,
+            source_file=source_file,
             audit_payload={
                 "source_file_id": source_file.id,
                 "sha256": source_file.sha256,
@@ -948,7 +953,7 @@ def _serializer() -> URLSafeTimedSerializer:
 
 
 def _plan_fingerprint(plan: dict[str, Any]) -> dict[str, Any]:
-    return {key: plan.get(key) for key in ("total", "valid", "invalid", "inserts", "updates", "skips", "conflicts", "operations")}
+    return {key: plan.get(key) for key in ("total", "valid", "invalid", "inserts", "updates", "skips", "conflicts", "operations", *(['energy_state'] if 'energy_state' in plan else []))}
 
 
 def _json_target(payload: dict[str, Any]) -> str:

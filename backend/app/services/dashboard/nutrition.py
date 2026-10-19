@@ -47,12 +47,16 @@ def _dates(date_range: DashboardDateRange):
 
 
 def effective_energy_value(rows: list[DailyEnergy], field: str):
-    available = [row for row in rows if getattr(row, field) is not None]
-    if not available:
+    if not rows:
         return None, None
-    manual = next((row for row in available if row.source == "manual"), None)
-    selected = manual or available[0]
-    return getattr(selected, field), selected
+    if hasattr(rows[0], 'conflicts'):
+        selected = rows[0]
+    else:
+        from app.services.energy_days import project
+        selected = project(rows)
+    if selected is None or getattr(selected, field) is None:
+        return None, None
+    return getattr(selected, field), selected.field_sources.get(field) or selected
 
 
 def _rolling(points: list[dict], key: str, output_key: str) -> None:
@@ -73,18 +77,8 @@ class NutritionTrendService:
             )
             .order_by(DailyNutrition.date)
         ).scalars().all()
-        energy_rows = db.session.execute(
-            db.select(DailyEnergy)
-            .where(
-                DailyEnergy.user_id == user_id,
-                DailyEnergy.date.between(date_range.start_date, date_range.end_date),
-            )
-            .order_by(
-                DailyEnergy.date,
-                DailyEnergy.updated_at.desc(),
-                DailyEnergy.id.desc(),
-            )
-        ).scalars().all()
+        from app.services.energy_days import views
+        energy_rows = views(user_id, start=date_range.start_date, end=date_range.end_date)
         return {"nutrition": nutrition_rows, "energy": energy_rows}
 
     def build_from_rows(

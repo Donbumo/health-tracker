@@ -12,7 +12,7 @@
         <tbody>
           {% for record in records %}
             <tr>
-              <td><a href="{{ url_for('wellness.energy_detail', record_id=record.id) }}">{{ record.date.isoformat() }}</a></td>
+              <td><a href="{{ url_for('wellness.energy_detail', record_id=record.id) }}">{{ record.date.isoformat() }}</a>{% if record.conflicts %} · Conflicto pendiente{% endif %}</td>
               <td>{{ record.total_calories if record.total_calories is not none else '—' }}</td>
               <td>{{ record.active_calories if record.active_calories is not none else '—' }}</td>
               <td>{{ record.resting_calories if record.resting_calories is not none else '—' }}</td>

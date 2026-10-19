@@ -4,29 +4,314 @@
   "title": "Daily energy",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "record_type", "user_id", "source_type", "data"],
+  "required": [
+    "schema_version",
+    "record_type",
+    "user_id",
+    "source_type",
+    "data"
+  ],
   "properties": {
-    "schema_version": {"const": "1.0"},
-    "record_type": {"const": "daily_energy"},
-    "user_id": {"type": "integer", "minimum": 1},
+    "schema_version": {
+      "enum": [
+        "1.0",
+        "1.1"
+      ]
+    },
+    "record_type": {
+      "const": "daily_energy"
+    },
+    "user_id": {
+      "type": "integer",
+      "minimum": 1
+    },
     "source_type": {
       "type": "string",
-      "enum": ["manual_generated", "uploaded", "device_sync"]
+      "enum": [
+        "manual_generated",
+        "uploaded",
+        "device_sync"
+      ]
     },
     "data": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["date"],
+      "required": [
+        "date"
+      ],
       "properties": {
-        "date": {"type": "string", "format": "date"},
-        "total_expenditure_kcal": {"type": "number", "minimum": 0, "maximum": 100000},
-        "resting_expenditure_kcal": {"type": "number", "minimum": 0, "maximum": 100000},
-        "active_expenditure_kcal": {"type": "number", "minimum": 0, "maximum": 100000},
-        "steps": {"type": "integer", "minimum": 0, "maximum": 10000000},
-        "distance_meters": {"type": "number", "minimum": 0, "maximum": 100000000},
-        "source": {"type": "string", "minLength": 1, "maxLength": 32},
-        "notes": {"type": "string", "maxLength": 2000}
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "total_expenditure_kcal": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "resting_expenditure_kcal": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "active_expenditure_kcal": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "steps": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 10000000
+        },
+        "distance_meters": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 2000
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "sources",
+        "review"
+      ],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "public_id",
+              "date",
+              "source",
+              "revision",
+              "values",
+              "deleted",
+              "events"
+            ],
+            "properties": {
+              "public_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "source": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "client_event_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "values": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "total_calories": {
+                    "type": [
+                      "string",
+                      "number",
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "active_calories": {
+                    "type": [
+                      "string",
+                      "number",
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "resting_calories": {
+                    "type": [
+                      "string",
+                      "number",
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "steps": {
+                    "type": [
+                      "string",
+                      "number",
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "distance_meters": {
+                    "type": [
+                      "string",
+                      "number",
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "notes": {
+                    "type": [
+                      "string",
+                      "number",
+                      "integer",
+                      "null"
+                    ]
+                  }
+                }
+              },
+              "raw_payload": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "deleted": {
+                "type": "boolean"
+              },
+              "source_file_sha256": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "events": {
+                "type": "array",
+                "maxItems": 10000,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "key",
+                    "kind",
+                    "payload"
+                  ],
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "pattern": "^[a-f0-9]{64}$"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "import",
+                        "conflict",
+                        "edit_day",
+                        "delete_day",
+                        "delete_source",
+                        "create_steps",
+                        "patch_steps",
+                        "delete_steps",
+                        "restore"
+                      ]
+                    },
+                    "payload": {
+                      "type": "object"
+                    },
+                    "source_file_sha256": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^[a-f0-9]{64}$"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "review": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "revision",
+            "resolutions",
+            "deleted"
+          ],
+          "properties": {
+            "revision": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "resolutions": {
+              "type": "object"
+            },
+            "deleted": {
+              "type": "boolean"
+            }
+          }
+        }
+      },
+      "description": "Version 1.1 private round-trip evidence. Version 1.0 remains accepted without this extension."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "1.0"
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "required": [
+            "evidence"
+          ]
+        }
+      },
+      "else": {
+        "required": [
+          "evidence"
+        ]
       }
     }
-  }
+  ]
 }

@@ -1,0 +1,13 @@
+{
+  "scope": "existing LOCAL MariaDB QA + real Gunicorn HTTP; fictional owner only",
+  "head": "20261018_0046",
+  "healthz": "pass",
+  "login_csrf": "pass",
+  "canonical_day": "pass",
+  "partial_merge": "pass",
+  "edit_preserves_energy": "pass",
+  "stale_revision_409": "pass",
+  "versioned_json_evidence": "pass",
+  "confirmed_delete": "pass",
+  "production_access": false
+}

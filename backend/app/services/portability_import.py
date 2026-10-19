@@ -1075,9 +1075,11 @@ def _apply_record(job, section, record, strategy, maps, created_paths):
     if section == "steps":
         destination, collision = _destination_uuid(DailyEnergy, source_id, user_id, force_new)
         source = "portable_import" if force_new else data.get("source", "portable_import")
-        db.session.add(DailyEnergy(public_id=destination, user_id=user_id, date=_date(data["date"]), steps=int(data["steps"]),
-            distance_meters=_decimal(data.get("distance_meters")), source=source, notes=data.get("notes"),
-            revision=max(1, int(record.get("revision", 1)))))
+        from app.services.energy_days import upsert_document
+        fields = {key:data[key] for key in ('steps','distance_meters','notes') if data.get(key) is not None}
+        result = upsert_document({'schema_version':'1.0', 'record_type':'daily_energy', 'user_id':user_id,
+            'source_type':'uploaded', 'data':{'date':data['date'], 'source':source, **fields}}, user_id, public_id=destination)
+        destination = result.public_id
         _add_mapping(job, section, source_id, destination, collision, maps); return "inserted"
     if section == "attachments":
         existing = _natural_existing(section, record, user_id)

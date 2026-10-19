@@ -167,6 +167,9 @@ def test_alpha15_real_journey_is_idempotent_owned_and_self_cleaning(app, client,
     with app.app_context():
         assert db.session.execute(db.select(WeighIn).where(WeighIn.client_event_id == body_event)).scalar_one_or_none() is None
         assert db.session.execute(db.select(NutritionItem).where(NutritionItem.client_event_id == nutrition_event)).scalar_one_or_none() is None
-        assert db.session.execute(db.select(DailyEnergy).where(DailyEnergy.client_event_id == steps_event)).scalar_one_or_none() is None
+        step_evidence = db.session.execute(db.select(DailyEnergy).where(DailyEnergy.client_event_id == steps_event)).scalar_one()
+        assert step_evidence.steps is None  # retained source identity/tombstone, no active step
+        from app.models import EnergyEvidenceEvent
+        assert db.session.scalar(db.select(EnergyEvidenceEvent.id).where(EnergyEvidenceEvent.kind == 'delete_steps')) is not None
     assert client.post("/api/v1/auth/logout", headers=headers).status_code == 200
     assert client.get("/api/v1/me", headers=headers).status_code == 401

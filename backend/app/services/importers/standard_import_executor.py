@@ -188,6 +188,10 @@ class StandardImportExecutor:
         plan: dict[str, Any],
         max_age: int = DEFAULT_CONFIRMATION_MAX_AGE_SECONDS,
     ) -> None:
+        if target_type == 'daily_energy' and plan.get('energy_state') is not None:
+            from app.services.energy_days import lock_owner, state_fingerprint
+            lock_owner(user_id)
+            plan = {**plan, 'energy_state':state_fingerprint(user_id, [date.fromisoformat(day) for day in plan['energy_state']], lock=True)}
         try:
             data = _serializer().loads(
                 token,
@@ -239,7 +243,11 @@ class StandardImportExecutor:
                 )
                 for index, document in enumerate(documents)
             ]
-        return self._summary(operations, committed=False, rollback=False)
+        result = self._summary(operations, committed=False, rollback=False)
+        if target_type == 'daily_energy':
+            from app.services.energy_days import state_fingerprint
+            result['energy_state'] = state_fingerprint(user_id, [date.fromisoformat(document['data']['date']) for document in documents if isinstance(document.get('data'),dict) and document['data'].get('date') and not any(item['operation']=='invalid' for item in result['operations'])])
+        return result
 
     def commit_documents(
         self,
@@ -250,6 +258,7 @@ class StandardImportExecutor:
         confirmed: bool,
         audit_payload: Any | None = None,
         audit_metadata: dict[str, Any] | None = None,
+        source_file=None,
     ) -> dict[str, Any]:
         if not confirmed:
             raise StandardImportError("Import confirmation is required")
@@ -302,6 +311,14 @@ class StandardImportExecutor:
             metadata=audit_metadata,
         )
         try:
+            if target_type == 'daily_energy':
+                # The audit pending record is committed independently. Acquire
+                # the mutex again and reject a change during that commit gap.
+                from app.services.energy_days import lock_owner, state_fingerprint
+                lock_owner(user_id)
+                expected_state = plan.get('energy_state', {})
+                if state_fingerprint(user_id, [date.fromisoformat(day) for day in expected_state], lock=True) != expected_state:
+                    raise StandardImportError("El día cambió; revisa un nuevo preview antes de confirmar.")
             for operation in plan["operations"]:
                 planned = PlannedOperation(
                     operation=operation["operation"],
@@ -313,7 +330,7 @@ class StandardImportExecutor:
                     recipe_index=operation.get("recipe_index"),
                     errors=tuple(operation["errors"]),
                 )
-                if planned.operation == "skip":
+                if planned.operation == "skip" and not (planned.target_type == 'daily_energy' and source_file is not None):
                     committed_operations.append(planned)
                     continue
                 document = self._operation_document(documents, planned)
@@ -323,11 +340,12 @@ class StandardImportExecutor:
                     target_type=planned.target_type,
                     operation=planned.operation,
                     existing_id=planned.existing_id,
+                    source_file=source_file,
                 )
                 db.session.flush()
                 committed_operations.append(
                     PlannedOperation(
-                        operation='skip' if planned.target_type=='nutrition_import' and getattr(record,'_nutrition_import_replay',False) else planned.operation,
+                        operation='skip' if ((planned.target_type == 'nutrition_import' and getattr(record, '_nutrition_import_replay', False)) or (planned.target_type == 'daily_energy' and getattr(record, '_energy_replay', False))) else planned.operation,
                         target_type=planned.target_type,
                         document_index=planned.document_index,
                         label=planned.label,
@@ -434,8 +452,25 @@ class StandardImportExecutor:
 
         label = self._document_label(document, schema_name)
         model = self._model_name(target_type, document)
+        if target_type == 'daily_energy':
+            from app.services.energy_days import FIELDS, decoded, view
+            canonical = view(user_id, date.fromisoformat(document['data']['date']))
+            if canonical is not None and any(document['data'].get(key) is not None and
+                ((getattr(canonical, field) is not None and decoded(field, document['data'][key]) != getattr(canonical, field)) or field in canonical.conflicts)
+                for field,key in FIELDS.items()):
+                label += ' · Discrepancia: conservar como evidencia pendiente; no sobrescribir ni sumar'
         if existing is None:
             return PlannedOperation("insert", target_type, index, label, model=model)
+
+        if target_type == "daily_energy":
+            from app.services.energy_days import FIELDS, decoded
+            data = document['data']
+            same = all(data.get(key) is None or decoded(field, data[key]) == getattr(existing, field)
+                       for field, key in FIELDS.items())
+            # Same payload may still be a different file's evidence; the shared
+            # writer deduplicates without changing source/day revisions.
+            if same and existing.raw_payload_json == document:
+                return PlannedOperation("skip", target_type, index, label, model=model, existing_id=existing.id)
 
         if self._is_same_payload(existing, document):
             return PlannedOperation(
@@ -580,23 +615,14 @@ class StandardImportExecutor:
             ).scalar_one_or_none()
 
         if target_type == "daily_energy":
-            record_date = date.fromisoformat(document["data"]["date"])
-            base = db.select(DailyEnergy).where(
+            from app.services.energy_days import FIELDS, decoded
+            data = document['data']
+            source = data.get('source', document['source_type']).strip()
+            return db.session.execute(db.select(DailyEnergy).where(
                 DailyEnergy.user_id == user_id,
-                DailyEnergy.date == record_date,
-            )
-            source = document["data"].get("source")
-            if source:
-                source = source.strip()
-                exact = db.session.execute(
-                    base.where(DailyEnergy.source == source)
-                ).scalar_one_or_none()
-                if exact is not None or source == "manual":
-                    return exact
-            imported = db.session.execute(
-                base.where(DailyEnergy.source != "manual").order_by(DailyEnergy.id)
-            ).scalars().all()
-            return imported[0] if len(imported) == 1 else None
+                DailyEnergy.date == date.fromisoformat(data['date']),
+                DailyEnergy.source == source,
+            )).scalar_one_or_none()
 
         if target_type == "daily_nutrition":
             record_date = date.fromisoformat(document["data"]["date"])
@@ -701,6 +727,7 @@ class StandardImportExecutor:
         target_type: str,
         operation: str,
         existing_id: int | None,
+        source_file=None,
     ) -> Any:
         if target_type == 'nutrition_import':
             from app.services.nutrition_import import apply_document
@@ -708,7 +735,7 @@ class StandardImportExecutor:
         if target_type in {"weigh_in", "weigh_in_batch"}:
             return self._apply_weigh_in(document, user_id, existing_id)
         if target_type == "daily_energy":
-            return self._apply_daily_energy(document, user_id, existing_id)
+            return self._apply_daily_energy(document, user_id, existing_id, source_file=source_file)
         if target_type == "daily_nutrition":
             return self._apply_daily_nutrition(document, user_id, existing_id)
         if target_type in {"food_product", "food_products"}:
@@ -758,29 +785,9 @@ class StandardImportExecutor:
         db.session.add(record)
         return record
 
-    def _apply_daily_energy(self, document: dict[str, Any], user_id: int, existing_id: int | None) -> DailyEnergy:
-        data = document["data"]
-        record = db.session.get(DailyEnergy, existing_id) if existing_id else DailyEnergy(user_id=user_id)
-        if record is None or record.user_id != user_id:
-            raise StandardImportError("Daily energy target does not belong to this user")
-        record.date = date.fromisoformat(data["date"])
-        if "total_expenditure_kcal" in data:
-            record.total_calories = _decimal(data.get("total_expenditure_kcal"))
-        if "active_expenditure_kcal" in data:
-            record.active_calories = _decimal(data.get("active_expenditure_kcal"))
-        if "resting_expenditure_kcal" in data:
-            record.resting_calories = _decimal(data.get("resting_expenditure_kcal"))
-        if "steps" in data:
-            record.steps = data.get("steps")
-        if "distance_meters" in data:
-            record.distance_meters = _decimal(data.get("distance_meters"))
-        if "source" in data or not existing_id:
-            record.source = data.get("source", document["source_type"]).strip()
-        if "notes" in data:
-            record.notes = data.get("notes")
-        record.raw_payload_json = document
-        db.session.add(record)
-        return record
+    def _apply_daily_energy(self, document: dict[str, Any], user_id: int, existing_id: int | None, *, source_file=None) -> DailyEnergy:
+        from app.services.energy_days import upsert_document
+        return upsert_document(document, user_id, source_file=source_file)
 
     def _apply_daily_nutrition(self, document: dict[str, Any], user_id: int, existing_id: int | None) -> DailyNutrition:
         from app.services.importers.daily_nutrition import _totals, _validate_ordering, _validate_recipe_references
@@ -1362,6 +1369,7 @@ def _plan_fingerprint(plan: dict[str, Any]) -> dict[str, Any]:
         "skips": plan.get("skips"),
         "conflicts": plan.get("conflicts"),
         "operations": plan.get("operations", []),
+        **({'energy_state':plan['energy_state']} if 'energy_state' in plan else {}),
     }
 
 

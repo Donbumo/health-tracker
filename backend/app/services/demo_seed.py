@@ -127,19 +127,12 @@ def _seed_energy(user: User, days: tuple, created: dict[str, int]) -> None:
         ).scalar_one_or_none()
         if existing is not None:
             continue
-        db.session.add(
-            DailyEnergy(
-                user_id=user.id,
-                date=record_date,
-                total_calories=Decimal(total),
-                active_calories=Decimal(active),
-                resting_calories=Decimal(resting),
-                steps=steps,
-                distance_meters=Decimal("6500.00"),
-                source=DEMO_SOURCE,
-                notes="Dato completamente ficticio para QA manual.",
-            )
-        )
+        from app.services.energy_days import upsert_document
+        upsert_document({'schema_version':'1.0', 'record_type':'daily_energy', 'user_id':user.id,
+            'source_type':'manual_generated', 'data':{'date':record_date.isoformat(), 'source':DEMO_SOURCE,
+            'total_expenditure_kcal':float(total), 'active_expenditure_kcal':float(active),
+            'resting_expenditure_kcal':float(resting), 'steps':steps, 'distance_meters':6500,
+            'notes':'Dato completamente ficticio para QA manual.'}}, user.id)
         created["energy_days"] += 1
 
 

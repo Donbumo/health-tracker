@@ -9,6 +9,7 @@ from app.extensions import db
 from app.models import DailyEnergy, DailyNutrition
 from app.services.files import UploadError, mark_import_status, store_uploaded_file
 from app.services.daily_balance import daily_balance
+from app.services import energy_days
 from app.services.exporters.wellness import (
     DailyEnergyCsvExporter,
     DailyEnergyJsonExporter,
@@ -33,6 +34,8 @@ from app.services.validation import JsonSchemaValidationError
 from app.wellness import wellness_bp
 from app.wellness.forms import (
     DailyEnergyImportForm,
+    DailyEnergyEditForm,
+    DailyEnergyDeleteForm,
     DailyEnergyManualForm,
     DailyNutritionImportForm,
     DailyNutritionManualForm,
@@ -58,7 +61,10 @@ def _user_energy_or_404(record_id: int) -> DailyEnergy:
     ).scalar_one_or_none()
     if record is None:
         abort(404)
-    return record
+    canonical = energy_days.view(current_user.id, record.date)
+    if canonical is None:
+        abort(404)
+    return canonical
 
 
 def _user_nutrition_or_404(record_id: int) -> DailyNutrition:
@@ -76,11 +82,7 @@ def _user_nutrition_or_404(record_id: int) -> DailyNutrition:
 @wellness_bp.get("/daily-energy")
 @login_required
 def energy_list():
-    records = db.session.execute(
-        db.select(DailyEnergy)
-        .where(DailyEnergy.user_id == current_user.id)
-        .order_by(DailyEnergy.date.desc())
-    ).scalars()
+    records = energy_days.views(current_user.id)
     return render_template("wellness/energy_list.html", records=records)
 
 
@@ -110,6 +112,8 @@ def energy_import():
                 )
             flash(f"No fue posible importar la energía diaria: {error}", "danger")
         else:
+            if getattr(record, '_energy_conflicts', None):
+                flash("Se conservó la propuesta de fuente con conflicto. Revisa el día antes de usar esos valores.", "warning")
             duplicate = file_duplicate or record_duplicate
             mark_import_status(
                 source_file,
@@ -134,6 +138,55 @@ def energy_detail(record_id: int):
         "wellness/energy_detail.html",
         record=_user_energy_or_404(record_id),
     )
+
+
+@wellness_bp.route("/daily-energy/<int:record_id>/edit", methods=["GET", "POST"])
+@login_required
+def energy_edit(record_id):
+    record = _user_energy_or_404(record_id)
+    form = DailyEnergyEditForm(obj=record)
+    if request.method == "GET":
+        form.base_revision.data = str(record.revision)
+    if form.validate_on_submit():
+        try:
+            values = {field: getattr(form, field).data for field in energy_days.FIELDS
+                      if getattr(form, field).data is not None and getattr(form, field).data != ""}
+            clear = [field for field in energy_days.FIELDS if getattr(form, 'clear_' + field).data]
+            updated = energy_days.edit_day(current_user.id, record.date, int(form.base_revision.data), values,
+                                           new_date=form.date.data, clear=clear)
+            db.session.commit()
+        except (energy_days.EnergyConflict, ValueError):
+            db.session.rollback()
+            flash("No se guardó: el día cambió o la fecha destino ya existe. Recarga y revisa.", "danger")
+            return render_template("wellness/energy_edit.html", record=record, form=form), 409
+        return redirect(url_for("wellness.energy_detail", record_id=updated.id))
+    return render_template("wellness/energy_edit.html", record=record, form=form)
+
+
+@wellness_bp.route("/daily-energy/<int:record_id>/delete", methods=["GET", "POST"])
+@login_required
+def energy_delete(record_id):
+    record = _user_energy_or_404(record_id)
+    form = DailyEnergyDeleteForm()
+    if request.method == "GET":
+        form.base_revision.data = str(record.revision)
+        form.source_public_id.data = request.args.get('source', '')
+    source = next((row for row in record.evidence if row.public_id == form.source_public_id.data), None)
+    if form.source_public_id.data and source is None:
+        abort(404)
+    if form.validate_on_submit():
+        try:
+            if source:
+                energy_days.delete_evidence(current_user.id, record.date, source.public_id, int(form.base_revision.data))
+            else:
+                energy_days.delete_day(current_user.id, record.date, int(form.base_revision.data))
+            db.session.commit()
+        except (energy_days.EnergyConflict, ValueError):
+            db.session.rollback()
+            flash("El día cambió. Recarga antes de eliminar.", "danger")
+            return render_template("wellness/energy_delete.html", record=record, form=form, source=source), 409
+        return redirect(url_for("wellness.energy_list"))
+    return render_template("wellness/energy_delete.html", record=record, form=form, source=source)
 
 
 @wellness_bp.get("/daily-energy/<int:record_id>/export/<string:format_name>")
@@ -193,6 +246,8 @@ def nutrition_import():
                 )
             flash(f"No fue posible importar la nutrición diaria: {error}", "danger")
         else:
+            if getattr(record, '_energy_conflicts', None):
+                flash("Se conservó la propuesta de fuente con conflicto. Revisa el día antes de usar esos valores.", "warning")
             duplicate = file_duplicate or record_duplicate
             mark_import_status(
                 source_file,
@@ -304,6 +359,8 @@ def manual_energy():
                 )
             flash(f"No fue posible guardar la energía diaria: {error}", "danger")
         else:
+            if getattr(record, '_energy_conflicts', None):
+                flash("Se conservó la propuesta de fuente con conflicto. Revisa el día antes de usar esos valores.", "warning")
             duplicate = file_duplicate or record_duplicate
             mark_import_status(
                 source_file,
@@ -429,6 +486,8 @@ def manual_nutrition():
                 )
             flash(f"No fue posible guardar la nutrición diaria: {error}", "danger")
         else:
+            if getattr(record, '_energy_conflicts', None):
+                flash("Se conservó la propuesta de fuente con conflicto. Revisa el día antes de usar esos valores.", "warning")
             duplicate = file_duplicate or record_duplicate
             mark_import_status(
                 source_file,

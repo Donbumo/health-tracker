@@ -70,6 +70,8 @@ class DailyEnergy(db.Model):
     notes = db.Column(db.Text, nullable=True)
     raw_payload_json = db.Column(db.JSON, nullable=True)
     revision = db.Column(db.Integer, nullable=False, default=1, server_default="1")
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    source_file_sha256 = db.Column(db.String(64), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

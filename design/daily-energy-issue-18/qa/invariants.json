@@ -1,0 +1,8 @@
+{
+  "migration_0045": "unchanged",
+  "catalog": "unchanged",
+  "nutrition_snapshots": "unchanged",
+  "mobile_transport": "unchanged",
+  "runtime_and_flags": "unchanged",
+  "production": "read-only preflight; remains 0045; no deployment or data recovery applied"
+}

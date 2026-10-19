@@ -307,7 +307,9 @@ def test_confirmed_import_updates_same_user_natural_key(app, user):
 
         record = db.session.execute(db.select(DailyEnergy)).scalar_one()
         assert result["updates"] == 1
-        assert int(record.total_calories) == 2500
+        assert int(record.total_calories) == 2400
+        from app.services.energy_days import view
+        assert view(user, record.date).total_calories is None  # conflicting values retained
 
 
 def test_confirmed_import_partial_daily_energy_update_preserves_absent_fields(app, user):
@@ -332,12 +334,13 @@ def test_confirmed_import_partial_daily_energy_update_preserves_absent_fields(ap
             confirmed=True,
         )
 
-        record = db.session.execute(db.select(DailyEnergy)).scalar_one()
-        assert result["updates"] == 1
-        assert int(record.total_calories) == 2500
-        assert int(record.active_calories) == 700
-        assert record.source == "qa"
-        assert record.notes == "nota inicial"
+        records = db.session.scalars(db.select(DailyEnergy)).all()
+        assert len(records) == 2  # missing source cannot overwrite a known source
+        from app.services.energy_days import view
+        canonical = view(user, records[0].date)
+        assert canonical.total_calories is None
+        assert canonical.active_calories == 700 and canonical.notes == "nota inicial"
+        assert {record.source for record in records} == {"qa", "uploaded"}
 
 
 def test_confirmed_import_rejects_other_user_id(app, user):

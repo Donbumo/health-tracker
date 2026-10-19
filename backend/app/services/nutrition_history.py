@@ -76,9 +76,8 @@ def history(user_id, target, period=30):
     day = db.session.execute(db.select(DailyNutrition).where(
         DailyNutrition.user_id == user_id, DailyNutrition.date == target
     ).options(selectinload(DailyNutrition.meals).selectinload(NutritionMeal.items))).scalar_one_or_none()
-    energy_rows = db.session.execute(db.select(DailyEnergy).where(
-        DailyEnergy.user_id == user_id, DailyEnergy.date.between(window_start, target)
-    ).order_by(DailyEnergy.updated_at.desc(), DailyEnergy.id.desc())).scalars().all()
+    from app.services.energy_days import views
+    energy_rows = views(user_id, start=window_start, end=target)
     energy_by_day = defaultdict(list)
     for row in energy_rows:
         energy_by_day[row.date].append(row)

@@ -1,0 +1,20 @@
+{
+  "image": "sha256:04c9cde6a5a537b08ff1099478cf97959dd79e6e1ce4ad2e4dfd303275acc051",
+  "platform": "linux/amd64",
+  "base": "Python 3.12 (approved runtime unchanged)",
+  "dependency_changes": false,
+  "mode": "standard Docker build, cached unchanged dependency layers",
+  "build_log_sha256": "78fbfd8650d70d779f1a1fb03b5e2c84c9a292f3f215c2b3a1dc21936b4340e6",
+  "source_sha256": {
+    "backend/app/services/account_restore.py": "ad991d9cf75ae285993449055130ec3c8c95fe1cb3b6cada07c3f0b0425c30a1",
+    "backend/app/services/energy_days.py": "ac4a29823c3b4993a069146b521c995b9dce8ee571b53913c28bbdcd8f77ed0d",
+    "backend/app/services/exporters/wellness.py": "7f3a7530dcb61e6cc7826c96bcbe024230930e45cca1bce97ff7599e761f7536",
+    "backend/app/services/importers/standard_import_executor.py": "3b818ca9e21ddf0bcdaa976731eddaf3b010d8f2f90688c5eecbf76021b68464",
+    "backend/app/services/mobile_health.py": "0e9b05ac6d1b2b4d860b898d3fdd5b234d2a9556b8acb95dcec180d3758b14e6",
+    "backend/app/services/real_file_imports.py": "27b876e73e67d31f1dafea0d1f38b11420b802d12703e124d477710d61a4f4ae",
+    "backend/migrations/versions/20261018_0046_canonical_energy_days.py": "7c7bb70c63a25f2c60e6c5b851ca04cdb8eafa05567e613506abd23054a00115",
+    "schemas/daily_energy.schema.json": "227ab27fe1cf3bbbc1804ac3a33c852727c2296898f3161069b8fc0a295ef903"
+  },
+  "production_image_modified": false,
+  "source_hash_format": "UTF-8 source bytes with LF line endings"
+}

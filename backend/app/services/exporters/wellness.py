@@ -2,7 +2,7 @@ import csv
 from io import StringIO
 
 from app.models import DailyEnergy, DailyNutrition
-from app.services.exporters.base import BaseExporter, ExportArtifact, serialize_json
+from app.services.exporters.base import BaseExporter, ExportArtifact, SafeCsvDictWriter, serialize_json
 from app.services.validation import validate_json_document
 
 
@@ -17,6 +17,12 @@ def _source_type(resource) -> str:
         "device_sync",
     }:
         return resource.source_file.source_type
+    # JSON restores can retain original provenance without restoring raw bytes.
+    evidence = next((row for row in getattr(resource, 'evidence', []) if row.id == resource.id), resource)
+    if isinstance(evidence, DailyEnergy):
+        original = (evidence.raw_payload_json or {}).get('source_type')
+        if isinstance(original, str) and original in {'manual_generated', 'uploaded', 'device_sync'}:
+            return original
     return "uploaded"
 
 
@@ -36,12 +42,14 @@ def build_daily_energy_document(record: DailyEnergy, user_id: int) -> dict:
             data[field] = value if field == "steps" else _number(value)
     if record.notes:
         data["notes"] = record.notes
+    from app.services.energy_days import export_evidence
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "record_type": "daily_energy",
         "user_id": user_id,
         "source_type": _source_type(record),
         "data": data,
+        "evidence": export_evidence(record, user_id),
     }
 
 
@@ -134,13 +142,14 @@ class DailyEnergyCsvExporter(BaseExporter):
             "distance_meters",
             "source",
         )
-        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer = SafeCsvDictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerow({field: getattr(resource, field) for field in fieldnames})
         return ExportArtifact(
             content=output.getvalue().encode("utf-8-sig"),
             mimetype="text/csv",
             extension="csv",
+            warning="CSV contiene la vista diaria. Para conservar fuentes, revisiones y auditoría utiliza JSON o backup ZIP.",
         )
 
 

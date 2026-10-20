@@ -1,0 +1,43 @@
+{
+  "status": "PASS",
+  "scope": "existing LOCAL MariaDB isolated QA only",
+  "head": "20261018_0046",
+  "isolations": {
+    "READ COMMITTED": {
+      "status": "PASS",
+      "events": 117,
+      "pages": 5,
+      "page_sizes": [
+        25,
+        25,
+        25,
+        25,
+        17
+      ],
+      "json_source_and_combined_filters": "PASS",
+      "owner_isolation_and_original": "PASS",
+      "file_bytes": "identical",
+      "domain_writes": 0,
+      "canonical_evidence_revision_events": "unchanged",
+      "db_check": "PASS"
+    },
+    "REPEATABLE READ": {
+      "status": "PASS",
+      "events": 117,
+      "pages": 5,
+      "page_sizes": [
+        25,
+        25,
+        25,
+        25,
+        17
+      ],
+      "json_source_and_combined_filters": "PASS",
+      "owner_isolation_and_original": "PASS",
+      "file_bytes": "identical",
+      "domain_writes": 0,
+      "canonical_evidence_revision_events": "unchanged",
+      "db_check": "PASS"
+    }
+  }
+}

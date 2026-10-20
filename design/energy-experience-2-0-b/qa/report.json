@@ -1,0 +1,302 @@
+{
+  "scope": "real Flask HTTP; temporary SQLite and synthetic B owners/files only",
+  "status": "PASS",
+  "viewport_checks": 48,
+  "checks": [
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "sources",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "history",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "decision",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "retired-day",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "sources",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "history",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "decision",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "retired-day",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "sources",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "history",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "decision",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "retired-day",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "sources",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "history",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "decision",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "retired-day",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "sources",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "history",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "decision",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "retired-day",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "sources",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "history",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "decision",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "retired-day",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "sources",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "history",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "decision",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "retired-day",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "sources",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "history",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "decision",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "retired-day",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "sources",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "history",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "decision",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "retired-day",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "sources",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "history",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "decision",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "retired-day",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "sources",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "history",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "decision",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "retired-day",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "sources",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "history",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "decision",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "retired-day",
+      "status": "PASS"
+    }
+  ],
+  "screenshots": 20,
+  "javascript_errors": [],
+  "http_errors": [],
+  "keyboard": "Tab, native date focus, selects, disclosure and links PASS",
+  "flows": "canonical/evidence navigation, combined filters, pages beyond 100, retired day, source retirement, decisions, verified original and real second-owner login/download 404 PASS",
+  "privacy": "fictional QA only; no production account or NAS access",
+  "limitations": "Focal accessibility; integral audit and boundary-date navigation remain D."
+}

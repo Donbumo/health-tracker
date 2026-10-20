@@ -1,0 +1,55 @@
+{
+  "status": "STOPPED_STABLE_VERSION_RESTORED",
+  "pr": 22,
+  "merge_sha": "9624142901c191ebc5dd47f333a42f5096e9065e",
+  "runtime_sha": "9e2f2dc7fea728bfec3c8abf1aed6bc7bb428852",
+  "alembic": "20261018_0046",
+  "new_migrations_executed": false,
+  "history_all_tables": "identical to frozen baseline",
+  "database_container_unchanged": true,
+  "flags_unchanged": true,
+  "stable_http_healthz": 200,
+  "stable_https_tls_healthz": 200,
+  "web_restarts": 0,
+  "new_runtime_errors": 0,
+  "preflight": "PASS",
+  "fresh_backup": "PASS",
+  "prior_backups_preserved": true,
+  "compatible_images_preserved": true,
+  "isolated_restore": "PASS",
+  "restored_regular_files": 2022,
+  "clone_smoke": {
+    "7": {
+      "service_ms": 37.0,
+      "nutrition_parity": "PASS",
+      "daily_balance_parity": "PASS",
+      "get_no_writes": "PASS",
+      "forged_owner_ignored": "PASS",
+      "http": 200
+    },
+    "30": {
+      "service_ms": 14.4,
+      "nutrition_parity": "PASS",
+      "daily_balance_parity": "PASS",
+      "get_no_writes": "PASS",
+      "forged_owner_ignored": "PASS",
+      "http": 200
+    },
+    "90": {
+      "service_ms": 21.2,
+      "nutrition_parity": "PASS",
+      "daily_balance_parity": "PASS",
+      "get_no_writes": "PASS",
+      "forged_owner_ignored": "PASS",
+      "http": 200
+    }
+  },
+  "failure": "Smoke harness used localhost in a one-off container without an HTTP server; connection refused. No application fault demonstrated.",
+  "corrected_harness_connectivity": "HTTP/HTTPS 200; full A gate not rerun",
+  "production_A_certified": false,
+  "B_started": false,
+  "D_pending": [
+    "Navigation at allowed date boundaries",
+    "Full accessibility audit"
+  ]
+}

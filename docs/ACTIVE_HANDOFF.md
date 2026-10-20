@@ -2,7 +2,22 @@
 
 Índice de reglas y guías: [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md).
 
-## Estado actual — Energy Experience 2.0, entrega A para revisión
+## Estado actual — A operativa; B implementada para revisión
+
+- A desplegada y certificada el 20-10-2026: código `9624142901c191ebc5dd47f333a42f5096e9065e`, imagen activa contrastada por ID y 525 archivos aprobados. [Cierre verificable](ENERGY_EXPERIENCE_2_0_A_PRODUCTION.md).
+- Nuevo backup consistente/restore aislado; anteriores e imágenes preservados. MariaDB sin recrear, 0046 sin migraciones, historial completo y flags intactos. HTTP/HTTPS autenticado de `/energy` 7/30/90, paridad y legacy PASS; 36 combinaciones visuales QA y 14 capturas. Cero nuevos errores/5xx/reinicios en ventana observada.
+- B implementada en `feature/energy-experience-2-0-b`, desde master aprobado: [alcance/evidencia](ENERGY_EXPERIENCE_2_0_B.md). Fuentes, decisiones/propuestas, historial filtrado y páginas de 25; originales protegidos con CSRF, owner, referencia y hash. Sin migración ni cambios móviles.
+- QA B: 70 PASS + 1 skip Windows, 29 PASS Linux (symlink incluido), MariaDB RC/RR y db check PASS, 48 combinaciones y 20 capturas reales Flask. Presentar PR propio para revisión; NO merge ni despliegue de B. NAS conserva sólo A.
+- D: fechas límite y auditoría integral de accesibilidad; Android/iOS físico y OFF externo separados. El diagnóstico del intento anterior queda conservado en el informe.
+
+## Antecedente operativo — intento del 19-10-2026
+
+- PR #22 integrado por squash `9624142901c191ebc5dd47f333a42f5096e9065e`, árbol del HEAD autorizado `740966af7ef512805026be220ae14bba4fd48032`. Checkouts master GitHub/Windows/NAS sincronizados.
+- Intento de despliegue detenido: sonda HTTP apuntó al loopback del contenedor efímero sin servidor. Se repuso imagen estable `9e2f2dc7fea728bfec3c8abf1aed6bc7bb428852`, manteniendo DB/storage actuales. Alembic 0046 sin migración; historial completo idéntico a baseline, flags preservados; HTTP/HTTPS healthz 200.
+- Backups e imágenes anteriores/nuevos preservados; checksum y restore aislado PASS. Sonda corregida preparada y conectividad probada; no se reintentó el despliegue. [Diagnóstico verificable](ENERGY_EXPERIENCE_2_0_A_PRODUCTION.md).
+- A no certificado en producción: B no iniciado y sin PR. Completar smoke productivo de A antes de abrir B. Para D: navegación en fechas límite y auditoría integral de accesibilidad, sin cambios funcionales a A en esta operación.
+
+## Antecedente de diseño — Energy Experience 2.0, entrega A para revisión
 
 - Issue #18 recuperado en producción y cerrado como completado tras smoke. PR #21 squash: `9e2f2dc7fea728bfec3c8abf1aed6bc7bb428852`; NAS en 0046, 13.685 alimentos y flags conservados.
 - [Cierre productivo](https://github.com/Donbumo/health-tracker/issues/18): backup/restore aislado, imagen compatible, tres días reparados, resto del historial intacto, HTTP/HTTPS y estabilidad PASS. PITR y dispositivos físicos siguen separados.

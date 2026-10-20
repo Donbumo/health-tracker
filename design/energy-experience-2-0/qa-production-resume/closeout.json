@@ -1,0 +1,157 @@
+{
+  "status": "PASS_A_OPERATIONAL",
+  "approved_sha": "9624142901c191ebc5dd47f333a42f5096e9065e",
+  "stable_previous_sha": "9e2f2dc7fea728bfec3c8abf1aed6bc7bb428852",
+  "active_image_id": "sha256:d0322c07899e52830769a25b192daa42d2582aa77cd7f2762adc7b32b3cb751a",
+  "previous_image_id": "sha256:b513331ea4e1fba1ca1549f4c5830d49a4be3ecddfbac4cb98ac26fde87e73c7",
+  "candidate_content_files_verified": 525,
+  "candidate_archive_checksum": "PASS",
+  "sha_and_image_and_route_content_verified": true,
+  "probe_target": "web:8000 on existing shared Compose network; Docker DNS peer matches active container",
+  "alembic": "20261018_0046",
+  "db_check": "PASS",
+  "new_migrations": false,
+  "startup": "Gunicorn direct; no upgrade/seed",
+  "catalog_active": 13685,
+  "all_tables_after_http": "identical to frozen pre-deploy baseline",
+  "domain_writes_from_consultation": 0,
+  "database_container_unchanged": true,
+  "flags_secrets_ports_mounts": "preserved",
+  "fresh_backup": {
+    "status": "PASS",
+    "backup_id": "energy-a-20261020T162301Z",
+    "consistent": true,
+    "checksums_verified": true,
+    "prior_backups_retained": true,
+    "bytes": 283641826
+  },
+  "prior_backups": "retained and checksums verified",
+  "isolated_restore": "all tables/columns/rows and regular storage files verified",
+  "qa_real_gunicorn": "authenticated HTTP + synthetic states + owner isolation; SELECT-only isolated clone",
+  "qa_visual": {
+    "matrix": 36,
+    "screenshots": 14,
+    "themes": [
+      "dark",
+      "light"
+    ],
+    "widths": [
+      360,
+      390,
+      430,
+      768,
+      1024,
+      1366
+    ]
+  },
+  "production_http": {
+    "HTTP": {
+      "healthz": 200,
+      "authenticated_energy": 200,
+      "login_csrf": "PASS",
+      "period_latency": {
+        "7": {
+          "samples": 5,
+          "milliseconds": [
+            400.2,
+            25.4,
+            24.5,
+            22.3,
+            28.8
+          ],
+          "min_ms": 22.3,
+          "max_ms": 400.2,
+          "median_ms": 25.4
+        },
+        "30": {
+          "samples": 5,
+          "milliseconds": [
+            46.8,
+            27.9,
+            32.9,
+            35.0,
+            34.9
+          ],
+          "min_ms": 27.9,
+          "max_ms": 46.8,
+          "median_ms": 34.9
+        },
+        "90": {
+          "samples": 5,
+          "milliseconds": [
+            52.9,
+            54.2,
+            54.6,
+            52.6,
+            51.5
+          ],
+          "min_ms": 51.5,
+          "max_ms": 54.6,
+          "median_ms": 52.9
+        }
+      },
+      "legacy_routes": 5,
+      "integrations": 3,
+      "canonical_nutrition_balance_parity": "PASS",
+      "calendar_charts_tables_theme_assets": "PASS",
+      "forged_owner_ignored": "PASS"
+    },
+    "HTTPS_TLS": {
+      "healthz": 200,
+      "authenticated_energy": 200,
+      "login_csrf": "PASS",
+      "period_latency": {
+        "7": {
+          "samples": 5,
+          "milliseconds": [
+            46.5,
+            53.6,
+            50.1,
+            54.6,
+            55.6
+          ],
+          "min_ms": 46.5,
+          "max_ms": 55.6,
+          "median_ms": 53.6
+        },
+        "30": {
+          "samples": 5,
+          "milliseconds": [
+            63.3,
+            57.4,
+            70.6,
+            63.7,
+            50.2
+          ],
+          "min_ms": 50.2,
+          "max_ms": 70.6,
+          "median_ms": 63.3
+        },
+        "90": {
+          "samples": 5,
+          "milliseconds": [
+            70.8,
+            67.7,
+            67.3,
+            68.7,
+            76.3
+          ],
+          "min_ms": 67.3,
+          "max_ms": 76.3,
+          "median_ms": 68.7
+        }
+      },
+      "legacy_routes": 5,
+      "integrations": 3,
+      "canonical_nutrition_balance_parity": "PASS",
+      "calendar_charts_tables_theme_assets": "PASS",
+      "forged_owner_ignored": "PASS"
+    }
+  },
+  "restarts": 0,
+  "new_errors": 0,
+  "new_http_5xx": 0,
+  "stability_observed_seconds": 102.1,
+  "physical_android_ios": "not executed; separate gate",
+  "external_OFF": "not executed; separate gate"
+}

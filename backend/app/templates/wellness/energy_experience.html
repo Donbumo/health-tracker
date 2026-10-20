@@ -51,7 +51,7 @@
     {% if latest and latest.date!=target %}<a href="{{ day_link(latest.date) }}">Último registro · {{ latest.date }} · {% if latest.total_calories is not none %}{{ value(latest.total_calories) }}{% else %}{{ 'gasto en conflicto' if latest.conflicts else 'gasto desconocido' }}{% endif %}</a>{% endif %}
     <span class="ee-muted">Zona: {{ timezone_name }}. Consultar no modifica registros.</span>
   </div>
-  <nav class="ee-links" aria-label="Secciones de Energía"><a href="#ee-trends">Tendencias</a><a href="#ee-calendar">Calendario</a><a href="#ee-activity">Actividad y fuentes</a></nav>
+  <nav class="ee-links" aria-label="Secciones de Energía"><a href="#ee-trends">Tendencias</a><a href="#ee-calendar">Calendario</a><a href="#ee-activity">Actividad</a><a href="{{ url_for('wellness.energy_sources',date=target) }}">Fuentes y decisiones</a><a href="{{ url_for('wellness.energy_history') }}">Historial auditable</a></nav>
   <section id="ee-trends"><h2>Gasto y contexto nutricional</h2><p class="ee-muted">■ Observación diaria · ◇ Subtotal parcial · × Ausente · ! Conflicto · línea discontinua: media móvil 7 días. Cero conocido se marca sobre el eje.</p>
     <p class="ee-muted">La cobertura mide disponibilidad de datos; no precisión ni cumplimiento. Cada media muestra su denominador sobre 7 días. Seis días previos de calentamiento; huecos sin rellenar, parciales fuera del balance.</p>
     <div class="ee-main-charts">{% for c in charts %}{{ plot(c) }}{% endfor %}</div>

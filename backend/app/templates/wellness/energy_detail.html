@@ -3,7 +3,7 @@
 {% block content %}
   {% set labels = {'total_calories':'Calorías totales', 'active_calories':'Calorías activas', 'resting_calories':'Calorías de reposo', 'steps':'Pasos', 'distance_meters':'Distancia (m)', 'notes':'Notas'} %}
   <section class="page-heading">
-    <div><h1>Energía {{ record.date.isoformat() }}</h1><p>Fuente: {{ 'Conciliación por campo' if record.source == 'reconciled' else record.source }}</p></div>
+    <div><h1>Energía {{ record.date.isoformat() }}</h1><p>Fuente: {{ 'Conciliación por campo' if record.source == 'reconciled' else record.source }}</p><a href="{{ url_for('wellness.energy_sources',date=record.date) }}">Fuentes, retiradas y decisiones auditables</a></div>
     <div class="page-actions"><a class="button" href="{{ url_for('wellness.energy_edit', record_id=record.id) }}">Editar día</a><a class="button button-secondary" href="{{ url_for('wellness.energy_delete', record_id=record.id) }}">Eliminar día</a><a class="button" href="{{ url_for('wellness.energy_export', record_id=record.id, format_name='json') }}">JSON</a><a class="button button-secondary" href="{{ url_for('wellness.energy_export', record_id=record.id, format_name='csv') }}">CSV</a><a class="button button-secondary" href="{{ url_for('wellness.energy_list') }}">Volver</a></div>
   </section>
   {% if record.conflicts %}<section class="card"><h2>Fuentes en conflicto</h2><p>No se calcula con valores contradictorios. Edita el día para confirmar una corrección por campo; las fuentes no se suman.</p>

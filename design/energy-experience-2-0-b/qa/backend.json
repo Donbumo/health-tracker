@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "windows_affected": {
+    "passed": 70,
+    "skipped": 1,
+    "skip": "Symlink creation unavailable on Windows"
+  },
+  "linux_focal": {
+    "passed": 29,
+    "skipped": 0,
+    "includes": "real symlink test"
+  },
+  "mariadb": "READ COMMITTED and REPEATABLE READ; 117 events; 5 pages; db check PASS",
+  "full_suite": "A approved suite not repeated; focal affected regression executed",
+  "compileall": "PASS",
+  "compose_config": "PASS",
+  "no_new_schema_or_mobile_contracts": true,
+  "no_domain_writers_changed": true,
+  "B_production_access": false
+}

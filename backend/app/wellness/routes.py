@@ -106,6 +106,57 @@ def energy_experience():
                            today=today, timezone_name=timezone_name)
 
 
+def _provenance_page(view, **values):
+    response = current_app.make_response(render_template('wellness/energy_provenance.html', view=view, **values))
+    response.headers['Cache-Control'] = 'private, no-store'
+    return response
+
+
+@wellness_bp.get('/energy/sources')
+@login_required
+def energy_sources():
+    from app.services.energy_history import local_today
+    from app.services.energy_provenance import parsed_date, sources
+    try:
+        target = parsed_date(request.args.get('date')) or local_today(current_user, current_app.config['APP_TIMEZONE'])[0]
+    except ValueError:
+        abort(400, description='Fecha inválida.')
+    return _provenance_page('sources', **sources(current_user.id, target))
+
+
+@wellness_bp.get('/energy/history')
+@login_required
+def energy_history():
+    from app.services.energy_provenance import filters, audit
+    try:
+        selected = filters(request.args)
+    except (ValueError, TypeError):
+        abort(400, description='Filtros inválidos.')
+    data = audit(current_user.id, selected)
+    args = {'from': selected['start'], 'to': selected['end'],
+            'source': selected['source'] or None, 'operation': selected['operation'] or None}
+    data['previous_url'] = url_for('wellness.energy_history', page=data['page'] - 1, **args) if data['page'] > 1 else None
+    data['next_url'] = url_for('wellness.energy_history', page=data['page'] + 1, **args) if data['page'] < data['pages'] else None
+    return _provenance_page('history', **data)
+
+
+@wellness_bp.post('/energy/original')
+@login_required
+def energy_original():
+    from app.services.energy_provenance import download
+    try:
+        # The signed locator travels in the CSRF-protected body, never an access
+        # log URL. This download reads a verified descriptor; it does not write.
+        stream, filename = download(current_user.id, request.form.get('reference', ''))
+    except LookupError:
+        abort(404)
+    response = send_file(stream, mimetype='application/octet-stream', as_attachment=True, download_name=filename)
+    response.call_on_close(stream.close)
+    response.headers['Cache-Control'] = 'private, no-store'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
+
+
 @wellness_bp.route("/daily-energy/import", methods=["GET", "POST"])
 @login_required
 def energy_import():

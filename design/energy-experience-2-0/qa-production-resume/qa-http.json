@@ -1,0 +1,68 @@
+{
+  "status": "PASS",
+  "scope": "isolated synthetic QA real Gunicorn",
+  "application_sha": "9624142901c191ebc5dd47f333a42f5096e9065e",
+  "target_image_id": "sha256:d0322c07899e52830769a25b192daa42d2582aa77cd7f2762adc7b32b3cb751a",
+  "probe_container": "7f79e2094e4e",
+  "dns_peer_matches_identified_target": true,
+  "target_service": "energy-a-qa-app-20261020",
+  "port": 8000,
+  "http": {
+    "HTTP": {
+      "healthz": 200,
+      "authenticated_energy": 200,
+      "login_csrf": "PASS",
+      "period_latency": {
+        "7": {
+          "samples": 5,
+          "milliseconds": [
+            64.3,
+            36.3,
+            45.2,
+            48.2,
+            43.0
+          ],
+          "min_ms": 36.3,
+          "max_ms": 64.3,
+          "median_ms": 45.2
+        },
+        "30": {
+          "samples": 5,
+          "milliseconds": [
+            62.2,
+            53.2,
+            64.6,
+            53.7,
+            59.6
+          ],
+          "min_ms": 53.2,
+          "max_ms": 64.6,
+          "median_ms": 59.6
+        },
+        "90": {
+          "samples": 5,
+          "milliseconds": [
+            130.8,
+            96.7,
+            110.8,
+            96.3,
+            106.4
+          ],
+          "min_ms": 96.3,
+          "max_ms": 130.8,
+          "median_ms": 106.4
+        }
+      },
+      "legacy_routes": 5,
+      "integrations": 0,
+      "canonical_nutrition_balance_parity": "PASS",
+      "calendar_charts_tables_theme_assets": "PASS",
+      "forged_owner_ignored": "PASS"
+    }
+  },
+  "domain_write_statements": 0,
+  "synthetic_states": "complementary, conflicting, resolved, retired, deleted, zero, partial, today empty and latest PASS",
+  "db_enforced_readonly": "SELECT-only isolated schema",
+  "alembic": "20261018_0046",
+  "db_check": "PASS"
+}

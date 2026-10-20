@@ -1,0 +1,24 @@
+.ep-page h1 { font-size: clamp(1.6rem,3vw,2.3rem); overflow-wrap: anywhere; }
+.ep-source-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+.ep-metrics { display: grid; grid-template-columns: repeat(auto-fit,minmax(130px,1fr)); gap: .75rem; }
+.ep-metrics dd { margin: .25rem 0; font-weight: 700; font-size: 1.1rem; }
+.ep-metrics dt { color: var(--text-muted); font-size: .88rem; }
+.ep-metrics small { font-size: .8rem; font-weight: 400; }
+.ep-retired { border-left: 4px solid var(--text-muted); }
+.ep-decision { padding: .5rem 0; border-bottom: 1px solid var(--border); }
+.ep-page details { margin-block: .7rem; }
+.ep-page summary { min-height: 44px; cursor: pointer; padding: .6rem 0; }
+.ep-page .button { white-space: normal; text-align: left; overflow-wrap: anywhere; }
+.ep-filters { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; }
+.ep-filters label { flex: 1 1 170px; min-width: 0; margin: 0; }
+.ep-filters input, .ep-filters select { min-height: 44px; font-size: 16px; width: 100%; max-width: 100%; }
+.ep-filters input:focus-within { outline: 3px solid var(--text); outline-offset: 3px; }
+.ep-pagination { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin: 1rem 0; }
+.ep-event header p, .ep-event h2 { overflow-wrap: anywhere; }
+.ep-page li { overflow-wrap: anywhere; }
+@media(max-width:767px) {
+ .ep-source-grid { grid-template-columns: minmax(0,1fr); }
+ .ep-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+ .ep-filters label { flex-basis: 100%; }
+ .ep-page .ee-card { padding: .85rem; }
+}

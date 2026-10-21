@@ -2,7 +2,15 @@
 
 Índice de reglas y guías: [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md).
 
-## Estado actual — A operativa; B implementada para revisión
+## Estado actual — B operativa; C implementada para revisión
+
+- B desplegada el 20-10-2026: squash `6fdd594151f5ede12997b5447e28b10d4e8a901f`, checkout GitHub/Windows/NAS sincronizado; imagen activa y 528 archivos aprobados contrastados. [Cierre productivo B](ENERGY_EXPERIENCE_2_0_B_PRODUCTION.md). 0046 sin DDL, mismo MariaDB, catálogo/flags/historial intactos; backup consistente y restore de DB + 2.022 archivos PASS. A e imágenes/backups anteriores preservados.
+- Gate de rendimiento B: cinco eventos reales restaurados y escenario separado de 10.000 eventos ficticios/400 páginas; cinco muestras HTTP por caso, máximo 286,7 ms. EXPLAIN registra scans/filesort en JSON/DISTINCT; no certificación de concurrencia. HTTP/HTTPS autenticado productivo PASS; cuenta de smoke sin eventos, originales/datos poblados validados en QA sin suplantación productiva.
+- C implementada después del cierre B, rama `feature/energy-experience-2-0-c`: [informe](ENERGY_EXPERIENCE_2_0_C.md), cuatro pasos de importación y decisión por campo; escritores oficiales intactos, originales sólo al confirmar, revisión/CSRF/owner/replay. Observaciones JSON 1.0 hasta 256 KiB; JSON 1.1/historial y mayores remiten al flujo estándar existente, sin aplanar ni cambiar contratos.
+- QA C: área afectada 97 PASS + 1 skip Windows; importador estándar 52 PASS; C final 27 PASS; Linux C/B 56 PASS; MariaDB RC/RR y db check PASS; Flask 88 verificaciones/32 capturas. Preparar PR separado; NO merge ni despliegue C. NAS conserva B.
+- D mantiene fechas extremas y auditoría integral de accesibilidad. Android/iOS físico y OFF externo siguen separados. Informe local previo de issue #18 preservado fuera de Git.
+
+## Antecedente — A operativa e inicio de B
 
 - A desplegada y certificada el 20-10-2026: código `9624142901c191ebc5dd47f333a42f5096e9065e`, imagen activa contrastada por ID y 525 archivos aprobados. [Cierre verificable](ENERGY_EXPERIENCE_2_0_A_PRODUCTION.md).
 - Nuevo backup consistente/restore aislado; anteriores e imágenes preservados. MariaDB sin recrear, 0046 sin migraciones, historial completo y flags intactos. HTTP/HTTPS autenticado de `/energy` 7/30/90, paridad y legacy PASS; 36 combinaciones visuales QA y 14 capturas. Cero nuevos errores/5xx/reinicios en ventana observada.

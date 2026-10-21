@@ -1,0 +1,494 @@
+{
+  "status": "PASS",
+  "mode": "qa",
+  "image_id": "sha256:d7e4dba4095cdbab45f3879a13c74857c301a37eec80acf2ce2409317ad3aa31",
+  "dns_peer_verified": true,
+  "http": {
+    "HTTP": {
+      "energy_7": {
+        "samples": 5,
+        "milliseconds": [
+          20.7,
+          21.6,
+          20.9,
+          20.0,
+          19.1
+        ],
+        "median_ms": 20.7,
+        "max_ms": 21.6
+      },
+      "energy_30": {
+        "samples": 5,
+        "milliseconds": [
+          26.3,
+          24.8,
+          22.7,
+          24.8,
+          26.3
+        ],
+        "median_ms": 24.8,
+        "max_ms": 26.3
+      },
+      "energy_90": {
+        "samples": 5,
+        "milliseconds": [
+          33.4,
+          54.7,
+          33.7,
+          39.3,
+          32.3
+        ],
+        "median_ms": 33.7,
+        "max_ms": 54.7
+      },
+      "history_unfiltered": {
+        "samples": 5,
+        "milliseconds": [
+          149.6,
+          150.5,
+          150.5,
+          142.6,
+          141.9
+        ],
+        "median_ms": 149.6,
+        "max_ms": 150.5
+      },
+      "history_source": {
+        "samples": 5,
+        "milliseconds": [
+          272.6,
+          277.1,
+          272.8,
+          265.4,
+          266.3
+        ],
+        "median_ms": 272.6,
+        "max_ms": 277.1
+      },
+      "history_dates": {
+        "samples": 5,
+        "milliseconds": [
+          146.2,
+          151.2,
+          153.6,
+          151.1,
+          150.8
+        ],
+        "median_ms": 151.1,
+        "max_ms": 153.6
+      },
+      "history_operation": {
+        "samples": 5,
+        "milliseconds": [
+          143.0,
+          143.4,
+          143.8,
+          153.8,
+          152.1
+        ],
+        "median_ms": 143.8,
+        "max_ms": 153.8
+      },
+      "history_combined": {
+        "samples": 5,
+        "milliseconds": [
+          286.7,
+          271.6,
+          280.4,
+          260.7,
+          265.5
+        ],
+        "median_ms": 271.6,
+        "max_ms": 286.7
+      },
+      "history_first": {
+        "samples": 5,
+        "milliseconds": [
+          149.0,
+          145.7,
+          143.8,
+          144.2,
+          144.5
+        ],
+        "median_ms": 144.5,
+        "max_ms": 149.0
+      },
+      "history_middle": {
+        "samples": 5,
+        "milliseconds": [
+          141.2,
+          130.7,
+          136.3,
+          130.7,
+          143.0
+        ],
+        "median_ms": 136.3,
+        "max_ms": 143.0
+      },
+      "history_last": {
+        "samples": 5,
+        "milliseconds": [
+          155.4,
+          154.8,
+          138.5,
+          148.2,
+          156.5
+        ],
+        "median_ms": 154.8,
+        "max_ms": 156.5
+      },
+      "history_no_matches": {
+        "samples": 5,
+        "milliseconds": [
+          272.0,
+          273.3,
+          274.9,
+          256.8,
+          260.3
+        ],
+        "median_ms": 272.0,
+        "max_ms": 274.9
+      }
+    }
+  },
+  "qa_owner_session": "isolated signed QA session of largest event owner; real login separately verified",
+  "approved_sha": "6fdd594151f5ede12997b5447e28b10d4e8a901f",
+  "volume": {
+    "owner_events": 10000,
+    "owner_pages": 400,
+    "all_events": 10005,
+    "source_choices": 5,
+    "operation_choices": 4,
+    "distinct_middle_page_exists": true
+  },
+  "sql": {
+    "unfiltered": {
+      "service_ms": 134.3,
+      "select_queries": 4,
+      "result_count": 10000,
+      "page_items": 25,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "ix_energy_event_owner_date",
+          "rows": "10005",
+          "Extra": "Using index"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "range",
+          "key": "ix_energy_event_owner_date",
+          "rows": "10005",
+          "Extra": "Using index condition; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "source": {
+      "service_ms": 260.1,
+      "select_queries": 4,
+      "result_count": 2000,
+      "page_items": 25,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "range",
+          "key": "ix_energy_event_owner_date",
+          "rows": "10005",
+          "Extra": "Using index condition; Using where; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "dates": {
+      "service_ms": 142.6,
+      "select_queries": 4,
+      "result_count": 10000,
+      "page_items": 25,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "range",
+          "key": "ix_energy_event_owner_date",
+          "rows": "10005",
+          "Extra": "Using where; Using index"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "range",
+          "key": "ix_energy_event_owner_date",
+          "rows": "10005",
+          "Extra": "Using index condition; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "operation": {
+      "service_ms": 142.8,
+      "select_queries": 4,
+      "result_count": 2500,
+      "page_items": 25,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "range",
+          "key": "ix_energy_event_owner_date",
+          "rows": "10005",
+          "Extra": "Using index condition; Using where; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "combined": {
+      "service_ms": 265.3,
+      "select_queries": 4,
+      "result_count": 500,
+      "page_items": 25,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "range",
+          "key": "ix_energy_event_owner_date",
+          "rows": "10005",
+          "Extra": "Using index condition; Using where; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "first": {
+      "service_ms": 133.8,
+      "select_queries": 4,
+      "result_count": 10000,
+      "page_items": 25,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "ix_energy_event_owner_date",
+          "rows": "10005",
+          "Extra": "Using index"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "range",
+          "key": "ix_energy_event_owner_date",
+          "rows": "10005",
+          "Extra": "Using index condition; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "middle": {
+      "service_ms": 137.4,
+      "select_queries": 4,
+      "result_count": 10000,
+      "page_items": 25,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "ix_energy_event_owner_date",
+          "rows": "10005",
+          "Extra": "Using index"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "last": {
+      "service_ms": 144.2,
+      "select_queries": 4,
+      "result_count": 10000,
+      "page_items": 25,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "ix_energy_event_owner_date",
+          "rows": "10005",
+          "Extra": "Using index"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "no_matches": {
+      "service_ms": 263.8,
+      "select_queries": 4,
+      "result_count": 0,
+      "page_items": 0,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "range",
+          "key": "ix_energy_event_owner_date",
+          "rows": "10005",
+          "Extra": "Using index condition; Using where; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ALL",
+          "key": null,
+          "rows": "10005",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    }
+  },
+  "original": "no event-linked original available",
+  "source_days_read": 1,
+  "db_check": "PASS",
+  "domain_write_statements": 0
+}

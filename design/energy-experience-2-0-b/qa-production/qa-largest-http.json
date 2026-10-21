@@ -1,0 +1,536 @@
+{
+  "status": "PASS",
+  "mode": "qa",
+  "image_id": "sha256:d7e4dba4095cdbab45f3879a13c74857c301a37eec80acf2ce2409317ad3aa31",
+  "dns_peer_verified": true,
+  "http": {
+    "HTTP": {
+      "energy_7": {
+        "samples": 5,
+        "milliseconds": [
+          185.7,
+          77.8,
+          89.9,
+          83.9,
+          72.9
+        ],
+        "median_ms": 83.9,
+        "max_ms": 185.7
+      },
+      "energy_30": {
+        "samples": 5,
+        "milliseconds": [
+          138.6,
+          147.1,
+          140.0,
+          127.2,
+          124.5
+        ],
+        "median_ms": 138.6,
+        "max_ms": 147.1
+      },
+      "energy_90": {
+        "samples": 5,
+        "milliseconds": [
+          236.6,
+          247.4,
+          243.0,
+          250.8,
+          245.9
+        ],
+        "median_ms": 245.9,
+        "max_ms": 250.8
+      },
+      "history_unfiltered": {
+        "samples": 5,
+        "milliseconds": [
+          13.5,
+          13.0,
+          13.4,
+          14.9,
+          11.2
+        ],
+        "median_ms": 13.4,
+        "max_ms": 14.9
+      },
+      "history_source": {
+        "samples": 5,
+        "milliseconds": [
+          11.4,
+          10.7,
+          12.5,
+          13.8,
+          15.8
+        ],
+        "median_ms": 12.5,
+        "max_ms": 15.8
+      },
+      "history_dates": {
+        "samples": 5,
+        "milliseconds": [
+          12.6,
+          11.6,
+          16.2,
+          13.9,
+          11.7
+        ],
+        "median_ms": 12.6,
+        "max_ms": 16.2
+      },
+      "history_operation": {
+        "samples": 5,
+        "milliseconds": [
+          11.0,
+          11.8,
+          8.6,
+          8.9,
+          11.5
+        ],
+        "median_ms": 11.0,
+        "max_ms": 11.8
+      },
+      "history_combined": {
+        "samples": 5,
+        "milliseconds": [
+          9.6,
+          11.0,
+          14.2,
+          9.9,
+          11.3
+        ],
+        "median_ms": 11.0,
+        "max_ms": 14.2
+      },
+      "history_first": {
+        "samples": 5,
+        "milliseconds": [
+          21.6,
+          13.2,
+          13.2,
+          12.0,
+          14.2
+        ],
+        "median_ms": 13.2,
+        "max_ms": 21.6
+      },
+      "history_middle": {
+        "samples": 5,
+        "milliseconds": [
+          12.2,
+          10.8,
+          10.4,
+          10.0,
+          11.1
+        ],
+        "median_ms": 10.8,
+        "max_ms": 12.2
+      },
+      "history_last": {
+        "samples": 5,
+        "milliseconds": [
+          12.0,
+          12.3,
+          11.3,
+          12.9,
+          15.4
+        ],
+        "median_ms": 12.3,
+        "max_ms": 15.4
+      },
+      "history_no_matches": {
+        "samples": 5,
+        "milliseconds": [
+          17.0,
+          13.9,
+          9.4,
+          10.0,
+          9.0
+        ],
+        "median_ms": 10.0,
+        "max_ms": 17.0
+      }
+    }
+  },
+  "qa_owner_session": "isolated signed QA session of largest event owner; real login separately verified",
+  "approved_sha": "6fdd594151f5ede12997b5447e28b10d4e8a901f",
+  "volume": {
+    "owner_events": 5,
+    "owner_pages": 1,
+    "all_events": 5,
+    "source_choices": 2,
+    "operation_choices": 3,
+    "distinct_middle_page_exists": false
+  },
+  "sql": {
+    "unfiltered": {
+      "service_ms": 7.6,
+      "select_queries": 5,
+      "result_count": 5,
+      "page_items": 5,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using index"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "range",
+          "key": "PRIMARY",
+          "rows": "2",
+          "Extra": "Using where"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "source": {
+      "service_ms": 10.0,
+      "select_queries": 5,
+      "result_count": 4,
+      "page_items": 4,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "range",
+          "key": "PRIMARY",
+          "rows": "2",
+          "Extra": "Using where"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "dates": {
+      "service_ms": 9.6,
+      "select_queries": 5,
+      "result_count": 5,
+      "page_items": 5,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "range",
+          "key": "ix_energy_event_owner_date",
+          "rows": "5",
+          "Extra": "Using where; Using index"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "range",
+          "key": "PRIMARY",
+          "rows": "2",
+          "Extra": "Using where"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "operation": {
+      "service_ms": 6.9,
+      "select_queries": 4,
+      "result_count": 1,
+      "page_items": 1,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "combined": {
+      "service_ms": 8.4,
+      "select_queries": 4,
+      "result_count": 0,
+      "page_items": 0,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "first": {
+      "service_ms": 6.9,
+      "select_queries": 5,
+      "result_count": 5,
+      "page_items": 5,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using index"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "range",
+          "key": "PRIMARY",
+          "rows": "2",
+          "Extra": "Using where"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "middle": {
+      "service_ms": 8.0,
+      "select_queries": 5,
+      "result_count": 5,
+      "page_items": 5,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using index"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "range",
+          "key": "PRIMARY",
+          "rows": "2",
+          "Extra": "Using where"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "last": {
+      "service_ms": 6.9,
+      "select_queries": 5,
+      "result_count": 5,
+      "page_items": 5,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using index"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "range",
+          "key": "PRIMARY",
+          "rows": "2",
+          "Extra": "Using where"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    },
+    "no_matches": {
+      "service_ms": 5.1,
+      "select_queries": 4,
+      "result_count": 0,
+      "page_items": 0,
+      "explain": [
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "select_type": "SIMPLE",
+          "type": "ref",
+          "key": "uq_energy_event_owner_key",
+          "rows": "5",
+          "Extra": "Using where; Using temporary; Using filesort"
+        }
+      ]
+    }
+  },
+  "original": "owner-linked original SHA256/size/headers PASS; bytes not retained",
+  "source_days_read": 2,
+  "db_check": "PASS",
+  "domain_write_statements": 0
+}

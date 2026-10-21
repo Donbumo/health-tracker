@@ -1,0 +1,17 @@
+.eg-page { max-width: 1120px; }
+.eg-steps { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .5rem; list-style: none; padding: 0; }
+.eg-steps li { padding: .65rem; background: var(--surface); border: 1px solid var(--border); border-radius: .65rem; }
+.eg-steps [aria-current] { font-weight: 700; outline: 2px solid var(--primary); }
+.eg-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+.eg-field,.eg-identity,.eg-summary { overflow-wrap: anywhere; min-width: 0; }
+.eg-page form { display: grid; gap: 1rem; }
+.eg-page label { display: grid; gap: .35rem; }
+.eg-page input:not([type=hidden]):not([type=checkbox]),.eg-page select,.eg-page textarea { width: 100%; min-width: 0; min-height: 44px; font-size: 16px; }
+.eg-page button,.eg-actions a { min-height: 44px; }
+.eg-confirm { grid-template-columns: 24px 1fr; align-items: start; }
+.eg-confirm input { width: 22px; height: 22px; }
+.eg-actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+.eg-operation { padding: .6rem; border-left: 3px solid var(--primary); background: var(--surface); }
+.eg-summary li { margin-block: .6rem; }
+.eg-page :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+@media(max-width:600px) { .eg-fields { grid-template-columns: minmax(0,1fr); } .eg-steps { grid-template-columns: repeat(2,minmax(0,1fr)); font-size: .82rem; } .eg-actions { align-items: stretch; flex-direction: column; } }

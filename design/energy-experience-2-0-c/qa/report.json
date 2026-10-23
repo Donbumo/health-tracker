@@ -1,0 +1,541 @@
+{
+  "status": "PASS",
+  "scope": "real Flask HTTP; temporary SQLite; fictional QA only; no NAS",
+  "viewport_checks": 88,
+  "checks": [
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "identify",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "preview",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "decide",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "decision-operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "view": "decision-confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "identify",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "preview",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "decide",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "decision-operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "decision-confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "identify",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "preview",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "decide",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "decision-operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "view": "decision-confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "identify",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "preview",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "decide",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "decision-operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "view": "decision-confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "identify",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "preview",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "decide",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "decision-operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "view": "decision-confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "identify",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "preview",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "decide",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "decision-operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "decision-confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "view": "import-conflict",
+      "status": "PASS"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "view": "import-conflict",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "identify",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "preview",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "decide",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "decision-operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 360,
+      "view": "decision-confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "identify",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "preview",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "decide",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "decision-operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "decision-confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "identify",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "preview",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "decide",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "decision-operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "view": "decision-confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "identify",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "preview",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "decide",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "decision-operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "view": "decision-confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "identify",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "preview",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "decide",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "decision-operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "view": "decision-confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "identify",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "preview",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "decide",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "decision-operations",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "decision-confirmation",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "view": "import-conflict",
+      "status": "PASS"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "view": "import-conflict",
+      "status": "PASS"
+    }
+  ],
+  "screenshots": 32,
+  "javascript_errors": [],
+  "http_errors": [],
+  "keyboard": "Native inputs/selects/buttons, Tab and visible focus PASS",
+  "flows": "Four enforced stages, preview no writes, actual CSRF confirmation, import original, source-before/canonical-conflict/incoming distinction, HTTP replay unchanged audit count, manual conflict decision and second-owner 404 PASS",
+  "limits": "Physical mobile and full accessibility audit remain separate; D extreme-date navigation unchanged"
+}

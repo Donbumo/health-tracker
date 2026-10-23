@@ -14,7 +14,7 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 
 ## Uso diario y web
 
-- Energy Experience 2.0: [ENERGY_EXPERIENCE_2_0.md](ENERGY_EXPERIENCE_2_0.md), dirección y arquitectura; [QA de A](ENERGY_EXPERIENCE_2_0_A_QA.md), [cierre productivo de A](ENERGY_EXPERIENCE_2_0_A_PRODUCTION.md) y [B para revisión](ENERGY_EXPERIENCE_2_0_B.md), fuentes, auditoría y originales protegidos sin despliegue.
+- Energy Experience 2.0: [ENERGY_EXPERIENCE_2_0.md](ENERGY_EXPERIENCE_2_0.md), dirección y arquitectura; [QA de A](ENERGY_EXPERIENCE_2_0_A_QA.md), [cierre A](ENERGY_EXPERIENCE_2_0_A_PRODUCTION.md), [alcance B](ENERGY_EXPERIENCE_2_0_B.md), [cierre productivo B](ENERGY_EXPERIENCE_2_0_B_PRODUCTION.md) y [C para revisión](ENERGY_EXPERIENCE_2_0_C.md), importación/decisiones guiadas sin desplegar C.
 - Cierre productivo Energía #18: [ENERGY_18_PRODUCTION_CLOSEOUT.md](https://github.com/Donbumo/health-tracker/issues/18), despliegue 0046, backups, correcciones autorizadas y smoke.
 - Recuperación 0046: [ENERGY_0046_RECOVERY_RUNBOOK.md](ENERGY_0046_RECOVERY_RUNBOOK.md), backup consistente, DDL parcial, imagen compatible, nuevas escrituras y validación QA aislada.
 - Corrección P0 Energía diaria: [DAILY_ENERGY_ISSUE_18.md](DAILY_ENERGY_ISSUE_18.md), canónico/evidencias, 0046, QA y gate de recuperación productiva.

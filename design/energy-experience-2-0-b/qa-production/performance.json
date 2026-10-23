@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "real_backup_volume": {
+    "owner_events": 5,
+    "owner_pages": 1,
+    "all_events": 5,
+    "source_choices": 2,
+    "operation_choices": 3,
+    "distinct_middle_page_exists": false
+  },
+  "supplemental_synthetic_volume": {
+    "owner_events": 10000,
+    "owner_pages": 400,
+    "all_events": 10005,
+    "source_choices": 5,
+    "operation_choices": 4,
+    "distinct_middle_page_exists": true
+  },
+  "history_real_max_ms": 21.6,
+  "history_10000_max_ms": 286.7,
+  "http_samples_per_case": 5,
+  "same_login_A_B_canonical_comparison": {
+    "7": {
+      "A_median_ms": 27.1,
+      "B_same_login_clone_median_ms": 26.9
+    },
+    "30": {
+      "A_median_ms": 33.6,
+      "B_same_login_clone_median_ms": 32.1
+    },
+    "90": {
+      "A_median_ms": 53.4,
+      "B_same_login_clone_median_ms": 55.5
+    }
+  },
+  "QA_memory_after": "222.7MiB / 31.27GiB",
+  "memory_before_MB": 204.9,
+  "explain": "Owner/date index used; JSON source/count/DISTINCT and ordering may scan/filesort; no DDL added",
+  "limits": "Real five-event history has one page; synthetic 10000 events exercises 400 pages separately. Sequential HTTP only, no concurrency/capacity claim."
+}

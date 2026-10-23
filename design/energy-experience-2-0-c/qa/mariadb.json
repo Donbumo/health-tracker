@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "scope": "existing LOCAL MariaDB QA only; fictional fixtures",
+  "head": "20261018_0046",
+  "isolations": {
+    "READ COMMITTED": {
+      "status": "PASS",
+      "four_stages_and_preview_no_writes": "PASS",
+      "unknown_vs_zero": "PASS",
+      "exact_original_and_single_event": "PASS",
+      "replay_no_revision_or_event": "PASS",
+      "explicit_manual_and_clear": "PASS",
+      "source_values_and_history": "preserved",
+      "stale_revision_409": "PASS",
+      "domain_rollback_after_flush": "PASS",
+      "owner_isolation_404": "PASS",
+      "db_check": "PASS"
+    },
+    "REPEATABLE READ": {
+      "status": "PASS",
+      "four_stages_and_preview_no_writes": "PASS",
+      "unknown_vs_zero": "PASS",
+      "exact_original_and_single_event": "PASS",
+      "replay_no_revision_or_event": "PASS",
+      "explicit_manual_and_clear": "PASS",
+      "source_values_and_history": "preserved",
+      "stale_revision_409": "PASS",
+      "domain_rollback_after_flush": "PASS",
+      "owner_isolation_404": "PASS",
+      "db_check": "PASS"
+    }
+  }
+}

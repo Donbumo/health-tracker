@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "windows_affected": {
+    "passed": 97,
+    "skipped": 1,
+    "skip": "Windows symlink creation; covered on Linux"
+  },
+  "standard_import_regression": {
+    "passed": 52
+  },
+  "final_C_focal": {
+    "passed": 27
+  },
+  "linux_C_and_B": {
+    "passed": 56,
+    "skipped": 0
+  },
+  "mariadb": "RC/RR; isolated LOCAL QA 0046; db check PASS",
+  "Flask_UI": {
+    "checks": 88,
+    "screenshots": 32
+  },
+  "compileall": "PASS",
+  "compose_config": "PASS",
+  "schema_model_canonical_mobile_changes": false,
+  "NAS_C_access": false,
+  "full_suite": "Not repeated; affected regression plus final focal executed"
+}

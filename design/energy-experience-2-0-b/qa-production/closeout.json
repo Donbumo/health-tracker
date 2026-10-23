@@ -1,0 +1,112 @@
+{
+  "status": "PASS_B_OPERATIONAL",
+  "squash_sha": "6fdd594151f5ede12997b5447e28b10d4e8a901f",
+  "github_windows_nas_sha": "6fdd594151f5ede12997b5447e28b10d4e8a901f",
+  "active_image": "sha256:d7e4dba4095cdbab45f3879a13c74857c301a37eec80acf2ce2409317ad3aa31",
+  "previous_A_image": "sha256:d0322c07899e52830769a25b192daa42d2582aa77cd7f2762adc7b32b3cb751a",
+  "content": {
+    "status": "PASS",
+    "approved_sha": "6fdd594151f5ede12997b5447e28b10d4e8a901f",
+    "image_id": "sha256:d7e4dba4095cdbab45f3879a13c74857c301a37eec80acf2ce2409317ad3aa31",
+    "git_files_byte_identical": 528,
+    "pip_check": "PASS",
+    "schema_migration_changes": false
+  },
+  "image_archive_integrity": "PASS; saved and loaded",
+  "python": "3.12 linux/amd64",
+  "dependency_parity": {
+    "status": "PASS",
+    "A_B_pip_freeze_identical": true
+  },
+  "alembic": "20261018_0046",
+  "catalog_active": 13685,
+  "backup": {
+    "status": "PASS",
+    "backup_id": "energy-b-20261020T233932Z",
+    "consistent": true,
+    "checksums_verified": true,
+    "prior_backups_retained": true,
+    "bytes": 283641826
+  },
+  "restore": {
+    "status": "PASS",
+    "all_tables_columns_rows": "identical",
+    "independent_schema_storage": true,
+    "http_gate": "PASS; completed separately, see qa-largest-http.json and qa-load-http.json"
+  },
+  "storage_restore": {
+    "status": "PASS",
+    "regular_files_byte_identical": 2022
+  },
+  "performance": {
+    "status": "PASS",
+    "real_backup_volume": {
+      "owner_events": 5,
+      "owner_pages": 1,
+      "all_events": 5,
+      "source_choices": 2,
+      "operation_choices": 3,
+      "distinct_middle_page_exists": false
+    },
+    "supplemental_synthetic_volume": {
+      "owner_events": 10000,
+      "owner_pages": 400,
+      "all_events": 10005,
+      "source_choices": 5,
+      "operation_choices": 4,
+      "distinct_middle_page_exists": true
+    },
+    "history_real_max_ms": 21.6,
+    "history_10000_max_ms": 286.7,
+    "http_samples_per_case": 5,
+    "same_login_A_B_canonical_comparison": {
+      "7": {
+        "A_median_ms": 27.1,
+        "B_same_login_clone_median_ms": 26.9
+      },
+      "30": {
+        "A_median_ms": 33.6,
+        "B_same_login_clone_median_ms": 32.1
+      },
+      "90": {
+        "A_median_ms": 53.4,
+        "B_same_login_clone_median_ms": 55.5
+      }
+    },
+    "QA_memory_after": "222.7MiB / 31.27GiB",
+    "memory_before_MB": 204.9,
+    "explain": "Owner/date index used; JSON source/count/DISTINCT and ordering may scan/filesort; no DDL added",
+    "limits": "Real five-event history has one page; synthetic 10000 events exercises 400 pages separately. Sequential HTTP only, no concurrency/capacity claim."
+  },
+  "integrity": {
+    "status": "PASS",
+    "all_tables_columns_rows": "identical",
+    "alembic": "20261018_0046",
+    "database_container_preserved": true,
+    "new_migrations": false,
+    "active_image": "sha256:d7e4dba4095cdbab45f3879a13c74857c301a37eec80acf2ce2409317ad3aa31",
+    "memory": [
+      "213.8MiB / 31.27GiB",
+      "222.7MiB / 31.27GiB"
+    ]
+  },
+  "production_http": "authenticated username/password + CSRF, DNS peer and B image verified; HTTP/HTTPS TLS; /energy, /energy/sources, /energy/history and legacy/Nutrition/Gym/AI PASS",
+  "production_account_scope": "Authenticated smoke account has no audit events. Five existing events and their original exercised on isolated exact restore using a server-issued QA owner session, without changing passwords or production data. Middle/last distinct pages exercised with separate 10000 synthetic events, never production.",
+  "security_regression": "Existing 29 Linux focal tests incl foreign/expired token, CSRF, size/hash, symlink/traversal/file-swap PASS; build code byte-identical and dependencies identical. No production adversarial mutations.",
+  "new_errors": 0,
+  "new_5xx": 0,
+  "restarts": 0,
+  "stability_observed_seconds": 72.7,
+  "prior_backups_images_retained": true,
+  "C": "not started until this closeout; separate branch/PR; no merge/deploy without review",
+  "D": "extreme dates and full accessibility audit remain separate",
+  "physical_mobile_OFF": "separate pending gates",
+  "incidents": [
+    "Operational launcher corrected preserved image archive reference before build; A unaffected.",
+    "QA signed session initially omitted existing CSRF state; probe fixed, app unchanged.",
+    "A restored while supplemental performance gate ran; no data restore/downgrade."
+  ],
+  "limits": [
+    "JSON-origin/count/DISTINCT/order may scan/filesort; 10000-event sequential QA is not concurrent capacity certification."
+  ]
+}

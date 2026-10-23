@@ -66,6 +66,6 @@
   <section id="ee-activity" class="ee-card"><h2>Actividad y procedencia del día</h2><dl class="ee-fields">{% for f in fields %}<div><dt>{{ f.label }}</dt><dd>{{ value(f.value,f.unit) }}</dd><p>{{ states[f.state] }} · {{ f.source }}</p></div>{% endfor %}</dl>
     {% if selected %}<p>Las fuentes se conservan por separado. No se suman entre dispositivos.</p><a class="button button-secondary" href="{{ url_for('wellness.energy_detail',record_id=selected.id) }}">Ver fuentes y acciones actuales</a>{% endif %}
   </section>
-  <nav class="ee-links" aria-label="Acciones existentes"><a href="{{ url_for('wellness.manual_energy') }}">Captura manual</a><a href="{{ url_for('wellness.energy_import') }}">Importar JSON</a><a href="{{ url_for('main.import_hub') }}">Import Hub</a><a href="{{ url_for('wellness.energy_list') }}">Listado actual</a></nav>
+  <nav class="ee-links" aria-label="Acciones existentes"><a href="{{ url_for('wellness.manual_energy') }}">Captura manual</a><a href="{{ url_for('wellness.energy_guided_import') }}">Importar con revisión</a><a href="{{ url_for('wellness.energy_import') }}">Importación directa existente</a><a href="{{ url_for('main.import_hub') }}">Import Hub</a><a href="{{ url_for('wellness.energy_list') }}">Listado actual</a></nav>
 </div>
 {% endblock %}

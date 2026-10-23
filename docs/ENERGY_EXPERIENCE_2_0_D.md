@@ -19,8 +19,8 @@ Todos los datos de D son ficticios. Flask real local con storage/SQLite temporal
 | Gate | Evidencia |
 | --- | --- |
 | Suite general | 1.401 PASS, 35 skipped; aviso esperado de ZIP duplicado en fixture negativa. Ejecutada antes del último refinamiento de errores B; se revalidó el área afectada en el estado final. |
-| Focal final Windows | **103 PASS, 1 skip** (symlink Windows); 32 pruebas nuevas D. A/B/C/D, límites 7/30/90, ownership, errores, recuperación, originales y firmas; [JUnit](../design/energy-experience-2-0-d/qa/windows-final-focal.xml). |
-| Focal Linux Python 3.12 | **125 PASS**, A/B/C/D + escritor canónico/round-trip; incluye symlink real: [JUnit](../design/energy-experience-2-0-d/qa/linux-focal.xml). |
+| Focal final Windows | **108 PASS, 1 skip** (symlink Windows); 37 pruebas nuevas D. A/B/C/D, límites 7/30/90, ownership, errores, recuperación, originales y firmas; [JUnit final asistido](../design/energy-experience-2-0-d/qa/assisted-final-focal.xml). |
+| Focal Linux Python 3.12 | **130 PASS**, A/B/C/D + escritor canónico/round-trip; incluye symlink real: [JUnit](../design/energy-experience-2-0-d/qa/linux-focal.xml). |
 | MariaDB | READ COMMITTED + REPEATABLE READ; límites, errores sin escrituras, owner-only, `no-store`, preview, confirmación, replay, conflicto 409, rollback, originales y `db check` en 0046: [resultado](../design/energy-experience-2-0-d/qa/mariadb.json). Sin DDL. |
 | Flask/Edge | **250 comprobaciones de layout**, 12 comprobaciones/recorridos de teclado y 78 scans axe sin violaciones detectadas; 320/360/390/430/768/1024/1366, dark/light, fechas límite, conocido/parcial/conflicto/hueco/retirado, B, cuatro pasos C y errores. [Resultado](../design/energy-experience-2-0-d/qa/accessibility.json). |
 | Accesibilidad visual | Otros **20 scans axe** sin violaciones detectadas y **30 pruebas de espaciado**. Teclado, árbol AX, contraste, targets, reduced-motion y colores forzados: [resultado adicional](../design/energy-experience-2-0-d/qa/visual-checks.json), [auditoría por criterio](ENERGY_EXPERIENCE_2_0_D_ACCESSIBILITY.md). **81 capturas**. |
@@ -33,8 +33,8 @@ Historial: primera/intermedia/última página y filtros, cinco muestras de naveg
 
 ## Gate de revisión y pendientes
 
-D queda para revisión en PR independiente. **No es una certificación WCAG completa**: el árbol AX y axe no sustituyen un lector real. Prueba Narrador/NVDA pendiente; la solicitud de disponibilidad no recibió respuesta al preparar la entrega. Verificar con usuario: nombres de gráficas, tablas, fechas, estado/paso, errores y confirmaciones, junto con zoom nativo.
+D queda para revisión en PR independiente. **No es una certificación WCAG completa**: el árbol AX y axe no sustituyen un lector real. El usuario confirmó **Narrador de Windows con Edge** y disponibilidad para escuchar; los resultados audibles requieren confirmación específica por caso. [Seguimiento asistido y TTL](ENERGY_EXPERIENCE_2_0_D_ASSISTED_CLOSEOUT.md). Verificar con usuario: nombres de gráficas, tablas, fechas, estado/paso, errores y confirmaciones, junto con zoom nativo.
 
-La auditoría registra además la revisión pendiente de la excepción de seguridad del TTL de 15 minutos y la recuperación de una revisión caducada (409). D no cambia ese contrato de C ni prolonga tokens automáticamente. No autorizar el cierre de conformidad WCAG hasta resolver los puntos manuales/pendientes de la matriz.
+La espera real de 903,02 segundos confirmó 409 sin escritura. Se corrigió la recuperación manual del borrador sin token automático; se mantienen 15 minutos y todas las validaciones. El ajuste del plazo/aviso previo no existe y su propuesta requiere revisión: gate 2.2.1 FAIL. [Informe asistido completo](ENERGY_EXPERIENCE_2_0_D_ASSISTED_CLOSEOUT.md), con cuatro capturas adicionales, seis controles del destino QA y cuatro verificaciones UI reales. No autorizar el cierre de conformidad WCAG hasta resolver los puntos manuales y de tiempo.
 
 PITR, smoke físico Android/iOS y Open Food Facts externo siguen como pendientes **separados** de D. No hubo nuevas escrituras productivas, flags modificados ni originales productivos en esta evidencia. El informe local previo de issue #18 permanece fuera de Git.

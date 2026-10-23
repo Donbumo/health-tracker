@@ -25,7 +25,7 @@ Métodos: Flask real con fixtures ficticias; Edge/Playwright; axe-core 4.14.0 (t
 | 2.1.1 | Observado: fechas/selects, menú, pasos, errores, confirmación, cancelar, filtros y tabla con teclado; archivos mediante input nativo y fixture QA. Selector de archivo del SO/lector pendiente. |
 | 2.1.2 | Observado: ciclo Tab completo, Shift+Tab, menú reversible, salida de tabla; sin modal que atrape foco. |
 | 2.1.4 | No aplica: sin atajos de una sola letra. |
-| 2.2.1 | **Pendiente de revisión humana**: firma C caduca en 15 min; aviso explícito, respuesta 409 y nueva revisión sin escritura. Validar excepción de seguridad y recuperación del trabajo; no se afirma conformidad ni se cambia TTL. |
+| 2.2.1 | **FAIL del gate de conformidad**: sin ajuste/aviso próximo al vencimiento ni esencialidad demostrada. Espera real 903,02 s → 409 sin escritura; se conserva ahora el borrador manual. No se modifica TTL. [Resultado y propuesta](ENERGY_EXPERIENCE_2_0_D_ASSISTED_CLOSEOUT.md). |
 | 2.2.2 | Observado: no carruseles, autoactualización ni movimiento de datos; smooth scroll respeta reduced-motion. |
 | 2.3.1 | Observado: sin contenido intermitente. |
 | 2.4.1 | Observado: «Saltar al contenido» recibe primer Tab y Enter enfoca main; nav y secciones identificadas. |
@@ -53,7 +53,7 @@ Métodos: Flask real con fixtures ficticias; Edge/Playwright; axe-core 4.14.0 (t
 | 3.3.2 | Observado: intervalo de fechas, unidades, desconocido≠cero, vaciado explícito, límites del archivo, preview y firma temporal explicados. |
 | 3.3.3 | Mejorado: sugerencia y vínculo de corrección; valores válidos/draft C preservados. Fuente inválida sigue exigiendo seleccionar operación disponible. |
 | 3.3.4 | Observado: preview → operaciones → confirmación explícita; no escribe hasta POST confirmado, CSRF/owner/replay/409/rollback en regresión. |
-| 3.3.7 | Observado en flujo normal: original/draft viajan entre pasos sin pedir reentrada. Caducidad/error de seguridad requiere nueva revisión; vinculado a pendiente 2.2.1. |
+| 3.3.7 | Flujo normal sin reentrada; corregida recuperación manual tras 409: valores escapados disponibles en el formulario, sin firma automática, nueva revisión explícita. Fuente por índice exige otra elección si la revisión no es utilizable; importación exige reelección del original. Sin afirmación global: [alcance/limitaciones](ENERGY_EXPERIENCE_2_0_D_ASSISTED_CLOSEOUT.md). |
 | 3.3.8 | Inspección de alcance: login nativo sin CAPTCHA ni bloqueo de pegado; password manager/lector/autenticación accesible real pendientes, no se certifican. |
 | 4.1.2 | Observado: nombres/roles/estados en AX, aria-current paso/fecha, disabled real sin href en límites, validación asociada. Lector real pendiente. |
 | 4.1.3 | Observado estructuralmente: status atómico y error role=alert con foco; títulos/pasos identifican cambios de documento. [Mensajes de estado](https://www.w3.org/WAI/WCAG22/Understanding/status-messages.html). No se afirma que AX demuestre anuncios audibles. |
@@ -62,6 +62,6 @@ Métodos: Flask real con fixtures ficticias; Edge/Playwright; axe-core 4.14.0 (t
 
 ## Prueba asistida pendiente y gate
 
-No hubo sesión real con Narrador/NVDA. No se encontró NVDA en sus ubicaciones estándar y se solicitó al usuario qué lector tiene disponible. El árbol AX es evidencia semántica, no simulación de un lector.
+El usuario confirmó **Narrador de Windows con Edge** y que puede escuchar. Esa disponibilidad no acredita una sesión ni resultados audibles. [Cierre asistido, entorno y TTL](ENERGY_EXPERIENCE_2_0_D_ASSISTED_CLOSEOUT.md) conserva la matriz por caso. El árbol AX es evidencia semántica, no simulación de un lector.
 
 Antes de cerrar conformidad: lector con Edge/Firefox, teclado + zoom nativo 200%, lectura por encabezados/tablas, estado parcial/conflicto/hueco, límites de calendario, menú, campo inválido y su corrección, cuatro pasos/confirmación/original protegido; comprobar anuncios únicos y foco no oculto. Revisar la justificación del TTL y no confundir los tags de axe con cobertura total. D permanece en PR sin merge/despliegue automático.

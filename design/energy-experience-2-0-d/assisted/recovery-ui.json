@@ -1,0 +1,73 @@
+{
+  "scope": "fictional Flask QA only; no native Windows input",
+  "method": "Real HTTP invalid-signature 409; deterministic expired-signature coverage separately in Flask focal tests",
+  "audible": "NOT TESTED",
+  "nativeZoom": "NOT TESTED",
+  "cases": [
+    {
+      "theme": "light",
+      "width": 390,
+      "http": 409,
+      "draftRetained": true,
+      "escaped": true,
+      "noAutomaticToken": true,
+      "errorFocused": true,
+      "errorLinkFocusesDraft": true,
+      "explicitFreshReview": true,
+      "cancelPreservesCanonical": true,
+      "overflow": false,
+      "axeViolations": [],
+      "axeIncomplete": [],
+      "screenshot": "draft-409-390-light.png"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "http": 409,
+      "draftRetained": true,
+      "escaped": true,
+      "noAutomaticToken": true,
+      "errorFocused": true,
+      "errorLinkFocusesDraft": true,
+      "explicitFreshReview": true,
+      "cancelPreservesCanonical": true,
+      "overflow": false,
+      "axeViolations": [],
+      "axeIncomplete": [],
+      "screenshot": "draft-409-1366-light.png"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "http": 409,
+      "draftRetained": true,
+      "escaped": true,
+      "noAutomaticToken": true,
+      "errorFocused": true,
+      "errorLinkFocusesDraft": true,
+      "explicitFreshReview": true,
+      "cancelPreservesCanonical": true,
+      "overflow": false,
+      "axeViolations": [],
+      "axeIncomplete": [],
+      "screenshot": "draft-409-390-dark.png"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "http": 409,
+      "draftRetained": true,
+      "escaped": true,
+      "noAutomaticToken": true,
+      "errorFocused": true,
+      "errorLinkFocusesDraft": true,
+      "explicitFreshReview": true,
+      "cancelPreservesCanonical": true,
+      "overflow": false,
+      "axeViolations": [],
+      "axeIncomplete": [],
+      "screenshot": "draft-409-1366-dark.png"
+    }
+  ],
+  "status": "PASS"
+}

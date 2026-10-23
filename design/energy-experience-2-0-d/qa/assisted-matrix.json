@@ -1,0 +1,96 @@
+{
+  "scope": "Narrador + Edge; audible results require explicit human confirmation",
+  "baselineHead": "061c460661f3daa922bceb50710b0d31a224044e",
+  "foreground": {
+    "status": "BLOCKED",
+    "reason": "Human confirmation of the new QA window foreground/Narrator activation and case observations was not received. No blind native input; prior URL guard unchanged."
+  },
+  "cases": [
+    {
+      "id": "N01",
+      "status": "NOT TESTED",
+      "humanObservation": null
+    },
+    {
+      "id": "N02",
+      "status": "NOT TESTED",
+      "humanObservation": null
+    },
+    {
+      "id": "N03",
+      "status": "NOT TESTED",
+      "humanObservation": null
+    },
+    {
+      "id": "N04",
+      "status": "NOT TESTED",
+      "humanObservation": null
+    },
+    {
+      "id": "N05",
+      "status": "NOT TESTED",
+      "humanObservation": null
+    },
+    {
+      "id": "N06",
+      "status": "NOT TESTED",
+      "humanObservation": null
+    },
+    {
+      "id": "N07",
+      "status": "NOT TESTED",
+      "humanObservation": null
+    },
+    {
+      "id": "N08",
+      "status": "NOT TESTED",
+      "humanObservation": null
+    },
+    {
+      "id": "N09",
+      "status": "NOT TESTED",
+      "humanObservation": null
+    },
+    {
+      "id": "N10",
+      "status": "NOT TESTED",
+      "humanObservation": null
+    },
+    {
+      "id": "Z01",
+      "status": "NOT TESTED",
+      "humanObservation": null
+    },
+    {
+      "id": "Z02",
+      "status": "NOT TESTED",
+      "humanObservation": null
+    }
+  ],
+  "overallGate": "BLOCKED",
+  "activeQAURL": "http://127.0.0.1:65440/energy?date=2040-02-03&period=7",
+  "TTL": [
+    {
+      "id": "T01",
+      "status": "PASS",
+      "basis": "Real 903.02-second wait, genuine server tokens, both HTTP 409, domain/file metadata unchanged"
+    },
+    {
+      "id": "T02",
+      "status": "PASS",
+      "basis": "Manual draft loss corrected in D; expired/stale/invalid signature focal tests and four real HTTP recovery UIs, no automatic token"
+    },
+    {
+      "id": "T03",
+      "status": "FAIL",
+      "basis": "No time adjustment/proactive notice and no reviewed essential exception for WCAG 2.2.1. Security/time proposal requires review."
+    },
+    {
+      "id": "T04",
+      "status": "PASS",
+      "basis": "Fresh explicit review/confirmation required; source indexes discarded, no writer/TTL/CSRF/owner/fingerprint changes"
+    }
+  ],
+  "audibleReportsReceived": false,
+  "nativeZoomHumanConfirmed": false
+}

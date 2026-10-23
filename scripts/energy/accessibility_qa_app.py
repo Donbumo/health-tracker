@@ -1,7 +1,7 @@
 """D: real Flask, fictional A/B/C states and 10000 audit events; no NAS access."""
 from pathlib import Path
 from datetime import date,datetime,timedelta,timezone
-import sys,tempfile,uuid,hashlib,json,io
+import sys,tempfile,uuid,hashlib,json,io,os
 from werkzeug.serving import make_server
 from werkzeug.datastructures import FileStorage
 ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/'backend'))
@@ -37,5 +37,6 @@ with app.app_context():
     db.session.execute(db.insert(EnergyEvidenceEvent),rows);db.session.commit()
 if __name__=='__main__':
     server=make_server('127.0.0.1',0,app)
-    print(json.dumps({'scope':'fictional D QA only; no NAS','url':f'http://127.0.0.1:{server.server_port}','synthetic_audit_events':10000}),flush=True)
+    print(json.dumps({'scope':'fictional D QA only; no NAS','url':f'http://127.0.0.1:{server.server_port}',
+        'pid':os.getpid(),'fixture_label':'QA ficticia D','synthetic_audit_events':10000}),flush=True)
     server.serve_forever()

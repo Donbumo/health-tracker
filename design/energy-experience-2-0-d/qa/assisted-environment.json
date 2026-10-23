@@ -1,0 +1,98 @@
+{
+  "url": "http://127.0.0.1:55229/energy?date=2040-02-03&period=7",
+  "browserVersion": "155.0.4283.45",
+  "temporaryContext": "Playwright launch + newContext; no persistent or personal profile requested",
+  "browserPID": 39824,
+  "window": {
+    "windowId": 243876615,
+    "bounds": {
+      "left": 10,
+      "top": 10,
+      "width": 1366,
+      "height": 900,
+      "windowState": "normal"
+    }
+  },
+  "content": {
+    "title": "Energía · 2040-02-03 · Health Tracker",
+    "qaFixture": true,
+    "known": "2450 kcal",
+    "width": 1342,
+    "height": 808,
+    "dpr": 1
+  },
+  "server": {
+    "bind": "127.0.0.1",
+    "port": 55229,
+    "pid": 32944,
+    "launchCommand": "scripts/energy/accessibility_qa_app.py",
+    "pidFromServerOutput": true,
+    "pidMatchedListener": true,
+    "python312": true,
+    "fixtureLabel": "QA ficticia D"
+  },
+  "nativeWindowsAutomation": {
+    "status": "BLOCKED_PREVIOUS_ATTEMPT",
+    "reason": "could not determine current browser URL with enough confidence",
+    "guardRelaxed": false,
+    "windowsKeysSent": false,
+    "foreground": "BLOCKED: human foreground/Narrator activation confirmation not received during this run; no native input sent"
+  },
+  "windows": {
+    "displayVersion": "25H2",
+    "build": "26200.9711",
+    "registryProductName": "Windows 10 Pro",
+    "productNameNote": "Registry ProductName retained verbatim, not used to identify Windows version",
+    "narratorFileVersion": "10.0.26100.8972",
+    "product": "Windows 11 Pro 25H2",
+    "editionID": "Professional",
+    "productBasis": "EditionID + DisplayVersion + build 26200 mapped using official Microsoft release table",
+    "productSource": "https://learn.microsoft.com/en-us/windows/release-health/windows11-release-information"
+  },
+  "audibleStatus": "NOT TESTED",
+  "finalBrowserObservation": {
+    "observedAtUTC": "2026-10-23T22:18:34.542Z",
+    "url": "http://127.0.0.1:55229/energy?date=2040-02-03&period=7",
+    "metrics": {
+      "width": 1342,
+      "height": 808,
+      "dpr": 1,
+      "qaFixture": true
+    },
+    "nativeMenuPercentageHumanConfirmed": false,
+    "audibleResultHumanReceived": false
+  },
+  "recoveryFixEnvironment": {
+    "server": {
+      "bind": "127.0.0.1",
+      "port": 65440,
+      "pid": 32168,
+      "pidFromOutput": true,
+      "listenerPIDMatched": true
+    },
+    "url": "http://127.0.0.1:65440/energy?date=2040-02-03&period=7",
+    "browserPID": 39824,
+    "metrics": {
+      "width": 1342,
+      "height": 808,
+      "dpr": 1,
+      "qaFixture": true
+    },
+    "foregroundHumanConfirmed": false,
+    "finalObservation": {
+      "observedAtUTC": "2026-10-23T22:31:18.160Z",
+      "url": "http://127.0.0.1:65440/energy?date=2040-02-03&period=7",
+      "metrics": {
+        "width": 1342,
+        "height": 808,
+        "dpr": 1,
+        "qaFixture": true
+      }
+    }
+  },
+  "activeQAURL": "http://127.0.0.1:65440/energy?date=2040-02-03&period=7",
+  "baselineRealExpiryQAURL": "http://127.0.0.1:55229/energy?date=2040-02-03&period=7",
+  "foregroundConfirmationReceived": false,
+  "narratorActivationConfirmed": false,
+  "nativeZoomConfirmed": false
+}

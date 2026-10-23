@@ -1,8 +1,10 @@
 """D: fictional date boundaries, accessible recovery and owner-only read facade."""
 from datetime import date
 import re
+from itsdangerous.timed import TimestampSigner
 
 import pytest
+from flask import g
 from sqlalchemy import event
 
 from app.extensions import db
@@ -11,7 +13,7 @@ from app.services import energy_days as energy
 from app.services.energy_history import consultation, MIN_DAY, MAX_DAY
 from tests.conftest import login
 from tests.test_energy_days import document, DAY
-from tests.test_energy_guided import seed_conflict, counts, advance
+from tests.test_energy_guided import seed_conflict, counts, advance, final_review, hidden
 
 
 @pytest.mark.parametrize('target', [MIN_DAY, date(1900,1,2), date(1900,2,1), date(9998,11,30), date(9998,12,30), MAX_DAY])
@@ -115,3 +117,64 @@ def test_provenance_errors_have_accessible_recovery(app,client,user,path):
     recovery=client.get('/energy/history?filters=1')
     assert b'id="ep-filters" class="ee-card ep-filter-panel" open' in recovery.data
     assert counts()==before
+
+
+@pytest.mark.parametrize('failure',['expired','stale','tampered'])
+def test_unusable_review_keeps_manual_draft_without_renewing_or_writing(app,client,user,monkeypatch,failure):
+    seed_conflict(user);login(client)
+    choices={'choice_total_calories':'manual','value_total_calories':'2460',
+             'choice_steps':'clear','choice_notes':'manual','value_notes':'<QA preserved draft>'}
+    if failure=='expired':
+        original=TimestampSigner.get_timestamp
+        with monkeypatch.context() as patch:
+            patch.setattr(TimestampSigner,'get_timestamp',lambda self:original(self)-903)
+            final=final_review(client,**choices)
+    else:
+        final=final_review(client,**choices)
+    data={**hidden(final),'action':'confirm','confirm':'yes'}
+    if failure=='tampered':data['review_token']='QA-invalid-signature'
+    if failure=='stale':
+        energy.edit_day(user,DAY,energy.view(user,DAY).revision,{'total_calories':2470});db.session.commit()
+    before=counts();state=energy.state_fingerprint(user,[DAY])
+    response=client.post('/energy/review',data=data)
+    assert response.status_code==409
+    body=response.get_data(as_text=True)
+    assert 'value="2460"' in body and '&lt;QA preserved draft&gt;' in body
+    assert 'name="review_token"' not in body and 'No se renovó la firma anterior.' in body
+    assert counts()==before and energy.state_fingerprint(user,[DAY])==state
+    # The unusable confirmation stays unusable; only an explicit new review
+    # through the existing flow can create a fresh signed confirmation.
+    assert client.post('/energy/review',data=data).status_code==409
+    fresh=client.post('/energy/review',data={**hidden(response),'action':'review',**choices})
+    assert fresh.status_code==200 and counts()==before
+    final=advance(client,fresh,'approve',path='/energy/review')
+    assert final.status_code==200 and energy.state_fingerprint(user,[DAY])==state
+    assert advance(client,final,'confirm',path='/energy/review',confirm='yes').status_code==302
+    assert energy.view(user,DAY).total_calories==2460 and energy.view(user,DAY).steps is None
+
+
+def test_stale_review_drops_source_indexes_before_fresh_choice(app,client,user):
+    seed_conflict(user);login(client)
+    final=final_review(client,choice_total_calories='source:0')
+    energy.upsert_document(document(user,'QA third source',steps=3),user);db.session.commit()
+    before=counts();response=advance(client,final,'confirm',path='/energy/review',confirm='yes')
+    assert response.status_code==409 and counts()==before
+    select=response.get_data(as_text=True).split('id="eg-choice-total_calories"',1)[1].split('</select>',1)[0]
+    assert 'value="keep" selected' in select and 'value="source:0" selected' not in select
+
+
+def test_rejected_foreign_token_rebuilds_only_effective_owners_day(app,client,user):
+    seed_conflict(user);login(client)
+    other=User(username='QA second recovery owner',role='user');other.set_password('fictional-D-password')
+    db.session.add(other);db.session.commit()
+    energy.upsert_document(document(other.id,'QA second owner source',total_expenditure_kcal=1300),other.id);db.session.commit()
+    final=final_review(client,choice_total_calories='manual',value_total_calories='2460')
+    before=counts();states=[energy.state_fingerprint(owner,[DAY]) for owner in (user,other.id)]
+    with client.session_transaction() as session:session['_user_id']=str(other.id);session['_fresh']=True
+    g.pop('_login_user',None)
+    response=advance(client,final,'confirm',path='/energy/review',confirm='yes',user_id=str(user))
+    assert response.status_code==409 and counts()==before
+    body=response.get_data(as_text=True)
+    assert 'QA second owner source' in body and 'QA A' not in body and 'QA B' not in body
+    assert 'name="review_token"' not in body
+    assert [energy.state_fingerprint(owner,[DAY]) for owner in (user,other.id)]==states

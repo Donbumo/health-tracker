@@ -30,6 +30,21 @@ def remember(token):
     session['energy_guided_used'] = [*session.get('energy_guided_used', []), hashlib.sha256(token.encode()).hexdigest()][-20:]
 
 
+def review_draft(target, operations, *, discard_sources=False):
+    """Display the submitted draft against the current owner-only day, never execute it."""
+    try:
+        current = guided.review_preview(current_user.id, target)
+    except LookupError:
+        abort(404)
+    for field in current['fields']:
+        supplied = operations.get(field['key'], {})
+        choice = supplied.get('choice', 'keep')
+        # Source indexes can refer to a different evidence after a stale review.
+        field['choice'] = 'keep' if discard_sources and choice.startswith('source:') else choice
+        field['value'] = supplied.get('value', '')
+    return current
+
+
 @wellness_bp.after_app_request
 def energy_private_responses(response):
     if request.path == '/energy' or request.path.startswith(('/energy/', '/daily-energy')):
@@ -139,19 +154,14 @@ def energy_guided_review():
         abort(404)
     except energy.EnergyConflict:
         db.session.rollback()
-        return page('review', status=409, preview=None, operations=None, error='El día o la revisión cambió. Vuelve a abrir sus fuentes antes de confirmar.')
+        current = review_draft(target, operations, discard_sources=True)
+        return page('review', 2, status=409, preview=current, operations=None,
+                    error='La revisión cambió, caducó o no es válida. La propuesta no se guardó. '
+                    'Tus valores manuales siguen en el formulario; revisa las fuentes de nuevo. '
+                    'Debes repetir revisión y confirmación. No se renovó la firma anterior.')
     except guided.GuidedInputError as exc:
         db.session.rollback()
-        try:
-            current = guided.review_preview(current_user.id, target)
-        except LookupError:
-            abort(404)
-        # Retain the submitted draft for correction, never for execution. A new
-        # preview/token is required after fixing it. Values stay HTML-escaped.
-        for field in current['fields']:
-            supplied = operations.get(field['key'], {})
-            field['choice'] = supplied.get('choice', 'keep')
-            field['value'] = supplied.get('value', '')
+        current = review_draft(target, operations)
         return page('review', 2, status=400, preview=current, operations=None,
                     field_errors={exc.field: str(exc)}, error='Corrige el campo indicado. Tus otras elecciones siguen en el formulario; no se guardaron decisiones.')
     except (ValueError, TypeError, KeyError):

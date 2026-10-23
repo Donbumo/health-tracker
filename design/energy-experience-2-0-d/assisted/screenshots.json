@@ -1,0 +1,34 @@
+{
+  "scope": "synthetic recovery UI, no native zoom/audio claim",
+  "count": 4,
+  "images": [
+    {
+      "file": "screenshots/draft-409-1366-dark.png",
+      "width": 1366,
+      "height": 1811,
+      "bytes": 132796,
+      "sha256": "e2eaecc4a48aa80d8c341d42c1fccb2384c232f618de9c47411e29da84816ca6"
+    },
+    {
+      "file": "screenshots/draft-409-1366-light.png",
+      "width": 1366,
+      "height": 1811,
+      "bytes": 130651,
+      "sha256": "e0fea8cd783ad4eb7e3579060a1e1edf24367b1f889db62c11e1a368314e879e"
+    },
+    {
+      "file": "screenshots/draft-409-390-dark.png",
+      "width": 390,
+      "height": 3301,
+      "bytes": 127597,
+      "sha256": "c057b05b3f88f1afad965ac77f5f3dfb24b6990d09642f560b9c26f4b5e1b590"
+    },
+    {
+      "file": "screenshots/draft-409-390-light.png",
+      "width": 390,
+      "height": 3301,
+      "bytes": 124373,
+      "sha256": "4f564ab2547dccc0da071a6d0db52045a5d7ede42564a8c7b2722a8276823f9e"
+    }
+  ]
+}

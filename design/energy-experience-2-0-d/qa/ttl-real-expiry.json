@@ -1,0 +1,39 @@
+{
+  "scope": "real HTTP; fictional local D fixture only; no NAS",
+  "status": "COMPLETE",
+  "client_timezone": "America/Mexico_City",
+  "started_at": "2026-10-23T16:03:08.680981-06:00",
+  "method": "unmodified server clock, genuine server-issued tokens; wait >=903 seconds after both final pages",
+  "preview_domain_and_files_unchanged": true,
+  "warning": {
+    "step2": false,
+    "step3": false,
+    "step4": true
+  },
+  "security_modified": false,
+  "tokens_or_originals_in_report": false,
+  "elapsed_seconds": 903.02,
+  "finished_at": "2026-10-23T16:18:11.741897-06:00",
+  "expired_import": {
+    "http": 409,
+    "original_draft_retained": false,
+    "fresh_signed_token_issued": false,
+    "focused_error_markup": true
+  },
+  "expired_review": {
+    "http": 409,
+    "manual_draft_retained": false,
+    "fresh_signed_token_issued": false,
+    "focused_error_markup": true
+  },
+  "domain_and_file_metadata_unchanged": true,
+  "recovery": {
+    "fresh_import_preview_http": 200,
+    "fresh_review_http": 200,
+    "fresh_review_repopulates_prior_manual_draft": false,
+    "requires": "import: reselect original and repeat preview/review/confirmation; decisions: reopen day and re-enter choices/values, review and confirm"
+  },
+  "security_gate": "PASS",
+  "timing_adjustment_controls": "none in current C; static warning only at step 4; no proactive expiry notice",
+  "audible_expiry_notice": "NOT TESTED; no audio observation inferred from markup"
+}

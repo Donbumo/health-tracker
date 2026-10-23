@@ -19,6 +19,13 @@ MAX_BYTES = 256 * 1024
 FIELDS = [*METRICS, ('notes', 'Notas', '')]
 
 
+class GuidedInputError(ValueError):
+    """Presentation context only; official validation/ranges remain authoritative."""
+    def __init__(self, field, message):
+        super().__init__(message)
+        self.field = field
+
+
 def serializer():
     return URLSafeTimedSerializer(current_app.secret_key, salt='energy-guided-review-v1')
 
@@ -133,19 +140,19 @@ def review_preview(user_id, target, operations=None):
             result = None; clear.append(field); description = 'Vaciar explícitamente · no significa cero'
         elif choice == 'manual':
             if incoming == '' and field != 'notes':
-                raise ValueError('Ingresa un valor conocido o elige conservar/vaciar.')
+                raise GuidedInputError(field, 'Ingresa un valor conocido o elige conservar/vaciar.')
             try:
                 result = energy.decoded(field, incoming)
             except energy.EnergyConflict as exc:
-                raise ValueError('Revisa el tipo, la unidad y el rango del valor manual.') from exc
+                raise GuidedInputError(field, 'Revisa el tipo, la unidad y el rango. Usa punto decimal; pasos requiere un entero.') from exc
             values[field] = result; description = 'Confirmar valor manual'
         elif choice.startswith('source:'):
             selected = next((item for item in options if item[0] == choice[7:]), None)
             if selected is None:
-                raise ValueError('La fuente elegida no está disponible para este campo.')
+                raise GuidedInputError(field, 'La fuente elegida no está disponible para este campo.')
             result = selected[2]; values[field] = result; description = 'Confirmar fuente: '+selected[1]
         else:
-            raise ValueError('Operación no admitida.')
+            raise GuidedInputError(field, 'Elige una operación disponible para este campo.')
         normalized[field] = {'choice': choice, 'value': str(incoming) if choice == 'manual' else ''}
         fields.append({'key': field, 'label': label, 'unit': unit, 'current': getattr(canonical, field),
                        'result': result, 'operation': description, 'options': options,

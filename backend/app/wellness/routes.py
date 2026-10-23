@@ -91,16 +91,24 @@ def energy_list():
 def energy_experience():
     from app.services.energy_history import consultation, local_today
     today, timezone_name = local_today(current_user, current_app.config['APP_TIMEZONE'])
+    invalid_date = invalid_period = False
     try:
         target = date.fromisoformat(request.args['date']) if request.args.get('date') else today
-        # Leave room for warm-up and adjacent month/day links at date bounds.
         if not 1900 <= target.year <= 9998:
             raise ValueError()
+    except ValueError:
+        invalid_date = True
+        target = today
+    try:
         period = int(request.args.get('period', 30))
         if period not in (7, 30, 90):
             raise ValueError()
     except ValueError:
-        abort(400, description='Fecha o período inválidos. Usa 7, 30 o 90 días.')
+        invalid_period = True
+        period = None
+    if invalid_date or invalid_period:
+        return render_template('wellness/energy_query_error.html', today=today, target=target, period=period,
+                               invalid_date=invalid_date, invalid_period=invalid_period), 400
     return render_template('wellness/energy_experience.html',
                            **consultation(current_user.id, target, period),
                            today=today, timezone_name=timezone_name)
@@ -120,7 +128,7 @@ def energy_sources():
     try:
         target = parsed_date(request.args.get('date')) or local_today(current_user, current_app.config['APP_TIMEZONE'])[0]
     except ValueError:
-        abort(400, description='Fecha inválida.')
+        return render_template('wellness/energy_navigation_error.html', filters_error=False), 400
     return _provenance_page('sources', **sources(current_user.id, target))
 
 
@@ -131,7 +139,7 @@ def energy_history():
     try:
         selected = filters(request.args)
     except (ValueError, TypeError):
-        abort(400, description='Filtros inválidos.')
+        return render_template('wellness/energy_navigation_error.html', filters_error=True), 400
     data = audit(current_user.id, selected)
     args = {'from': selected['start'], 'to': selected['end'],
             'source': selected['source'] or None, 'operation': selected['operation'] or None}

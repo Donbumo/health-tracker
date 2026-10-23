@@ -13,7 +13,7 @@ from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.models import DailyEnergy, EnergyDay, EnergyEvidenceEvent, UploadedFile
 from app.services import energy_days
-from app.services.energy_history import METRICS
+from app.services.energy_history import METRICS, supported_day
 from app.services.backups import BackupError, resolve_uploaded_download
 
 PAGE_SIZE = 25
@@ -150,6 +150,7 @@ def audit(user_id, selected):
         if stamp.tzinfo is None:
             stamp = stamp.replace(tzinfo=timezone.utc)
         items.append({'date': record.date, 'created_at': stamp,
+                      'date_supported': supported_day(record.date),
                       'previous_date': previous_date if previous_date != record.date else None,
                       'source': label or 'Origen no disponible',
                       'operation': OPERATIONS.get(record.kind, record.kind.replace('_', ' ')),

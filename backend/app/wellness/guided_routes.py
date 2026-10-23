@@ -30,6 +30,29 @@ def remember(token):
     session['energy_guided_used'] = [*session.get('energy_guided_used', []), hashlib.sha256(token.encode()).hexdigest()][-20:]
 
 
+def review_draft(target, operations, *, discard_sources=False):
+    """Display the submitted draft against the current owner-only day, never execute it."""
+    try:
+        current = guided.review_preview(current_user.id, target)
+    except LookupError:
+        abort(404)
+    for field in current['fields']:
+        supplied = operations.get(field['key'], {})
+        choice = supplied.get('choice', 'keep')
+        # Source indexes can refer to a different evidence after a stale review.
+        field['choice'] = 'keep' if discard_sources and choice.startswith('source:') else choice
+        field['value'] = supplied.get('value', '')
+    return current
+
+
+@wellness_bp.after_app_request
+def energy_private_responses(response):
+    if request.path == '/energy' or request.path.startswith(('/energy/', '/daily-energy')):
+        response.headers['Cache-Control'] = 'private, no-store'
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+    return response
+
+
 @wellness_bp.route('/energy/import', methods=['GET', 'POST'])
 @login_required
 def energy_guided_import():
@@ -131,7 +154,16 @@ def energy_guided_review():
         abort(404)
     except energy.EnergyConflict:
         db.session.rollback()
-        return page('review', status=409, preview=None, operations=None, error='El día o la revisión cambió. Vuelve a abrir sus fuentes antes de confirmar.')
+        current = review_draft(target, operations, discard_sources=True)
+        return page('review', 2, status=409, preview=current, operations=None,
+                    error='La revisión cambió, caducó o no es válida. La propuesta no se guardó. '
+                    'Tus valores manuales siguen en el formulario; revisa las fuentes de nuevo. '
+                    'Debes repetir revisión y confirmación. No se renovó la firma anterior.')
+    except guided.GuidedInputError as exc:
+        db.session.rollback()
+        current = review_draft(target, operations)
+        return page('review', 2, status=400, preview=current, operations=None,
+                    field_errors={exc.field: str(exc)}, error='Corrige el campo indicado. Tus otras elecciones siguen en el formulario; no se guardaron decisiones.')
     except (ValueError, TypeError, KeyError):
         db.session.rollback()
         return page('review', status=400, preview=None, operations=None, error='Revisa las operaciones, unidades y límites. No se guardaron cambios.')

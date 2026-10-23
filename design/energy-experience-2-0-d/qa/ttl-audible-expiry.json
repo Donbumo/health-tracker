@@ -1,0 +1,37 @@
+{
+  "scope": "Fictional Flask QA only; no NAS or production",
+  "status": "PASS for expiry rejection and observed recovery; timing-adjustment conformance remains FAIL",
+  "preparedAtUTC": "2026-10-23T23:32:15.146Z",
+  "submittedAtUTC": "2026-10-23T23:47:42.810Z",
+  "realElapsedSeconds": 927.556,
+  "minimumRealWaitSeconds": 905,
+  "clockOrTTLChanged": false,
+  "tokenRenewed": false,
+  "http": 409,
+  "fromServiceWorker": false,
+  "url": "http://127.0.0.1:65440/energy/import",
+  "title": "Paso 1 de 4 · Importar energía con revisión · Health Tracker",
+  "reviewTokenPresent": 0,
+  "alertText": "No se confirmó La revisión cambió, caducó o no se pudo confirmar. No se aplicaron cambios energéticos. Selecciona el archivo y revisa de nuevo; un original ya guardado se conserva para auditoría. Preparar una nueva revisión Revisar JSON 1.1 o archivos mayores mediante la importación estándar",
+  "errorFocused": true,
+  "canonicalSourceEventProjectionsUnchanged": true,
+  "proposedTTLSourceVisible": false,
+  "audibleStatus": "PASS: expired-error and recovered-form explicit human reports",
+  "originalPolicy": "Import envelope discarded; original must be selected again. No pre-confirmation original retention added.",
+  "filePersistenceBasis": "Existing focused Flask/real TTL baseline tests; current second run observes HTTP projections only",
+  "errorAudibleStatus": "PASS: caducidad, consecuencias y recuperación claras (explicit human report)",
+  "screenshot": "../assisted/screenshots/ttl-expired-import-observed.png",
+  "screenshotMetrics": {
+    "width": 1342,
+    "height": 808,
+    "dpr": 1,
+    "native200Corroborated": false
+  },
+  "recovery": {
+    "http": 200,
+    "title": "Paso 1 de 4 · Importar energía con revisión · Health Tracker",
+    "fileSelectorEmpty": true,
+    "reviewTokenPresent": 0,
+    "audibleStatus": "PASS: formulario recuperado y trabajo a repetir claros (explicit human report)"
+  }
+}

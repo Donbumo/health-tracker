@@ -1,0 +1,83 @@
+{
+  "status": "PASS",
+  "scope": "real Gunicorn HTTP; isolated exact production restore plus fictional QA users only",
+  "cases": {
+    "preview_four_steps_CSFR_binding_expiry_explicit": "PASS; no DB/storage writes before confirmation",
+    "exact_original_hash_size_download_idempotence": "PASS",
+    "concurrent_sessions_409_and_simultaneous_confirm": "PASS; one event only",
+    "pending_conflict_source_manual_clear_revision_owner": "PASS; source snapshots unchanged",
+    "domain_rollback_original_retention": "PASS; confirmed original retained; no day/event survived",
+    "JSON_10_256KiB_server_limit_JSON_11_handoff": "PASS; exact boundary accepted, boundary+1 rejected"
+  },
+  "parallel_statuses": [
+    302,
+    409
+  ],
+  "timings": {
+    "energy": {
+      "samples": 5,
+      "milliseconds": [
+        34.0,
+        31.8,
+        32.4,
+        28.8,
+        28.1
+      ],
+      "median_ms": 31.8,
+      "max_ms": 34.0
+    },
+    "import": {
+      "samples": 5,
+      "milliseconds": [
+        5.8,
+        6.9,
+        5.8,
+        5.6,
+        5.6
+      ],
+      "median_ms": 5.8,
+      "max_ms": 6.9
+    },
+    "review": {
+      "samples": 5,
+      "milliseconds": [
+        9.8,
+        9.6,
+        8.2,
+        7.9,
+        7.8
+      ],
+      "median_ms": 8.2,
+      "max_ms": 9.8
+    },
+    "sources": {
+      "samples": 5,
+      "milliseconds": [
+        40.7,
+        11.1,
+        9.8,
+        9.5,
+        9.2
+      ],
+      "median_ms": 9.8,
+      "max_ms": 40.7
+    },
+    "history": {
+      "samples": 5,
+      "milliseconds": [
+        18.6,
+        14.5,
+        14.6,
+        15.9,
+        16.2
+      ],
+      "median_ms": 15.9,
+      "max_ms": 18.6
+    }
+  },
+  "alembic": "20261018_0046",
+  "db_check": "PASS",
+  "payloads_retained_in_report": false,
+  "production_writes": 0,
+  "cleanup": "QA data/confirmed originals retained only in isolated clone; no automatic deletion"
+}

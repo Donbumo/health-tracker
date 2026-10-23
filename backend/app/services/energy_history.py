@@ -23,6 +23,11 @@ METRICS = (
 )
 STATES = {'known': 'Conocido', 'zero': 'Cero conocido', 'unknown': 'Sin dato',
           'conflict': 'Conflicto pendiente', 'partial': 'Subtotal conocido · parcial'}
+MIN_DAY, MAX_DAY = date(1900, 1, 1), date(9998, 12, 31)
+
+
+def supported_day(target):
+    return target is not None and MIN_DAY <= target <= MAX_DAY
 
 
 def local_today(owner, fallback='UTC', now=None):
@@ -134,11 +139,14 @@ def consultation(user_id, target, period=30):
     # A single date aggregate can find older history without materializing it.
     latest_date = db.session.scalar(db.select(db.func.max(DailyEnergy.date)).outerjoin(EnergyDay, db.and_(
         EnergyDay.user_id == DailyEnergy.user_id, EnergyDay.date == DailyEnergy.date)).where(
-            DailyEnergy.user_id == user_id, DailyEnergy.deleted_at.is_(None), EnergyDay.deleted_at.is_(None)))
+            DailyEnergy.user_id == user_id, DailyEnergy.date.between(MIN_DAY, MAX_DAY),
+            DailyEnergy.deleted_at.is_(None), EnergyDay.deleted_at.is_(None)))
     latest = energy_days.view(user_id, latest_date) if latest_date else None
     return {'target': target, 'period': period, 'start': start, 'selected': selected,
             'day_state': day_state(selected), 'fields': fields, 'charts': charts, 'trends': trends,
             'calendar_weeks': weeks, 'month_start': month_start, 'month_end': month_end,
-            'previous_month': month_start - timedelta(days=1), 'next_month': month_end + timedelta(days=1),
-            'previous': target - timedelta(days=1), 'next': target + timedelta(days=1),
+            'previous_month': month_start - timedelta(days=1) if month_start > MIN_DAY else None,
+            'next_month': month_end + timedelta(days=1) if month_end < MAX_DAY else None,
+            'previous': target - timedelta(days=1) if target > MIN_DAY else None,
+            'next': target + timedelta(days=1) if target < MAX_DAY else None,
             'latest': latest, 'states': STATES, 'nutrition_point': nutrition['points'][-1]}

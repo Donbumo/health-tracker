@@ -1,0 +1,179 @@
+{
+  "status": "PASS",
+  "sha": "fcf901b903ab7e467444e6f9a5fe898624207efa",
+  "image_id": "sha256:7785e11d8623514089d986ff8b7d8f3ce0330e1b1ba5fea527a3cb21c0aec21d",
+  "probe_peer_matches_active_image": true,
+  "http": {
+    "HTTP": {
+      "status": "PASS",
+      "login": "real username/password and CSRF",
+      "timings": {
+        "energy_7": {
+          "samples": 5,
+          "milliseconds": [
+            36.9,
+            27.5,
+            29.5,
+            25.7,
+            30.7
+          ],
+          "median_ms": 29.5,
+          "max_ms": 36.9
+        },
+        "energy_30": {
+          "samples": 5,
+          "milliseconds": [
+            35.5,
+            32.6,
+            44.8,
+            30.1,
+            31.0
+          ],
+          "median_ms": 32.6,
+          "max_ms": 44.8
+        },
+        "energy_90": {
+          "samples": 5,
+          "milliseconds": [
+            49.5,
+            51.6,
+            50.4,
+            51.2,
+            48.5
+          ],
+          "median_ms": 50.4,
+          "max_ms": 51.6
+        },
+        "guided_import": {
+          "samples": 5,
+          "milliseconds": [
+            37.2,
+            6.0,
+            6.7,
+            5.2,
+            7.0
+          ],
+          "median_ms": 6.7,
+          "max_ms": 37.2
+        },
+        "sources": {
+          "samples": 5,
+          "milliseconds": [
+            46.2,
+            9.1,
+            8.8,
+            8.7,
+            8.7
+          ],
+          "median_ms": 8.8,
+          "max_ms": 46.2
+        },
+        "history": {
+          "samples": 5,
+          "milliseconds": [
+            11.9,
+            8.6,
+            11.7,
+            8.3,
+            8.2
+          ],
+          "median_ms": 8.6,
+          "max_ms": 11.9
+        }
+      },
+      "review_status": 200,
+      "review_scope": "own existing day",
+      "legacy_routes": 3,
+      "integrations": 3,
+      "A_nutrition_balance_means_parity": "PASS",
+      "C_tokens_originals_no_store": "PASS on sensitive rendered stages; no real original uploaded"
+    },
+    "HTTPS_TLS": {
+      "status": "PASS",
+      "login": "real username/password and CSRF",
+      "timings": {
+        "energy_7": {
+          "samples": 5,
+          "milliseconds": [
+            47.9,
+            47.3,
+            40.6,
+            38.7,
+            36.9
+          ],
+          "median_ms": 40.6,
+          "max_ms": 47.9
+        },
+        "energy_30": {
+          "samples": 5,
+          "milliseconds": [
+            57.5,
+            56.2,
+            62.2,
+            50.7,
+            50.7
+          ],
+          "median_ms": 56.2,
+          "max_ms": 62.2
+        },
+        "energy_90": {
+          "samples": 5,
+          "milliseconds": [
+            74.1,
+            73.1,
+            97.2,
+            65.7,
+            69.4
+          ],
+          "median_ms": 73.1,
+          "max_ms": 97.2
+        },
+        "guided_import": {
+          "samples": 5,
+          "milliseconds": [
+            25.8,
+            54.4,
+            25.4,
+            26.0,
+            20.9
+          ],
+          "median_ms": 25.8,
+          "max_ms": 54.4
+        },
+        "sources": {
+          "samples": 5,
+          "milliseconds": [
+            24.8,
+            26.7,
+            188.9,
+            23.6,
+            22.2
+          ],
+          "median_ms": 24.8,
+          "max_ms": 188.9
+        },
+        "history": {
+          "samples": 5,
+          "milliseconds": [
+            22.1,
+            30.1,
+            37.0,
+            28.0,
+            28.8
+          ],
+          "median_ms": 28.8,
+          "max_ms": 37.0
+        }
+      },
+      "review_status": 200,
+      "review_scope": "own existing day",
+      "legacy_routes": 3,
+      "integrations": 3,
+      "A_nutrition_balance_means_parity": "PASS",
+      "C_tokens_originals_no_store": "PASS on sensitive rendered stages; no real original uploaded"
+    }
+  },
+  "production_domain_writes": 0,
+  "db_check": "PASS",
+  "alembic": "20261018_0046"
+}

@@ -1,0 +1,166 @@
+{
+  "status": "PASS_C_OPERATIONAL",
+  "date_local": "2026-10-23",
+  "PR": 24,
+  "approved_head": "e32daee801b60ebd23c24fcdf9b9d28badf100b8",
+  "squash_sha": "fcf901b903ab7e467444e6f9a5fe898624207efa",
+  "github_windows_nas_sha": "fcf901b903ab7e467444e6f9a5fe898624207efa",
+  "active_image": "sha256:7785e11d8623514089d986ff8b7d8f3ce0330e1b1ba5fea527a3cb21c0aec21d",
+  "previous_B_image": "sha256:d7e4dba4095cdbab45f3879a13c74857c301a37eec80acf2ce2409317ad3aa31",
+  "image": {
+    "status": "PASS",
+    "image": "sha256:7785e11d8623514089d986ff8b7d8f3ce0330e1b1ba5fea527a3cb21c0aec21d",
+    "archive_sha256": "fafb94345e90d695994efe4e264dbb15a5512893b6cf3d516f70f5bb94fb9bcb",
+    "archive": "compatible-0046-pinned-runtime-image.tar",
+    "load": "PASS",
+    "arch": "linux/amd64",
+    "python": "3.12",
+    "base": "preserved immutable B runtime; only approved app/schema files copied",
+    "old_web_unchanged": true
+  },
+  "content": {
+    "status": "PASS",
+    "approved_sha": "fcf901b903ab7e467444e6f9a5fe898624207efa",
+    "image_id": "sha256:7785e11d8623514089d986ff8b7d8f3ce0330e1b1ba5fea527a3cb21c0aec21d",
+    "git_files_byte_identical": 532,
+    "pip_check": "PASS",
+    "schema_migration_changes": false
+  },
+  "dependencies": {
+    "status": "PASS",
+    "B_C_pip_freeze_identical": true
+  },
+  "alembic": "20261018_0046",
+  "new_migrations": false,
+  "db_check": "PASS",
+  "catalog_active": 13685,
+  "flags_secrets_ports_mounts": "preserved",
+  "backup": {
+    "status": "PASS",
+    "backup_id": "energy-c-20261023T143521Z",
+    "consistent": true,
+    "checksums_verified": true,
+    "prior_backups_retained": true,
+    "bytes": 283712756
+  },
+  "restore": "all tables/columns/rows exact; independent schema/storage; real HTTP gate PASS",
+  "storage": {
+    "status": "PASS",
+    "regular_files_identical": 2026,
+    "no_extra_originals_from_production_smoke": true
+  },
+  "production_integrity": {
+    "status": "PASS",
+    "all_tables_columns_rows": "identical",
+    "database_container_unchanged": true,
+    "new_migrations": false,
+    "startup": "original app:create_app Gunicorn; no QA module/upgrade/seed"
+  },
+  "HTTP_HTTPS": "authenticated reads PASS; review of own existing day 200; no real domain POST",
+  "QA": {
+    "status": "PASS",
+    "scope": "real Gunicorn HTTP; isolated exact production restore plus fictional QA users only",
+    "cases": {
+      "preview_four_steps_CSFR_binding_expiry_explicit": "PASS; no DB/storage writes before confirmation",
+      "exact_original_hash_size_download_idempotence": "PASS",
+      "concurrent_sessions_409_and_simultaneous_confirm": "PASS; one event only",
+      "pending_conflict_source_manual_clear_revision_owner": "PASS; source snapshots unchanged",
+      "domain_rollback_original_retention": "PASS; confirmed original retained; no day/event survived",
+      "JSON_10_256KiB_server_limit_JSON_11_handoff": "PASS; exact boundary accepted, boundary+1 rejected"
+    },
+    "parallel_statuses": [
+      302,
+      409
+    ],
+    "timings": {
+      "energy": {
+        "samples": 5,
+        "milliseconds": [
+          34.0,
+          31.8,
+          32.4,
+          28.8,
+          28.1
+        ],
+        "median_ms": 31.8,
+        "max_ms": 34.0
+      },
+      "import": {
+        "samples": 5,
+        "milliseconds": [
+          5.8,
+          6.9,
+          5.8,
+          5.6,
+          5.6
+        ],
+        "median_ms": 5.8,
+        "max_ms": 6.9
+      },
+      "review": {
+        "samples": 5,
+        "milliseconds": [
+          9.8,
+          9.6,
+          8.2,
+          7.9,
+          7.8
+        ],
+        "median_ms": 8.2,
+        "max_ms": 9.8
+      },
+      "sources": {
+        "samples": 5,
+        "milliseconds": [
+          40.7,
+          11.1,
+          9.8,
+          9.5,
+          9.2
+        ],
+        "median_ms": 9.8,
+        "max_ms": 40.7
+      },
+      "history": {
+        "samples": 5,
+        "milliseconds": [
+          18.6,
+          14.5,
+          14.6,
+          15.9,
+          16.2
+        ],
+        "median_ms": 15.9,
+        "max_ms": 18.6
+      }
+    },
+    "alembic": "20261018_0046",
+    "db_check": "PASS",
+    "payloads_retained_in_report": false,
+    "production_writes": 0,
+    "cleanup": "QA data/confirmed originals retained only in isolated clone; no automatic deletion"
+  },
+  "proxy": {
+    "status": "PASS",
+    "effective_host_config_identified": true,
+    "request_body_cookie_authorization_token_logging": false,
+    "debug_logging": false,
+    "scope": "Effective HTTPS vhost and configured log formats; standard route/status/URI metadata only; C originals/tokens are POST bodies, not URLs",
+    "configuration_modified": false
+  },
+  "new_errors": 0,
+  "new_http5xx": 0,
+  "restarts": 0,
+  "stability_observed_seconds": 127.4,
+  "QA_cleanup": "Own isolated Gunicorn stopped; QA DML privileges revoked to SELECT-only clone. Fictional confirmed originals and failed-attempt metadata retained in clone for audit; no production fixtures.",
+  "reconciliation": "A confirmed file can remain pending with failed import audit and no energy event. Reconcile owner, original SHA/size, failed ImportRun and current canonical revision privately; review again before any retry. Never delete confirmed originals automatically or restore old backup over later writes.",
+  "incidents": [
+    "Normal clean build resolved three unreviewed package updates; that candidate was not deployed. Rebuilt from preserved immutable B runtime plus approved C app/schema files; dependency set identical."
+  ],
+  "D": "Start separate branch/PR only after this closure; no automatic merge/deploy.",
+  "separate_pending": [
+    "PITR",
+    "physical Android/iOS smoke",
+    "external Open Food Facts"
+  ]
+}

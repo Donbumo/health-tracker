@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "approved_sha": "fcf901b903ab7e467444e6f9a5fe898624207efa",
+  "image_id": "sha256:7785e11d8623514089d986ff8b7d8f3ce0330e1b1ba5fea527a3cb21c0aec21d",
+  "git_files_byte_identical": 532,
+  "pip_check": "PASS",
+  "schema_migration_changes": false
+}

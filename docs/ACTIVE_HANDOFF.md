@@ -2,7 +2,14 @@
 
 Índice de reglas y guías: [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md).
 
-## Estado actual — B operativa; C implementada para revisión
+## Estado actual — C operativa; D preparada para revisión
+
+- C integrada por squash de PR #24 y desplegada el 23-10-2026: master GitHub/Windows/NAS `fcf901b903ab7e467444e6f9a5fe898624207efa`, imagen activa `sha256:7785e11d8623514089d986ff8b7d8f3ce0330e1b1ba5fea527a3cb21c0aec21d`. [Cierre operativo C](ENERGY_EXPERIENCE_2_0_C_PRODUCTION.md). Backup consistente y restore DB/storage, 2.026 archivos exactos; Gunicorn QA completo y HTTP/HTTPS productivo sólo lecturas PASS. 0046, catálogo, flags y todas las tablas/filas conservados. Imagen B/backups preservados; QA clon detenido y DML revocado.
+- D se inició después de cerrar C, en `feature/energy-experience-2-0-d`: [informe](ENERGY_EXPERIENCE_2_0_D.md), [matriz WCAG A/AA](ENERGY_EXPERIENCE_2_0_D_ACCESSIBILITY.md), [81 capturas/evidencia reproducible](../design/energy-experience-2-0-d/README.md). Límites 1900/9998, foco/contraste/semántica, errores recuperables y no-store, sin modificar escritor, migración o contratos.
+- D: suite general 1.401 PASS/35 skipped antes del refinamiento final B; focal final 103 PASS/1 skip Windows, 125 PASS Linux; MariaDB RC/RR + db check PASS. Flask: 250 layouts, 30 pruebas de espaciado, 98 scans axe sin violaciones detectadas. No certificación WCAG: lector real/zoom nativo y revisión del TTL siguen pendientes explícitos. Preparar PR independiente; **NO merge ni despliegue D**. NAS conserva C.
+- PITR, Android/iOS físico y OFF externo separados. Informe local previo del issue #18 preservado sin versionar.
+
+## Antecedente — B operativa; C implementada para revisión
 
 - B desplegada el 20-10-2026: squash `6fdd594151f5ede12997b5447e28b10d4e8a901f`, checkout GitHub/Windows/NAS sincronizado; imagen activa y 528 archivos aprobados contrastados. [Cierre productivo B](ENERGY_EXPERIENCE_2_0_B_PRODUCTION.md). 0046 sin DDL, mismo MariaDB, catálogo/flags/historial intactos; backup consistente y restore de DB + 2.022 archivos PASS. A e imágenes/backups anteriores preservados.
 - Gate de rendimiento B: cinco eventos reales restaurados y escenario separado de 10.000 eventos ficticios/400 páginas; cinco muestras HTTP por caso, máximo 286,7 ms. EXPLAIN registra scans/filesort en JSON/DISTINCT; no certificación de concurrencia. HTTP/HTTPS autenticado productivo PASS; cuenta de smoke sin eventos, originales/datos poblados validados en QA sin suplantación productiva.

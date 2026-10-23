@@ -1,0 +1,1071 @@
+{
+  "scope": "synthetic Flask QA",
+  "contrast": [
+    {
+      "theme": "light",
+      "v": {
+        "--primary": "#075985",
+        "--surface": "#ffffff",
+        "--text": "#172033",
+        "--text-muted": "#526078",
+        "--primary-soft": "#e0f2fe",
+        "--warning-text": "#78350f",
+        "--warning-bg": "#fef3c7"
+      },
+      "targets": [
+        {
+          "label": "Volver a interfaz actual",
+          "width": 131,
+          "height": 44
+        },
+        {
+          "label": "Día anterior",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "date",
+          "width": 272,
+          "height": 51
+        },
+        {
+          "label": "Día siguiente",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "7 días\n30 días\n90 días",
+          "width": 100,
+          "height": 47
+        },
+        {
+          "label": "Consultar",
+          "width": 98,
+          "height": 44
+        },
+        {
+          "label": "Hoy",
+          "width": 28,
+          "height": 44
+        },
+        {
+          "label": "Último registro · 2040-02-04 · gasto desconocido",
+          "width": 374,
+          "height": 44
+        },
+        {
+          "label": "Tendencias",
+          "width": 77,
+          "height": 44
+        },
+        {
+          "label": "Calendario",
+          "width": 76,
+          "height": 44
+        },
+        {
+          "label": "Actividad",
+          "width": 66,
+          "height": 44
+        },
+        {
+          "label": "Fuentes y decisiones",
+          "width": 145,
+          "height": 44
+        },
+        {
+          "label": "Historial auditable",
+          "width": 128,
+          "height": 44
+        },
+        {
+          "label": "Tabla equivalente · Gasto total",
+          "width": 340,
+          "height": 46
+        },
+        {
+          "label": "Tabla equivalente · Ingesta · contexto Nutrition",
+          "width": 340,
+          "height": 70
+        },
+        {
+          "label": "Tabla equivalente · Balance comparable",
+          "width": 340,
+          "height": 46
+        },
+        {
+          "label": "Tabla equivalente · Calorías totales",
+          "width": 340,
+          "height": 46
+        },
+        {
+          "label": "Tabla equivalente · Calorías activas",
+          "width": 340,
+          "height": 46
+        },
+        {
+          "label": "Tabla equivalente · Calorías de reposo",
+          "width": 340,
+          "height": 46
+        },
+        {
+          "label": "Tabla equivalente · Pasos",
+          "width": 340,
+          "height": 46
+        },
+        {
+          "label": "Tabla equivalente · Distancia",
+          "width": 340,
+          "height": 46
+        },
+        {
+          "label": "Mes anterior",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "Mes siguiente",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "2040-02-01 · Conflicto pendiente",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-02 · Conocido",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-03 · Conocido",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-04 · Subtotal conocido · parcial",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-05 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-06 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-07 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-08 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-09 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-10 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-11 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-12 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-13 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-14 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-15 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-16 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-17 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-18 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-19 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-20 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-21 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-22 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-23 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-24 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-25 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-26 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-27 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-28 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-29 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "Ver fuentes y acciones actuales",
+          "width": 266,
+          "height": 44
+        },
+        {
+          "label": "Captura manual",
+          "width": 112,
+          "height": 44
+        },
+        {
+          "label": "Importar con revisión",
+          "width": 151,
+          "height": 44
+        },
+        {
+          "label": "Importación directa existente",
+          "width": 206,
+          "height": 44
+        },
+        {
+          "label": "Import Hub",
+          "width": 82,
+          "height": 44
+        },
+        {
+          "label": "Listado actual",
+          "width": 97,
+          "height": 44
+        }
+      ],
+      "inputBorder": "rgb(82, 96, 120)",
+      "checks": {
+        "primary button text": {
+          "ratio": 7.56,
+          "minimum": 4.5
+        },
+        "muted text/control border": {
+          "ratio": 6.36,
+          "minimum": 4.5
+        },
+        "graph bar": {
+          "ratio": 7.56,
+          "minimum": 3
+        },
+        "focus/rolling": {
+          "ratio": 16.27,
+          "minimum": 3
+        },
+        "warning": {
+          "ratio": 8.15,
+          "minimum": 4.5
+        },
+        "hero text": {
+          "ratio": 14.18,
+          "minimum": 4.5
+        }
+      }
+    },
+    {
+      "theme": "dark",
+      "v": {
+        "--primary": "#38bdf8",
+        "--surface": "#111b2d",
+        "--text": "#e7edf7",
+        "--text-muted": "#aebbd0",
+        "--primary-soft": "#15344b",
+        "--warning-text": "#fde68a",
+        "--warning-bg": "#422f0a"
+      },
+      "targets": [
+        {
+          "label": "Volver a interfaz actual",
+          "width": 131,
+          "height": 44
+        },
+        {
+          "label": "Día anterior",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "date",
+          "width": 272,
+          "height": 51
+        },
+        {
+          "label": "Día siguiente",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "7 días\n30 días\n90 días",
+          "width": 100,
+          "height": 47
+        },
+        {
+          "label": "Consultar",
+          "width": 98,
+          "height": 44
+        },
+        {
+          "label": "Hoy",
+          "width": 28,
+          "height": 44
+        },
+        {
+          "label": "Último registro · 2040-02-04 · gasto desconocido",
+          "width": 374,
+          "height": 44
+        },
+        {
+          "label": "Tendencias",
+          "width": 77,
+          "height": 44
+        },
+        {
+          "label": "Calendario",
+          "width": 76,
+          "height": 44
+        },
+        {
+          "label": "Actividad",
+          "width": 66,
+          "height": 44
+        },
+        {
+          "label": "Fuentes y decisiones",
+          "width": 145,
+          "height": 44
+        },
+        {
+          "label": "Historial auditable",
+          "width": 128,
+          "height": 44
+        },
+        {
+          "label": "Tabla equivalente · Gasto total",
+          "width": 340,
+          "height": 46
+        },
+        {
+          "label": "Tabla equivalente · Ingesta · contexto Nutrition",
+          "width": 340,
+          "height": 70
+        },
+        {
+          "label": "Tabla equivalente · Balance comparable",
+          "width": 340,
+          "height": 46
+        },
+        {
+          "label": "Tabla equivalente · Calorías totales",
+          "width": 340,
+          "height": 46
+        },
+        {
+          "label": "Tabla equivalente · Calorías activas",
+          "width": 340,
+          "height": 46
+        },
+        {
+          "label": "Tabla equivalente · Calorías de reposo",
+          "width": 340,
+          "height": 46
+        },
+        {
+          "label": "Tabla equivalente · Pasos",
+          "width": 340,
+          "height": 46
+        },
+        {
+          "label": "Tabla equivalente · Distancia",
+          "width": 340,
+          "height": 46
+        },
+        {
+          "label": "Mes anterior",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "Mes siguiente",
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "2040-02-01 · Conflicto pendiente",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-02 · Conocido",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-03 · Conocido",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-04 · Subtotal conocido · parcial",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-05 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-06 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-07 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-08 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-09 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-10 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-11 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-12 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-13 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-14 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-15 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-16 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-17 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-18 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-19 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-20 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-21 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-22 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-23 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-24 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-25 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-26 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-27 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-28 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "2040-02-29 · Sin dato",
+          "width": 46,
+          "height": 47
+        },
+        {
+          "label": "Ver fuentes y acciones actuales",
+          "width": 266,
+          "height": 44
+        },
+        {
+          "label": "Captura manual",
+          "width": 112,
+          "height": 44
+        },
+        {
+          "label": "Importar con revisión",
+          "width": 151,
+          "height": 44
+        },
+        {
+          "label": "Importación directa existente",
+          "width": 206,
+          "height": 44
+        },
+        {
+          "label": "Import Hub",
+          "width": 82,
+          "height": 44
+        },
+        {
+          "label": "Listado actual",
+          "width": 97,
+          "height": 44
+        }
+      ],
+      "inputBorder": "rgb(174, 187, 208)",
+      "checks": {
+        "primary button text": {
+          "ratio": 8.04,
+          "minimum": 4.5
+        },
+        "muted text/control border": {
+          "ratio": 8.88,
+          "minimum": 4.5
+        },
+        "graph bar": {
+          "ratio": 8.04,
+          "minimum": 3
+        },
+        "focus/rolling": {
+          "ratio": 14.65,
+          "minimum": 3
+        },
+        "warning": {
+          "ratio": 10.27,
+          "minimum": 4.5
+        },
+        "hero text": {
+          "ratio": 10.99,
+          "minimum": 4.5
+        }
+      }
+    }
+  ],
+  "spacing": [
+    {
+      "theme": "light",
+      "width": 320,
+      "route": "/energy?date=2040-02-03",
+      "viewport": 320,
+      "scroll": 320
+    },
+    {
+      "theme": "light",
+      "width": 320,
+      "route": "/energy/sources?date=2040-02-03",
+      "viewport": 320,
+      "scroll": 320
+    },
+    {
+      "theme": "light",
+      "width": 320,
+      "route": "/energy/history",
+      "viewport": 320,
+      "scroll": 320
+    },
+    {
+      "theme": "light",
+      "width": 320,
+      "route": "/energy/import",
+      "viewport": 320,
+      "scroll": 320
+    },
+    {
+      "theme": "light",
+      "width": 320,
+      "route": "/energy/review?date=2040-02-01",
+      "viewport": 320,
+      "scroll": 320
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "route": "/energy?date=2040-02-03",
+      "viewport": 390,
+      "scroll": 390
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "route": "/energy/sources?date=2040-02-03",
+      "viewport": 390,
+      "scroll": 390
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "route": "/energy/history",
+      "viewport": 390,
+      "scroll": 390
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "route": "/energy/import",
+      "viewport": 390,
+      "scroll": 390
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "route": "/energy/review?date=2040-02-01",
+      "viewport": 390,
+      "scroll": 390
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "route": "/energy?date=2040-02-03",
+      "viewport": 1366,
+      "scroll": 1366
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "route": "/energy/sources?date=2040-02-03",
+      "viewport": 1366,
+      "scroll": 1366
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "route": "/energy/history",
+      "viewport": 1366,
+      "scroll": 1366
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "route": "/energy/import",
+      "viewport": 1366,
+      "scroll": 1366
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "route": "/energy/review?date=2040-02-01",
+      "viewport": 1366,
+      "scroll": 1366
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "route": "/energy?date=2040-02-03",
+      "viewport": 320,
+      "scroll": 320
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "route": "/energy/sources?date=2040-02-03",
+      "viewport": 320,
+      "scroll": 320
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "route": "/energy/history",
+      "viewport": 320,
+      "scroll": 320
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "route": "/energy/import",
+      "viewport": 320,
+      "scroll": 320
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "route": "/energy/review?date=2040-02-01",
+      "viewport": 320,
+      "scroll": 320
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "route": "/energy?date=2040-02-03",
+      "viewport": 390,
+      "scroll": 390
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "route": "/energy/sources?date=2040-02-03",
+      "viewport": 390,
+      "scroll": 390
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "route": "/energy/history",
+      "viewport": 390,
+      "scroll": 390
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "route": "/energy/import",
+      "viewport": 390,
+      "scroll": 390
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "route": "/energy/review?date=2040-02-01",
+      "viewport": 390,
+      "scroll": 390
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "route": "/energy?date=2040-02-03",
+      "viewport": 1366,
+      "scroll": 1366
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "route": "/energy/sources?date=2040-02-03",
+      "viewport": 1366,
+      "scroll": 1366
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "route": "/energy/history",
+      "viewport": 1366,
+      "scroll": 1366
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "route": "/energy/import",
+      "viewport": 1366,
+      "scroll": 1366
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "route": "/energy/review?date=2040-02-01",
+      "viewport": 1366,
+      "scroll": 1366
+    }
+  ],
+  "extraScans": [
+    {
+      "name": "calendar-min",
+      "width": 390,
+      "theme": "light",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "name": "calendar-max",
+      "width": 390,
+      "theme": "light",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "name": "partial-chart",
+      "width": 390,
+      "theme": "light",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "name": "history-filters",
+      "width": 390,
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "table-open-extra",
+      "width": 390,
+      "theme": "light",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "name": "calendar-min",
+      "width": 1366,
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "calendar-max",
+      "width": 1366,
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "partial-chart",
+      "width": 1366,
+      "theme": "light",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "name": "history-filters",
+      "width": 1366,
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "table-open-extra",
+      "width": 1366,
+      "theme": "light",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "name": "calendar-min",
+      "width": 390,
+      "theme": "dark",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "name": "calendar-max",
+      "width": 390,
+      "theme": "dark",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "name": "partial-chart",
+      "width": 390,
+      "theme": "dark",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "name": "history-filters",
+      "width": 390,
+      "theme": "dark",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "table-open-extra",
+      "width": 390,
+      "theme": "dark",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "name": "calendar-min",
+      "width": 1366,
+      "theme": "dark",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "calendar-max",
+      "width": 1366,
+      "theme": "dark",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "partial-chart",
+      "width": 1366,
+      "theme": "dark",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "name": "history-filters",
+      "width": 1366,
+      "theme": "dark",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "table-open-extra",
+      "width": 1366,
+      "theme": "dark",
+      "violations": [],
+      "incomplete": [
+        "color-contrast"
+      ]
+    }
+  ],
+  "screenshots": [
+    "calendar-min-390-light.png",
+    "calendar-max-390-light.png",
+    "partial-chart-390-light.png",
+    "history-filters-390-light.png",
+    "table-open-extra-390-light.png",
+    "calendar-min-1366-light.png",
+    "calendar-max-1366-light.png",
+    "partial-chart-1366-light.png",
+    "history-filters-1366-light.png",
+    "table-open-extra-1366-light.png",
+    "calendar-min-390-dark.png",
+    "calendar-max-390-dark.png",
+    "partial-chart-390-dark.png",
+    "history-filters-390-dark.png",
+    "table-open-extra-390-dark.png",
+    "calendar-min-1366-dark.png",
+    "calendar-max-1366-dark.png",
+    "partial-chart-1366-dark.png",
+    "history-filters-1366-dark.png",
+    "table-open-extra-1366-dark.png",
+    "forced-colors-1366.png"
+  ],
+  "reducedMotion": "auto",
+  "forcedColors": "captured for manual inspection; data tables remain available",
+  "status": "PASS"
+}

@@ -1,0 +1,5874 @@
+{
+  "scope": "synthetic Flask QA only; no NAS",
+  "axe": "4.14.0",
+  "layouts": [
+    {
+      "name": "known",
+      "theme": "light",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "light",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "unknown",
+      "theme": "light",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "minimum",
+      "theme": "light",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "maximum",
+      "theme": "light",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "sources",
+      "theme": "light",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "retired",
+      "theme": "light",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "history",
+      "theme": "light",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Historial de energía"
+    },
+    {
+      "name": "import",
+      "theme": "light",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review",
+      "theme": "light",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "query-error",
+      "theme": "light",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Revisa la fecha o el período"
+    },
+    {
+      "name": "sources-error",
+      "theme": "light",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes"
+    },
+    {
+      "name": "history-error",
+      "theme": "light",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Revisa los filtros del historial"
+    },
+    {
+      "name": "known",
+      "theme": "light",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "light",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "unknown",
+      "theme": "light",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "minimum",
+      "theme": "light",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "maximum",
+      "theme": "light",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "sources",
+      "theme": "light",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "retired",
+      "theme": "light",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "history",
+      "theme": "light",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Historial de energía"
+    },
+    {
+      "name": "import",
+      "theme": "light",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review",
+      "theme": "light",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "query-error",
+      "theme": "light",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Revisa la fecha o el período"
+    },
+    {
+      "name": "sources-error",
+      "theme": "light",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes"
+    },
+    {
+      "name": "history-error",
+      "theme": "light",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Revisa los filtros del historial"
+    },
+    {
+      "name": "known",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "unknown",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "minimum",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "maximum",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "sources",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "retired",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "history",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Historial de energía"
+    },
+    {
+      "name": "import",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "query-error",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Revisa la fecha o el período"
+    },
+    {
+      "name": "sources-error",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes"
+    },
+    {
+      "name": "history-error",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Revisa los filtros del historial"
+    },
+    {
+      "name": "known",
+      "theme": "light",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "light",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "unknown",
+      "theme": "light",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "minimum",
+      "theme": "light",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "maximum",
+      "theme": "light",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "sources",
+      "theme": "light",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "retired",
+      "theme": "light",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "history",
+      "theme": "light",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Historial de energía"
+    },
+    {
+      "name": "import",
+      "theme": "light",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review",
+      "theme": "light",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "query-error",
+      "theme": "light",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Revisa la fecha o el período"
+    },
+    {
+      "name": "sources-error",
+      "theme": "light",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes"
+    },
+    {
+      "name": "history-error",
+      "theme": "light",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Revisa los filtros del historial"
+    },
+    {
+      "name": "known",
+      "theme": "light",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "light",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "unknown",
+      "theme": "light",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "minimum",
+      "theme": "light",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "maximum",
+      "theme": "light",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "sources",
+      "theme": "light",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "retired",
+      "theme": "light",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "history",
+      "theme": "light",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Historial de energía"
+    },
+    {
+      "name": "import",
+      "theme": "light",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review",
+      "theme": "light",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "query-error",
+      "theme": "light",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Revisa la fecha o el período"
+    },
+    {
+      "name": "sources-error",
+      "theme": "light",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes"
+    },
+    {
+      "name": "history-error",
+      "theme": "light",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Revisa los filtros del historial"
+    },
+    {
+      "name": "known",
+      "theme": "light",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "light",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "unknown",
+      "theme": "light",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "minimum",
+      "theme": "light",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "maximum",
+      "theme": "light",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "sources",
+      "theme": "light",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "retired",
+      "theme": "light",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "history",
+      "theme": "light",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Historial de energía"
+    },
+    {
+      "name": "import",
+      "theme": "light",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review",
+      "theme": "light",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "query-error",
+      "theme": "light",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Revisa la fecha o el período"
+    },
+    {
+      "name": "sources-error",
+      "theme": "light",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes"
+    },
+    {
+      "name": "history-error",
+      "theme": "light",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Revisa los filtros del historial"
+    },
+    {
+      "name": "known",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "unknown",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "minimum",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "maximum",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "sources",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "retired",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "history",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Historial de energía"
+    },
+    {
+      "name": "import",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "query-error",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Revisa la fecha o el período"
+    },
+    {
+      "name": "sources-error",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes"
+    },
+    {
+      "name": "history-error",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Revisa los filtros del historial"
+    },
+    {
+      "name": "import-step-2",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "import-step-3",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "import-step-4",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review-error",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "import-step-2",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "import-step-3",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "import-step-4",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review-error",
+      "theme": "light",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "known",
+      "theme": "dark",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "dark",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "unknown",
+      "theme": "dark",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "minimum",
+      "theme": "dark",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "maximum",
+      "theme": "dark",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "sources",
+      "theme": "dark",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "retired",
+      "theme": "dark",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "history",
+      "theme": "dark",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Historial de energía"
+    },
+    {
+      "name": "import",
+      "theme": "dark",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review",
+      "theme": "dark",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "query-error",
+      "theme": "dark",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Revisa la fecha o el período"
+    },
+    {
+      "name": "sources-error",
+      "theme": "dark",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes"
+    },
+    {
+      "name": "history-error",
+      "theme": "dark",
+      "width": 320,
+      "scroll": 320,
+      "body": 320,
+      "main": true,
+      "h1": "Revisa los filtros del historial"
+    },
+    {
+      "name": "known",
+      "theme": "dark",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "dark",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "unknown",
+      "theme": "dark",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "minimum",
+      "theme": "dark",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "maximum",
+      "theme": "dark",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "sources",
+      "theme": "dark",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "retired",
+      "theme": "dark",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "history",
+      "theme": "dark",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Historial de energía"
+    },
+    {
+      "name": "import",
+      "theme": "dark",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review",
+      "theme": "dark",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "query-error",
+      "theme": "dark",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Revisa la fecha o el período"
+    },
+    {
+      "name": "sources-error",
+      "theme": "dark",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes"
+    },
+    {
+      "name": "history-error",
+      "theme": "dark",
+      "width": 360,
+      "scroll": 360,
+      "body": 360,
+      "main": true,
+      "h1": "Revisa los filtros del historial"
+    },
+    {
+      "name": "known",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "unknown",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "minimum",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "maximum",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "sources",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "retired",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "history",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Historial de energía"
+    },
+    {
+      "name": "import",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "query-error",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Revisa la fecha o el período"
+    },
+    {
+      "name": "sources-error",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes"
+    },
+    {
+      "name": "history-error",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Revisa los filtros del historial"
+    },
+    {
+      "name": "known",
+      "theme": "dark",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "dark",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "unknown",
+      "theme": "dark",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "minimum",
+      "theme": "dark",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "maximum",
+      "theme": "dark",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "sources",
+      "theme": "dark",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "retired",
+      "theme": "dark",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "history",
+      "theme": "dark",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Historial de energía"
+    },
+    {
+      "name": "import",
+      "theme": "dark",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review",
+      "theme": "dark",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "query-error",
+      "theme": "dark",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Revisa la fecha o el período"
+    },
+    {
+      "name": "sources-error",
+      "theme": "dark",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes"
+    },
+    {
+      "name": "history-error",
+      "theme": "dark",
+      "width": 430,
+      "scroll": 430,
+      "body": 430,
+      "main": true,
+      "h1": "Revisa los filtros del historial"
+    },
+    {
+      "name": "known",
+      "theme": "dark",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "dark",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "unknown",
+      "theme": "dark",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "minimum",
+      "theme": "dark",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "maximum",
+      "theme": "dark",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "sources",
+      "theme": "dark",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "retired",
+      "theme": "dark",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "history",
+      "theme": "dark",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Historial de energía"
+    },
+    {
+      "name": "import",
+      "theme": "dark",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review",
+      "theme": "dark",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "query-error",
+      "theme": "dark",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Revisa la fecha o el período"
+    },
+    {
+      "name": "sources-error",
+      "theme": "dark",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes"
+    },
+    {
+      "name": "history-error",
+      "theme": "dark",
+      "width": 768,
+      "scroll": 768,
+      "body": 768,
+      "main": true,
+      "h1": "Revisa los filtros del historial"
+    },
+    {
+      "name": "known",
+      "theme": "dark",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "dark",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "unknown",
+      "theme": "dark",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "minimum",
+      "theme": "dark",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "maximum",
+      "theme": "dark",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "sources",
+      "theme": "dark",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "retired",
+      "theme": "dark",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "history",
+      "theme": "dark",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Historial de energía"
+    },
+    {
+      "name": "import",
+      "theme": "dark",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review",
+      "theme": "dark",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "query-error",
+      "theme": "dark",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Revisa la fecha o el período"
+    },
+    {
+      "name": "sources-error",
+      "theme": "dark",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes"
+    },
+    {
+      "name": "history-error",
+      "theme": "dark",
+      "width": 1024,
+      "scroll": 1024,
+      "body": 1024,
+      "main": true,
+      "h1": "Revisa los filtros del historial"
+    },
+    {
+      "name": "known",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "unknown",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "minimum",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "maximum",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Energía"
+    },
+    {
+      "name": "sources",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "retired",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Fuentes y decisiones"
+    },
+    {
+      "name": "history",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Historial de energía"
+    },
+    {
+      "name": "import",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "query-error",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Revisa la fecha o el período"
+    },
+    {
+      "name": "sources-error",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes"
+    },
+    {
+      "name": "history-error",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Revisa los filtros del historial"
+    },
+    {
+      "name": "import-step-2",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "import-step-3",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "import-step-4",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review-error",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "import-step-2",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "import-step-3",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "import-step-4",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Importar energía"
+    },
+    {
+      "name": "review-error",
+      "theme": "dark",
+      "width": 1366,
+      "scroll": 1366,
+      "body": 1366,
+      "main": true,
+      "h1": "Decidir por campo"
+    },
+    {
+      "name": "known",
+      "theme": "light",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Energía",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "light",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Energía",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "unknown",
+      "theme": "light",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Energía",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "minimum",
+      "theme": "light",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Energía",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "maximum",
+      "theme": "light",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Energía",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "sources",
+      "theme": "light",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Fuentes y decisiones",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "retired",
+      "theme": "light",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Fuentes y decisiones",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "history",
+      "theme": "light",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Historial de energía",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "import",
+      "theme": "light",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Importar energía",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "review",
+      "theme": "light",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Decidir por campo",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "query-error",
+      "theme": "light",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Revisa la fecha o el período",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "sources-error",
+      "theme": "light",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "history-error",
+      "theme": "light",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Revisa los filtros del historial",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "known",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "unknown",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "minimum",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "maximum",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "sources",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Fuentes y decisiones",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "retired",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Fuentes y decisiones",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "history",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Historial de energía",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "import",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Importar energía",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "review",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Decidir por campo",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "query-error",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Revisa la fecha o el período",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "sources-error",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "history-error",
+      "theme": "light",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Revisa los filtros del historial",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "known",
+      "theme": "dark",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Energía",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "dark",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Energía",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "unknown",
+      "theme": "dark",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Energía",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "minimum",
+      "theme": "dark",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Energía",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "maximum",
+      "theme": "dark",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Energía",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "sources",
+      "theme": "dark",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Fuentes y decisiones",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "retired",
+      "theme": "dark",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Fuentes y decisiones",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "history",
+      "theme": "dark",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Historial de energía",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "import",
+      "theme": "dark",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Importar energía",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "review",
+      "theme": "dark",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Decidir por campo",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "query-error",
+      "theme": "dark",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Revisa la fecha o el período",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "sources-error",
+      "theme": "dark",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "history-error",
+      "theme": "dark",
+      "width": 683,
+      "scroll": 683,
+      "body": 683,
+      "main": true,
+      "h1": "Revisa los filtros del historial",
+      "method": "1366x900 layout equivalent at 200%; 683x450 CSS px"
+    },
+    {
+      "name": "known",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "unknown",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "minimum",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "maximum",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Energía",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "sources",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Fuentes y decisiones",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "retired",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Fuentes y decisiones",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "history",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Historial de energía",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "import",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Importar energía",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "review",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Decidir por campo",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "query-error",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Revisa la fecha o el período",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "sources-error",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Revisa la fecha de las fuentes",
+      "method": "independent root text resize 200%"
+    },
+    {
+      "name": "history-error",
+      "theme": "dark",
+      "width": 390,
+      "scroll": 390,
+      "body": 390,
+      "main": true,
+      "h1": "Revisa los filtros del historial",
+      "method": "independent root text resize 200%"
+    }
+  ],
+  "scans": [
+    {
+      "name": "known",
+      "theme": "light",
+      "width": 390,
+      "passes": 45,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "targets": [
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "text[x=\"75\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"618.33\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"125.13\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"143.4\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"161.67\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"179.93\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"198.2\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"216.47\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"234.73\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"253.0\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"271.27\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"289.53\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"307.8\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"326.07\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"344.33\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"362.6\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"380.87\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"399.13\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"417.4\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"435.67\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"453.93\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"472.2\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"490.47\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"508.73\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"527.0\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"545.27\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"581.8\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"600.07\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"618.33\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"636.6\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"125.13\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"143.4\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"161.67\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"179.93\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"198.2\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"216.47\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"234.73\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"253.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"271.27\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"289.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"307.8\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"326.07\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"344.33\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"362.6\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"380.87\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"399.13\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"417.4\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"435.67\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"453.93\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"472.2\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"490.47\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"508.73\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"527.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"545.27\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"581.8\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"600.07\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"618.33\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"636.6\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "a[aria-label=\"2040-02-02 · Conocido\"] > small"
+            ],
+            [
+              ".is-selected > small"
+            ],
+            [
+              ".ee-partial.ee-day > small"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "light",
+      "width": 390,
+      "passes": 45,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "targets": [
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "text[x=\"75\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"624.86\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "a[aria-label=\"2040-02-02 · Conocido\"] > small"
+            ],
+            [
+              "a[aria-label=\"2040-02-03 · Conocido\"] > small"
+            ],
+            [
+              ".ee-partial.ee-day > small"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "unknown",
+      "theme": "light",
+      "width": 390,
+      "passes": 44,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "minimum",
+      "theme": "light",
+      "width": 390,
+      "passes": 45,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "maximum",
+      "theme": "light",
+      "width": 390,
+      "passes": 45,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "sources",
+      "theme": "light",
+      "width": 390,
+      "passes": 36,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "retired",
+      "theme": "light",
+      "width": 390,
+      "passes": 35,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "history",
+      "theme": "light",
+      "width": 390,
+      "passes": 38,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import",
+      "theme": "light",
+      "width": 390,
+      "passes": 39,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review",
+      "theme": "light",
+      "width": 390,
+      "passes": 40,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "query-error",
+      "theme": "light",
+      "width": 390,
+      "passes": 44,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "sources-error",
+      "theme": "light",
+      "width": 390,
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "history-error",
+      "theme": "light",
+      "width": 390,
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "known",
+      "theme": "light",
+      "width": 1366,
+      "passes": 46,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "targets": [
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "text[x=\"75\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"618.33\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"125.13\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"143.4\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"161.67\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"179.93\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"198.2\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"216.47\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"234.73\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"253.0\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"271.27\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"289.53\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"307.8\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"326.07\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"344.33\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"362.6\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"380.87\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"399.13\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"417.4\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"435.67\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"453.93\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"472.2\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"490.47\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"508.73\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"527.0\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"545.27\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"581.8\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"600.07\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"618.33\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"636.6\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"125.13\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"143.4\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"161.67\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"179.93\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"198.2\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"216.47\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"234.73\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"253.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"271.27\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"289.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"307.8\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"326.07\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"344.33\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"362.6\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"380.87\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"399.13\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"417.4\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"435.67\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"453.93\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"472.2\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"490.47\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"508.73\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"527.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"545.27\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"581.8\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"600.07\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"618.33\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"636.6\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "a[aria-label=\"2040-02-02 · Conocido\"] > small"
+            ],
+            [
+              ".is-selected > small"
+            ],
+            [
+              ".ee-partial.ee-day > small"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "light",
+      "width": 1366,
+      "passes": 46,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "targets": [
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "text[x=\"75\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"624.86\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "a[aria-label=\"2040-02-02 · Conocido\"] > small"
+            ],
+            [
+              "a[aria-label=\"2040-02-03 · Conocido\"] > small"
+            ],
+            [
+              ".ee-partial.ee-day > small"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "unknown",
+      "theme": "light",
+      "width": 1366,
+      "passes": 45,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "minimum",
+      "theme": "light",
+      "width": 1366,
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "maximum",
+      "theme": "light",
+      "width": 1366,
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "sources",
+      "theme": "light",
+      "width": 1366,
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "retired",
+      "theme": "light",
+      "width": 1366,
+      "passes": 36,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "history",
+      "theme": "light",
+      "width": 1366,
+      "passes": 39,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import",
+      "theme": "light",
+      "width": 1366,
+      "passes": 40,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review",
+      "theme": "light",
+      "width": 1366,
+      "passes": 41,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "query-error",
+      "theme": "light",
+      "width": 1366,
+      "passes": 45,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "sources-error",
+      "theme": "light",
+      "width": 1366,
+      "passes": 38,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "history-error",
+      "theme": "light",
+      "width": 1366,
+      "passes": 38,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import-step-2",
+      "theme": "light",
+      "width": 390,
+      "passes": 36,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import-step-3",
+      "theme": "light",
+      "width": 390,
+      "passes": 36,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import-step-4",
+      "theme": "light",
+      "width": 390,
+      "passes": 39,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review-error",
+      "theme": "light",
+      "width": 390,
+      "passes": 44,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review-step-3",
+      "theme": "light",
+      "width": 390,
+      "passes": 36,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review-step-4",
+      "theme": "light",
+      "width": 390,
+      "passes": 39,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import-step-2",
+      "theme": "light",
+      "width": 1366,
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import-step-3",
+      "theme": "light",
+      "width": 1366,
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import-step-4",
+      "theme": "light",
+      "width": 1366,
+      "passes": 40,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review-error",
+      "theme": "light",
+      "width": 1366,
+      "passes": 45,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review-step-3",
+      "theme": "light",
+      "width": 1366,
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review-step-4",
+      "theme": "light",
+      "width": 1366,
+      "passes": 40,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "known",
+      "theme": "dark",
+      "width": 390,
+      "passes": 45,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "targets": [
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "text[x=\"75\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"618.33\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"125.13\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"143.4\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"161.67\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"179.93\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"198.2\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"216.47\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"234.73\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"253.0\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"271.27\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"289.53\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"307.8\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"326.07\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"344.33\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"362.6\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"380.87\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"399.13\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"417.4\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"435.67\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"453.93\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"472.2\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"490.47\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"508.73\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"527.0\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"545.27\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"581.8\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"600.07\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"618.33\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"636.6\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"125.13\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"143.4\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"161.67\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"179.93\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"198.2\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"216.47\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"234.73\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"253.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"271.27\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"289.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"307.8\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"326.07\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"344.33\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"362.6\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"380.87\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"399.13\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"417.4\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"435.67\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"453.93\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"472.2\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"490.47\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"508.73\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"527.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"545.27\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"581.8\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"600.07\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"618.33\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"636.6\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "a[aria-label=\"2040-02-02 · Conocido\"] > small"
+            ],
+            [
+              ".is-selected > small"
+            ],
+            [
+              ".ee-partial.ee-day > small"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "dark",
+      "width": 390,
+      "passes": 45,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "targets": [
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "text[x=\"75\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"624.86\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "a[aria-label=\"2040-02-02 · Conocido\"] > small"
+            ],
+            [
+              "a[aria-label=\"2040-02-03 · Conocido\"] > small"
+            ],
+            [
+              ".ee-partial.ee-day > small"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "unknown",
+      "theme": "dark",
+      "width": 390,
+      "passes": 44,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "minimum",
+      "theme": "dark",
+      "width": 390,
+      "passes": 45,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "maximum",
+      "theme": "dark",
+      "width": 390,
+      "passes": 45,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "sources",
+      "theme": "dark",
+      "width": 390,
+      "passes": 36,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "retired",
+      "theme": "dark",
+      "width": 390,
+      "passes": 35,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "history",
+      "theme": "dark",
+      "width": 390,
+      "passes": 38,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import",
+      "theme": "dark",
+      "width": 390,
+      "passes": 39,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review",
+      "theme": "dark",
+      "width": 390,
+      "passes": 40,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "query-error",
+      "theme": "dark",
+      "width": 390,
+      "passes": 44,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "sources-error",
+      "theme": "dark",
+      "width": 390,
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "history-error",
+      "theme": "dark",
+      "width": 390,
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "known",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 46,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "targets": [
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "text[x=\"75\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"618.33\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"125.13\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"143.4\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"161.67\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"179.93\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"198.2\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"216.47\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"234.73\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"253.0\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"271.27\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"289.53\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"307.8\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"326.07\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"344.33\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"362.6\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"380.87\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"399.13\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"417.4\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"435.67\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"453.93\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"472.2\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"490.47\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"508.73\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"527.0\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"545.27\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"581.8\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"600.07\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"618.33\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"636.6\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"125.13\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"143.4\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"161.67\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"179.93\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"198.2\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"216.47\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"234.73\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"253.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"271.27\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"289.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"307.8\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"326.07\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"344.33\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"362.6\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"380.87\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"399.13\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"417.4\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"435.67\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"453.93\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"472.2\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"490.47\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"508.73\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"527.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"545.27\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"563.53\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"581.8\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"600.07\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"618.33\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"636.6\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "a[aria-label=\"2040-02-02 · Conocido\"] > small"
+            ],
+            [
+              ".is-selected > small"
+            ],
+            [
+              ".ee-partial.ee-day > small"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "partial-conflict",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 46,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "targets": [
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "text[x=\"75\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"624.86\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "a[aria-label=\"2040-02-02 · Conocido\"] > small"
+            ],
+            [
+              "a[aria-label=\"2040-02-03 · Conocido\"] > small"
+            ],
+            [
+              ".ee-partial.ee-day > small"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "unknown",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 45,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "minimum",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "maximum",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 46,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "sources",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "retired",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 36,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "history",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 39,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 40,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 41,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "query-error",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 45,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "sources-error",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 38,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "history-error",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 38,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import-step-2",
+      "theme": "dark",
+      "width": 390,
+      "passes": 36,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import-step-3",
+      "theme": "dark",
+      "width": 390,
+      "passes": 36,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import-step-4",
+      "theme": "dark",
+      "width": 390,
+      "passes": 39,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review-error",
+      "theme": "dark",
+      "width": 390,
+      "passes": 44,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review-step-3",
+      "theme": "dark",
+      "width": 390,
+      "passes": 36,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review-step-4",
+      "theme": "dark",
+      "width": 390,
+      "passes": 39,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import-step-2",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import-step-3",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import-step-4",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 40,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review-error",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 45,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review-step-3",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 37,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review-step-4",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 40,
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "table-open",
+      "theme": "dark",
+      "width": 390,
+      "passes": 51,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "targets": [
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > .ee-gap[x=\"233.43\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "text[x=\"75\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"233.43\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"468.29\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > .ee-gap[x=\"233.43\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > .ee-gap[x=\"233.43\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > .ee-gap[x=\"233.43\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"155.14\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"233.43\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"311.71\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"468.29\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"546.57\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"155.14\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"233.43\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"311.71\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"468.29\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"546.57\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "a[aria-label=\"2040-02-02 · Conocido\"] > small"
+            ],
+            [
+              ".is-selected > small"
+            ],
+            [
+              ".ee-partial.ee-day > small"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "table-open",
+      "theme": "dark",
+      "width": 1366,
+      "passes": 51,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "targets": [
+            [
+              "summary[aria-label=\"Abrir menú de cuenta\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > .ee-gap[x=\"233.43\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"expended\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-intake-title ee-intake-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "text[x=\"75\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"233.43\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > .ee-gap[x=\"468.29\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"balance\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > .ee-gap[x=\"233.43\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"total_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > .ee-gap[x=\"233.43\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"active_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > .ee-gap[x=\"233.43\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"resting_calories\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"155.14\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"233.43\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"311.71\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"468.29\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > .ee-gap[x=\"546.57\"][y=\"205\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "svg[aria-labelledby=\"ee-steps-title ee-steps-desc\"] > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[y=\"24\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[y=\"195\"][x=\"2\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"155.14\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"233.43\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"311.71\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"390.0\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"468.29\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > .ee-gap[x=\"546.57\"][y=\"205\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[x=\"106\"][y=\"230\"]"
+            ],
+            [
+              "article[data-series=\"distance_meters\"] > svg > text[x=\"676\"][text-anchor=\"end\"][y=\"230\"]"
+            ],
+            [
+              "a[aria-label=\"2040-02-02 · Conocido\"] > small"
+            ],
+            [
+              ".is-selected > small"
+            ],
+            [
+              ".ee-partial.ee-day > small"
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "keyboard": [
+    {
+      "name": "import four steps, Tab/Enter/Space confirmation, cancel without write",
+      "theme": "light",
+      "width": 390,
+      "status": "PASS"
+    },
+    {
+      "name": "field error focus, error link, correction, review and explicit confirmation",
+      "theme": "light",
+      "width": 390,
+      "status": "PASS"
+    },
+    {
+      "name": "import four steps, Tab/Enter/Space confirmation, cancel without write",
+      "theme": "light",
+      "width": 1366,
+      "status": "PASS"
+    },
+    {
+      "name": "field error focus, error link, correction, review and explicit confirmation",
+      "theme": "light",
+      "width": 1366,
+      "status": "PASS"
+    },
+    {
+      "name": "import four steps, Tab/Enter/Space confirmation, cancel without write",
+      "theme": "dark",
+      "width": 390,
+      "status": "PASS"
+    },
+    {
+      "name": "field error focus, error link, correction, review and explicit confirmation",
+      "theme": "dark",
+      "width": 390,
+      "status": "PASS"
+    },
+    {
+      "name": "import four steps, Tab/Enter/Space confirmation, cancel without write",
+      "theme": "dark",
+      "width": 1366,
+      "status": "PASS"
+    },
+    {
+      "name": "field error focus, error link, correction, review and explicit confirmation",
+      "theme": "dark",
+      "width": 1366,
+      "status": "PASS"
+    },
+    {
+      "name": "complete tab cycle, skip, focus visible, Shift+Tab and table arrow scroll",
+      "width": 390,
+      "status": "PASS",
+      "focusTargets": 11
+    },
+    {
+      "name": "mobile navigation opens/closes with keyboard, no focus trap",
+      "width": 390,
+      "status": "PASS"
+    },
+    {
+      "name": "complete tab cycle, skip, focus visible, Shift+Tab and table arrow scroll",
+      "width": 1366,
+      "status": "PASS",
+      "focusTargets": 36
+    },
+    {
+      "name": "A → B → C → B → A route loop",
+      "status": "PASS",
+      "method": "real links"
+    }
+  ],
+  "semantics": [
+    {
+      "name": "import-step-2",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 7,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 65,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 1,
+        "generic": 9,
+        "form": 1,
+        "InlineTextBox": 70,
+        "DisclosureTriangle": 1,
+        "paragraph": 17,
+        "heading": 8,
+        "listitem": 4,
+        "button": 1,
+        "strong": 16
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "import-step-3",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 7,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 71,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 1,
+        "generic": 9,
+        "form": 1,
+        "InlineTextBox": 76,
+        "DisclosureTriangle": 1,
+        "paragraph": 23,
+        "heading": 8,
+        "listitem": 4,
+        "button": 1,
+        "strong": 16
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "import-step-4",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 7,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 49,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 2,
+        "generic": 4,
+        "form": 1,
+        "InlineTextBox": 61,
+        "DisclosureTriangle": 1,
+        "paragraph": 6,
+        "heading": 3,
+        "listitem": 10,
+        "button": 1,
+        "strong": 10,
+        "checkbox": 1,
+        "ListMarker": 6
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "review-field-error",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 9,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 71,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 2,
+        "alert": 1,
+        "generic": 15,
+        "form": 1,
+        "InlineTextBox": 86,
+        "DisclosureTriangle": 1,
+        "paragraph": 18,
+        "heading": 9,
+        "listitem": 5,
+        "button": 1,
+        "LabelText": 12,
+        "ListMarker": 1,
+        "strong": 7,
+        "combobox": 6,
+        "textbox": 6,
+        "MenuListPopup": 6,
+        "option": 22
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "review-confirm",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 8,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 40,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 2,
+        "generic": 4,
+        "form": 1,
+        "InlineTextBox": 49,
+        "DisclosureTriangle": 1,
+        "paragraph": 4,
+        "heading": 3,
+        "listitem": 10,
+        "button": 1,
+        "checkbox": 1,
+        "ListMarker": 6,
+        "strong": 6
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "import-step-2",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 32,
+        "complementary": 1,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 98,
+        "region": 8,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 1,
+        "generic": 9,
+        "form": 1,
+        "InlineTextBox": 98,
+        "heading": 16,
+        "DisclosureTriangle": 1,
+        "paragraph": 17,
+        "listitem": 4,
+        "button": 1,
+        "strong": 16
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "import-step-3",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 32,
+        "complementary": 1,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 104,
+        "region": 8,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 1,
+        "generic": 9,
+        "form": 1,
+        "InlineTextBox": 104,
+        "heading": 16,
+        "DisclosureTriangle": 1,
+        "paragraph": 23,
+        "listitem": 4,
+        "button": 1,
+        "strong": 16
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "import-step-4",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 32,
+        "complementary": 1,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 82,
+        "region": 8,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 2,
+        "generic": 4,
+        "form": 1,
+        "InlineTextBox": 83,
+        "heading": 11,
+        "DisclosureTriangle": 1,
+        "paragraph": 6,
+        "listitem": 10,
+        "button": 1,
+        "strong": 10,
+        "checkbox": 1,
+        "ListMarker": 6
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "review-field-error",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 34,
+        "complementary": 1,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 104,
+        "region": 8,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 2,
+        "alert": 1,
+        "generic": 15,
+        "form": 1,
+        "InlineTextBox": 112,
+        "heading": 17,
+        "DisclosureTriangle": 1,
+        "paragraph": 18,
+        "listitem": 5,
+        "button": 1,
+        "LabelText": 12,
+        "ListMarker": 1,
+        "strong": 7,
+        "combobox": 6,
+        "textbox": 6,
+        "MenuListPopup": 6,
+        "option": 22
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "review-confirm",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 33,
+        "complementary": 1,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 73,
+        "region": 8,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 2,
+        "generic": 3,
+        "form": 1,
+        "InlineTextBox": 73,
+        "heading": 11,
+        "DisclosureTriangle": 1,
+        "paragraph": 4,
+        "listitem": 10,
+        "button": 1,
+        "checkbox": 1,
+        "ListMarker": 6,
+        "strong": 6
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "import-step-2",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 7,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 65,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 1,
+        "generic": 9,
+        "form": 1,
+        "InlineTextBox": 70,
+        "DisclosureTriangle": 1,
+        "paragraph": 17,
+        "heading": 8,
+        "listitem": 4,
+        "button": 1,
+        "strong": 16
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "import-step-3",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 7,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 71,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 1,
+        "generic": 9,
+        "form": 1,
+        "InlineTextBox": 76,
+        "DisclosureTriangle": 1,
+        "paragraph": 23,
+        "heading": 8,
+        "listitem": 4,
+        "button": 1,
+        "strong": 16
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "import-step-4",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 7,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 49,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 2,
+        "generic": 4,
+        "form": 1,
+        "InlineTextBox": 61,
+        "DisclosureTriangle": 1,
+        "paragraph": 6,
+        "heading": 3,
+        "listitem": 10,
+        "button": 1,
+        "strong": 10,
+        "checkbox": 1,
+        "ListMarker": 6
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "review-field-error",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 9,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 71,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 2,
+        "alert": 1,
+        "generic": 15,
+        "form": 1,
+        "InlineTextBox": 86,
+        "DisclosureTriangle": 1,
+        "paragraph": 18,
+        "heading": 9,
+        "listitem": 5,
+        "button": 1,
+        "LabelText": 12,
+        "ListMarker": 1,
+        "strong": 7,
+        "combobox": 6,
+        "textbox": 6,
+        "MenuListPopup": 6,
+        "option": 22
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "review-confirm",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 8,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 40,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 2,
+        "generic": 4,
+        "form": 1,
+        "InlineTextBox": 49,
+        "DisclosureTriangle": 1,
+        "paragraph": 4,
+        "heading": 3,
+        "listitem": 10,
+        "button": 1,
+        "checkbox": 1,
+        "ListMarker": 6,
+        "strong": 6
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "import-step-2",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 32,
+        "complementary": 1,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 98,
+        "region": 8,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 1,
+        "generic": 9,
+        "form": 1,
+        "InlineTextBox": 98,
+        "heading": 16,
+        "DisclosureTriangle": 1,
+        "paragraph": 17,
+        "listitem": 4,
+        "button": 1,
+        "strong": 16
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "import-step-3",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 32,
+        "complementary": 1,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 104,
+        "region": 8,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 1,
+        "generic": 9,
+        "form": 1,
+        "InlineTextBox": 104,
+        "heading": 16,
+        "DisclosureTriangle": 1,
+        "paragraph": 23,
+        "listitem": 4,
+        "button": 1,
+        "strong": 16
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "import-step-4",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 32,
+        "complementary": 1,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 82,
+        "region": 8,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 2,
+        "generic": 4,
+        "form": 1,
+        "InlineTextBox": 83,
+        "heading": 11,
+        "DisclosureTriangle": 1,
+        "paragraph": 6,
+        "listitem": 10,
+        "button": 1,
+        "strong": 10,
+        "checkbox": 1,
+        "ListMarker": 6
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "review-field-error",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 34,
+        "complementary": 1,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 104,
+        "region": 8,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 2,
+        "alert": 1,
+        "generic": 15,
+        "form": 1,
+        "InlineTextBox": 112,
+        "heading": 17,
+        "DisclosureTriangle": 1,
+        "paragraph": 18,
+        "listitem": 5,
+        "button": 1,
+        "LabelText": 12,
+        "ListMarker": 1,
+        "strong": 7,
+        "combobox": 6,
+        "textbox": 6,
+        "MenuListPopup": 6,
+        "option": 22
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "review-confirm",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 33,
+        "complementary": 1,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 73,
+        "region": 8,
+        "group": 1,
+        "navigation": 1,
+        "sectionheader": 1,
+        "list": 2,
+        "generic": 3,
+        "form": 1,
+        "InlineTextBox": 73,
+        "heading": 11,
+        "DisclosureTriangle": 1,
+        "paragraph": 4,
+        "listitem": 10,
+        "button": 1,
+        "checkbox": 1,
+        "ListMarker": 6,
+        "strong": 6
+      },
+      "images": [],
+      "actualScreenReader": false
+    },
+    {
+      "name": "chart-and-open-table",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 52,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 311,
+        "group": 9,
+        "navigation": 3,
+        "sectionheader": 10,
+        "form": 1,
+        "paragraph": 35,
+        "region": 2,
+        "status": 1,
+        "generic": 89,
+        "InlineTextBox": 346,
+        "DisclosureTriangle": 9,
+        "heading": 16,
+        "LabelText": 2,
+        "button": 2,
+        "article": 11,
+        "strong": 9,
+        "DescriptionList": 1,
+        "Date": 1,
+        "combobox": 1,
+        "image": 8,
+        "term": 5,
+        "definition": 5,
+        "MenuListPopup": 1,
+        "graphics-symbol": 36,
+        "option": 3,
+        "table": 1,
+        "spinbutton": 3,
+        "caption": 1,
+        "rowgroup": 1,
+        "row": 8,
+        "rowheader": 7,
+        "cell": 35,
+        "columnheader": 6
+      },
+      "images": [
+        {
+          "name": true,
+          "description": true
+        },
+        {
+          "name": true,
+          "description": true
+        },
+        {
+          "name": true,
+          "description": true
+        },
+        {
+          "name": true,
+          "description": true
+        },
+        {
+          "name": true,
+          "description": true
+        },
+        {
+          "name": true,
+          "description": true
+        },
+        {
+          "name": true,
+          "description": true
+        },
+        {
+          "name": true,
+          "description": true
+        }
+      ],
+      "actualScreenReader": false
+    },
+    {
+      "name": "chart-and-open-table",
+      "roles": {
+        "RootWebArea": 1,
+        "link": 77,
+        "complementary": 1,
+        "banner": 1,
+        "main": 1,
+        "contentinfo": 1,
+        "StaticText": 344,
+        "region": 10,
+        "group": 9,
+        "navigation": 3,
+        "sectionheader": 10,
+        "form": 1,
+        "paragraph": 35,
+        "status": 1,
+        "generic": 88,
+        "InlineTextBox": 347,
+        "heading": 24,
+        "DisclosureTriangle": 9,
+        "LabelText": 2,
+        "button": 2,
+        "article": 11,
+        "strong": 9,
+        "DescriptionList": 1,
+        "Date": 1,
+        "combobox": 1,
+        "image": 8,
+        "term": 5,
+        "definition": 5,
+        "MenuListPopup": 1,
+        "graphics-symbol": 36,
+        "option": 3,
+        "table": 1,
+        "spinbutton": 3,
+        "caption": 1,
+        "rowgroup": 1,
+        "row": 8,
+        "rowheader": 7,
+        "cell": 35,
+        "columnheader": 6
+      },
+      "images": [
+        {
+          "name": true,
+          "description": true
+        },
+        {
+          "name": true,
+          "description": true
+        },
+        {
+          "name": true,
+          "description": true
+        },
+        {
+          "name": true,
+          "description": true
+        },
+        {
+          "name": true,
+          "description": true
+        },
+        {
+          "name": true,
+          "description": true
+        },
+        {
+          "name": true,
+          "description": true
+        },
+        {
+          "name": true,
+          "description": true
+        }
+      ],
+      "actualScreenReader": false
+    }
+  ],
+  "performance": [
+    {
+      "route": "/energy/history",
+      "samplesMs": [
+        49.4,
+        50,
+        52.3,
+        50.7,
+        51.8
+      ],
+      "renderedEvents": 25,
+      "maxMs": 52.3
+    },
+    {
+      "route": "/energy/history?page=200",
+      "samplesMs": [
+        77.1,
+        71.1,
+        67.6,
+        68.9,
+        67
+      ],
+      "renderedEvents": 25,
+      "maxMs": 77.1
+    },
+    {
+      "route": "/energy/history?page=99999",
+      "samplesMs": [
+        70.4,
+        66.8,
+        64,
+        69.1,
+        65.7
+      ],
+      "renderedEvents": 15,
+      "maxMs": 70.4
+    },
+    {
+      "route": "/energy/history?source=QA%20volumen%201",
+      "samplesMs": [
+        68.9,
+        66.9,
+        65.6,
+        65.4,
+        66.9
+      ],
+      "renderedEvents": 25,
+      "maxMs": 68.9
+    },
+    {
+      "route": "/energy/history?operation=import",
+      "samplesMs": [
+        54.7,
+        53.8,
+        53.3,
+        54.8,
+        54.1
+      ],
+      "renderedEvents": 25,
+      "maxMs": 54.8
+    }
+  ],
+  "screenshots": [
+    "known-390-light.png",
+    "minimum-390-light.png",
+    "maximum-390-light.png",
+    "sources-390-light.png",
+    "history-390-light.png",
+    "import-390-light.png",
+    "review-390-light.png",
+    "query-error-390-light.png",
+    "sources-error-390-light.png",
+    "history-error-390-light.png",
+    "known-1366-light.png",
+    "minimum-1366-light.png",
+    "maximum-1366-light.png",
+    "sources-1366-light.png",
+    "history-1366-light.png",
+    "import-1366-light.png",
+    "review-1366-light.png",
+    "query-error-1366-light.png",
+    "sources-error-1366-light.png",
+    "history-error-1366-light.png",
+    "import-step-2-390-light.png",
+    "import-step-3-390-light.png",
+    "import-step-4-390-light.png",
+    "review-error-390-light.png",
+    "review-confirm-390-light.png",
+    "review-error-1366-light.png",
+    "review-confirm-1366-light.png",
+    "known-390-dark.png",
+    "minimum-390-dark.png",
+    "maximum-390-dark.png",
+    "sources-390-dark.png",
+    "history-390-dark.png",
+    "import-390-dark.png",
+    "review-390-dark.png",
+    "query-error-390-dark.png",
+    "sources-error-390-dark.png",
+    "history-error-390-dark.png",
+    "known-1366-dark.png",
+    "minimum-1366-dark.png",
+    "maximum-1366-dark.png",
+    "sources-1366-dark.png",
+    "history-1366-dark.png",
+    "import-1366-dark.png",
+    "review-1366-dark.png",
+    "query-error-1366-dark.png",
+    "sources-error-1366-dark.png",
+    "history-error-1366-dark.png",
+    "import-step-2-390-dark.png",
+    "import-step-3-390-dark.png",
+    "import-step-4-390-dark.png",
+    "review-error-390-dark.png",
+    "review-confirm-390-dark.png",
+    "review-error-1366-dark.png",
+    "review-confirm-1366-dark.png",
+    "table-open-390-dark.png",
+    "table-open-1366-dark.png",
+    "zoom200-layout-683-light.png",
+    "text200-390-light.png",
+    "zoom200-layout-683-dark.png",
+    "text200-390-dark.png"
+  ],
+  "limits": [
+    "No actual NVDA/Narrator session; browser AX tree is structural evidence only.",
+    "200% uses layout equivalent and separate text resize; no claim of browser UI zoom.",
+    "Automated axe/manual inspection do not certify full WCAG conformance."
+  ],
+  "status": "PASS"
+}

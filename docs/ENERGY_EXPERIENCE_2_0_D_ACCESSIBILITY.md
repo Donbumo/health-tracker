@@ -60,8 +60,8 @@ Métodos: Flask real con fixtures ficticias; Edge/Playwright; axe-core 4.14.0 (t
 
 4.1.1 no forma parte de WCAG 2.2; se corrigió igualmente la estructura de la lista de definiciones. Esta matriz cubre los 55 criterios A/AA mediante agrupaciones de los medios no aplicables.
 
-## Prueba asistida pendiente y gate
+## Prueba asistida y gate
 
-El usuario confirmó **Narrador de Windows con Edge** y que puede escuchar. Esa disponibilidad no acredita una sesión ni resultados audibles. [Cierre asistido, entorno y TTL](ENERGY_EXPERIENCE_2_0_D_ASSISTED_CLOSEOUT.md) conserva la matriz por caso. El árbol AX es evidencia semántica, no simulación de un lector.
+El usuario confirmó **Narrador de Windows con Edge**, la QA actual en primer plano y el lector activo. N01–N10 tienen PASS específicos por escucha humana; el avance N07 se repitió y corroboró. Zoom nativo Z01 BLOCKED por discrepancia entre menú 200 % informado y medición inalterada respecto al 100 %; Z02 pendiente. [Cierre asistido, entorno y TTL](ENERGY_EXPERIENCE_2_0_D_ASSISTED_CLOSEOUT.md) conserva las respuestas por caso. La confirmación de disponibilidad no se usa para aprobar otros recorridos. El árbol AX es evidencia semántica, no simulación de un lector.
 
-Antes de cerrar conformidad: lector con Edge/Firefox, teclado + zoom nativo 200%, lectura por encabezados/tablas, estado parcial/conflicto/hueco, límites de calendario, menú, campo inválido y su corrección, cuatro pasos/confirmación/original protegido; comprobar anuncios únicos y foco no oculto. Revisar la justificación del TTL y no confundir los tags de axe con cobertura total. D permanece en PR sin merge/despliegue automático.
+Completados los casos N01–N10 con Narrador y Edge y la escucha de expiración/recuperación. Antes de cerrar conformidad quedan el zoom nativo 200 % corroborado, su recorrido completo por teclado/formularios y la revisión del ajuste de tiempo. Los tags de axe no equivalen a cobertura total. D permanece BLOCKED, en PR sin merge ni despliegue.

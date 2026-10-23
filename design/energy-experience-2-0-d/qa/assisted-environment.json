@@ -36,7 +36,7 @@
     "reason": "could not determine current browser URL with enough confidence",
     "guardRelaxed": false,
     "windowsKeysSent": false,
-    "foreground": "BLOCKED: human foreground/Narrator activation confirmation not received during this run; no native input sent"
+    "foreground": "Human-confirmed current QA foreground and manually activated Narrator. Native automation guard unchanged; no native keys sent."
   },
   "windows": {
     "displayVersion": "25H2",
@@ -49,7 +49,7 @@
     "productBasis": "EditionID + DisplayVersion + build 26200 mapped using official Microsoft release table",
     "productSource": "https://learn.microsoft.com/en-us/windows/release-health/windows11-release-information"
   },
-  "audibleStatus": "NOT TESTED",
+  "audibleStatus": "N01-N10 and actual import-expiry/recovery human PASS; native zoom Z01 BLOCKED due technical mismatch; Z02 NOT TESTED",
   "finalBrowserObservation": {
     "observedAtUTC": "2026-10-23T22:18:34.542Z",
     "url": "http://127.0.0.1:55229/energy?date=2040-02-03&period=7",
@@ -78,7 +78,7 @@
       "dpr": 1,
       "qaFixture": true
     },
-    "foregroundHumanConfirmed": false,
+    "foregroundHumanConfirmed": true,
     "finalObservation": {
       "observedAtUTC": "2026-10-23T22:31:18.160Z",
       "url": "http://127.0.0.1:65440/energy?date=2040-02-03&period=7",
@@ -92,7 +92,16 @@
   },
   "activeQAURL": "http://127.0.0.1:65440/energy?date=2040-02-03&period=7",
   "baselineRealExpiryQAURL": "http://127.0.0.1:55229/energy?date=2040-02-03&period=7",
-  "foregroundConfirmationReceived": false,
-  "narratorActivationConfirmed": false,
-  "nativeZoomConfirmed": false
+  "foregroundConfirmationReceived": true,
+  "narratorActivationConfirmed": true,
+  "nativeZoomConfirmed": false,
+  "humanConfirmation": {
+    "qaPort": 65440,
+    "statement": "Nueva QA visible y Narrador activo",
+    "basis": "Explicit human reply; no native foreground bypass",
+    "date": "2026-10-23"
+  },
+  "nativeZoomHumanReported200": true,
+  "nativeZoomTechnicallyCorroborated": false,
+  "followupDisposition": "User requested autonomous closure without further questions; retain unverified gates, no merge/deploy or timing-security changes"
 }

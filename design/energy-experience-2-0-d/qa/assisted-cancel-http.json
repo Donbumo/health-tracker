@@ -1,0 +1,16 @@
+{
+  "scope": "Fictional loopback QA; HTTP read projections, no SQL/file-system inference",
+  "result": "PASS",
+  "canonicalSourceEventProjectionsUnchanged": true,
+  "proposedSourcePresentBefore": false,
+  "proposedSourcePresentAfter": false,
+  "filteredEventsBefore": "0 eventos · página 1 de 1 · hasta 25 por página",
+  "filteredEventsAfter": "0 eventos · página 1 de 1 · hasta 25 por página",
+  "proposedOriginalVisibleBefore": false,
+  "proposedOriginalVisibleAfter": false,
+  "url": "http://127.0.0.1:65440/energy/import",
+  "title": "Paso 1 de 4 · Importar energía con revisión · Health Tracker",
+  "fileSelectorEmpty": true,
+  "audibleCancellation": "PASS: cancelación y regreso claros (explicit human report)",
+  "filePersistenceBasis": "Existing focused Flask tests verify no domain/file writes before confirmation; this observation checks HTTP projections only"
+}

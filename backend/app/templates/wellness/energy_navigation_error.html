@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Revisa {{ 'los filtros' if filters_error else 'la fecha' }} de Energía · Health Tracker{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{{ url_for('static',filename='css/energy_experience.css') }}">{% endblock %}
+{% block content %}
+<div class="ee-page"><section class="ee-card" role="alert" tabindex="-1" autofocus aria-labelledby="ep-error-title">
+ <h1 id="ep-error-title">Revisa {{ 'los filtros del historial' if filters_error else 'la fecha de las fuentes' }}</h1>
+ <p>La consulta no modificó ningún registro. Usa fechas entre 01/01/1900 y 31/12/9998.{% if filters_error %} El inicio debe ser anterior o igual al final; elige una operación del formulario y una página entera positiva.{% endif %}</p>
+ <p><a class="button" href="{{ url_for('wellness.energy_history',filters=1) }}#ep-filters">Abrir el historial y sus filtros</a> <a href="{{ url_for('wellness.energy_experience') }}">Consultar otra fecha en Energía</a></p>
+</section></div>
+{% endblock %}

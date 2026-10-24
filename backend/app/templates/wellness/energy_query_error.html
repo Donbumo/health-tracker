@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Revisa la consulta de Energía · Health Tracker{% endblock %}
+{% block page_styles %}<link rel="stylesheet" href="{{ url_for('static',filename='css/energy_experience.css') }}">{% endblock %}
+{% block content %}
+<div class="ee-page">
+ <section class="ee-card" role="alert" tabindex="-1" autofocus aria-labelledby="ee-query-title">
+  <h1 id="ee-query-title">Revisa la fecha o el período</h1><p>La consulta no modificó ningún registro. Corrige los campos indicados y vuelve a consultar.</p>
+  <ul>{% if invalid_date %}<li><a href="#ee-query-date">Fecha: usa un día entre 01/01/1900 y 31/12/9998.</a></li>{% endif %}{% if invalid_period %}<li><a href="#ee-query-period">Período: elige 7, 30 o 90 días.</a></li>{% endif %}</ul>
+ </section>
+ <form method="get" action="{{ url_for('wellness.energy_experience') }}" class="ee-date ee-card">
+  <label>Fecha<input id="ee-query-date" type="date" name="date" min="1900-01-01" max="9998-12-31" value="{{ target if not invalid_date else '' }}" required{% if invalid_date %} aria-invalid="true" aria-describedby="ee-date-error"{% endif %}></label>
+  {% if invalid_date %}<p id="ee-date-error">Introduce una fecha del intervalo admitido. También puedes abrir Hoy sin cambiar el historial.</p>{% endif %}
+  <label>Período<select id="ee-query-period" name="period" required{% if invalid_period %} aria-invalid="true" aria-describedby="ee-period-error"{% endif %}>{% if invalid_period %}<option value="" selected disabled>Selecciona un período</option>{% endif %}{% for n in [7,30,90] %}<option value="{{ n }}"{% if period==n %} selected{% endif %}>{{ n }} días</option>{% endfor %}</select></label>
+  {% if invalid_period %}<p id="ee-period-error">Sólo están disponibles períodos de 7, 30 y 90 días.</p>{% endif %}
+  <button class="button" type="submit">Consultar de nuevo</button><a href="{{ url_for('wellness.energy_experience') }}">Abrir Hoy</a>
+ </form>
+</div>
+{% endblock %}

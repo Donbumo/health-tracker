@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "effective_host_config_identified": true,
+  "request_body_cookie_authorization_token_logging": false,
+  "debug_logging": false,
+  "scope": "Effective HTTPS vhost and configured log formats; standard route/status/URI metadata only; C originals/tokens are POST bodies, not URLs",
+  "configuration_modified": false
+}

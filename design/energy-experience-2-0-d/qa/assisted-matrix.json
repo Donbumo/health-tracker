@@ -1,0 +1,230 @@
+{
+  "scope": "Narrador + Edge; audible results require explicit human confirmation",
+  "baselineHead": "061c460661f3daa922bceb50710b0d31a224044e",
+  "foreground": {
+    "status": "PASS",
+    "basis": "Explicit human confirmation for current QA port 65440: Nueva QA visible y Narrador activo. Native URL guard unchanged; no blind Windows input."
+  },
+  "cases": [
+    {
+      "id": "N01",
+      "status": "PASS",
+      "humanObservation": "PASS: título, encabezados, regiones y salto claros",
+      "basis": "Explicit human audible report; not inferred from AX or screenshots"
+    },
+    {
+      "id": "N02",
+      "status": "PASS",
+      "humanObservation": "PASS: lectura clara y límites anteriores correctos",
+      "basis": "Explicit human Narrator/keyboard report at 1900-01-01"
+    },
+    {
+      "id": "N03",
+      "status": "PASS",
+      "humanObservation": "PASS: lectura y límites posteriores correctos",
+      "basis": "Explicit human Narrator/keyboard report at 9998-12-31"
+    },
+    {
+      "id": "N04",
+      "status": "PASS",
+      "humanObservation": "Five explicit human PASS reports: known, zero, unknown, partial and conflict",
+      "subcases": [
+        {
+          "id": "known",
+          "date": "2040-02-03",
+          "status": "PASS",
+          "humanObservation": "PASS: valores, nombres y unidades claros",
+          "expected": "2450 kcal expenditure, 2200 kcal intake, -250 kcal balance"
+        },
+        {
+          "id": "zero",
+          "date": "2040-01-31",
+          "status": "PASS",
+          "humanObservation": "PASS: cero conocido inequívoco"
+        },
+        {
+          "id": "unknown",
+          "date": "2041-01-01",
+          "status": "PASS",
+          "humanObservation": "PASS: ausencia distinguible de cero"
+        },
+        {
+          "id": "partial",
+          "date": "2040-02-04",
+          "status": "PASS",
+          "humanObservation": "PASS: parcial, cero y ausencia bien diferenciados"
+        },
+        {
+          "id": "conflict",
+          "date": "2040-02-01",
+          "status": "PASS",
+          "humanObservation": "PASS: conflicto y subtotal parcial claros"
+        }
+      ],
+      "basis": "Human Narrator observations at the five fixture dates"
+    },
+    {
+      "id": "N05",
+      "status": "PASS",
+      "humanObservation": "PASS: gráficas y tablas comprensibles",
+      "basis": "Explicit human report for graph headings, table values, valid-day denominators and understandable announcements"
+    },
+    {
+      "id": "N06",
+      "status": "PASS",
+      "humanObservation": "PASS: fuentes, historial, filtros, páginas y original claros",
+      "basis": "Explicit human Narrator/keyboard report; no original deletion"
+    },
+    {
+      "id": "N07",
+      "status": "PASS",
+      "humanObservation": "Three explicit human PASS reports: invalid date, invalid filter, invalid manual field and correction",
+      "subcases": [
+        {
+          "id": "invalid-date",
+          "status": "PASS",
+          "humanObservation": "PASS: error anunciado, foco y recuperación correctos"
+        },
+        {
+          "id": "invalid-filter",
+          "status": "PASS",
+          "humanObservation": "PASS: error y recuperación del filtro claros"
+        },
+        {
+          "id": "invalid-manual",
+          "status": "PASS",
+          "humanObservation": "PASS: error, foco, borrador y corrección claros",
+          "reportedAudibleStatus": "PASS",
+          "browserObservation": "Controlled page title remained Paso 2 de 4 before navigation to import. Expected completed correction at step 3 is not independently verified.",
+          "repeatHumanObservation": "PASS: paso 3 y propuesta conservada claros",
+          "repeatEvidence": "manual-correction-advance.json"
+        }
+      ],
+      "basis": "Initial advancement mismatch retained as historical observation. Repeated real Flask invalid-manual HTTP 400 -> linked field -> correction HTTP 200 step 3, explicitly confirmed by human."
+    },
+    {
+      "id": "N08",
+      "status": "PASS",
+      "humanObservation": "Four explicit human PASS reports for steps 1-4; each transition observed on controlled QA page",
+      "subcases": [
+        {
+          "id": "step-1",
+          "status": "PASS",
+          "humanObservation": "Coincide URL/archivo y la lectura del paso 1 es clara",
+          "basis": "Human confirmed current QA port 65440, import step 1 and selected QA-Narrador-D.json"
+        },
+        {
+          "id": "step-2",
+          "status": "PASS",
+          "humanObservation": "PASS: paso 2 y datos claramente anunciados",
+          "browserHTTP": 200
+        },
+        {
+          "id": "step-3",
+          "status": "PASS",
+          "humanObservation": "PASS: paso 3 y operaciones comprensibles",
+          "browserHTTP": 200
+        },
+        {
+          "id": "step-4",
+          "status": "PASS",
+          "humanObservation": "PASS: resumen y aviso claramente anunciados",
+          "browserHTTP": 200
+        }
+      ],
+      "basis": "Real Flask HTTP 200 previews and explicit human Narrator reports; no final confirmation submitted"
+    },
+    {
+      "id": "N09",
+      "status": "PASS",
+      "humanObservation": "PASS: controles, estado y foco claros; PASS: cancelación y regreso claros",
+      "subcases": [
+        {
+          "id": "controls",
+          "status": "PASS",
+          "humanObservation": "PASS: controles, estado y foco claros"
+        },
+        {
+          "id": "cancellation",
+          "status": "PASS",
+          "humanObservation": "PASS: cancelación y regreso claros"
+        }
+      ],
+      "basis": "Explicit human Narrator/keyboard observations; HTTP canonical/source/event projections unchanged"
+    },
+    {
+      "id": "N10",
+      "status": "PASS",
+      "humanObservation": "PASS: anuncios oportunos y comprensibles",
+      "basis": "Explicit human report for invalid date/filter/manual field and import-step announcements; actual TTL expiry audible result tracked separately"
+    },
+    {
+      "id": "Z01",
+      "status": "BLOCKED",
+      "humanObservation": "PASS: menú 200 %, lectura y reflow correctos",
+      "basis": "Reported human PASS retained, but current controlled-target CSS width/DPR unchanged from 100% baseline. Verify matching native window and actual zoom before passing."
+    },
+    {
+      "id": "Z02",
+      "status": "NOT TESTED",
+      "humanObservation": null
+    }
+  ],
+  "overallGate": "BLOCKED",
+  "activeQAURL": "http://127.0.0.1:65440/energy?date=2040-02-03&period=7",
+  "TTL": [
+    {
+      "id": "T01",
+      "status": "PASS",
+      "basis": "Real 903.02-second wait, genuine server tokens, both HTTP 409, domain/file metadata unchanged"
+    },
+    {
+      "id": "T02",
+      "status": "PASS",
+      "basis": "Manual draft loss corrected in D; expired/stale/invalid signature focal tests and four real HTTP recovery UIs, no automatic token"
+    },
+    {
+      "id": "T03",
+      "status": "FAIL",
+      "basis": "No time adjustment/proactive notice and no reviewed essential exception for WCAG 2.2.1. Security/time proposal requires review."
+    },
+    {
+      "id": "T04",
+      "status": "PASS",
+      "basis": "Fresh explicit review/confirmation required; source indexes discarded, no writer/TTL/CSRF/owner/fingerprint changes"
+    },
+    {
+      "id": "T05",
+      "status": "PASS",
+      "basis": "Second real import-only expiry: 927.556 seconds, genuine server 409, no automatic token, HTTP projections unchanged. Explicit human PASS for expired error and recovery form; GET 200, empty selector, no confirmation token.",
+      "subcases": [
+        {
+          "id": "expired-error",
+          "status": "PASS",
+          "humanObservation": "PASS: caducidad, consecuencias y recuperación claras"
+        },
+        {
+          "id": "recovered-form",
+          "status": "PASS",
+          "humanObservation": "PASS: formulario recuperado y trabajo a repetir claros"
+        }
+      ]
+    }
+  ],
+  "audibleReportsReceived": true,
+  "narratorActivationConfirmedByHuman": true,
+  "sameWindowReconfirmed": {
+    "status": "PASS",
+    "qaPort": 65440,
+    "route": "/energy/import",
+    "file": "QA-Narrador-D.json",
+    "basis": "Explicit human confirmation of URL, step and file; no native automation guard changes"
+  },
+  "nativeZoomTechnicallyCorroborated": false,
+  "remainingGates": [
+    "Z01: reported native 200% not corroborated by controlled-target CSS/DPR measurements",
+    "Z02: native 200% complete keyboard/forms traversal NOT TESTED",
+    "T03: timing adjustment/proactive warning requires reviewed security/accessibility proposal"
+  ],
+  "nativeZoomHumanReported200": true
+}

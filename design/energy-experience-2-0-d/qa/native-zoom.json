@@ -1,0 +1,72 @@
+{
+  "observedAtUTC": "2026-10-23T23:37:35.638Z",
+  "url": "http://127.0.0.1:65440/energy?date=2040-02-03&period=7",
+  "title": "Energía · 2040-02-03 · Health Tracker",
+  "window": {
+    "windowId": 243876615,
+    "bounds": {
+      "left": 188,
+      "top": 47,
+      "width": 1366,
+      "height": 900,
+      "windowState": "minimized"
+    }
+  },
+  "metrics": {
+    "width": 1342,
+    "height": 808,
+    "dpr": 1,
+    "scrollWidth": 1327,
+    "visualViewportWidth": 1327,
+    "visualViewportScale": 1
+  },
+  "humanObservation": "PASS: menú 200 %, lectura y reflow correctos",
+  "baseline": {
+    "observedAtUTC": "2026-10-23T23:37:08.572Z",
+    "url": "http://127.0.0.1:65440/energy?date=2040-02-03&period=7",
+    "title": "Energía · 2040-02-03 · Health Tracker",
+    "window": {
+      "windowId": 243876615,
+      "bounds": {
+        "left": 188,
+        "top": 47,
+        "width": 1366,
+        "height": 900,
+        "windowState": "normal"
+      }
+    },
+    "metrics": {
+      "width": 1342,
+      "height": 808,
+      "dpr": 1,
+      "scrollWidth": 1327,
+      "theme": null
+    },
+    "method": "No viewport, page-scale, CSS zoom or OS scaling change by agent"
+  },
+  "agentChangedViewportOrScale": false,
+  "status": "BLOCKED",
+  "reason": "Two controlled-target observations retain baseline CSS width/height and DPR 1; latest human reply does not specify exact percentage/title. Native zoom cannot be corroborated; no simulated zoom used.",
+  "recheck": {
+    "observedAtUTC": "2026-10-23T23:40:14.422Z",
+    "url": "http://127.0.0.1:65440/energy?date=2040-02-03&period=7",
+    "title": "Energía · 2040-02-03 · Health Tracker",
+    "window": {
+      "windowId": 243876615,
+      "bounds": {
+        "left": 188,
+        "top": 47,
+        "width": 1366,
+        "height": 900,
+        "windowState": "normal"
+      }
+    },
+    "metrics": {
+      "width": 1342,
+      "height": 808,
+      "dpr": 1,
+      "scrollWidth": 1327
+    },
+    "exactPercentageAndTitleProvidedByHuman": false
+  }
+}

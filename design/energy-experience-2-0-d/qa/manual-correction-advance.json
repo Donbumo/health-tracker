@@ -1,0 +1,14 @@
+{
+  "scope": "Fictional Flask QA; no final confirmation",
+  "errorHTTP": 400,
+  "errorLinkFocusedSteps": true,
+  "correctedHTTP": 200,
+  "title": "Paso 3 de 4 · Revisar decisiones de energía · Health Tracker",
+  "url": "http://127.0.0.1:65440/energy/review?date=2040-02-03#eg-value-steps",
+  "expectedText": {
+    "steps": "0",
+    "totalCalories": "2450",
+    "notes": "QA ficticia: borrador de prueba de Narrador"
+  },
+  "audibleResult": "PASS: paso 3 y propuesta conservada claros (explicit human report)"
+}

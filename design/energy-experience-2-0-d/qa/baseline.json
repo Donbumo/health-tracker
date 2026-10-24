@@ -1,0 +1,147 @@
+{
+  "scope": "fictional Flask QA, pre-D changes",
+  "axe": "4.14.0",
+  "results": [
+    {
+      "name": "summary",
+      "theme": "light",
+      "violations": [
+        {
+          "id": "definition-list",
+          "impact": "serious",
+          "nodes": [
+            {
+              "target": [
+                "dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > p"
+            }
+          ]
+        }
+      ],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "name": "sources",
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "history",
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import",
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "review",
+      "theme": "light",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "summary",
+      "theme": "dark",
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": [
+            {
+              "target": [
+                ".ee-date > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.14 (foreground color: #ffffff, background color: #38bdf8, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        },
+        {
+          "id": "definition-list",
+          "impact": "serious",
+          "nodes": [
+            {
+              "target": [
+                "dl"
+              ],
+              "summary": "Fix all of the following:\n  dl element has direct children that are not allowed: div > p"
+            }
+          ]
+        }
+      ],
+      "incomplete": [
+        "color-contrast"
+      ]
+    },
+    {
+      "name": "sources",
+      "theme": "dark",
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": [
+            {
+              "target": [
+                "a[href=\"/energy/review?date=2040-02-03\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.14 (foreground color: #ffffff, background color: #38bdf8, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ],
+      "incomplete": []
+    },
+    {
+      "name": "history",
+      "theme": "dark",
+      "violations": [],
+      "incomplete": []
+    },
+    {
+      "name": "import",
+      "theme": "dark",
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": [
+            {
+              "target": [
+                "form[enctype=\"multipart/form-data\"] > button"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.14 (foreground color: #ffffff, background color: #38bdf8, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ],
+      "incomplete": []
+    },
+    {
+      "name": "review",
+      "theme": "dark",
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "nodes": [
+            {
+              "target": [
+                "button[name=\"action\"]"
+              ],
+              "summary": "Fix any of the following:\n  Element has insufficient color contrast of 2.14 (foreground color: #ffffff, background color: #38bdf8, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+            }
+          ]
+        }
+      ],
+      "incomplete": []
+    }
+  ]
+}

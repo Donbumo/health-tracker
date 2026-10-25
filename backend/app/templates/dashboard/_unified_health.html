@@ -1,0 +1,30 @@
+{% set selected = dashboard.trends.energy|last %}
+{% set states = {'known':'Conocido', 'zero':'Cero conocido', 'unknown':'Sin dato', 'partial':'Subtotal conocido · parcial', 'conflict':'Conflicto pendiente'} %}
+<section class="unified-health" aria-labelledby="health-title">
+  <div class="dashboard-card-heading">
+    <div><p class="eyebrow">Nutrition 2.1 + Energía 2.0</p><h2 id="health-title">Alimentación y energía</h2><p class="help">Día {{ dashboard.range['to'] }} · {{ dashboard.range.timezone }}</p></div>
+    <div class="health-links"><a href="{{ url_for('main.today') }}">Hoy</a><a href="{{ url_for('nutrition.today', date=dashboard.range['to']) }}">Nutrición</a><a href="{{ url_for('wellness.energy_experience', date=dashboard.range['to']) }}">Energía</a><a href="{{ url_for('wellness.energy_sources', date=dashboard.range['to']) }}">Fuentes y decisiones</a></div>
+  </div>
+  <div class="health-cards">
+    {% for key, label, value, state, rolling_key in [('intake','Ingesta',selected.intake,selected.intake_state,'consumed'),('expenditure','Gasto',selected.expended,selected.expenditure_state,'expended'),('balance','Balance comparable',selected.balance,'unknown' if selected.balance is none else 'zero' if selected.balance|float == 0 else 'known','balance')] %}
+    <article class="health-card health-{{ key }}">
+      <h3>{{ label }}</h3><strong class="health-value">{{ number(value) }}{% if value is not none %} <small>kcal</small>{% endif %}</strong>
+      <p>{{ states[state] }}{% if key == 'balance' and value is not none %} · {{ 'Déficit' if value|float < 0 else 'Superávit' if value|float > 0 else 'Equilibrio' }}{% endif %}</p>
+      <div class="health-mean">Media móvil 7 días <strong>{{ number(selected[rolling_key + '_rolling_7d']) }}{% if selected[rolling_key + '_rolling_7d'] is not none %} kcal{% endif %}</strong><span>{{ selected[rolling_key + '_rolling_7d_days'] }}/7 días válidos</span></div>
+    </article>
+    {% endfor %}
+  </div>
+  <p class="data-caveat">Parcial es un subtotal conocido; no confirma el total ni un déficit. Ausencia y conflicto no son cero. El balance requiere ambos valores comparables del mismo día.</p>
+  <div class="health-charts">
+    <section class="dashboard-card" aria-labelledby="intake-expense-title"><h3 id="intake-expense-title">Ingesta y gasto diarios</h3><p class="help">Barras por día y medias móviles de 7 días. Los huecos representan datos ausentes. Las barras parciales llevan contorno discontinuo.</p><div class="dashboard-chart" data-dashboard-chart="energy"><p>Consulta la tabla de datos diarios.</p></div></section>
+    <section class="dashboard-card" aria-labelledby="balance-title"><h3 id="balance-title">Balance · eje cero</h3><p class="help">Ingesta comparable − gasto canónico. Media calculada con pares válidos, nunca restando medias de distinta cobertura.</p><div class="dashboard-chart" data-dashboard-chart="balance"><p>Consulta la tabla de datos diarios.</p></div></section>
+  </div>
+  <div class="energy-summary-strip" aria-label="Cobertura y medias del periodo">
+    <div><span>Ingesta comparable · periodo</span><strong>{{ number(energy.consumed_average) }} kcal · {{ energy.nutrition_days }}/{{ dashboard.range.days }} días</strong></div>
+    <div><span>Gasto · periodo</span><strong>{{ number(energy.expended_average) }} kcal · {{ energy.energy_days }}/{{ dashboard.range.days }} días</strong></div>
+    <div><span>Balance · periodo</span><strong>{{ number(energy.balance_average) }} kcal · {{ energy.balance_days }}/{{ dashboard.range.days }} pares</strong></div>
+  </div>
+  <details class="chart-table"><summary>Ver datos diarios, estados, medias y fuentes</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Datos diarios de alimentación y energía"><table><caption>Valores en kcal. Cada media móvil muestra sus días válidos de los últimos siete, incluidos días anteriores al rango visible.</caption><thead><tr><th>Fecha</th><th>Ingesta</th><th>Gasto</th><th>Balance comparable</th><th>Media ingesta</th><th>Media gasto</th><th>Media balance</th><th>Fuentes</th></tr></thead><tbody>
+  {% for p in dashboard.trends.energy %}<tr><th scope="row">{{ p.date }}</th><td>{{ number(p.intake) }} · {{ states[p.intake_state] }}</td><td>{{ number(p.expended) }} · {{ states[p.expenditure_state] }}</td><td>{{ number(p.balance) }}</td>{% for key in ('consumed','expended','balance') %}<td>{{ number(p[key + '_rolling_7d']) }} · {{ p[key + '_rolling_7d_days'] }}/7</td>{% endfor %}<td>{{ p.sources|join(' · ') if p.sources else 'Sin fuente comparable' }}</td></tr>{% endfor %}
+  </tbody></table></div></details>
+</section>

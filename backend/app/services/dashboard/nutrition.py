@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from app.extensions import db
 from app.services.nutrition_intelligence import comparison_value
-from app.models import DailyEnergy, DailyNutrition, UserGoal
+from app.services.nutrition_series import build_points, effective_energy_value
+from app.models import DailyNutrition, UserGoal
 from app.services.dashboard.date_range import DashboardDateRange
 from app.services.dashboard.goals import DashboardGoalsService, goal_for_day
 from app.services.dashboard.provenance import source_label, source_labels
@@ -46,39 +46,18 @@ def _dates(date_range: DashboardDateRange):
         yield date_range.start_date + timedelta(days=offset)
 
 
-def effective_energy_value(rows: list[DailyEnergy], field: str):
-    if not rows:
-        return None, None
-    if hasattr(rows[0], 'conflicts'):
-        selected = rows[0]
-    else:
-        from app.services.energy_days import project
-        selected = project(rows)
-    if selected is None or getattr(selected, field) is None:
-        return None, None
-    return getattr(selected, field), selected.field_sources.get(field) or selected
-
-
-def _rolling(points: list[dict], key: str, output_key: str) -> None:
-    for index, point in enumerate(points):
-        window = points[max(0, index - 6) : index + 1]
-        values = [item[key] for item in window if item[key] is not None]
-        point[output_key] = _average(_sum_or_none(values), len(values))
-        point[f"{output_key}_days"] = len(values)
-
-
 class NutritionTrendService:
     def load(self, user_id: int, date_range: DashboardDateRange) -> dict:
         nutrition_rows = db.session.execute(
             db.select(DailyNutrition)
             .where(
                 DailyNutrition.user_id == user_id,
-                DailyNutrition.date.between(date_range.start_date, date_range.end_date),
+                DailyNutrition.date.between(date_range.start_date - timedelta(days=6), date_range.end_date),
             )
             .order_by(DailyNutrition.date)
         ).scalars().all()
         from app.services.energy_days import views
-        energy_rows = views(user_id, start=date_range.start_date, end=date_range.end_date)
+        energy_rows = views(user_id, start=date_range.start_date - timedelta(days=6), end=date_range.end_date)
         return {"nutrition": nutrition_rows, "energy": energy_rows}
 
     def build_from_rows(
@@ -92,55 +71,37 @@ class NutritionTrendService:
             for row in loaded["nutrition"]
             if date_range.start_date <= row.date <= date_range.end_date
         }
-        energy_by_date = defaultdict(list)
-        for row in loaded["energy"]:
-            if date_range.start_date <= row.date <= date_range.end_date:
-                energy_by_date[row.date].append(row)
-
-        energy_points = []
-        protein_points = []
-        for day in _dates(date_range):
+        canonical = build_points(loaded["nutrition"], loaded["energy"], date_range.start_date, date_range.end_date)
+        energy_by_date = {row.date: row for row in loaded["energy"]}
+        energy_points, protein_points = [], []
+        for p in canonical:
+            day = p['date']
             nutrition = nutrition_by_date.get(day)
-            expended, energy = effective_energy_value(
-                energy_by_date.get(day, []), "total_calories"
-            )
-            consumed = comparison_value(nutrition,"calories")
-            balance = (
-                consumed - expended
-                if consumed is not None and expended is not None
-                else None
-            )
-            intake_source = source_label(
-                nutrition.source if nutrition is not None else None,
-                has_source_file=bool(nutrition and nutrition.source_file_id),
-            )
-            expenditure_source = source_label(
-                energy.source if energy is not None else None,
-                has_source_file=bool(energy and energy.source_file_id),
-            )
-            energy_points.append(
-                {
-                    "date": day,
-                    "consumed": consumed,
-                    "expended": expended,
-                    "balance": balance,
-                    "source": energy.source if energy is not None else None,
-                    "intake_source": intake_source,
-                    "expenditure_source": expenditure_source,
-                    "sources": source_labels((intake_source, expenditure_source)),
-                }
-            )
+            view = energy_by_date.get(day)
+            _, energy = effective_energy_value([view] if view else [], "total_calories")
+            intake_source = source_label(nutrition.source if nutrition else None,
+                                        has_source_file=bool(nutrition and nutrition.source_file_id))
+            expenditure_source = source_label(energy.source if energy else None,
+                                              has_source_file=bool(energy and energy.source_file_id))
+            intake = p['values']['calories']
+            intake_state = ('partial' if p['states']['calories'] == 'partial' else
+                            'unknown' if intake is None else 'zero' if intake == 0 else 'known')
+            expenditure_state = ('conflict' if view and 'total_calories' in view.conflicts else
+                                 'unknown' if p['expended'] is None else 'zero' if p['expended'] == 0 else 'known')
+            point = {"date": day, "consumed": p['comparisons']['calories'], "intake": intake,
+                     "intake_state": intake_state, "expenditure_state": expenditure_state,
+                     "expended": p['expended'], "balance": p['balance'],
+                     "source": energy.source if energy else None,
+                     "intake_source": intake_source, "expenditure_source": expenditure_source,
+                     "sources": source_labels((intake_source, expenditure_source))}
+            for key, alias in [('intake', 'consumed'), ('expended', 'expended'), ('balance', 'balance')]:
+                point[f'{alias}_rolling_7d'] = p['rolling_energy'][key]
+                point[f'{alias}_rolling_7d_days'] = p['rolling_energy_days'][key]
+            energy_points.append(point)
             protein_goal = goal_for_day(goals, "nutrition_protein", day)
-            protein_points.append(
-                {
-                    "date": day,
-                    "grams": comparison_value(nutrition,"protein_g"),
-                    "target": protein_goal.target_value if protein_goal else None,
-                }
-            )
+            protein_points.append({"date": day, "grams": p['comparisons']['protein_g'],
+                                   "target": protein_goal.target_value if protein_goal else None})
 
-        _rolling(energy_points, "consumed", "consumed_rolling_7d")
-        _rolling(energy_points, "expended", "expended_rolling_7d")
         consumed_values = [point["consumed"] for point in energy_points]
         expended_values = [point["expended"] for point in energy_points]
         balance_values = [point["balance"] for point in energy_points]

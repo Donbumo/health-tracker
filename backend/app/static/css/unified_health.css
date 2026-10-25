@@ -1,0 +1,39 @@
+.unified-health { --chart-intake:#0284c7; --chart-expenditure:#8b5cf6; --chart-deficit:#2563eb; --chart-surplus:#2563eb; margin-bottom:1.5rem; }
+.health-date-form,.health-links { display:flex; flex-wrap:wrap; align-items:end; gap:.65rem; }
+.health-date-form label { display:grid; gap:.25rem; }
+.health-date-form input { min-height:44px; font-size:1rem; }
+.health-links a { display:inline-flex; align-items:center; min-height:44px; }
+.health-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin:1rem 0; }
+.health-card { min-width:0; padding:1rem; border:1px solid var(--border); border-top:3px solid var(--chart-intake); border-radius:var(--radius-lg); background:var(--surface); }
+.health-expenditure { border-top-color:var(--chart-expenditure); }
+.health-balance { border-top-color:var(--chart-deficit); }
+.health-card h3 { margin:0 0 .5rem; }
+.health-value { display:block; font-size:clamp(1.7rem,3vw,2.65rem); font-variant-numeric:tabular-nums; line-height:1.2; overflow-wrap:anywhere; }
+.health-value small { font-size:.85rem; font-weight:400; }
+.health-card p { font-size:.85rem; color:var(--text-muted); }
+.health-mean { border-top:1px solid var(--border); padding-top:.6rem; font-size:.85rem; }
+.health-mean strong,.health-mean span { display:block; }
+.health-charts { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:1rem; }
+.health-charts .dashboard-card { min-width:0; }
+.unified-health .chart-bar-partial { fill:transparent; stroke:var(--chart-intake); stroke-width:2; stroke-dasharray:4 3; }
+.unified-health .chart-line-balance { stroke:var(--chart-deficit); fill:var(--chart-deficit); }
+.unified-health table { min-width:850px; }
+.unified-health .table-wrap { max-width:100%; overflow-x:auto; }
+@media(max-width:1024px) { .health-charts { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:600px) {
+  .health-cards { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.6rem; }
+  .health-balance { grid-column:1/-1; }
+  .health-card { padding:.8rem; }
+  .health-value { font-size:1.75rem; }
+  .health-date-form { margin-bottom:.5rem; }
+  .dashboard-hero { padding:.8rem; }
+  .dashboard-hero-heading h1 { font-size:1.55rem; }
+  .dashboard-hero-heading .eyebrow { font-size:.7rem; }
+  .dashboard-hero-heading p { margin-bottom:.5rem; font-size:.85rem; }
+  .period-switcher { display:flex; flex-wrap:wrap; gap:.2rem; margin:.6rem 0 0; }
+  .period-option,.period-custom>summary { font-size:.8rem; padding-inline:.45rem; }
+  .period-custom { margin-left:auto; }
+  .health-links { gap:.7rem; font-size:.9rem; }
+  .unified-health>.dashboard-card-heading { gap:.2rem; }
+
+}

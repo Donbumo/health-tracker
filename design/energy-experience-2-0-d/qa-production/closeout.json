@@ -1,0 +1,206 @@
+{
+  "status": "PASS_D_PRODUCTION",
+  "date_local": "2026-10-24",
+  "github_windows_nas_sha": "38c6085565f49f560c9c4a1fefc18356bd1e3000",
+  "active_image": "sha256:9ed11ee13feb5ac4e2db7e5c46ac2c2fc0e40d6575d927b19975d55f9a22c8d6",
+  "preserved_C_image": "sha256:7785e11d8623514089d986ff8b7d8f3ce0330e1b1ba5fea527a3cb21c0aec21d",
+  "image": {
+    "status": "PASS",
+    "sha": "38c6085565f49f560c9c4a1fefc18356bd1e3000",
+    "image": "sha256:9ed11ee13feb5ac4e2db7e5c46ac2c2fc0e40d6575d927b19975d55f9a22c8d6",
+    "architecture": "linux/amd64",
+    "python": "3.12",
+    "base_image": "sha256:7785e11d8623514089d986ff8b7d8f3ce0330e1b1ba5fea527a3cb21c0aec21d",
+    "approved_runtime": "immutable preserved C; no dependency install/update",
+    "C_D_pip_freeze_identical": true,
+    "pip_check": "PASS",
+    "git_files_byte_identical": 534,
+    "archive_checksum_load": "PASS",
+    "C_image_untouched": true
+  },
+  "backup": {
+    "status": "PASS",
+    "backup_id": "energy-d-20261024T201630Z",
+    "consistent": true,
+    "checksums_verified": true,
+    "older_backups_preserved": true,
+    "bytes": 283741986
+  },
+  "restore": {
+    "status": "PASS",
+    "isolated_schema_storage": true,
+    "all_tables_columns_indexes_rows": "identical",
+    "regular_files_byte_identical": 2026,
+    "production_restore": false
+  },
+  "production_integrity": {
+    "status": "PASS",
+    "all_tables_columns_indexes_rows": "identical to fresh quiescent backup",
+    "new_migrations": false,
+    "db_check": "PASS",
+    "domain_writes_from_smoke": 0
+  },
+  "storage": {
+    "status": "PASS",
+    "regular_files_identical": 2026,
+    "no_extra_originals_from_production_smoke": true
+  },
+  "HTTP_HTTPS": {
+    "status": "PASS",
+    "sha": "38c6085565f49f560c9c4a1fefc18356bd1e3000",
+    "image": "sha256:9ed11ee13feb5ac4e2db7e5c46ac2c2fc0e40d6575d927b19975d55f9a22c8d6",
+    "requests_per_route": 1,
+    "domain_POSTs": 0,
+    "fixture_writes": 0,
+    "protocols": {
+      "HTTP_internal": {
+        "status": "PASS",
+        "authentication": "real username/password + CSRF, cookies in memory only",
+        "GET_routes": {
+          "healthz": {
+            "status": 200,
+            "elapsed_ms": 4.5
+          },
+          "A_energy": {
+            "status": 200,
+            "elapsed_ms": 81.4
+          },
+          "B_sources": {
+            "status": 200,
+            "elapsed_ms": 42.8
+          },
+          "B_history": {
+            "status": 200,
+            "elapsed_ms": 369.4
+          },
+          "C_import": {
+            "status": 200,
+            "elapsed_ms": 42.8
+          },
+          "C_review": {
+            "status": 200,
+            "elapsed_ms": 15.6
+          },
+          "nutrition_2_1": {
+            "status": 200,
+            "elapsed_ms": 199.6
+          },
+          "legacy_list": {
+            "status": 200,
+            "elapsed_ms": 16.1
+          },
+          "legacy_import": {
+            "status": 200,
+            "elapsed_ms": 9.5
+          },
+          "legacy_manual": {
+            "status": 200,
+            "elapsed_ms": 11.9
+          }
+        },
+        "review_scope": "own existing canonical day",
+        "response_bodies_saved": false
+      },
+      "HTTPS_TLS": {
+        "status": "PASS",
+        "authentication": "real username/password + CSRF, cookies in memory only",
+        "GET_routes": {
+          "healthz": {
+            "status": 200,
+            "elapsed_ms": 21.1
+          },
+          "A_energy": {
+            "status": 200,
+            "elapsed_ms": 94.5
+          },
+          "B_sources": {
+            "status": 200,
+            "elapsed_ms": 32.9
+          },
+          "B_history": {
+            "status": 200,
+            "elapsed_ms": 33.4
+          },
+          "C_import": {
+            "status": 200,
+            "elapsed_ms": 26.2
+          },
+          "C_review": {
+            "status": 200,
+            "elapsed_ms": 42.0
+          },
+          "nutrition_2_1": {
+            "status": 200,
+            "elapsed_ms": 38.9
+          },
+          "legacy_list": {
+            "status": 200,
+            "elapsed_ms": 34.3
+          },
+          "legacy_import": {
+            "status": 200,
+            "elapsed_ms": 37.2
+          },
+          "legacy_manual": {
+            "status": 200,
+            "elapsed_ms": 42.2
+          }
+        },
+        "review_scope": "own existing canonical day",
+        "response_bodies_saved": false
+      }
+    },
+    "effective_flags": {
+      "NUTRITION_INTELLIGENCE_ENABLED": true,
+      "NUTRITION_EXTERNAL_LOOKUP_ENABLED": false,
+      "AI_ENABLED": true
+    },
+    "alembic": "20261018_0046"
+  },
+  "alembic": "20261018_0046",
+  "new_migrations": false,
+  "catalog_active": 13685,
+  "flags": {
+    "NUTRITION_INTELLIGENCE_ENABLED": "true",
+    "NUTRITION_EXTERNAL_LOOKUP_ENABLED": "false",
+    "AI_ENABLED": "true"
+  },
+  "previous_backups": {
+    "C_image_archive_checksum": "PASS",
+    "C_backup_checksums": "PASS",
+    "older_backup_sets_preserved": 4
+  },
+  "new_errors": 0,
+  "new_http5xx": 0,
+  "restarts": 0,
+  "observation_seconds": 110.0,
+  "energy_experience": "A+B+C+D functionally delivered",
+  "known_debt": [
+    "Native 200% zoom not technically corroborated; no additional manual round",
+    "WCAG 2.2.1: no explicit time-extension mechanism; 15-minute signatures preserved",
+    "No full WCAG certification"
+  ],
+  "accessibility_or_full_suites_repeated": false,
+  "rollback": "Preserved C image over current DB/storage; no downgrade or old-backup restore",
+  "private_data_in_Git": false,
+  "operational_incident": {
+    "scope": "private verification harness only",
+    "cause": "PYTHONPATH omitted in one-off candidate checker",
+    "automatic_recovery": "C restored healthy over current DB/storage; no downgrade or data restore",
+    "resolution": "PYTHONPATH=/app for checker/probe; revalidated clone and unchanged fresh-backup baseline before deployment",
+    "product_code_changed": false
+  },
+  "final_health": {
+    "status": "PASS",
+    "checkedAtUTC": "2026-10-24T20:38:53.200147+00:00",
+    "nas_sha": "38c6085565f49f560c9c4a1fefc18356bd1e3000",
+    "image": "sha256:9ed11ee13feb5ac4e2db7e5c46ac2c2fc0e40d6575d927b19975d55f9a22c8d6",
+    "healthz": 200,
+    "db_healthy": true,
+    "same_DB_volume": true,
+    "restarts": 0,
+    "new_errors": 0,
+    "free_GiB": 314.8,
+    "scope": "Final operational heartbeat only; no new data comparison over legitimate later writes"
+  }
+}

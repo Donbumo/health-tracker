@@ -3,26 +3,14 @@
 This is a read model: never recalculates or rewrites a historical day.
 """
 import calendar
-from collections import defaultdict
 from datetime import date, timedelta
 from decimal import Decimal
 
 from sqlalchemy.orm import selectinload
 from app.extensions import db
-from app.models import DailyNutrition, DailyEnergy, NutritionMeal, NutritionItem
+from app.models import DailyNutrition, NutritionMeal
 from app.services.nutrition_intelligence import comparison_value, daily_summary
-from app.services.dashboard.nutrition import effective_energy_value
-
-METRICS = (
-    ('calories', 'Energía', 'kcal'), ('protein_g', 'Proteína', 'g'),
-    ('total_carbs_g', 'Carbohidratos totales', 'g'), ('net_carbs_g', 'Carbohidratos netos', 'g'),
-    ('fat_g', 'Grasas', 'g'), ('fiber_g', 'Fibra', 'g'),
-)
-
-
-def mean(values):
-    known = [Decimal(v) for v in values if v is not None]
-    return sum(known, Decimal(0)) / len(known) if known else None
+from app.services.nutrition_series import METRICS, mean, build_points
 
 
 def energy_charts(points):
@@ -78,38 +66,7 @@ def history(user_id, target, period=30):
     ).options(selectinload(DailyNutrition.meals).selectinload(NutritionMeal.items))).scalar_one_or_none()
     from app.services.energy_days import views
     energy_rows = views(user_id, start=window_start, end=target)
-    energy_by_day = defaultdict(list)
-    for row in energy_rows:
-        energy_by_day[row.date].append(row)
-    by_day = {row.date: row for row in rows}
-    points = []
-    for offset in range(period + 6):
-        current = window_start + timedelta(days=offset)
-        row = by_day.get(current)
-        values = {field: getattr(row, field) if row else None for field, _, _ in METRICS}
-        comparisons = {field: comparison_value(row, field) for field, _, _ in METRICS}
-        expended, _ = effective_energy_value(energy_by_day[current], 'total_calories')
-        consumed = comparisons['calories']
-        balance = consumed - expended if consumed is not None and expended is not None else None
-        states = {}
-        nutrient_ids = {'calories': 'energy', 'protein_g': 'protein', 'total_carbs_g': 'carbohydrate_total',
-                       'net_carbs_g': 'net_carbs', 'fat_g': 'fat', 'fiber_g': 'fiber'}
-        for field, nutrient in nutrient_ids.items():
-            detail = (row.nutrition_summary_json or {}).get(nutrient, {}) if row else {}
-            states[field] = detail.get('state', 'complete' if values[field] is not None else 'unknown')
-        point = {'date': current, 'values': values, 'comparisons': comparisons, 'states': states,
-                 'expended': expended, 'balance': balance, 'legacy': bool(row and row.authority is None)}
-        points.append(point)
-        window = points[max(0, len(points) - 7):]
-        point['rolling'] = {field: mean(p['comparisons'][field] for p in window) for field, _, _ in METRICS}
-        point['rolling_days'] = sum(p['comparisons']['calories'] is not None for p in window)
-        point['rolling_energy'] = {'intake': mean(p['comparisons']['calories'] for p in window),
-                                   'expended': mean(p['expended'] for p in window), 'balance': mean(p['balance'] for p in window)}
-        point['rolling_energy_days'] = {'intake': point['rolling_days'],
-                                        'expended': sum(p['expended'] is not None for p in window),
-                                        'balance': sum(p['balance'] is not None for p in window)}
-    # Warm-up affects only moving windows, never the visible range or its totals.
-    points = points[6:]
+    points = build_points(rows, energy_rows, start, target)
     summary = [{'field': field, 'label': label, 'unit': unit,
                 'average': mean(p['comparisons'][field] for p in points),
                 'known_subtotal': sum((p['values'][field] for p in points if p['values'][field] is not None), Decimal(0))

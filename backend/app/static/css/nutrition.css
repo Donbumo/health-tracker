@@ -19,6 +19,14 @@
 .ni-card p{line-height:1.5;margin:.45rem 0}
 .ni-value{font-size:1.6rem}.ni-value small{font-size:1rem}
 .ni-muted{color:var(--text-muted);font-size:.85rem}
+.ni-micro-scroll{max-width:100%;overflow-x:auto;margin:1rem 0;border:1px solid var(--border);border-radius:.7rem}
+.ni-micro-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.ni-micro-table caption{text-align:left;font-weight:700;padding:1rem;background:var(--surface)}
+.ni-micro-table th,.ni-micro-table td{padding:.75rem;text-align:left;vertical-align:top;border-bottom:1px solid var(--border);min-width:9rem;overflow-wrap:anywhere}
+.ni-micro-table th[scope=row]{min-width:11rem;text-transform:none;letter-spacing:normal;font-size:1rem}
+.ni-micro-table small,.ni-micros small{display:block;color:var(--text-muted);font-weight:400;line-height:1.5}
+.ni-micros .ni-heading{flex-wrap:wrap}
+.ni-micros [id]{scroll-margin-top:6rem}
 .ni-columns{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:1.25rem;margin:1.25rem 0}
 .ni-columns>*{min-width:0}
 .ni-inline{display:flex;gap:.6rem;align-items:end;flex-wrap:wrap}

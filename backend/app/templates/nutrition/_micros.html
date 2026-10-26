@@ -1,0 +1,40 @@
+{% macro state_label(state) -%}{{ {'complete':'Completo','partial':'Parcial','unknown':'Desconocido','known':'Conocido','trace':'Traza','below_limit':'Bajo el límite'}.get(state,'Desconocido') }}{%- endmacro %}
+
+{% macro amount(entry) -%}
+{% if entry.state=='trace' %}Traza · sin cantidad exacta{% elif entry.state=='below_limit' %}&lt; {{ entry.limit|micro_exact }} {{ entry.unit }}{% elif entry.value is not none %}{{ entry.value|micro_exact }} {{ entry.unit }}{% else %}Sin dato conocido{% endif %}
+{%- endmacro %}
+
+{% macro coverage(entry) -%}
+{% if entry.coverage is not none %}{{ entry.coverage|nutrient_value }}% · {{ entry.known_weight|micro_exact }} / {{ entry.total_weight|micro_exact }} g{% else %}No calculable{% endif %}
+{%- endmacro %}
+
+{% macro summary_table(summary, caption, group=none, evidence=none) %}
+<div class="ni-micro-scroll" tabindex="0" role="region" aria-label="{{ caption }}">
+<table class="ni-micro-table"><caption>{{ caption }}</caption><thead><tr><th scope="col">Nutriente</th><th scope="col">Aporte registrado</th><th scope="col">Disponibilidad</th><th scope="col">Cobertura por masa</th><th scope="col">Fuentes</th></tr></thead><tbody>
+{% for key,definition in nutrients.items() %}{% if group is none or definition[2]==group %}{% set n=summary[key] %}
+<tr data-nutrient="{{ key }}" data-state="{{ n.state }}"><th scope="row">{{ definition[0] }}</th><td>{{ amount(n) }}{% if n.state=='partial' %}<small>Subtotal conocido</small>{% endif %}{% if evidence and (evidence[key].trace or evidence[key].below_limit) %}<small>Composición: {{ evidence[key].trace }} trazas · {{ evidence[key].below_limit }} bajo límite</small>{% endif %}</td><td>{{ state_label(n.state) }}</td><td>{{ coverage(n) }}</td><td>{% for source in n.sources %}{{ source|nutrition_source_label }}{% if not loop.last %} · {% endif %}{% else %}Sin fuente{% endfor %}</td></tr>
+{% endif %}{% endfor %}</tbody></table></div>
+{% endmacro %}
+
+{% macro food_identity(entry, links) %}
+{% set f=entry.food %}
+{% if f.ref in links.foods %}<a href="{{ url_for('nutrition.detail',ref=f.ref,revision=f.revision if f.scope=='catalog' else none) }}">{{ f.name }}</a>{% else %}<strong>{{ f.name }}</strong>{% endif %}
+<small>{{ f.source|nutrition_source_label }} · revisión consumida {{ f.revision|default('sin revisión') }}{% if f.catalog_revision %} · catálogo {{ f.catalog_revision }}{% endif %}</small>
+<small>{{ entry.amount|micro_exact }} {{ entry.unit }}{% if entry.serving_id %} · porción {{ entry.serving_id }}{% endif %} · masa {{ entry.normalized.mass_g|micro_exact }}{% if entry.normalized.mass_g is not none %} g{% endif %}</small>
+{% if f.scope=='user' %}<small>Declaración personal. El enlace abre la definición actual; estos valores conservan la revisión consumida.</small>{% endif %}
+{% endmacro %}
+
+{% macro meal_contribution(log, nutrient, links) %}
+{% set doc=log.snapshot_json %}{% set n=doc.summary[nutrient] %}
+<article class="ni-card" id="meal-{{ log.public_id }}">
+<h3><a href="{{ url_for('nutrition.log_detail',key=log.public_id) }}">{{ doc.name }}</a></h3>
+<p>{{ nutrients[nutrient][0] }}: <strong>{{ amount(n) }}</strong> · {{ state_label(n.state) }}</p>
+<p class="ni-muted">Cobertura: {{ coverage(n) }} · {{ log.timezone }}</p>
+{% if doc.declared_nutrition and doc.declared_nutrition.nutrients.get(nutrient,{}).get('state')=='known' %}<p>Declaración de origen confirmada. La composición se muestra aparte y no se suma de nuevo.</p>{% else %}<p>Estimación por composición conservada al confirmar el consumo.</p>{% endif %}
+{% if log.recipe_id in links.recipes %}<a href="{{ url_for('recipes.detail_recipe',id=log.recipe_id) }}">Ver receta actual</a><p class="ni-muted">Receta consumida r{{ doc.recipe_revision }}. Las ediciones posteriores no cambian este aporte.</p>{% endif %}
+<div class="ni-micro-scroll" tabindex="0" role="region" aria-label="Ingredientes de {{ doc.name }}"><table class="ni-micro-table"><caption>Composición · {{ nutrients[nutrient][0] }} · {{ doc.name }}</caption><thead><tr><th scope="col">Ingrediente, cantidad y fuente</th><th scope="col">Estimación por ingrediente</th><th scope="col">Estado de origen</th></tr></thead><tbody>
+{% for entry in doc.ingredients %}{% set value=entry.contribution.get(nutrient,{'state':'unknown','value':none,'unit':nutrients[nutrient][1]}) %}<tr><th scope="row">{{ food_identity(entry,links) }}</th><td>{{ amount(value) }}</td><td>{{ state_label(value.state) }}</td></tr>{% else %}<tr><td colspan="3">Sin ingredientes documentados.</td></tr>{% endfor %}
+</tbody></table></div>
+<a href="{{ url_for('nutrition.log_detail',key=log.public_id) }}">Todos los nutrientes y fuentes de esta comida</a>
+</article>
+{% endmacro %}

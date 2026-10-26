@@ -29,7 +29,17 @@ def value(value):
 @nutrition_bp.app_template_filter('nutrition_source_label')
 def source_label(source):
     return {'usda_sr_legacy':'USDA SR Legacy','usda_foundation':'USDA Foundation',
-            'usda_fndds':'USDA FNDDS','open_food_facts':'Open Food Facts','user':'Tu declaración privada'}.get(source,source)
+            'usda_fndds':'USDA FNDDS','open_food_facts':'Open Food Facts','user':'Tu declaración privada',
+            'confirmed_source_declaration':'Declaración de origen confirmada',
+            'legacy':'Registro legacy','legacy_recipe':'Receta legacy'}.get(source,source)
+
+
+@nutrition_bp.app_template_filter('micro_exact')
+def micro_exact(raw):
+    if raw is None:
+        return 'Sin dato'
+    text = format(Decimal(str(raw)), 'f')
+    return text.rstrip('0').rstrip('.') if '.' in text else text
 
 
 @nutrition_bp.errorhandler(NutritionError)
@@ -91,7 +101,7 @@ def search():
 @nutrition_bp.get("/foods/<ref>")
 @login_required
 def detail(ref):
-    food=catalog.detail(current_user.id,ref)
+    food=catalog.detail(current_user.id,ref,request.args.get('revision'))
     return render("detail",food=food,summary=summarize([ingredient(food,food['basis_amount'],food['basis_unit'])]),draft=request.args.get("draft"),draft_revision=ni.owned_draft(current_user.id,request.args['draft']).revision if request.args.get('draft') else None)
 
 
@@ -193,7 +203,20 @@ def repeat(key):
 @login_required
 def micros():
     target=date_arg()
-    return render("micros",target=target,**ni.daily_summary(current_user.id,target))
+    from app.services.nutrition_micros import overview
+    try: period=int(request.args.get('period',30))
+    except ValueError: period=30
+    return render_template('nutrition/micronutrients.html', nutrients=NUTRIENTS,
+                           coverage_explanation=COVERAGE_EXPLANATION,
+                           **overview(current_user.id,target,period,request.args.get('nutrient','iron')))
+
+
+@nutrition_bp.get('/logs/<key>')
+@login_required
+def log_detail(key):
+    from app.services.nutrition_micros import meal
+    return render_template('nutrition/meal_log.html', nutrients=NUTRIENTS,
+                           coverage_explanation=COVERAGE_EXPLANATION, **meal(current_user.id,key))
 
 
 @nutrition_bp.route("/my-food",methods=['GET','POST'])

@@ -1,0 +1,588 @@
+{
+  "scope": "Public artifacts activated in ephemeral QA, before synthetic catalog fixtures",
+  "foods": 13685,
+  "sources": {
+    "open_food_facts": {
+      "revision": "2026-10-13-mx100-ni21-v2",
+      "foods": 97,
+      "nutrients": {
+        "energy": {
+          "known": 92,
+          "known_zero": 8,
+          "absent": 3,
+          "unknown": 2
+        },
+        "protein": {
+          "known": 94,
+          "known_zero": 22,
+          "absent": 3
+        },
+        "carbohydrate_total": {
+          "absent": 97
+        },
+        "net_carbs": {
+          "absent": 97
+        },
+        "fat": {
+          "known": 94,
+          "known_zero": 22,
+          "absent": 3
+        },
+        "fiber": {
+          "known": 91,
+          "known_zero": 47,
+          "absent": 6
+        },
+        "sugar": {
+          "known": 91,
+          "known_zero": 26,
+          "absent": 6
+        },
+        "sodium": {
+          "known": 93,
+          "absent": 3,
+          "known_zero": 16,
+          "unknown": 1
+        },
+        "potassium": {
+          "absent": 88,
+          "known": 9,
+          "known_zero": 4
+        },
+        "calcium": {
+          "known": 28,
+          "known_zero": 5,
+          "absent": 69
+        },
+        "iron": {
+          "known": 26,
+          "known_zero": 17,
+          "absent": 71
+        },
+        "magnesium": {
+          "absent": 76,
+          "known": 21,
+          "known_zero": 16
+        },
+        "phosphorus": {
+          "absent": 80,
+          "known": 17,
+          "known_zero": 15
+        },
+        "zinc": {
+          "absent": 76,
+          "known": 21,
+          "known_zero": 15
+        },
+        "vitamin_a_rae": {
+          "absent": 97
+        },
+        "retinol": {
+          "absent": 97
+        },
+        "vitamin_a_re": {
+          "absent": 97
+        },
+        "vitamin_c": {
+          "absent": 79,
+          "known": 18,
+          "known_zero": 16
+        },
+        "vitamin_d": {
+          "absent": 84,
+          "known": 13,
+          "known_zero": 4
+        },
+        "vitamin_e_alpha": {
+          "absent": 97
+        },
+        "vitamin_k1": {
+          "absent": 97
+        },
+        "vitamin_k2": {
+          "absent": 97
+        },
+        "thiamin": {
+          "absent": 96,
+          "known": 1
+        },
+        "riboflavin": {
+          "absent": 95,
+          "known": 2
+        },
+        "niacin": {
+          "absent": 97
+        },
+        "vitamin_b6": {
+          "absent": 97
+        },
+        "vitamin_b12": {
+          "absent": 96,
+          "known": 1
+        },
+        "folate_dfe": {
+          "absent": 97
+        },
+        "folate_food": {
+          "absent": 97
+        },
+        "choline": {
+          "absent": 97
+        }
+      },
+      "basis": {
+        "g": 69,
+        "ml": 28
+      }
+    },
+    "usda_fndds": {
+      "revision": "2021-2023-ni21-v1",
+      "foods": 5432,
+      "nutrients": {
+        "energy": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 28
+        },
+        "protein": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 184
+        },
+        "carbohydrate_total": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 307
+        },
+        "net_carbs": {
+          "absent": 5432
+        },
+        "fat": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 194
+        },
+        "fiber": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 1214
+        },
+        "sugar": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 482
+        },
+        "sodium": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 66
+        },
+        "potassium": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 42
+        },
+        "calcium": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 117
+        },
+        "iron": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 158
+        },
+        "magnesium": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 109
+        },
+        "phosphorus": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 119
+        },
+        "zinc": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 80
+        },
+        "vitamin_a_rae": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 1198
+        },
+        "retinol": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 2174
+        },
+        "vitamin_a_re": {
+          "absent": 5432
+        },
+        "vitamin_c": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 1948
+        },
+        "vitamin_d": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 3000
+        },
+        "vitamin_e_alpha": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 343
+        },
+        "vitamin_k1": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 592
+        },
+        "vitamin_k2": {
+          "absent": 5432
+        },
+        "thiamin": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 200
+        },
+        "riboflavin": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 164
+        },
+        "niacin": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 179
+        },
+        "vitamin_b6": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 239
+        },
+        "vitamin_b12": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 2031
+        },
+        "folate_dfe": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 367
+        },
+        "folate_food": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 476
+        },
+        "choline": {
+          "absent": 1,
+          "known": 5431,
+          "known_zero": 182
+        }
+      },
+      "basis": {
+        "g": 5432
+      }
+    },
+    "usda_foundation": {
+      "revision": "2026-04-30-ni21-v1",
+      "foods": 363,
+      "nutrients": {
+        "energy": {
+          "known": 321,
+          "absent": 42
+        },
+        "protein": {
+          "known": 352,
+          "absent": 11,
+          "known_zero": 4
+        },
+        "carbohydrate_total": {
+          "known": 311,
+          "absent": 52,
+          "known_zero": 29
+        },
+        "net_carbs": {
+          "absent": 363
+        },
+        "fat": {
+          "known": 340,
+          "absent": 23,
+          "known_zero": 1
+        },
+        "fiber": {
+          "known": 185,
+          "absent": 178,
+          "known_zero": 6
+        },
+        "sugar": {
+          "absent": 358,
+          "known": 5
+        },
+        "sodium": {
+          "absent": 30,
+          "known": 333,
+          "known_zero": 65
+        },
+        "potassium": {
+          "absent": 12,
+          "known": 351,
+          "known_zero": 1
+        },
+        "calcium": {
+          "absent": 12,
+          "known": 351,
+          "known_zero": 6
+        },
+        "iron": {
+          "absent": 12,
+          "known": 351,
+          "known_zero": 41
+        },
+        "magnesium": {
+          "absent": 12,
+          "known": 351,
+          "known_zero": 2
+        },
+        "phosphorus": {
+          "absent": 12,
+          "known": 351,
+          "known_zero": 4
+        },
+        "zinc": {
+          "absent": 12,
+          "known": 351,
+          "known_zero": 1
+        },
+        "vitamin_a_rae": {
+          "absent": 312,
+          "known": 51,
+          "known_zero": 3
+        },
+        "retinol": {
+          "absent": 310,
+          "known": 53,
+          "known_zero": 4
+        },
+        "vitamin_a_re": {
+          "absent": 363
+        },
+        "vitamin_c": {
+          "known": 111,
+          "absent": 252,
+          "known_zero": 10
+        },
+        "vitamin_d": {
+          "absent": 311,
+          "known": 52,
+          "known_zero": 19
+        },
+        "vitamin_e_alpha": {
+          "absent": 300,
+          "known": 63,
+          "known_zero": 4
+        },
+        "vitamin_k1": {
+          "absent": 288,
+          "known": 75,
+          "known_zero": 10
+        },
+        "vitamin_k2": {
+          "absent": 363
+        },
+        "thiamin": {
+          "absent": 194,
+          "known": 169,
+          "known_zero": 3
+        },
+        "riboflavin": {
+          "absent": 230,
+          "known": 133,
+          "known_zero": 9
+        },
+        "niacin": {
+          "absent": 187,
+          "known": 176,
+          "known_zero": 2
+        },
+        "vitamin_b6": {
+          "absent": 166,
+          "known": 197,
+          "known_zero": 5
+        },
+        "vitamin_b12": {
+          "absent": 299,
+          "known": 64,
+          "known_zero": 3
+        },
+        "folate_dfe": {
+          "absent": 363
+        },
+        "folate_food": {
+          "absent": 363
+        },
+        "choline": {
+          "absent": 336,
+          "known": 27
+        }
+      },
+      "basis": {
+        "g": 363
+      }
+    },
+    "usda_sr_legacy": {
+      "revision": "2018-04-full-ni21-v1",
+      "foods": 7793,
+      "nutrients": {
+        "energy": {
+          "known": 7793,
+          "known_zero": 37
+        },
+        "protein": {
+          "known": 7793,
+          "known_zero": 333
+        },
+        "carbohydrate_total": {
+          "known": 7793,
+          "known_zero": 2138
+        },
+        "net_carbs": {
+          "absent": 7793
+        },
+        "fat": {
+          "known": 7793,
+          "known_zero": 328
+        },
+        "fiber": {
+          "known": 7231,
+          "absent": 562,
+          "known_zero": 3373
+        },
+        "sugar": {
+          "known": 6007,
+          "absent": 1786,
+          "known_zero": 2116
+        },
+        "sodium": {
+          "known": 7709,
+          "absent": 84,
+          "known_zero": 194
+        },
+        "potassium": {
+          "absent": 277,
+          "known": 7516,
+          "known_zero": 140
+        },
+        "calcium": {
+          "absent": 85,
+          "known": 7708,
+          "known_zero": 227
+        },
+        "iron": {
+          "known": 7713,
+          "absent": 80,
+          "known_zero": 232
+        },
+        "magnesium": {
+          "absent": 372,
+          "known": 7421,
+          "known_zero": 213
+        },
+        "phosphorus": {
+          "absent": 326,
+          "known": 7467,
+          "known_zero": 222
+        },
+        "zinc": {
+          "absent": 387,
+          "known": 7406,
+          "known_zero": 185
+        },
+        "vitamin_a_rae": {
+          "absent": 875,
+          "known": 6918,
+          "known_zero": 2406
+        },
+        "retinol": {
+          "absent": 1005,
+          "known": 6788,
+          "known_zero": 3831
+        },
+        "vitamin_a_re": {
+          "absent": 7793
+        },
+        "vitamin_c": {
+          "absent": 461,
+          "known": 7332,
+          "known_zero": 3802
+        },
+        "vitamin_d": {
+          "absent": 2608,
+          "known": 5185,
+          "known_zero": 3296
+        },
+        "vitamin_e_alpha": {
+          "absent": 2213,
+          "known": 5580,
+          "known_zero": 358
+        },
+        "vitamin_k1": {
+          "absent": 2739,
+          "known": 5054,
+          "known_zero": 1067
+        },
+        "vitamin_k2": {
+          "absent": 7793
+        },
+        "thiamin": {
+          "absent": 391,
+          "known": 7402,
+          "known_zero": 336
+        },
+        "riboflavin": {
+          "absent": 372,
+          "known": 7421,
+          "known_zero": 312
+        },
+        "niacin": {
+          "absent": 391,
+          "known": 7402,
+          "known_zero": 276
+        },
+        "vitamin_b6": {
+          "absent": 531,
+          "known": 7262,
+          "known_zero": 347
+        },
+        "vitamin_b12": {
+          "absent": 680,
+          "known": 7113,
+          "known_zero": 2773
+        },
+        "folate_dfe": {
+          "absent": 1311,
+          "known": 6482,
+          "known_zero": 591
+        },
+        "folate_food": {
+          "absent": 1071,
+          "known": 6722,
+          "known_zero": 750
+        },
+        "choline": {
+          "absent": 3182,
+          "known": 4611,
+          "known_zero": 163
+        }
+      },
+      "basis": {
+        "g": 7793
+      }
+    }
+  },
+  "coverage": "Counts of data availability per identity, not dietary coverage"
+}

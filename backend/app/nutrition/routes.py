@@ -3,7 +3,7 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 from decimal import Decimal, ROUND_HALF_UP
 from uuid import uuid4
-from flask import render_template, request, redirect, url_for, abort, current_app, flash
+from flask import render_template, request, redirect, url_for, abort, current_app, flash, session
 from flask_login import login_required, current_user
 from itsdangerous import URLSafeTimedSerializer, BadSignature
 from sqlalchemy.exc import IntegrityError
@@ -14,6 +14,12 @@ from app.models import Recipe, FoodProduct
 from app.models.nutrition_intelligence import MealLog, NutritionPlan, NutritionImportReceipt
 from app.services import nutrition_intelligence as ni, food_catalog as catalog
 from app.services.nutrition_math import NutritionError, NUTRIENTS, PRODUCT, ingredient, summarize, decimal, COVERAGE_EXPLANATION
+
+
+@nutrition_bp.after_request
+def private_nutrition_response(response):
+    response.headers['Cache-Control'] = 'private, no-store'
+    return response
 
 
 @nutrition_bp.app_template_filter("nutrient_value")
@@ -217,6 +223,42 @@ def log_detail(key):
     from app.services.nutrition_micros import meal
     return render_template('nutrition/meal_log.html', nutrients=NUTRIENTS,
                            coverage_explanation=COVERAGE_EXPLANATION, **meal(current_user.id,key))
+
+
+@nutrition_bp.get('/my-food/<key>/equivalents')
+@login_required
+def equivalents(key):
+    from app.services import nutrition_equivalents as equivalents_service
+    original = equivalents_service.personal(current_user.id, key)
+    query = request.args.get('q', original['name'])[:100]
+    target = date_arg()
+    view = equivalents_service.candidates(current_user.id, key, query)
+    selected = request.args.get('candidate')
+    comparison = equivalents_service.comparison(current_user.id, key, selected,
+        request.args.get('amount'), request.args.get('unit','g'), target) if selected else None
+    return render_template('nutrition/equivalents.html', nutrients=NUTRIENTS, key=key,
+                           query=query, target=target, comparison=comparison,
+                           enabled=current_app.config.get('NUTRITION_INTELLIGENCE_ENABLED'), **view)
+
+
+@nutrition_bp.post('/my-food/<key>/equivalents/prepare')
+@login_required
+def prepare_equivalent(key):
+    from app.services import nutrition_equivalents as equivalents_service
+    if request.form.get('confirm_identity') != 'yes':
+        raise NutritionError('Confirma que registrarás el alimento publicado elegido; no modifica tu alimento original.')
+    claims, candidate = equivalents_service.reviewed_selection(current_user.id, key, request.form.get('token',''))
+    review_key = ni.hash_document(claims)
+    receipts = session.get('nutrition_equivalent_drafts', {})
+    if review_key in receipts:
+        row = ni.owned_draft(current_user.id, receipts[review_key])
+    else:
+        row = equivalents_service.prepare(current_user.id, claims, candidate)
+        db.session.commit()
+        receipts = dict(list(receipts.items())[-7:])
+        receipts[review_key] = row.public_id
+        session['nutrition_equivalent_drafts'] = receipts
+    return redirect(url_for('nutrition.review', key=row.public_id))
 
 
 @nutrition_bp.route("/my-food",methods=['GET','POST'])

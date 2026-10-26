@@ -2,7 +2,15 @@
 
 Índice de reglas y guías: [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md).
 
-## Estado actual — Energy Experience A+B+C+D operativa
+## Estado actual — Nutrition Intelligence 3.0 A operativa; B para revisión
+
+- A integrada por squash de PR #27 con HEAD autorizado intacto: GitHub/Windows/NAS master `2f0275ba6c86b14a797a7671b43b6257282886ac`. Imagen NAS `sha256:adfb59b115705746d24f444e0aba8d75cbf32a8cc4f3ad09e72fb160a563ea66`, anterior Unified Summary conservada. [Cierre productivo](NUTRITION_INTELLIGENCE_3_A_PRODUCTION.md), [evidencia agregada](../design/nutrition-intelligence-3-a/release-qa/closeout.json).
+- MariaDB QA RC/RR, db check 0046, backup nuevo `nutrition3-a-20261026T211943Z`, checksum/restore y 2,026 archivos idénticos PASS. Sólo web recreada; DB/volumen/flags/historial intactos. HTTP/HTTPS autenticado de micros 7/30/90, Nutrition, Unified Summary, Energy y legacy PASS. La cuenta operativa no tenía MealLogs propios; desglose y estados especiales se verificaron sólo en QA. No repetir campañas generales por este cierre.
+- El arnés tuvo supuestos de cabeceras, CRLF y un archivo temporal de reintento ya existente; cada fallo recuperó sólo imagen compatible sobre datos actuales. Sin cambio del código revisado ni restore productivo. A conserva el baseline Nutrition sin no-store explícito; B añade ese endurecimiento para revisión.
+- B se preparó después del cierre en `codex/nutrition-intelligence-3-0-enrichment`: [alcance y límites](NUTRITION_INTELLIGENCE_3_B.md). Candidatos locales, comparación fuera del vector original y selección explícita hacia borrador oficial pendiente. No altera definiciones personales ni consumos; no llama modelos IA. Sin DDL/schemas/dependencias nuevas. **No fusionar ni desplegar B automáticamente.**
+- Archivos operativos previos no versionados de Unified Summary y #18 preservados. Zoom/TTL, dispositivos físicos, OFF externo y PITR continúan separados.
+
+## Antecedente — Energy Experience A+B+C+D operativa
 
 - D desplegada el 24-10-2026 con autorización expresa, sin repetir merge/accesibilidad/suites. Master GitHub/Windows/NAS `38c6085565f49f560c9c4a1fefc18356bd1e3000`; imagen D `sha256:9ed11ee13feb5ac4e2db7e5c46ac2c2fc0e40d6575d927b19975d55f9a22c8d6`. [Cierre verificable](ENERGY_EXPERIENCE_2_0_D_PRODUCTION.md), [evidencia agregada](../design/energy-experience-2-0-d/qa-production/closeout.json).
 - Backup nuevo `energy-d-20261024T201630Z`: checksum y restore aislado exactos, tablas/columnas/índices/filas y 2.026 archivos intactos. Imagen C y backups anteriores conservados. Sólo web recreada; MariaDB/volumen/flags/puertos/secretos intactos; 0046/db check, catálogo 13.685 y smoke mínimo HTTP/HTTPS PASS, cero nuevos errores/5xx/reinicios en 110 s observados.

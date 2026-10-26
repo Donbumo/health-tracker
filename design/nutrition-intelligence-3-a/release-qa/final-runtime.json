@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "UTC": "2026-10-26T21:33:15.667382+00:00",
+  "sha": "2f0275ba6c86b14a797a7671b43b6257282886ac",
+  "image": "sha256:adfb59b115705746d24f444e0aba8d75cbf32a8cc4f3ad09e72fb160a563ea66",
+  "healthz": 200,
+  "MariaDB_healthy_same_container_volume": true,
+  "flags_preserved": true,
+  "alembic": "20261018_0046",
+  "restarts": 0,
+  "new_errors_5xx": 0,
+  "scope": "Operational heartbeat only; no comparison against backup over legitimate later writes",
+  "B_deployed": false
+}

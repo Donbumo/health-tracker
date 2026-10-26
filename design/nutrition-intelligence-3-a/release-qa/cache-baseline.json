@@ -1,0 +1,12 @@
+{
+  "previous": {
+    "status": 200,
+    "Cache-Control": null,
+    "Vary": "Cookie"
+  },
+  "candidate": {
+    "status": 200,
+    "Cache-Control": null,
+    "Vary": "Cookie"
+  }
+}

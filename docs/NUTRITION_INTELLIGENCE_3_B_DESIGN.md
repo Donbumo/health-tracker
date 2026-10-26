@@ -1,5 +1,10 @@
 # Nutrition Intelligence 3.0 — propuesta B, sin implementación
 
+Actualización 26-10-2026: [B local para revisión](NUTRITION_INTELLIGENCE_3_B.md)
+implementa búsqueda/comparación y selección explícita hacia borrador. Este diseño
+conserva el alcance futuro de IA, estimaciones persistentes y revisiones personales;
+esas partes no se presentan como implementadas ni desplegadas.
+
 Objetivo: ayudar a revisar nutrientes ausentes mediante candidatos equivalentes
 del catálogo local. Una sugerencia no prueba identidad, preparación, composición
 o concentración. Ningún resultado de IA se convierte automáticamente en conocido.

@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "sha": "2f0275ba6c86b14a797a7671b43b6257282886ac",
+  "scope": "LOCAL isolated 0046 schema; synthetic fixtures only",
+  "isolations": {
+    "READ COMMITTED": {
+      "db_check": "PASS",
+      "authenticated_periods": [
+        7,
+        30,
+        90
+      ],
+      "complete_partial_unknown_zero_trace_below_limit": "PASS",
+      "snapshot_edit_parity": "PASS",
+      "owner_only": "PASS",
+      "GET_DML": 0,
+      "GET_DDL": 0,
+      "nutrition_energy_dashboard_legacy": "PASS"
+    },
+    "REPEATABLE READ": {
+      "db_check": "PASS",
+      "authenticated_periods": [
+        7,
+        30,
+        90
+      ],
+      "complete_partial_unknown_zero_trace_below_limit": "PASS",
+      "snapshot_edit_parity": "PASS",
+      "owner_only": "PASS",
+      "GET_DML": 0,
+      "GET_DDL": 0,
+      "nutrition_energy_dashboard_legacy": "PASS"
+    }
+  }
+}

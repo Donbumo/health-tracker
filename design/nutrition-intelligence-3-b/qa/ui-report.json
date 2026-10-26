@@ -1,0 +1,333 @@
+{
+  "data": "QA fictional only; public catalog",
+  "combinations": 36,
+  "checks": [
+    {
+      "view": "candidates",
+      "theme": "light",
+      "width": 360,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "comparison",
+      "theme": "light",
+      "width": 360,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "empty",
+      "theme": "light",
+      "width": 360,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "candidates",
+      "theme": "light",
+      "width": 390,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "comparison",
+      "theme": "light",
+      "width": 390,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "empty",
+      "theme": "light",
+      "width": 390,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "candidates",
+      "theme": "light",
+      "width": 430,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "comparison",
+      "theme": "light",
+      "width": 430,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "empty",
+      "theme": "light",
+      "width": 430,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "candidates",
+      "theme": "light",
+      "width": 768,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "comparison",
+      "theme": "light",
+      "width": 768,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "empty",
+      "theme": "light",
+      "width": 768,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "candidates",
+      "theme": "light",
+      "width": 1024,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "comparison",
+      "theme": "light",
+      "width": 1024,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "empty",
+      "theme": "light",
+      "width": 1024,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "candidates",
+      "theme": "light",
+      "width": 1366,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "comparison",
+      "theme": "light",
+      "width": 1366,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "empty",
+      "theme": "light",
+      "width": 1366,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "candidates",
+      "theme": "dark",
+      "width": 360,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "comparison",
+      "theme": "dark",
+      "width": 360,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "empty",
+      "theme": "dark",
+      "width": 360,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "candidates",
+      "theme": "dark",
+      "width": 390,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "comparison",
+      "theme": "dark",
+      "width": 390,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "empty",
+      "theme": "dark",
+      "width": 390,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "candidates",
+      "theme": "dark",
+      "width": 430,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "comparison",
+      "theme": "dark",
+      "width": 430,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "empty",
+      "theme": "dark",
+      "width": 430,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "candidates",
+      "theme": "dark",
+      "width": 768,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "comparison",
+      "theme": "dark",
+      "width": 768,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "empty",
+      "theme": "dark",
+      "width": 768,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "candidates",
+      "theme": "dark",
+      "width": 1024,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "comparison",
+      "theme": "dark",
+      "width": 1024,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "empty",
+      "theme": "dark",
+      "width": 1024,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "candidates",
+      "theme": "dark",
+      "width": 1366,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "comparison",
+      "theme": "dark",
+      "width": 1366,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    },
+    {
+      "view": "empty",
+      "theme": "dark",
+      "width": 1366,
+      "status": 200,
+      "overflow": false,
+      "focus": "visible",
+      "confirmation": "unchecked"
+    }
+  ],
+  "explicit_selection": "pending official draft; original revision 1 preserved",
+  "errors": [],
+  "external_requests": []
+}

@@ -14,6 +14,8 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 
 ## Uso diario y web
 
+- Nutrition Intelligence 3.0 A: [implementación, auditoría de catálogo y QA](NUTRITION_INTELLIGENCE_3_A.md); [diseño B de enriquecimiento revisable](NUTRITION_INTELLIGENCE_3_B_DESIGN.md), sin implementación de IA ni cambios históricos.
+
 - Energy Experience 2.0: [ENERGY_EXPERIENCE_2_0.md](ENERGY_EXPERIENCE_2_0.md), dirección y arquitectura; [QA de A](ENERGY_EXPERIENCE_2_0_A_QA.md), [cierre A](ENERGY_EXPERIENCE_2_0_A_PRODUCTION.md), [alcance B](ENERGY_EXPERIENCE_2_0_B.md), [cierre B](ENERGY_EXPERIENCE_2_0_B_PRODUCTION.md), [alcance C](ENERGY_EXPERIENCE_2_0_C.md), [cierre productivo C](ENERGY_EXPERIENCE_2_0_C_PRODUCTION.md) y [D para revisión](ENERGY_EXPERIENCE_2_0_D.md), con [auditoría de accesibilidad](ENERGY_EXPERIENCE_2_0_D_ACCESSIBILITY.md) y [seguimiento Narrador/zoom/TTL](ENERGY_EXPERIENCE_2_0_D_ASSISTED_CLOSEOUT.md). A+B+C+D operativas: [cierre productivo D](ENERGY_EXPERIENCE_2_0_D_PRODUCTION.md), con deuda de accesibilidad conocida. Siguiente revisión: [Resumen de salud unificado](UNIFIED_HEALTH_SUMMARY_DESIGN.md) y [prototipo local](../design/unified-health-summary/README.md), con [implementación y QA Flask](UNIFIED_HEALTH_SUMMARY_IMPLEMENTATION.md) para PR, sin merge/despliegue.
 - Cierre productivo Energía #18: [ENERGY_18_PRODUCTION_CLOSEOUT.md](https://github.com/Donbumo/health-tracker/issues/18), despliegue 0046, backups, correcciones autorizadas y smoke.
 - Recuperación 0046: [ENERGY_0046_RECOVERY_RUNBOOK.md](ENERGY_0046_RECOVERY_RUNBOOK.md), backup consistente, DDL parcial, imagen compatible, nuevas escrituras y validación QA aislada.

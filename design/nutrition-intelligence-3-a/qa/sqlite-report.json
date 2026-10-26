@@ -1,0 +1,674 @@
+{
+  "data": "QA synthetic owners and public catalog only",
+  "engine": "sqlite",
+  "catalog_foods": 13685,
+  "migration_check": "pass; SQLite metadata created and stamped, not migration replay",
+  "head": "20261018_0046",
+  "get_statuses": {
+    "/nutrition/micronutrients": 200,
+    "/nutrition/logs/8d7eee45-9a75-4598-a6ec-1806dd744871": 200,
+    "/nutrition/": 200,
+    "/dashboard": 200,
+    "/daily-energy": 200
+  },
+  "get_dml": 0,
+  "snapshot_after_recipe_edit": "unchanged",
+  "series": [
+    {
+      "date": "2026-07-29",
+      "value": "9.0",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-07-30",
+      "value": "8.25",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-07-31",
+      "value": "7.5",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-08-01",
+      "value": "6.75",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-02",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-08-03",
+      "value": "5.25",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-08-04",
+      "value": "4.5",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-05",
+      "value": "3.75",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-06",
+      "value": "3.0",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-08-07",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-08-08",
+      "value": "8.25",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-09",
+      "value": "7.5",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-08-10",
+      "value": "6.75",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-11",
+      "value": "6.0",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-12",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-08-13",
+      "value": "4.5",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-14",
+      "value": "3.75",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-15",
+      "value": "3.0",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-08-16",
+      "value": "9.0",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-17",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-08-18",
+      "value": "7.5",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-08-19",
+      "value": "6.75",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-20",
+      "value": "6.0",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-21",
+      "value": "5.25",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-08-22",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-08-23",
+      "value": "3.75",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-24",
+      "value": "3.0",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-08-25",
+      "value": "9.0",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-26",
+      "value": "8.25",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-27",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-08-28",
+      "value": "6.75",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-29",
+      "value": "6.0",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-08-30",
+      "value": "5.25",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-08-31",
+      "value": "4.5",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-01",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-09-02",
+      "value": "3.0",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-09-03",
+      "value": "9.0",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-04",
+      "value": "8.25",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-05",
+      "value": "7.5",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-09-06",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-09-07",
+      "value": "6.0",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-08",
+      "value": "5.25",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-09-09",
+      "value": "4.5",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-10",
+      "value": "3.75",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-11",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-09-12",
+      "value": "9.0",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-13",
+      "value": "8.25",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-14",
+      "value": "7.5",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-09-15",
+      "value": "6.75",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-16",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-09-17",
+      "value": "5.25",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-09-18",
+      "value": "4.5",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-19",
+      "value": "3.75",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-20",
+      "value": "3.0",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-09-21",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-09-22",
+      "value": "8.25",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-23",
+      "value": "7.5",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-09-24",
+      "value": "6.75",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-25",
+      "value": "6.0",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-26",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-09-27",
+      "value": "4.5",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-28",
+      "value": "3.75",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-09-29",
+      "value": "3.0",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-09-30",
+      "value": "9.0",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-10-01",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-10-02",
+      "value": "7.5",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-10-03",
+      "value": "6.75",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-10-04",
+      "value": "6.0",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-10-05",
+      "value": "5.25",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-10-06",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-10-07",
+      "value": "3.75",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-10-08",
+      "value": "3.0",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-10-09",
+      "value": "9.0",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-10-10",
+      "value": "8.25",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-10-11",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-10-12",
+      "value": "6.75",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-10-13",
+      "value": "6.0",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-10-14",
+      "value": "5.25",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-10-15",
+      "value": "4.5",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-10-16",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-10-17",
+      "value": "3.0",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-10-18",
+      "value": "9.0",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-10-19",
+      "value": "8.25",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    },
+    {
+      "date": "2026-10-20",
+      "value": "7.5",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-10-21",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-10-22",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-10-23",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": null
+    },
+    {
+      "date": "2026-10-24",
+      "value": null,
+      "state": "unknown",
+      "unit": "mg",
+      "coverage": "0"
+    },
+    {
+      "date": "2026-10-25",
+      "value": "5",
+      "state": "partial",
+      "unit": "mg",
+      "coverage": "50"
+    },
+    {
+      "date": "2026-10-26",
+      "value": "5",
+      "state": "complete",
+      "unit": "mg",
+      "coverage": "100"
+    }
+  ],
+  "periods": {
+    "7": {
+      "days": 7,
+      "valid_days": 1,
+      "partial_days": 2,
+      "unknown_days": 4,
+      "average": "5",
+      "partial_average": "6.25"
+    },
+    "30": {
+      "days": 30,
+      "valid_days": 14,
+      "partial_days": 8,
+      "unknown_days": 8,
+      "average": "6.464285714285714285714285714285714285714",
+      "partial_average": "4.9375"
+    },
+    "90": {
+      "days": 90,
+      "valid_days": 46,
+      "partial_days": 24,
+      "unknown_days": 20,
+      "average": "6.451086956521739130434782608695652173913",
+      "partial_average": "5.239583333333333333333333333333333333333"
+    }
+  }
+}

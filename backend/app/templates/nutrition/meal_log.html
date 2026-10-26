@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% from 'nutrition/_micros.html' import summary_table, food_identity, amount, state_label with context %}
+{% block title %}Comida consumida · Health Tracker{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static',filename='css/nutrition.css',v='30a') }}">
+<div class="ni-shell ni-micros">
+{% if config.NUTRITION_QA_LABEL %}<p class="ni-eyebrow">QA ficticia · datos sintéticos · base aislada</p>{% endif %}
+<nav class="ni-tabs" aria-label="Nutrición"><a href="{{ url_for('nutrition.micros',date=log.local_date) }}">Micronutrientes del día</a><a href="{{ url_for('nutrition.today',date=log.local_date) }}">Historial</a></nav>
+{% set doc=log.snapshot_json %}<header><p class="ni-eyebrow">CONSUMO CONFIRMADO · SNAPSHOT</p><h1>{{ doc.name }}</h1><p>{{ log.local_date }} · {{ log.timezone }}{% if log.consumed_at %} · instante registrado {{ log.consumed_at.isoformat() }}{% endif %}</p></header>
+<p>El aporte registrado conserva la fuente y revisión consumidas. Las estimaciones por ingrediente no se suman otra vez a una declaración confirmada. {{ coverage_explanation }}</p>
+{% if log.recipe_id in links.recipes %}<a href="{{ url_for('recipes.detail_recipe',id=log.recipe_id) }}">Ver receta actual</a><p>Revisión de receta consumida: {{ doc.recipe_revision }}. El historial conserva sus cantidades originales.</p>{% endif %}
+{% for group,label in groups %}{{ summary_table(doc.summary,label ~ ' · aporte registrado',group) }}{% endfor %}
+{% if doc.declared_nutrition %}<section class="ni-card"><h2>Declaración de origen confirmada</h2><p>Base {{ doc.declared_nutrition.basis_amount|micro_exact }} {{ doc.declared_nutrition.basis_unit }} · factor de porción {{ doc.portion_factor|default('1')|micro_exact }}. Valores originales antes del factor.</p><ul>{% for key,n in doc.declared_nutrition.nutrients.items() %}<li>{{ nutrients[key][0] }}: {{ amount(n) }} · {{ state_label(n.state) }}</li>{% endfor %}</ul></section>{% endif %}
+{% if doc.composition_summary %}<details class="ni-card"><summary>Estimación por composición independiente del aporte registrado</summary>{{ summary_table(doc.composition_summary,'Composición estimada · no sumar a la declaración') }}</details>{% endif %}
+<section><h2>Ingredientes y evidencia consumida</h2>
+{% for entry in doc.ingredients %}<details class="ni-card"><summary>{{ entry.food.name }} · ver nutrientes y procedencia</summary><p>{{ food_identity(entry,links) }}</p>
+<div class="ni-micro-scroll" tabindex="0" role="region" aria-label="Nutrientes de {{ entry.food.name }}"><table class="ni-micro-table"><caption>Estimación por composición · {{ entry.food.name }}</caption><thead><tr><th scope="col">Nutriente</th><th scope="col">Aporte del ingrediente</th><th scope="col">Estado</th><th scope="col">Procedencia</th></tr></thead><tbody>
+{% for key,definition in nutrients.items() %}{% set n=entry.contribution.get(key,{'state':'unknown','value':none,'unit':definition[1]}) %}<tr><th scope="row">{{ definition[0] }}</th><td>{{ amount(n) }}</td><td>{{ state_label(n.state) }}</td><td>{{ entry.food.source|nutrition_source_label }} · r{{ entry.food.revision|default('sin revisión') }}{% if n.provenance %}<small>{{ {'user_declared':'Declaración del usuario','published':'Fuente publicada','legacy_declared':'Declaración legacy'}.get(n.provenance.get('method'),'Evidencia conservada en el snapshot') }}</small>{% endif %}</td></tr>{% endfor %}
+</tbody></table></div></details>{% else %}<p>Sin ingredientes documentados.</p>{% endfor %}</section></div>
+{% endblock %}

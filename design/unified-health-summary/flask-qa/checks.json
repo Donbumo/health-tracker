@@ -1,0 +1,189 @@
+{
+  "scope": "real Flask; synthetic SQLite QA only",
+  "browser": "155.0.4283.45",
+  "checks": [
+    {
+      "width": 360,
+      "theme": "dark",
+      "status": 200,
+      "overflow": false,
+      "mobileCardLayout": "2+1",
+      "values": [
+        "2,280 kcal",
+        "2,660 kcal",
+        "-380 kcal"
+      ]
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "status": 200,
+      "overflow": false,
+      "mobileCardLayout": "2+1",
+      "values": [
+        "2,280 kcal",
+        "2,660 kcal",
+        "-380 kcal"
+      ]
+    },
+    {
+      "width": 430,
+      "theme": "dark",
+      "status": 200,
+      "overflow": false,
+      "mobileCardLayout": "2+1",
+      "values": [
+        "2,280 kcal",
+        "2,660 kcal",
+        "-380 kcal"
+      ]
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "status": 200,
+      "overflow": false,
+      "mobileCardLayout": "desktop",
+      "values": [
+        "2,280 kcal",
+        "2,660 kcal",
+        "-380 kcal"
+      ]
+    },
+    {
+      "width": 1024,
+      "theme": "dark",
+      "status": 200,
+      "overflow": false,
+      "mobileCardLayout": "desktop",
+      "values": [
+        "2,280 kcal",
+        "2,660 kcal",
+        "-380 kcal"
+      ]
+    },
+    {
+      "width": 1366,
+      "theme": "dark",
+      "status": 200,
+      "overflow": false,
+      "mobileCardLayout": "desktop",
+      "values": [
+        "2,280 kcal",
+        "2,660 kcal",
+        "-380 kcal"
+      ]
+    },
+    {
+      "width": 360,
+      "theme": "light",
+      "status": 200,
+      "overflow": false,
+      "mobileCardLayout": "2+1",
+      "values": [
+        "2,280 kcal",
+        "2,660 kcal",
+        "-380 kcal"
+      ]
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "status": 200,
+      "overflow": false,
+      "mobileCardLayout": "2+1",
+      "values": [
+        "2,280 kcal",
+        "2,660 kcal",
+        "-380 kcal"
+      ]
+    },
+    {
+      "width": 430,
+      "theme": "light",
+      "status": 200,
+      "overflow": false,
+      "mobileCardLayout": "2+1",
+      "values": [
+        "2,280 kcal",
+        "2,660 kcal",
+        "-380 kcal"
+      ]
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "status": 200,
+      "overflow": false,
+      "mobileCardLayout": "desktop",
+      "values": [
+        "2,280 kcal",
+        "2,660 kcal",
+        "-380 kcal"
+      ]
+    },
+    {
+      "width": 1024,
+      "theme": "light",
+      "status": 200,
+      "overflow": false,
+      "mobileCardLayout": "desktop",
+      "values": [
+        "2,280 kcal",
+        "2,660 kcal",
+        "-380 kcal"
+      ]
+    },
+    {
+      "width": 1366,
+      "theme": "light",
+      "status": 200,
+      "overflow": false,
+      "mobileCardLayout": "desktop",
+      "values": [
+        "2,280 kcal",
+        "2,660 kcal",
+        "-380 kcal"
+      ]
+    },
+    {
+      "scenario": "partial",
+      "date": "2040-02-01",
+      "text": "Ingesta\n1,450 kcal\n\nSubtotal conocido · parcial\n\nMedia móvil 7 días\n2,355 kcal\n6/7 días válidos\nGasto\n2,420 kcal\n\nConocido\n\nMedia móvil 7 días\n2,524 kcal\n7/7 días válidos\nBalance comparable\nSin datos\n\nSin dato\n\nMedia móvil 7 días\n-187 kcal\n6/7 días válidos"
+    },
+    {
+      "scenario": "conflict",
+      "date": "2040-02-04",
+      "text": "Ingesta\n2,160 kcal\n\nConocido\n\nMedia móvil 7 días\n2,336 kcal\n5/7 días válidos\nGasto\nSin datos\n\nConflicto pendiente\n\nMedia móvil 7 días\n2,520 kcal\n5/7 días válidos\nBalance comparable\nSin datos\n\nSin dato\n\nMedia móvil 7 días\n-165 kcal\n4/7 días válidos"
+    },
+    {
+      "scenario": "empty",
+      "date": "2041-01-01",
+      "text": "Ingesta\nSin datos\n\nSin dato\n\nMedia móvil 7 días\nSin datos\n0/7 días válidos\nGasto\nSin datos\n\nSin dato\n\nMedia móvil 7 días\nSin datos\n0/7 días válidos\nBalance comparable\nSin datos\n\nSin dato\n\nMedia móvil 7 días\nSin datos\n0/7 días válidos"
+    },
+    {
+      "scenario": "zero",
+      "date": "2040-02-06",
+      "text": "Ingesta\n0 kcal\n\nCero conocido\n\nMedia móvil 7 días\n1,896 kcal\n5/7 días válidos\nGasto\n0 kcal\n\nCero conocido\n\nMedia móvil 7 días\n2,036 kcal\n5/7 días válidos\nBalance comparable\n0 kcal\n\nCero conocido · Equilibrio\n\nMedia móvil 7 días\n-110 kcal\n4/7 días válidos"
+    },
+    {
+      "period": 7,
+      "tableRows": 7,
+      "internalTableScroll": true
+    },
+    {
+      "period": 30,
+      "tableRows": 30,
+      "internalTableScroll": true
+    },
+    {
+      "period": 90,
+      "tableRows": 90,
+      "internalTableScroll": true
+    }
+  ],
+  "errors": [],
+  "posts": [
+    "/login"
+  ]
+}

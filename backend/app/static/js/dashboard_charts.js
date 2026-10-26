@@ -109,23 +109,22 @@
   };
 
   const configs = {
-    energy: () => {
-      const series = [
-        { key: "consumed", label: "Consumidas", type: "bar", className: "chart-series-intake" },
-        { key: "expended", label: "Gastadas", type: "bar", className: "chart-series-expenditure" },
+    energy: () => ({
+      rows: objectRows(payload?.trends?.energy), x: "date", unit: "kcal", zero: true,
+      series: [
+        { key: "intake", label: "Ingesta (parcial: contorno discontinuo)", type: "bar", className: "chart-series-intake" },
+        { key: "expended", label: "Gasto", type: "bar", className: "chart-series-expenditure" },
+        { key: "consumed_rolling_7d", label: "Media ingesta 7 días", type: "line", className: "chart-line-intake" },
+        { key: "expended_rolling_7d", label: "Media gasto 7 días", type: "line", className: "chart-line-expenditure chart-line-dashed" },
+      ],
+    }),
+    balance: () => ({
+      rows: objectRows(payload?.trends?.energy), x: "date", unit: "kcal", zero: true,
+      series: [
         { key: "balance", label: "Balance (déficit − / superávit +)", type: "balance", className: "chart-series-balance" },
-        { key: "consumed_rolling_7d", label: "Media consumo", type: "line", className: "chart-line-intake" },
-        { key: "expended_rolling_7d", label: "Media gasto", type: "line", className: "chart-line-expenditure chart-line-dashed" },
-      ];
-      return {
-        rows: objectRows(payload?.trends?.energy),
-        x: "date",
-        unit: "kcal",
-        zero: true,
-        balanceSign: energyState.balanceSign,
-        series: series.filter((item) => energyState.visibleKeys.has(item.key)),
-      };
-    },
+        { key: "balance_rolling_7d", label: "Media balance 7 días", type: "line", className: "chart-line-balance" },
+      ],
+    }),
     weight: () => ({
       rows: objectRows(payload?.trends?.weight),
       x: "recorded_at",
@@ -172,9 +171,10 @@
 
   const tooltipFor = (kind, row, series, value, unit) => {
     const label = row.date || row.recorded_at || row.label || "Punto";
-    if (kind === "energy") {
-      const sources = objectRows(row.sources).length ? row.sources.join(", ") : (Array.isArray(row.sources) ? row.sources.join(", ") : "Sin fuente");
-      return `${label}. Consumidas: ${format(row.consumed)} kcal. Gastadas: ${format(row.expended)} kcal. Balance: ${format(row.balance)} kcal. Media consumo: ${format(row.consumed_rolling_7d)} kcal (${row.consumed_rolling_7d_days || 0} días con dato). Media gasto: ${format(row.expended_rolling_7d)} kcal (${row.expended_rolling_7d_days || 0} días con dato). Fuente: ${sources || "Sin fuente"}.`;
+    if (kind === "energy" || kind === "balance") {
+      const sources = Array.isArray(row.sources) ? row.sources.join(", ") : "Sin fuente";
+      const states = {known:"Conocido", zero:"Cero conocido", unknown:"Sin dato", partial:"Subtotal conocido · parcial", conflict:"Conflicto pendiente"};
+      return `${label}. Ingesta: ${format(row.intake)} kcal (${states[row.intake_state]}). Gasto: ${format(row.expended)} kcal (${states[row.expenditure_state]}). Balance comparable: ${format(row.balance)} kcal. Media ingesta: ${format(row.consumed_rolling_7d)} kcal (${row.consumed_rolling_7d_days}/7 días válidos). Media gasto: ${format(row.expended_rolling_7d)} kcal (${row.expended_rolling_7d_days}/7). Media balance: ${format(row.balance_rolling_7d)} kcal (${row.balance_rolling_7d_days}/7 pares). Fuentes: ${sources}.`;
     }
     if (kind === "activity") {
       const sources = Array.isArray(row.sources) && row.sources.length ? row.sources.join(", ") : "Sin fuente";
@@ -317,7 +317,7 @@
             y: Math.min(zeroY, valueY),
             width: layout.width,
             height: Math.max(1, Math.abs(zeroY - valueY)),
-            class: `chart-bar ${signClass}`,
+            class: `chart-bar ${signClass} ${series.key === "intake" && row.intake_state === "partial" ? "chart-bar-partial" : ""}`,
             "data-series": series.key,
             "data-row-index": rowIndex,
             "data-value": value,

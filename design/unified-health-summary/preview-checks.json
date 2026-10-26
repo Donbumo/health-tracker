@@ -1,0 +1,81 @@
+{
+  "scope": "New local standalone design proposal only; no D accessibility rerun, no production",
+  "urlScheme": "file",
+  "productionCalls": 0,
+  "errors": [],
+  "renders": [
+    {
+      "device": "desktop",
+      "requestedTheme": "dark",
+      "width": 1366,
+      "pageWidth": 1366,
+      "themeAttribute": "dark",
+      "intake": "2,280kcal",
+      "gasto": "2,660kcal",
+      "balance": "−380kcal",
+      "rows": 7,
+      "idsUnique": true,
+      "charts": 2
+    },
+    {
+      "device": "desktop",
+      "requestedTheme": "light",
+      "width": 1366,
+      "pageWidth": 1366,
+      "themeAttribute": "light",
+      "intake": "2,280kcal",
+      "gasto": "2,660kcal",
+      "balance": "−380kcal",
+      "rows": 7,
+      "idsUnique": true,
+      "charts": 2
+    },
+    {
+      "device": "mobile",
+      "requestedTheme": "dark",
+      "width": 390,
+      "pageWidth": 390,
+      "themeAttribute": "dark",
+      "intake": "2,280kcal",
+      "gasto": "2,660kcal",
+      "balance": "−380kcal",
+      "rows": 7,
+      "idsUnique": true,
+      "charts": 2
+    },
+    {
+      "device": "mobile",
+      "requestedTheme": "light",
+      "width": 390,
+      "pageWidth": 390,
+      "themeAttribute": "light",
+      "intake": "2,280kcal",
+      "gasto": "2,660kcal",
+      "balance": "−380kcal",
+      "rows": 7,
+      "idsUnique": true,
+      "charts": 2
+    }
+  ],
+  "interactions": [
+    {
+      "action": "30 days",
+      "rows": 30
+    },
+    {
+      "action": "partial",
+      "balance": "—kcal",
+      "state": "Subtotal conocido · parcial"
+    },
+    {
+      "action": "known zero",
+      "intake": "0kcal",
+      "balance": "0kcal"
+    },
+    {
+      "action": "detail dialog",
+      "open": true
+    }
+  ],
+  "status": "PASS"
+}

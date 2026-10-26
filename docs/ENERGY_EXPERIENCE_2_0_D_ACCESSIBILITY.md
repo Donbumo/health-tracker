@@ -1,5 +1,7 @@
 # D — auditoría WCAG 2.2 A/AA de A+B+C
 
+Actualización operativa 24-10-2026: D integrada y desplegada por autorización explícita. [Cierre productivo A+B+C+D](ENERGY_EXPERIENCE_2_0_D_PRODUCTION.md). Los resultados y gates de accesibilidad de este informe conservan su alcance histórico; zoom/TTL son deuda conocida aceptada para ese despliegue, sin certificación WCAG ni cambios de seguridad.
+
 Alcance: Energía autenticada, navegación compartida en esas páginas, gráficas/calendario A, fuentes/historial/originales B, importación/decisiones C y errores. No es auditoría de todo Health Tracker ni certificación. Referencia: [WCAG 2.2](https://www.w3.org/TR/WCAG22/). Criterios revisados a continuación; «observado» significa evidencia acotada en QA, no conformidad universal.
 
 Métodos: Flask real con fixtures ficticias; Edge/Playwright; axe-core 4.14.0 (tags A/AA 2.0/2.1/2.2 y best-practice); Tab/Shift+Tab/Enter/Space/flechas; árbol AX CDP; medición sRGB y objetivos; screenshots inspeccionados; reflow y espaciado. JUnit y JSON en [evidencia](../design/energy-experience-2-0-d/README.md). Las incidencias `incomplete` de contraste sobre controles nativos se conservan en JSON; no se cuentan como fallos ni se omiten. Se revisaron capturas y los colores de superficies/controles en ambos temas.

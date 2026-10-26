@@ -1,5 +1,7 @@
 # D — cierre asistido: Narrador, zoom nativo y TTL
 
+Actualización operativa 24-10-2026: D integrada y desplegada por autorización explícita. [Cierre productivo A+B+C+D](ENERGY_EXPERIENCE_2_0_D_PRODUCTION.md). Los resultados y gates de accesibilidad de este informe conservan su alcance histórico; zoom/TTL son deuda conocida aceptada para ese despliegue, sin certificación WCAG ni cambios de seguridad.
+
 Fecha: 23-10-2026, zona `America/Mexico_City`. Base revisada de PR #25: `061c460661f3daa922bceb50710b0d31a224044e`. Sin merge ni despliegue; C permanece como versión productiva. Esta entrega no certifica conformidad WCAG.
 
 ## Aislamiento y entorno

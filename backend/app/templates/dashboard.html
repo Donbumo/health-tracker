@@ -43,6 +43,7 @@
 {% block content %}
 {% from "ai/_coach.html" import brief with context %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/coach.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/unified_health.css', v='1') }}">
 {% set energy = dashboard.summary.energy %}
 {% set nutrition = dashboard.summary.nutrition %}
 {% set activity = dashboard.summary.activity %}
@@ -55,25 +56,28 @@
 <section class="dashboard-hero" aria-labelledby="dashboard-title">
   <div class="dashboard-hero-heading">
     <div>
-      <p class="eyebrow">Análisis longitudinal · Resumen del periodo</p>
+      <p class="eyebrow">Análisis longitudinal</p>
       <h1 id="dashboard-title">Tu salud, en contexto</h1>
       <p><strong>{{ period_title }}</strong> · {{ dashboard.range.label }} · {{ dashboard.range.timezone }}</p>
-      <p class="help">Anterior equivalente: {{ dashboard.comparison.range.label }}</p>
-    </div>
-    <div class="dashboard-heading-actions">
-      <a class="button button-secondary" href="{{ url_for('main.today') }}">Abrir Hoy</a>
     </div>
   </div>
 
+  <form method="get" action="{{ url_for('main.dashboard') }}" class="health-date-form">
+    <label for="health-date">Día seleccionado <input id="health-date" type="date" name="as_of" min="1900-01-01" max="9998-12-31" required value="{{ dashboard.range['to'] }}"></label>
+    <input type="hidden" name="preset" value="{{ dashboard.range.preset if dashboard.range.preset != 'custom' else '7d' }}">
+    {% if dashboard.range.compare %}<input type="hidden" name="compare" value="previous">{% endif %}
+    <button type="submit" class="button button-secondary">Consultar</button>
+  </form>
   <nav class="period-switcher" aria-label="Periodo del dashboard">
     {% for days in (7, 30, 90) %}
-      <a href="{{ url_for('main.dashboard', period=days) }}" class="period-option{% if dashboard.range.preset == days|string + 'd' %} is-active{% endif %}"{% if dashboard.range.preset == days|string + 'd' %} aria-current="page"{% endif %}>{{ days }} días</a>
+      <a href="{{ url_for('main.dashboard', period=days, as_of=dashboard.range['to'], compare=dashboard.range.compare) }}" class="period-option{% if dashboard.range.preset == days|string + 'd' %} is-active{% endif %}"{% if dashboard.range.preset == days|string + 'd' %} aria-current="page"{% endif %}>{{ days }} días</a>
     {% endfor %}
     <details class="period-custom">
       <summary>Fechas</summary>
+      <p class="help">Anterior equivalente: {{ dashboard.comparison.range.label }}</p>
       <form method="get" action="{{ url_for('main.dashboard') }}" class="custom-period-form">
-        <label>Desde <input type="date" name="start" required value="{{ dashboard.range['from'] }}"></label>
-        <label>Hasta <input type="date" name="end" required value="{{ dashboard.range['to'] }}"></label>
+        <label>Desde <input type="date" min="1900-01-01" max="9998-12-31" name="start" required value="{{ dashboard.range['from'] }}"></label>
+        <label>Hasta <input type="date" min="1900-01-01" max="9998-12-31" name="end" required value="{{ dashboard.range['to'] }}"></label>
         <button class="button button-secondary" type="submit">Aplicar</button>
       </form>
     </details>
@@ -83,63 +87,9 @@
     <div class="alert alert-danger" role="alert"><strong>No se pudo aplicar el periodo.</strong> {{ range_error }} Se muestra el rango predeterminado.</div>
   {% endif %}
 
-  <div class="hero-metrics">
-    {{ hero_metric('Calorías consumidas', energy.consumed_total, 'kcal', comparisons.intake, energy.nutrition_days|string + '/' + dashboard.range.days|string + ' días') }}
-    {{ hero_metric('Calorías gastadas', energy.expended_total, 'kcal', comparisons.expenditure, energy.energy_days|string + '/' + dashboard.range.days|string + ' días') }}
-    {{ hero_metric('Balance acumulado', energy.balance_total, 'kcal', none, ('Déficit' if energy.balance_total is not none and energy.balance_total|float < 0 else 'Superávit' if energy.balance_total is not none and energy.balance_total|float > 0 else 'Equilibrio' if energy.balance_total is not none else 'Cobertura insuficiente') + (' · parcial' if energy.is_partial and energy.balance_total is not none else '')) }}
-    {{ hero_metric('Cambio de peso', weight.change, weight.unit, none, 'Primera vs última medición' if weight.change is not none else (weight.entries|string + ' medición' if weight.entries == 1 else 'Sin mediciones suficientes')) }}
-  </div>
 </section>
+{% include "dashboard/_unified_health.html" %}
 <div class="coach-preview">{{ brief(coach_brief, 'Resumen semanal', true) }}<p><a class="button button-secondary" href="{{ url_for('ai.index') }}">Abrir Coach</a></p></div>
-
-<section class="dashboard-card dashboard-card-energy" aria-labelledby="energy-title">
-  <div class="dashboard-card-heading">
-    <div>
-      <p class="eyebrow">Energía</p>
-      <h2 id="energy-title">Balance diario</h2>
-      <p id="energy-chart-summary" class="help">Barras de consumo y gasto, balance con signo y medias móviles de 7 días. Los huecos representan datos ausentes.</p>
-    </div>
-    {{ source_details(energy.sources) }}
-  </div>
-  <div class="energy-chart-controls" data-energy-chart-controls aria-describedby="energy-control-status">
-    <fieldset class="energy-control-set">
-      <legend>Series visibles</legend>
-      <div class="energy-control-list">
-        <button type="button" class="energy-control is-active" data-energy-series-toggle="consumed" aria-pressed="true">Consumo</button>
-        <button type="button" class="energy-control is-active" data-energy-series-toggle="expended" aria-pressed="true">Gasto</button>
-        <button type="button" class="energy-control is-active" data-energy-series-toggle="balance" aria-pressed="true">Balance</button>
-        <button type="button" class="energy-control is-active" data-energy-series-toggle="consumed_rolling_7d" aria-pressed="true">Media consumo</button>
-        <button type="button" class="energy-control is-active" data-energy-series-toggle="expended_rolling_7d" aria-pressed="true">Media gasto</button>
-      </div>
-    </fieldset>
-    <fieldset class="energy-control-set">
-      <legend>Enfoque rápido</legend>
-      <div class="energy-control-list">
-        <button type="button" class="energy-control energy-focus is-active" data-energy-focus="all" aria-pressed="true">Todo</button>
-        <button type="button" class="energy-control energy-focus" data-energy-focus="bars" aria-pressed="false">Solo barras</button>
-        <button type="button" class="energy-control energy-focus" data-energy-focus="lines" aria-pressed="false">Solo líneas</button>
-        <button type="button" class="energy-control energy-focus" data-energy-focus="balance" aria-pressed="false">Solo balance</button>
-        <button type="button" class="energy-control energy-focus" data-energy-focus="deficit" aria-pressed="false">Solo déficit</button>
-        <button type="button" class="energy-control energy-focus" data-energy-focus="surplus" aria-pressed="false">Solo superávit</button>
-      </div>
-    </fieldset>
-    <p id="energy-control-status" class="energy-control-status" data-energy-control-status aria-live="polite">5 series visibles.</p>
-  </div>
-  <div class="dashboard-chart dashboard-chart-primary" data-dashboard-chart="energy" aria-describedby="energy-chart-summary">
-    <p class="chart-fallback">La tabla accesible conserva los datos si JavaScript no está disponible.</p>
-  </div>
-  <div class="energy-summary-strip">
-    <div><span>Ingesta diaria</span><strong>{{ number(energy.consumed_average) }} kcal</strong></div>
-    <div><span>Gasto diario</span><strong>{{ number(energy.expended_average) }} kcal</strong></div>
-    <div><span>Balance diario</span><strong>{{ number(energy.balance_average) }} kcal</strong></div>
-    <div><span>Días completos</span><strong>{{ energy.complete_days }}/{{ dashboard.range.days }}</strong></div>
-    <div><span>Días incompletos</span><strong>{{ energy.incomplete_days }}</strong></div>
-  </div>
-  {% if energy.is_partial %}
-    <p class="data-caveat"><strong>Dato parcial:</strong> el balance acumulado suma únicamente los {{ energy.complete_days }} días con consumo y gasto; los días ausentes no se tratan como cero.</p>
-  {% endif %}
-  <details class="chart-table"><summary>Ver datos diarios y fuentes</summary><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Consumidas</th><th>Gastadas</th><th>Balance</th><th>Media consumo</th><th>Media gasto</th><th>Fuente</th></tr></thead><tbody>{% for point in dashboard.trends.energy %}<tr><th scope="row">{{ point.date }}</th><td>{{ number(point.consumed) }}</td><td>{{ number(point.expended) }}</td><td>{{ number(point.balance) }}</td><td>{{ number(point.consumed_rolling_7d) }}</td><td>{{ number(point.expended_rolling_7d) }}</td><td>{{ point.sources|join(', ') if point.sources else 'Sin dato' }}</td></tr>{% endfor %}</tbody></table></div></details>
-</section>
 
 <div class="dashboard-grid">
   <section class="dashboard-card dashboard-card-span-8" aria-labelledby="weight-title">
@@ -294,5 +244,5 @@
 </div>
 
 <script id="dashboard-chart-data" type="application/json">{{ {'trends': dashboard.trends, 'comparison': dashboard.comparison, 'body': body, 'units': {'weight': weight.unit, 'volume': training.volume_unit}}|tojson }}</script>
-<script src="{{ url_for('static', filename='js/dashboard_charts.js', v='dashboard-2-energy-controls') }}" defer></script>
+<script src="{{ url_for('static', filename='js/dashboard_charts.js', v='unified-health-1') }}" defer></script>
 {% endblock %}

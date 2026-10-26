@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 MAX_DASHBOARD_DAYS = 366
 DEFAULT_PRESET = "7d"
+MIN_DAY, MAX_DAY = date(1900, 1, 1), date(9998, 12, 31)
 PRESET_LABELS = {
     "today": "Hoy",
     "7d": "Últimos 7 días",
@@ -38,11 +39,14 @@ class DashboardRangeError(ValueError):
 
 def _parse_date(value: str, label: str) -> date:
     try:
-        return date.fromisoformat(value)
+        parsed = date.fromisoformat(value)
     except (TypeError, ValueError) as error:
         raise DashboardRangeError(
             f"La fecha {label} debe usar el formato AAAA-MM-DD."
         ) from error
+    if not MIN_DAY <= parsed <= MAX_DAY:
+        raise DashboardRangeError("La fecha debe estar entre 1900 y 9998.")
+    return parsed
 
 
 def _month_end(value: date) -> date:
@@ -142,6 +146,9 @@ class DashboardDateRange:
             ) from error
 
         local_today = today or datetime.now(zone).date()
+        raw_as_of = (query.get("as_of") or "").strip()
+        if raw_as_of:
+            local_today = _parse_date(raw_as_of, "seleccionada")
         raw_from = (query.get("from") or query.get("start") or "").strip()
         raw_to = (query.get("to") or query.get("end") or "").strip()
         raw_compare = (query.get("compare") or "").strip()
@@ -173,7 +180,7 @@ class DashboardDateRange:
             if preset == "today":
                 start_date = local_today
             elif preset in {"7d", "30d", "90d"}:
-                start_date = local_today - timedelta(days=int(preset[:-1]) - 1)
+                start_date = max(MIN_DAY, local_today - timedelta(days=int(preset[:-1]) - 1))
             elif preset == "this-month":
                 start_date = local_today.replace(day=1)
             elif preset == "previous-month":
@@ -186,6 +193,8 @@ class DashboardDateRange:
             raise DashboardRangeError(
                 "La fecha inicial no puede ser posterior a la fecha final."
             )
+        if start_date < MIN_DAY or end_date > MAX_DAY:
+            raise DashboardRangeError("La fecha debe estar entre 1900 y 9998.")
         days = (end_date - start_date).days + 1
         if days > MAX_DASHBOARD_DAYS:
             raise DashboardRangeError(

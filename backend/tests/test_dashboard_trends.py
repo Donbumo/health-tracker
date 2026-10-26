@@ -330,7 +330,7 @@ def test_dashboard_summary_contract_preserves_decimal_nulls_units_and_coverage(a
     assert result["summary"]["energy"]["consumed_total"] == "2100.000"
     assert result["summary"]["energy"]["expended_total"] == "1000.00"
     assert result["summary"]["energy"]["balance_total"] == "100.000"
-    assert result["trends"]["energy"][1]["consumed_rolling_7d"] == "1050.00"
+    assert Decimal(result["trends"]["energy"][1]["consumed_rolling_7d"]) == Decimal("1050.00")
     assert result["trends"]["energy"][1]["expended_rolling_7d"] == "1000.00"
     assert result["summary"]["nutrition"]["averages"]["fat"]["average"] == "42.50"
     assert result["summary"]["nutrition"]["averages"]["net_carbs"]["average"] == "92.50"
@@ -577,19 +577,12 @@ def test_dashboard_and_today_routes_are_authenticated_canonical_and_private(clie
     assert "Análisis longitudinal" in html
     assert "Anterior equivalente" in html
     assert 'id="dashboard-chart-data" type="application/json"' in html
-    assert 'src="/static/js/dashboard_charts.js?v=dashboard-2-energy-controls"' in html
+    assert 'src="/static/js/dashboard_charts.js?v=unified-health-1"' in html
     assert 'href="/static/css/app.css?v=ai-operator-mobile-1"' in html
-    assert 'data-energy-chart-controls' in html
-    for series_key in (
-        "consumed",
-        "expended",
-        "balance",
-        "consumed_rolling_7d",
-        "expended_rolling_7d",
-    ):
-        assert f'data-energy-series-toggle="{series_key}"' in html
-    for focus in ("all", "bars", "lines", "balance", "deficit", "surplus"):
-        assert f'data-energy-focus="{focus}"' in html
+    assert 'data-dashboard-chart="energy"' in html
+    assert 'data-dashboard-chart="balance"' in html
+    assert 'health-balance' in html
+    assert 'name="as_of"' in html
     assert "cdn" not in html.lower()
     assert 'href="/today"' in html
 

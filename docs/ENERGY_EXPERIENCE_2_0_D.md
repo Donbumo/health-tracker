@@ -1,5 +1,7 @@
 # Energy Experience 2.0 D — calidad y accesibilidad para revisión
 
+Actualización operativa 24-10-2026: D integrada y desplegada por autorización explícita. [Cierre productivo A+B+C+D](ENERGY_EXPERIENCE_2_0_D_PRODUCTION.md). Los resultados y gates de accesibilidad de este informe conservan su alcance histórico; zoom/TTL son deuda conocida aceptada para ese despliegue, sin certificación WCAG ni cambios de seguridad.
+
 23-10-2026. Rama `feature/energy-experience-2-0-d`, desde master C `fcf901b903ab7e467444e6f9a5fe898624207efa`. C se cerró en producción **antes** de iniciar D: [informe operativo](ENERGY_EXPERIENCE_2_0_C_PRODUCTION.md). D no se fusiona ni se despliega con esta entrega.
 
 ## Cambios

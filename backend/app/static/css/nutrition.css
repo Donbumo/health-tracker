@@ -76,3 +76,18 @@
 @media(max-width:480px){.ni-experience .ni-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ni-experience .ni-import-row .ni-grid{grid-template-columns:minmax(0,1fr)}.ni-experience .ni-grid .ni-card{padding:.8rem}.ni-calendar a{min-height:44px}.ni-date-nav form{width:100%}}
 @media(prefers-color-scheme:dark){.ni-shell{--ni-accent:#d2f89a;--ni-action:#c7ed84;--ni-action-text:#142014}}
 @media(max-width:767px){.ni-columns{grid-template-columns:minmax(0,1fr)}.ni-heading{align-items:start;flex-wrap:wrap}.ni-review .ni-card{padding:.8rem}.ni-ingredient h2{font-size:1rem}.ni-review aside .ni-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ni-value{font-size:1.35rem}}
+
+/* One batch review; exception forms remain readable without JavaScript. */
+.ni-import-counts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; }
+.ni-import-counts p { display:flex; flex-direction:column; padding:.75rem; border:1px solid var(--border); border-radius:.75rem; }
+.ni-import-counts strong { font-size:1.75rem; }
+.ni-import-confirm { border-top:1px solid var(--border); padding-top:1rem; }
+.ni-import-confirm button { min-height:48px; }
+.ni-import-exception { margin:1.25rem 0; padding:1rem; min-width:0; border:1px solid var(--border); border-radius:.75rem; }
+.ni-import-exception legend { font-weight:700; max-width:100%; overflow-wrap:anywhere; }
+.ni-import-problem { font-weight:600; }
+.ni-import-part { padding:.75rem 0; }
+.ni-import-part select { max-width:100%; }
+@media (max-width:600px) { .ni-import-counts { gap:.4rem; } .ni-import-counts p { padding:.5rem; font-size:.875rem; } .ni-import-counts strong { font-size:1.5rem; } .ni-import-exception { padding:.75rem; } .ni-import-confirm button { width:100%; } }
+
+#import-summary, #import-exceptions { scroll-margin-top:6rem; }

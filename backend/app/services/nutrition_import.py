@@ -59,13 +59,25 @@ def start(user_id,payload,filename,mime=None):
     row=NutritionImportDraft(user_id=user_id,source_sha256=source.sha256,
         source_json={'upload_id':source.id,'profile':found['profile'],'classification_hint':found['classification_hint'],
             'warnings':found['warnings'],'text':found['text'],'evidence':found['source']},review_json=review)
-    if prior:row.source_json=dict(row.source_json,already_imported=True)
+    if prior:
+        row.source_json=dict(row.source_json,already_imported=True)
+        row.state='completed'
+    else:
+        existing=db.session.execute(db.select(NutritionImportDraft).where(
+            NutritionImportDraft.user_id==user_id,NutritionImportDraft.source_sha256==source.sha256,
+            NutritionImportDraft.state=='pending').order_by(NutritionImportDraft.id.desc())).scalars()
+        for pending in existing:
+            try:assert_pending(pending,pending.revision)
+            except NutritionError:continue
+            return pending
     db.session.add(row);db.session.flush();return row
 
 
 def assert_pending(row,revision):
     created=row.created_at.replace(tzinfo=timezone.utc) if row.created_at.tzinfo is None else row.created_at
-    if row.state!='pending' or row.revision!=int(revision) or datetime.now(timezone.utc)-created>timedelta(hours=24):
+    try:revision=int(revision)
+    except (ValueError,TypeError) as error:raise NutritionError('Revisión inválida; reabre el resumen.',409) from error
+    if row.state!='pending' or row.revision!=revision or datetime.now(timezone.utc)-created>timedelta(hours=24):
         raise NutritionError('La revisión cambió o venció. Reabre el archivo.',409)
     upload_id=(row.source_json or {}).get('upload_id')
     if upload_id and not db.session.scalar(db.select(UploadedFile.id).where(UploadedFile.id==upload_id,UploadedFile.user_id==row.user_id)):

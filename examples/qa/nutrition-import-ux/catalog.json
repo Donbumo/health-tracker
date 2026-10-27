@@ -1,0 +1,62 @@
+{
+  "schema_version": "2.0",
+  "source": "qa_import_ux",
+  "revision": "1",
+  "license": "Fictional QA only",
+  "foods": [
+    {
+      "source": "qa_import_ux",
+      "source_food_id": "1",
+      "revision": "1",
+      "name": "QA arroz cocido",
+      "preparation": "QA cooked",
+      "basis_amount": "100",
+      "basis_unit": "g",
+      "servings": [],
+      "nutrients": {
+        "energy": {
+          "state": "known",
+          "value": "100",
+          "unit": "kcal"
+        },
+        "protein": {
+          "state": "known",
+          "value": "5",
+          "unit": "g"
+        },
+        "vitamin_d": {
+          "state": "known",
+          "value": "0",
+          "unit": "ug"
+        }
+      }
+    },
+    {
+      "source": "qa_import_ux",
+      "source_food_id": "2",
+      "revision": "1",
+      "name": "QA pollo cocido",
+      "preparation": "QA cooked",
+      "basis_amount": "100",
+      "basis_unit": "g",
+      "servings": [],
+      "nutrients": {
+        "energy": {
+          "state": "known",
+          "value": "100",
+          "unit": "kcal"
+        },
+        "protein": {
+          "state": "known",
+          "value": "5",
+          "unit": "g"
+        },
+        "vitamin_d": {
+          "state": "known",
+          "value": "0",
+          "unit": "ug"
+        }
+      }
+    }
+  ]
+}

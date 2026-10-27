@@ -176,7 +176,7 @@ def test_OFF_selection_prefill_is_pending_owner_bound_and_only_signed_confirmati
     assert client.get('/nutrition/my-food?proposal=tampered').status_code==409
 
 
-def test_wizard_scoped_edits_preserve_other_stages_invalidate_confirmation_and_still_validate(app,client,user,enabled):
+def test_legacy_scoped_edits_preserve_fields_and_open_the_single_summary(app,client,user,enabled):
     row=reviewed(user,enabled);before=copy.deepcopy(row.review_json['rows'][0]);login(client)
     row=imports.update(user,row.public_id,row.revision,'fields',{'index':0,'_section':'identity','name':'QA identidad corregida','meal_type':'lunch','planned_for':'2026-10-05'})
     item=row.review_json['rows'][0]
@@ -188,7 +188,8 @@ def test_wizard_scoped_edits_preserve_other_stages_invalidate_confirmation_and_s
     db.session.commit()
     for step in range(1,5):
         response=client.get(f'/nutrition/import/{row.public_id}?step={step}')
-        assert response.status_code==200 and f'PASO {step} DE 4'.encode() in response.data
+        assert response.status_code==200 and b'PASO 2 DE 3' in response.data
+        assert b'ni-steps' not in response.data
     early=client.get(f'/nutrition/import/{row.public_id}?step=1').get_data(as_text=True)
     assert 'name="nutrient_energy"' not in early and 'name="ref"' not in early
     with pytest.raises(NutritionError):imports.update(user,row.public_id,row.revision,'fields',{'index':0,'_section':'invented'})
@@ -230,6 +231,10 @@ def test_shared_pending_original_and_foreign_domain_references_block_deletion(ap
     payload=(FIXTURES/'external.json').read_bytes()
     row=imports.start(user,payload,'QA-first.json');db.session.commit()
     second=imports.start(user,payload,'QA-second.json');db.session.commit()
+    assert second.id==row.id  # New uploads resume instead of multiplying reviews.
+    from app.models import NutritionImportDraft
+    second=NutritionImportDraft(user_id=user,source_sha256=row.source_sha256,source_json=copy.deepcopy(row.source_json),review_json=copy.deepcopy(row.review_json))
+    db.session.add(second);db.session.commit()  # Existing legacy/shared draft case.
     assert not imports.original_policy(row)['can_delete']
     imports.update(user,second.public_id,second.revision,'cancel',{});db.session.commit()
     assert imports.original_policy(row)['can_delete']

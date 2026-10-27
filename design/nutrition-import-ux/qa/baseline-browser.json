@@ -1,0 +1,16 @@
+{
+  "data": "fictional old real Flask UI only",
+  "base": "430164e4f868e0ad5743b49223f87a330107c0b0",
+  "records": 13,
+  "ingredients": 26,
+  "POSTs": 81,
+  "search_GET_actions": 26,
+  "stage_navigation_actions": 3,
+  "submit_navigation_actions": 110,
+  "individual_row_confirmations": 13,
+  "composition_checkboxes": 13,
+  "destination_confirmations": 1,
+  "global_confirmations": 1,
+  "counting": "Button/link activations; field entry, select changes, 13 composition checkboxes and native file picker excluded from 110. Searches repeated because legacy redirects discard q.",
+  "saved_records": 13
+}

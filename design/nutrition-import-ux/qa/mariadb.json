@@ -1,0 +1,59 @@
+{
+  "status": "PASS",
+  "runtime": "preserved production B Python 3.12; working-tree app mounted read-only",
+  "qa": [
+    {
+      "status": "PASS",
+      "data": "fictional isolated LOCAL MariaDB only",
+      "new_DDL": false,
+      "isolation": "READ-COMMITTED",
+      "alembic": "20261018_0046",
+      "db_check": "PASS",
+      "GET_DML_DDL": 0,
+      "initial_ready": 10,
+      "initial_decisions": 3,
+      "one_exception_POST": "PASS",
+      "global_confirm": "PASS",
+      "csrf_signature_expiry_owner": "PASS",
+      "pending_completion_atomic": "PASS",
+      "rollback_after_domain_flush": "PASS",
+      "replay_reupload": "PASS",
+      "concurrent_statuses": [
+        200,
+        409
+      ],
+      "concurrent_no_duplicates": true,
+      "FoodProduct_MealLog_Recipe_unchanged": true,
+      "partial_import_enabled": false,
+      "partial_review_decisions_resume": true,
+      "original_SHA256_retained": true
+    },
+    {
+      "status": "PASS",
+      "data": "fictional isolated LOCAL MariaDB only",
+      "new_DDL": false,
+      "isolation": "REPEATABLE-READ",
+      "alembic": "20261018_0046",
+      "db_check": "PASS",
+      "GET_DML_DDL": 0,
+      "initial_ready": 10,
+      "initial_decisions": 3,
+      "one_exception_POST": "PASS",
+      "global_confirm": "PASS",
+      "csrf_signature_expiry_owner": "PASS",
+      "pending_completion_atomic": "PASS",
+      "rollback_after_domain_flush": "PASS",
+      "replay_reupload": "PASS",
+      "concurrent_statuses": [
+        200,
+        409
+      ],
+      "concurrent_no_duplicates": true,
+      "FoodProduct_MealLog_Recipe_unchanged": true,
+      "partial_import_enabled": false,
+      "partial_review_decisions_resume": true,
+      "original_SHA256_retained": true
+    }
+  ],
+  "production_access": false
+}

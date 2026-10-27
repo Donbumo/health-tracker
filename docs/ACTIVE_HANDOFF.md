@@ -2,7 +2,15 @@
 
 Índice de reglas y guías: [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md).
 
-## Estado actual — Nutrition Intelligence 3.0 A operativa; B para revisión
+## Estado actual — simplificación de importación nutricional para revisión
+
+- Prioridad UX autorizada después de B productiva (master base `430164e4f868e0ad5743b49223f87a330107c0b0`). Rama independiente `codex/nutrition-import-three-screens`; [auditoría y QA](NUTRITION_IMPORT_UX.md). Subir → resumen de excepciones → resultado, sin confirmación individual de filas inequívocas. No continuar enriquecimiento personal C en este PR.
+- Fixture ficticia de 13 registros/26 ingredientes: navegador anterior 110 activaciones de botones/enlaces y 81 POST; nuevo 4 activaciones y 3 POST. Archivo inequívoco de diez registros: dos POST. No se cuentan entradas de texto/selects/casillas o selector nativo de archivo como botones/enlaces. Capturas Flask/Edge móvil/escritorio y claro/oscuro; 12 combinaciones responsive.
+- Reutiliza StandardImportExecutor, revisiones y recibos. Confirmación global firmada owner/revisión/documento/plan, CSRF y consentimiento de consumo; revalidación tras auditoría pending y cierre de revisión atómico con recibo/dominio. SQL GET sin DML/DDL, replay, rollback y concurrencia MariaDB QA 0046 RC/RR PASS. Sin DDL, schemas, dependencias o contratos móviles nuevos.
+- No hay importación parcial de dominio: el contrato actual es por evento/archivo completo. Sí se guardan decisiones parciales de revisión para reanudar. Propuesta mínima para parcial seguro documentada; no simular pendientes recuperables tras omisiones.
+- Trabajo en worktree aislado; informes locales de producción B y cambios no versionados del checkout principal preservados. Sin acceso al NAS ni a importación real pendiente. **No fusionar ni desplegar automáticamente.**
+
+## Antecedente — A operativa; preparación de B
 
 - A integrada por squash de PR #27 con HEAD autorizado intacto: GitHub/Windows/NAS master `2f0275ba6c86b14a797a7671b43b6257282886ac`. Imagen NAS `sha256:adfb59b115705746d24f444e0aba8d75cbf32a8cc4f3ad09e72fb160a563ea66`, anterior Unified Summary conservada. [Cierre productivo](NUTRITION_INTELLIGENCE_3_A_PRODUCTION.md), [evidencia agregada](../design/nutrition-intelligence-3-a/release-qa/closeout.json).
 - MariaDB QA RC/RR, db check 0046, backup nuevo `nutrition3-a-20261026T211943Z`, checksum/restore y 2,026 archivos idénticos PASS. Sólo web recreada; DB/volumen/flags/historial intactos. HTTP/HTTPS autenticado de micros 7/30/90, Nutrition, Unified Summary, Energy y legacy PASS. La cuenta operativa no tenía MealLogs propios; desglose y estados especiales se verificaron sólo en QA. No repetir campañas generales por este cierre.

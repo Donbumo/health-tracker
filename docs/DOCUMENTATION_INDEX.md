@@ -14,6 +14,8 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 
 ## Uso diario y web
 
+- Importación nutricional simplificada: [auditoría, métricas, recibos y QA](NUTRITION_IMPORT_UX.md). Tres pantallas, excepciones agrupadas, confirmación global; PR independiente sin merge ni despliegue.
+
 - Nutrition Intelligence 3.0 A: [implementación, auditoría de catálogo y QA](NUTRITION_INTELLIGENCE_3_A.md), [cierre productivo](NUTRITION_INTELLIGENCE_3_A_PRODUCTION.md). B: [candidatos revisables implementados para PR](NUTRITION_INTELLIGENCE_3_B.md), [arquitectura de enriquecimiento](NUTRITION_INTELLIGENCE_3_B_DESIGN.md); sin llamada a IA, merge o despliegue de B.
 
 - Energy Experience 2.0: [ENERGY_EXPERIENCE_2_0.md](ENERGY_EXPERIENCE_2_0.md), dirección y arquitectura; [QA de A](ENERGY_EXPERIENCE_2_0_A_QA.md), [cierre A](ENERGY_EXPERIENCE_2_0_A_PRODUCTION.md), [alcance B](ENERGY_EXPERIENCE_2_0_B.md), [cierre B](ENERGY_EXPERIENCE_2_0_B_PRODUCTION.md), [alcance C](ENERGY_EXPERIENCE_2_0_C.md), [cierre productivo C](ENERGY_EXPERIENCE_2_0_C_PRODUCTION.md) y [D para revisión](ENERGY_EXPERIENCE_2_0_D.md), con [auditoría de accesibilidad](ENERGY_EXPERIENCE_2_0_D_ACCESSIBILITY.md) y [seguimiento Narrador/zoom/TTL](ENERGY_EXPERIENCE_2_0_D_ASSISTED_CLOSEOUT.md). A+B+C+D operativas: [cierre productivo D](ENERGY_EXPERIENCE_2_0_D_PRODUCTION.md), con deuda de accesibilidad conocida. Siguiente revisión: [Resumen de salud unificado](UNIFIED_HEALTH_SUMMARY_DESIGN.md) y [prototipo local](../design/unified-health-summary/README.md), con [implementación y QA Flask](UNIFIED_HEALTH_SUMMARY_IMPLEMENTATION.md) para PR, sin merge/despliegue.

@@ -1,0 +1,22 @@
+{
+  "data": "fictional QA only",
+  "base": "430164e4f868e0ad5743b49223f87a330107c0b0",
+  "rows": 13,
+  "ingredients": 26,
+  "upload_POSTs": 1,
+  "mutation_POSTs": {
+    "destination": 1,
+    "fields": 39,
+    "bind": 26,
+    "confirm": 13
+  },
+  "domain_confirmation_POSTs": 1,
+  "total_POSTs": 81,
+  "explicit_row_confirmations": 13,
+  "destination_confirmations": 1,
+  "stage_navigation_clicks": 3,
+  "minimum_submit_navigation_actions": 84,
+  "blocking_rows_after_upload": 13,
+  "counting": "Submit-button activations plus three stage links; excludes file picker and field editing; upload/stage final GET reloads not counted as clicks",
+  "saved_meals": 13
+}

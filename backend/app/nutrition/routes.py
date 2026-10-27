@@ -11,7 +11,7 @@ from app.services.mobile_health import MobileSyncError
 from app.nutrition import nutrition_bp
 from app.extensions import db
 from app.models import Recipe, FoodProduct
-from app.models.nutrition_intelligence import MealLog, NutritionPlan, NutritionImportReceipt
+from app.models.nutrition_intelligence import MealLog, NutritionPlan, NutritionImportReceipt, NutritionImportDraft
 from app.services import nutrition_intelligence as ni, food_catalog as catalog
 from app.services.nutrition_math import NutritionError, NUTRIENTS, PRODUCT, ingredient, summarize, decimal, COVERAGE_EXPLANATION
 
@@ -67,7 +67,7 @@ def food_error(error):
 
 
 def render(view, **values):
-    return render_template("nutrition/experience.html" if view in {'history','import_upload','import_review','import_result','library','external'} else "nutrition/page.html",view=view,nutrients=NUTRIENTS,
+    return render_template("nutrition/experience.html" if view in {'history','import_upload','import_review','import_result','import_expired','library','external'} else "nutrition/page.html",view=view,nutrients=NUTRIENTS,
         coverage_explanation=COVERAGE_EXPLANATION,enabled=current_app.config.get("NUTRITION_INTELLIGENCE_ENABLED"),**values)
 
 
@@ -326,7 +326,12 @@ def import_upload():
     ni.enabled()
     if request.method=='GET':
         from app.services.importers.registry import ImportAdapterRegistry
-        return render('import_upload',adapter=ImportAdapterRegistry().get('nutrition_sources'))
+        pending=db.session.scalars(db.select(NutritionImportDraft).where(NutritionImportDraft.user_id==current_user.id, NutritionImportDraft.state=='pending').order_by(NutritionImportDraft.id.desc()).limit(20)).all()
+        from app.services import nutrition_import as imports
+        statuses=[(review,imports.review_status(review)) for review in pending]
+        return render('import_upload',adapter=ImportAdapterRegistry().get('nutrition_sources'),
+            pending_reviews=[review for review,status in statuses if status['can_resume']],
+            unavailable_reviews=[(review,status) for review,status in statuses if not status['can_resume']])
     from app.services import nutrition_import as imports
     file=request.files.get('file')
     if not file:raise NutritionError('Selecciona un archivo.')
@@ -340,32 +345,81 @@ def import_upload():
 def import_review(key):
     from app.services import nutrition_import as imports
     from app.services.importers.standard_import_executor import StandardImportExecutor
-    row=imports.owned(current_user.id,key);review=row.review_json
+    from app.services import nutrition_import_review as compact
+    row=imports.owned(current_user.id,key)
+    receipt=_import_receipt(row)
+    if receipt:
+        return _import_result(row,receipt)
+    status=imports.review_status(row)
+    if row.state=='pending' and not status['can_resume']:
+        return render('import_expired',row=row,status=status,original_policy=imports.original_policy(row))
+    view=compact.overview(row)
     document=None;plan=None;token=None;blocking=[]
-    pending=sum(not item.get('confirmed') for item in review['rows'] if not item.get('skip'))
-    if not pending:
+    if row.state=='pending':
         try:
-            document=imports.canonical(row)
+            imports.assert_pending(row,row.revision)
+            document=compact.document(row,view)
             executor=StandardImportExecutor();plan=executor.plan_documents([document],user_id=current_user.id,target_type='nutrition_import')
             blocking=plan['errors']
             if not plan['invalid'] and not plan['conflicts']:
-                token=executor.build_confirmation_token(user_id=current_user.id,target_type='nutrition_import',payload=document,plan=plan)
+                token=_import_serializer().dumps({'owner':current_user.id,'draft':row.public_id,'revision':row.revision,
+                    'document':ni.hash_document(document),'executor':executor.build_confirmation_token(user_id=current_user.id,target_type='nutrition_import',payload=document,plan=plan)})
         except ValueError as error:blocking=[str(error)]
-    matches=catalog.search(current_user.id,request.args.get('q',''),limit=20) if request.args.get('q') else []
-    previews={}
-    binding_info={}
-    for index,item in enumerate(review['rows']):
-        if item.get('skip'):continue
-        binding_info[index]={}
-        for part,binding in enumerate(item.get('ingredients',[])):
-            if binding.get('ref'):
-                try:binding_info[index][part]=catalog.detail(current_user.id,binding['ref'],binding.get('food_revision'))
-                except NutritionError:pass
-        try:previews[index]=imports.row_preview(row,index)
-        except (ValueError,KeyError,TypeError):pass
-    try: step=max(1,min(4,int(request.args.get('step',1))))
-    except ValueError:step=1
-    return render('import_review',row=row,review=review,pending=pending,document=document,plan=plan,token=token,blocking=blocking,matches=matches,query=request.args.get('q',''),previews=previews,step=step,original_policy=imports.original_policy(row),binding_info=binding_info)
+    query=request.args.get('q','').strip()[:100]
+    cache={}
+    for record in view['records']:
+        for problem in record['issues']:
+            if problem['code']=='ingredient':
+                text=query or problem['proposal'].get('name','')[:100]
+                if text not in cache:
+                    hits=catalog.search(current_user.id,text,limit=12) if text else []
+                    foods=catalog.details(current_user.id,[{'ref':hit['ref']} for hit in hits])
+                    cache[text]=[dict(hit,revision=food['revision']) for hit,food in zip(hits,foods)]
+                problem['candidates']=cache[text]
+    return render('import_review',row=row,**view,token=token,blocking=blocking,query=query,
+                  original_policy=imports.original_policy(row),pending=view['counts']['decision']+view['counts']['invalid'])
+
+
+def _import_serializer():
+    return URLSafeTimedSerializer(current_app.secret_key,salt='nutrition-import-summary-v1')
+
+
+def _import_receipt(row):
+    event={'file':row.source_sha256}
+    if row.source_json.get('plan_identity'):
+        event={'plan':row.source_json['plan_identity'],'revision':row.source_json['plan_revision']}
+    return db.session.scalar(db.select(NutritionImportReceipt).where(
+        NutritionImportReceipt.user_id==current_user.id,NutritionImportReceipt.event_key==ni.hash_document(event)))
+
+
+def _import_result(row,receipt):
+    from app.services import nutrition_import as imports
+    result={'committed':True,'inserts':0,'skips':1,'conflicts':0,'invalid':0,'errors':[]}
+    return render('import_result',result=result,receipt=receipt,row=row,original_policy=imports.original_policy(row))
+
+
+@nutrition_bp.post('/import/<key>/recover')
+@login_required
+def import_recover(key):
+    from app.services import nutrition_import as imports
+    row=imports.recover(current_user.id,key,request.form.get('revision'))
+    db.session.commit()
+    flash('Se abrió una revisión vigente desde el original verificado. Las decisiones vencidas no se copiaron; revisa otra vez las excepciones.','info')
+    return redirect(url_for('nutrition.import_review',key=row.public_id))
+
+
+@nutrition_bp.post('/import/<key>/decisions')
+@login_required
+def import_decisions(key):
+    from app.services import nutrition_import_review as compact
+    try:row=compact.save_decisions(current_user.id,key,request.form.get('revision'),request.form.to_dict())
+    except NutritionError as error:
+        db.session.rollback()
+        if error.status==404:raise
+        flash(str(error),'error')
+        return import_review(key),error.status
+    db.session.commit()
+    return redirect(url_for('nutrition.import_review',key=row.public_id)+'#import-summary')
 
 
 @nutrition_bp.post('/import/<key>/change')
@@ -399,15 +453,30 @@ def delete_original(key):
 def import_confirm(key):
     from app.services import nutrition_import as imports
     from app.services.importers.standard_import_executor import StandardImportExecutor
+    from app.services import nutrition_import_review as compact
     ni.enabled();ni.lock_owner(current_user.id);row=imports.owned(current_user.id,key,True)
-    imports.assert_pending(row,request.form['revision'])
-    document=imports.canonical(row);executor=StandardImportExecutor();plan=executor.plan_documents([document],user_id=current_user.id,target_type='nutrition_import')
-    try:executor.verify_confirmation_token(request.form.get('token',''),user_id=current_user.id,target_type='nutrition_import',payload=document,plan=plan)
-    except ValueError as error:raise NutritionError('La confirmación cambió o venció; revisa de nuevo.',409) from error
-    result=executor.commit_documents([document],user_id=current_user.id,target_type='nutrition_import',confirmed=True,audit_metadata={'nutrition_review':row.public_id,'source_sha256':row.source_sha256})
-    if result['committed']:
-        row=imports.owned(current_user.id,key,True);row.state='completed';db.session.commit()
-    receipt=db.session.execute(db.select(NutritionImportReceipt).where(NutritionImportReceipt.user_id==current_user.id,NutritionImportReceipt.event_key==document['data']['event_key'])).scalar_one_or_none()
+    try:
+        claims=_import_serializer().loads(request.form.get('token',''),max_age=900)
+        if any(claims.get(k)!=v for k,v in {'owner':current_user.id,'draft':row.public_id,'revision':row.revision}.items()):
+            raise ValueError('Changed review')
+        if int(request.form.get('revision',''))!=row.revision:raise ValueError('Changed review')
+    except (BadSignature,ValueError,TypeError) as error:
+        raise NutritionError('La confirmación cambió o venció; revisa de nuevo.',409) from error
+    receipt=_import_receipt(row)
+    if row.state=='completed' and receipt:
+        if claims.get('document')!=ni.hash_document(receipt.raw_payload_json):raise NutritionError('La revisión no corresponde al recibo.',409)
+        return _import_result(row,receipt)
+    imports.assert_pending(row,row.revision)
+    if row.review_json['destination']=='consumed' and request.form.get('consent_consumed')!='yes':
+        raise NutritionError('Confirma que el lote contiene consumos reales antes de guardarlo.')
+    document=compact.document(row);executor=StandardImportExecutor();plan=executor.plan_documents([document],user_id=current_user.id,target_type='nutrition_import')
+    try:
+        if claims.get('document')!=ni.hash_document(document):raise ValueError('Changed document')
+        executor.verify_confirmation_token(claims['executor'],user_id=current_user.id,target_type='nutrition_import',payload=document,plan=plan)
+    except (KeyError,ValueError) as error:raise NutritionError('La confirmación cambió o venció; revisa de nuevo.',409) from error
+    result=executor.commit_documents([document],user_id=current_user.id,target_type='nutrition_import',confirmed=True,
+        audit_metadata={'nutrition_review':row.public_id,'nutrition_review_revision':row.revision,'source_sha256':row.source_sha256})
+    receipt=_import_receipt(row)
     return render('import_result',result=result,receipt=receipt,row=row,original_policy=imports.original_policy(row)),200 if result['committed'] else 409
 
 

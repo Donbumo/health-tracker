@@ -1,0 +1,63 @@
+{
+  "data": "fictional QA only",
+  "modified_state_checks": [
+    {
+      "view": "expired",
+      "width": 390,
+      "theme": "light",
+      "status": 200,
+      "overflow": false,
+      "no_store": true
+    },
+    {
+      "view": "noids",
+      "width": 390,
+      "theme": "light",
+      "status": 200,
+      "overflow": false,
+      "no_store": true
+    },
+    {
+      "view": "expired",
+      "width": 1366,
+      "theme": "dark",
+      "status": 200,
+      "overflow": false,
+      "no_store": true
+    },
+    {
+      "view": "noids",
+      "width": 1366,
+      "theme": "dark",
+      "status": 200,
+      "overflow": false,
+      "no_store": true
+    }
+  ],
+  "expired_GET_status": 200,
+  "expiry_is_not_a_500": "NutritionError inherits ValueError; UX recovery fixed",
+  "recovery": {
+    "new_review": true,
+    "expired_decisions_reset": true,
+    "replay_same_review": true
+  },
+  "representative": {
+    "format": "CSV without catalog identifiers",
+    "detected": 6,
+    "ready_initial": 0,
+    "decisions_initial": 6,
+    "not_importable_initial": 0,
+    "manual_identity_selections": 6,
+    "POSTs": 4,
+    "button_link_actions": 8,
+    "search_GET_actions": 2,
+    "partial_decisions_saved": true,
+    "exit_and_resume": true,
+    "saved_records": 6,
+    "pending_final": 0,
+    "consumptions_created": 0,
+    "counting": "Upload, apply partial, leave to imports, resume, apply remaining, confirm; field/select changes excluded. No textual identity autolinking."
+  },
+  "errors": [],
+  "external_requests": []
+}

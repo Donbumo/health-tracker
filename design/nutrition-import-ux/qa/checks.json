@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "compose_config": "PASS; synthetic configuration only, no up/recreate",
+  "flask_db_check": "PASS; existing isolated MariaDB QA 0046",
+  "schema_migrations_mobile_dependencies_changed": false,
+  "targeted_integration_run": {
+    "passed": 161
+  },
+  "latest_summary_run": {
+    "passed": 11,
+    "overlap_with_integration": 10,
+    "new_case": "partial review decisions resume without domain import"
+  },
+  "compileall": "PASS",
+  "diff_check": "PASS",
+  "full_suite_run": false
+}

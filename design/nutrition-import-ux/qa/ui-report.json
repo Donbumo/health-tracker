@@ -1,0 +1,139 @@
+{
+  "data": "fictional isolated Flask only",
+  "checks": [
+    {
+      "theme": "light",
+      "width": 360,
+      "status": 200,
+      "exceptions": 3,
+      "overflow": false,
+      "no_store": true,
+      "focus": "visible"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "status": 200,
+      "exceptions": 3,
+      "overflow": false,
+      "no_store": true,
+      "focus": "visible"
+    },
+    {
+      "theme": "light",
+      "width": 430,
+      "status": 200,
+      "exceptions": 3,
+      "overflow": false,
+      "no_store": true,
+      "focus": "visible"
+    },
+    {
+      "theme": "light",
+      "width": 768,
+      "status": 200,
+      "exceptions": 3,
+      "overflow": false,
+      "no_store": true,
+      "focus": "visible"
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "status": 200,
+      "exceptions": 3,
+      "overflow": false,
+      "no_store": true,
+      "focus": "visible"
+    },
+    {
+      "theme": "light",
+      "width": 1366,
+      "status": 200,
+      "exceptions": 3,
+      "overflow": false,
+      "no_store": true,
+      "focus": "visible"
+    },
+    {
+      "theme": "dark",
+      "width": 360,
+      "status": 200,
+      "exceptions": 3,
+      "overflow": false,
+      "no_store": true,
+      "focus": "visible"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "status": 200,
+      "exceptions": 3,
+      "overflow": false,
+      "no_store": true,
+      "focus": "visible"
+    },
+    {
+      "theme": "dark",
+      "width": 430,
+      "status": 200,
+      "exceptions": 3,
+      "overflow": false,
+      "no_store": true,
+      "focus": "visible"
+    },
+    {
+      "theme": "dark",
+      "width": 768,
+      "status": 200,
+      "exceptions": 3,
+      "overflow": false,
+      "no_store": true,
+      "focus": "visible"
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "status": 200,
+      "exceptions": 3,
+      "overflow": false,
+      "no_store": true,
+      "focus": "visible"
+    },
+    {
+      "theme": "dark",
+      "width": 1366,
+      "status": 200,
+      "exceptions": 3,
+      "overflow": false,
+      "no_store": true,
+      "focus": "visible"
+    }
+  ],
+  "baseline_screenshots": [
+    390,
+    1366
+  ],
+  "mixed_file": {
+    "records": 13,
+    "ingredients": 26,
+    "initial_ready": 10,
+    "exceptions": 3,
+    "POSTs": 3,
+    "submit_navigation_actions": 4,
+    "search_GET_actions": 1,
+    "individual_confirmations": 0,
+    "saved_records": 13,
+    "pending": 0,
+    "replay": "PASS; existing receipt, no additional records"
+  },
+  "original_download_sha256": "PASS",
+  "normal_file": {
+    "records": 10,
+    "POSTs": 2,
+    "submit_navigation_actions": 2,
+    "individual_confirmations": 0
+  },
+  "errors": [],
+  "external_requests": []
+}

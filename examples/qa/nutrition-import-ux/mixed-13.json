@@ -1,0 +1,429 @@
+{
+  "plan": [
+    {
+      "name": "QA comida 1",
+      "date": "2026-10-20",
+      "meal_type": "breakfast",
+      "amount": "200",
+      "unit": "g",
+      "basis_amount": "200",
+      "basis_unit": "g",
+      "kcal": "200",
+      "protein_g": "10",
+      "total_mass_g": "200",
+      "composition_complete": true,
+      "ingredients": [
+        {
+          "name": "QA arroz cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "1",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "QA pollo cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "2",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "name": "QA comida 2",
+      "date": "2026-10-20",
+      "meal_type": "lunch",
+      "amount": "200",
+      "unit": "g",
+      "basis_amount": "200",
+      "basis_unit": "g",
+      "kcal": "200",
+      "protein_g": "10",
+      "total_mass_g": "200",
+      "composition_complete": true,
+      "ingredients": [
+        {
+          "name": "QA arroz cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "1",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "QA pollo cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "2",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "name": "QA comida 3",
+      "date": "2026-10-20",
+      "meal_type": "dinner",
+      "amount": "200",
+      "unit": "g",
+      "basis_amount": "200",
+      "basis_unit": "g",
+      "kcal": "200",
+      "protein_g": "10",
+      "total_mass_g": "200",
+      "composition_complete": true,
+      "ingredients": [
+        {
+          "name": "QA arroz cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "1",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "QA pollo cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "2",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "name": "QA comida 4",
+      "date": "2026-10-21",
+      "meal_type": "breakfast",
+      "amount": "200",
+      "unit": "g",
+      "basis_amount": "200",
+      "basis_unit": "g",
+      "kcal": "200",
+      "protein_g": "10",
+      "total_mass_g": "200",
+      "composition_complete": true,
+      "ingredients": [
+        {
+          "name": "QA arroz cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "1",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "QA pollo cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "2",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "name": "QA comida 5",
+      "date": "2026-10-21",
+      "meal_type": "lunch",
+      "amount": "200",
+      "unit": "g",
+      "basis_amount": "200",
+      "basis_unit": "g",
+      "kcal": "200",
+      "protein_g": "10",
+      "total_mass_g": "200",
+      "composition_complete": true,
+      "ingredients": [
+        {
+          "name": "QA arroz cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "1",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "QA pollo cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "2",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "name": "QA comida 6",
+      "date": "2026-10-21",
+      "meal_type": "dinner",
+      "amount": "200",
+      "unit": "g",
+      "basis_amount": "200",
+      "basis_unit": "g",
+      "kcal": "200",
+      "protein_g": "10",
+      "total_mass_g": "200",
+      "composition_complete": true,
+      "ingredients": [
+        {
+          "name": "QA arroz cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "1",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "QA pollo cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "2",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "name": "QA comida 7",
+      "date": "2026-10-22",
+      "meal_type": "breakfast",
+      "amount": "200",
+      "unit": "g",
+      "basis_amount": "200",
+      "basis_unit": "g",
+      "kcal": "200",
+      "protein_g": "10",
+      "total_mass_g": "200",
+      "composition_complete": true,
+      "ingredients": [
+        {
+          "name": "QA arroz cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "1",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "QA pollo cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "2",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "name": "QA comida 8",
+      "date": "2026-10-22",
+      "meal_type": "lunch",
+      "amount": "200",
+      "unit": "g",
+      "basis_amount": "200",
+      "basis_unit": "g",
+      "kcal": "200",
+      "protein_g": "10",
+      "total_mass_g": "200",
+      "composition_complete": true,
+      "ingredients": [
+        {
+          "name": "QA arroz cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "1",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "QA pollo cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "2",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "name": "QA comida 9",
+      "date": "2026-10-22",
+      "meal_type": "dinner",
+      "amount": "200",
+      "unit": "g",
+      "basis_amount": "200",
+      "basis_unit": "g",
+      "kcal": "200",
+      "protein_g": "10",
+      "total_mass_g": "200",
+      "composition_complete": true,
+      "ingredients": [
+        {
+          "name": "QA arroz cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "1",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "QA pollo cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "2",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "name": "QA comida 10",
+      "date": "2026-10-23",
+      "meal_type": "breakfast",
+      "amount": "200",
+      "unit": "g",
+      "basis_amount": "200",
+      "basis_unit": "g",
+      "kcal": "200",
+      "protein_g": "10",
+      "total_mass_g": "200",
+      "composition_complete": true,
+      "ingredients": [
+        {
+          "name": "QA arroz cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "1",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "QA pollo cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "2",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "name": "QA comida 11",
+      "date": "2026-10-23",
+      "meal_type": "lunch",
+      "amount": "200",
+      "unit": "g",
+      "basis_amount": "200",
+      "basis_unit": "g",
+      "kcal": "200",
+      "protein_g": "10",
+      "total_mass_g": "200",
+      "composition_complete": true,
+      "ingredients": [
+        {
+          "name": "QA arroz cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "1",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "unit": "g"
+        },
+        {
+          "name": "QA pollo cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "2",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "name": "QA comida 12",
+      "date": "2026-10-23",
+      "meal_type": "dinner",
+      "amount": "200",
+      "unit": "g",
+      "basis_amount": "200",
+      "basis_unit": "g",
+      "kcal": "200",
+      "protein_g": "10",
+      "total_mass_g": "200",
+      "composition_complete": true,
+      "ingredients": [
+        {
+          "name": "QA arroz cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "1",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "QA pollo parecido",
+          "amount": "100",
+          "unit": "g"
+        }
+      ]
+    },
+    {
+      "name": "QA comida 13",
+      "date": "2026-10-24",
+      "meal_type": "breakfast",
+      "amount": "200",
+      "unit": "g",
+      "basis_amount": "200",
+      "basis_unit": "g",
+      "kcal": "200",
+      "protein_g": "10",
+      "total_mass_g": "200",
+      "composition_complete": true,
+      "ingredients": [
+        {
+          "name": "QA arroz cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "1",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "QA pollo cocido",
+          "source": "qa_import_ux",
+          "source_food_id": "2",
+          "revision": "1",
+          "preparation": "QA cooked",
+          "amount": "100",
+          "unit": "g"
+        }
+      ],
+      "carbs": "10 g"
+    }
+  ]
+}

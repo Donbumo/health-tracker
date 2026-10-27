@@ -1,0 +1,74 @@
+{
+  "schema_version": "2.0",
+  "source": "qa_diet_closeout",
+  "revision": "1",
+  "license": "Invented QA data only",
+  "foods": [
+    {
+      "source": "qa_diet_closeout",
+      "source_food_id": "1",
+      "revision": "1",
+      "name": "QA dieta pollo cocido sin aceite",
+      "preparation": "Cocido sin aceite",
+      "basis_amount": "100",
+      "basis_unit": "g",
+      "servings": [],
+      "nutrients": {
+        "energy": {
+          "state": "known",
+          "value": "160",
+          "unit": "kcal"
+        },
+        "vitamin_d": {
+          "state": "known",
+          "value": "0",
+          "unit": "ug"
+        }
+      }
+    },
+    {
+      "source": "qa_diet_closeout",
+      "source_food_id": "2",
+      "revision": "1",
+      "name": "QA dieta arroz blanco cocido",
+      "preparation": "Cocido en agua",
+      "basis_amount": "100",
+      "basis_unit": "g",
+      "servings": [],
+      "nutrients": {
+        "energy": {
+          "state": "known",
+          "value": "130",
+          "unit": "kcal"
+        },
+        "vitamin_d": {
+          "state": "known",
+          "value": "0",
+          "unit": "ug"
+        }
+      }
+    },
+    {
+      "source": "qa_diet_closeout",
+      "source_food_id": "3",
+      "revision": "1",
+      "name": "QA dieta ensalada lechuga y pepino sin aderezo",
+      "preparation": "Crudo sin aderezo",
+      "basis_amount": "100",
+      "basis_unit": "g",
+      "servings": [],
+      "nutrients": {
+        "energy": {
+          "state": "known",
+          "value": "20",
+          "unit": "kcal"
+        },
+        "vitamin_d": {
+          "state": "known",
+          "value": "0",
+          "unit": "ug"
+        }
+      }
+    }
+  ]
+}

@@ -40,6 +40,11 @@ def start(user_id,payload,filename,mime=None):
     # Reuse the official owner-isolated original upload store only AFTER parse.
     from app.services.files import store_uploaded_file
     source,_=store_uploaded_file(FileStorage(stream=io.BytesIO(payload),filename=filename,content_type=mime),user_id)
+    ni.lock_owner(user_id)
+    return _review_from_source(user_id,found,source)
+
+
+def _review_from_source(user_id,found,source):
     found['source']['file']=source.original_filename
     for item in found['rows']:
         if item['evidence'].get('sha256')==source.sha256:
@@ -59,17 +64,75 @@ def start(user_id,payload,filename,mime=None):
     row=NutritionImportDraft(user_id=user_id,source_sha256=source.sha256,
         source_json={'upload_id':source.id,'profile':found['profile'],'classification_hint':found['classification_hint'],
             'warnings':found['warnings'],'text':found['text'],'evidence':found['source']},review_json=review)
-    if prior:row.source_json=dict(row.source_json,already_imported=True)
+    if prior:
+        row.source_json=dict(row.source_json,already_imported=True)
+        row.state='completed'
+    else:
+        existing=db.session.execute(db.select(NutritionImportDraft).where(
+            NutritionImportDraft.user_id==user_id,NutritionImportDraft.source_sha256==source.sha256,
+            NutritionImportDraft.state=='pending').order_by(NutritionImportDraft.id.desc())).scalars()
+        for pending in existing:
+            if pending.source_json.get('plan_identity'):continue
+            try:assert_pending(pending,pending.revision)
+            except NutritionError:continue
+            return pending
     db.session.add(row);db.session.flush();return row
 
 
 def assert_pending(row,revision):
     created=row.created_at.replace(tzinfo=timezone.utc) if row.created_at.tzinfo is None else row.created_at
-    if row.state!='pending' or row.revision!=int(revision) or datetime.now(timezone.utc)-created>timedelta(hours=24):
+    try:revision=int(revision)
+    except (ValueError,TypeError) as error:raise NutritionError('Revisión inválida; reabre el resumen.',409) from error
+    if row.state!='pending' or row.revision!=revision or datetime.now(timezone.utc)-created>timedelta(hours=24):
         raise NutritionError('La revisión cambió o venció. Reabre el archivo.',409)
     upload_id=(row.source_json or {}).get('upload_id')
     if upload_id and not db.session.scalar(db.select(UploadedFile.id).where(UploadedFile.id==upload_id,UploadedFile.user_id==row.user_id)):
         raise NutritionError('El original ya no está disponible. Reabre el archivo antes de confirmar.',409)
+
+
+def review_status(row):
+    """Read-only TTL/original status. Never reactivate a review on GET."""
+    created=row.created_at.replace(tzinfo=timezone.utc) if row.created_at.tzinfo is None else row.created_at
+    expires=created+timedelta(hours=24)
+    expired=datetime.now(timezone.utc)>expires
+    upload_id=(row.source_json or {}).get('upload_id')
+    available=bool(upload_id and db.session.scalar(db.select(UploadedFile.id).where(
+        UploadedFile.id==upload_id,UploadedFile.user_id==row.user_id)))
+    pending=row.state=='pending'
+    return {'expired':expired,'expires_at':expires,'original_available':available,
+            'can_resume':pending and not expired and (available or bool(row.source_json.get('plan_identity'))),
+            'can_recover':pending and expired and available}
+
+
+def recover(user_id,key,revision):
+    """New review from verified retained bytes; old decisions/TTL stay frozen."""
+    ni.enabled();ni.lock_owner(user_id);row=owned(user_id,key,True)
+    try:valid_revision=int(revision)==row.revision
+    except (ValueError,TypeError):valid_revision=False
+    if not valid_revision or row.state!='pending' or not review_status(row)['expired']:
+        raise NutritionError('Sólo se recupera una revisión vencida sin cambios posteriores.',409)
+    upload_id=row.source_json.get('upload_id')
+    source=db.session.scalar(db.select(UploadedFile).where(UploadedFile.id==upload_id,
+        UploadedFile.user_id==user_id).with_for_update()) if upload_id else None
+    if not source:
+        raise NutritionError('No hay original disponible. Sube de nuevo el archivo o prepara una revisión desde la biblioteca.',409)
+    from app.services.backups import resolve_uploaded_download,BackupError
+    try:
+        path=resolve_uploaded_download(source,user_id=user_id)
+        with path.open('rb') as stream:payload=stream.read(MAX_BYTES+1)
+        if len(payload)>MAX_BYTES:raise NutritionError('El original supera el límite actual.',409)
+        found=extract(payload,source.original_filename,source.mime_type)
+    except (BackupError,OSError) as error:
+        raise NutritionError('El original no está disponible o no supera la comprobación de integridad. No se creó otra revisión.',409) from error
+    if source.sha256!=row.source_sha256 or found['source']['sha256']!=row.source_sha256:
+        raise NutritionError('La evidencia del original no coincide; no se recupera la revisión.',409)
+    fresh=_review_from_source(user_id,found,source)
+    # Only link technical reviews; never copy expired user decisions or reset created_at.
+    if fresh.public_id!=row.public_id:
+        fresh.source_json=dict(fresh.source_json,recovered_from=row.public_id,decisions_reset=True)
+        row.source_json=dict(row.source_json,recovered_to=fresh.public_id)
+    db.session.flush()
+    return fresh
 
 
 def original_policy(row):

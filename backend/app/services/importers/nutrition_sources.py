@@ -1,6 +1,7 @@
 """Read-only, bounded nutrition extraction from bytes, never domain writes.
 
-Aliases belong here; callers still review every identity, unit and destination.
+Aliases belong here; explicit fields survive prevalidation and ambiguities
+remain visible in the batch review.
 PDF/image OCR runs locally with installed, bundled ONNX models. No AI provider
 or external URL is called with a document, page, image or extracted diet text.
 """
@@ -17,7 +18,7 @@ from decimal import Decimal
 from functools import lru_cache
 
 from PIL import Image
-from app.services.nutrition_math import NutritionError, NUTRIENTS
+from app.services.nutrition_math import NutritionError, NUTRIENTS, validate_vector
 from app.services.importers.schema_detector import SchemaDetector
 
 MAX_BYTES = 10 * 1024 * 1024
@@ -47,6 +48,7 @@ ALIASES = {
     'sodium': ('sodium','sodio','sodium_mg','sodium (mg)','sodium_mg_per_100g'),
     'ingredients': ('ingredients','ingredientes','components','componentes'),
     'notes': ('notes','notas','instructions','instrucciones','preparacion_texto'),
+    'basis_amount': ('basis_amount','base_cantidad'), 'basis_unit': ('basis_unit','base_unidad'),
     'total_mass_g': ('total_mass_g','yield_weight_g','peso_total_g','peso total g'),
     'yield_factor': ('yield_factor','factor_rendimiento','factor de rendimiento'),
 }
@@ -92,7 +94,7 @@ def normalized_row(raw, evidence):
             keys[canonical]=(match,folded[match])
     row = {'evidence':evidence,'original':raw,'declaration':{},'ingredients':[],'warnings':[],
            'confirmed':False,'skip':False,'composition_complete':False}
-    for key in ['name','brand','barcode','notes','serving_size','total_mass_g','yield_factor']:
+    for key in ['name','brand','barcode','notes','serving_size','total_mass_g','yield_factor','basis_amount','basis_unit']:
         if key in keys and keys[key][1] not in (None,''):
             row[key]=str(keys[key][1])[:10000 if key=='notes' else 200]
     for key in ('date','meal_type'):
@@ -137,13 +139,25 @@ def normalized_row(raw, evidence):
             row['carbohydrate_proposal']=row['declaration'].pop(nutrient)
             row['warnings'].append('Carbohidratos sin distinción total/neto: clasifica explícitamente o conserva el valor sin contabilizar.')
         if unit is None:row['warnings'].append('Confirma la unidad de '+nutrient+'.')
+    if isinstance(raw.get('nutrients'),dict):
+        try:explicit=validate_vector(raw['nutrients'])
+        except NutritionError:
+            row['warnings'].append('Vector de nutrientes no reconocido: requiere un archivo estándar válido.')
+            row['unsupported_vector']=True
+        else:
+            for nutrient,value in explicit.items():
+                if nutrient in row['declaration'] and row['declaration'][nutrient]!=value:
+                    row['warnings'].append('Valor declarado ambiguo: '+nutrient)
+                row['declaration'][nutrient]=value
+    if raw.get('composition_complete') is True:
+        row['composition_complete']=True
     if 'ingredients' in keys and isinstance(keys['ingredients'][1],list):
         if len(keys['ingredients'][1])>100:raise NutritionError('Máximo 100 componentes por fila; divide la preparación.')
         row['ingredient_proposals']=[normalized_row(item,dict(evidence,ingredient=index+1)) for index,item in enumerate(keys['ingredients'][1])]
     if not row.get('name'):
         row['warnings'].append('Falta nombre; no se inventa uno.')
     if any('per_100g' in key for key in folded):
-        row['basis_amount']='100';row['basis_unit']='g';row['kind_hint']='product'
+        row['basis_amount']='100';row['basis_unit']='g';row['kind_hint']='products'
     return row
 
 
@@ -159,7 +173,7 @@ def json_rows(document, evidence):
             for item in meal.get('items',[]):
                 rows.append(normalized_row(dict(item,date=data.get('date'),meal_type=meal.get('meal_type')),dict(evidence,row=len(rows)+1)))
         if not rows:
-            row=normalized_row(data,evidence);row['kind_hint']='daily_aggregate';rows=[row]
+            row=normalized_row(data,evidence);row.update(kind_hint='daily_aggregate',basis_amount='1',basis_unit='portion');rows=[row]
         return rows
     if document.get('record_type') in {'food_product','recipe'} and isinstance(document.get('data'),dict):
         return [normalized_row(document['data'],evidence)]

@@ -1,0 +1,7 @@
+name,date,meal_type,amount,unit,basis_amount,basis_unit,kcal,notes
+Pollo cocido sin aceite,2042-04-03,lunch,120,g,120,g,192,Plan alimentario ficticio QA; no es consumo confirmado
+Arroz blanco cocido,2042-04-03,lunch,150,g,150,g,195,Plan alimentario ficticio QA; no es consumo confirmado
+Ensalada de lechuga y pepino sin aderezo,2042-04-03,lunch,100,g,100,g,20,Plan alimentario ficticio QA; no es consumo confirmado
+Pollo cocido sin aceite,2042-04-03,dinner,120,g,120,g,192,Plan alimentario ficticio QA; no es consumo confirmado
+Arroz blanco cocido,2042-04-03,dinner,150,g,150,g,195,Plan alimentario ficticio QA; no es consumo confirmado
+Ensalada de lechuga y pepino sin aderezo,2042-04-03,dinner,,g,100,g,20,Plan alimentario ficticio QA; no es consumo confirmado

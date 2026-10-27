@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "new_targeted_tests": 112,
+  "post_SQL_read_guard_recovery_tests": 4,
+  "overlap": 4,
+  "new_mariadb_RC_RR": "PASS",
+  "new_modified_state_Flask": "PASS",
+  "reused_evidence": [
+    "previous A/B Energy/Unified cases",
+    "initial 12 responsive combinations",
+    "original exact-ID 110-to-4 comparison"
+  ],
+  "compileall": "PASS",
+  "flask_db_check": "PASS",
+  "compose_synthetic_config": "PASS",
+  "full_suite_repeated": false,
+  "NutritionError_is_ValueError": true,
+  "schema_or_dependencies_changed": false
+}

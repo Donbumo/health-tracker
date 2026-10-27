@@ -310,6 +310,7 @@ class StandardImportExecutor:
             summary=plan,
             metadata=audit_metadata,
         )
+        nutrition_review = None
         try:
             if target_type == 'daily_energy':
                 # The audit pending record is committed independently. Acquire
@@ -319,6 +320,14 @@ class StandardImportExecutor:
                 expected_state = plan.get('energy_state', {})
                 if state_fingerprint(user_id, [date.fromisoformat(day) for day in expected_state], lock=True) != expected_state:
                     raise StandardImportError("El día cambió; revisa un nuevo preview antes de confirmar.")
+            if target_type == 'nutrition_import' and (audit_metadata or {}).get('nutrition_review_revision') is not None:
+                from app.services import nutrition_import as nutrition, nutrition_import_review as compact
+                nutrition.ni.lock_owner(user_id)
+                review=nutrition.owned(user_id,audit_metadata['nutrition_review'],True)
+                nutrition.assert_pending(review,audit_metadata['nutrition_review_revision'])
+                if compact.document(review)!=documents[0]:
+                    raise StandardImportError("La revisión cambió; revisa el lote antes de confirmar.")
+                nutrition_review = review
             for operation in plan["operations"]:
                 planned = PlannedOperation(
                     operation=operation["operation"],
@@ -355,6 +364,8 @@ class StandardImportExecutor:
                     )
                 )
             result = self._summary(committed_operations, committed=True, rollback=False)
+            if nutrition_review is not None:
+                nutrition_review.state = 'completed'
             self.audit_service.finalize_succeeded(audit_run, result)
             db.session.commit()
         except Exception as error:

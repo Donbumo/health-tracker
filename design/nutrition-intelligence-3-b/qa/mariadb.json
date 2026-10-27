@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "scope": "B working tree in A runtime; LOCAL synthetic-only MariaDB 0046",
+  "new_migrations": false,
+  "db_check": "PASS",
+  "authenticated_GET": "PASS",
+  "GET_DML": 0,
+  "GET_DDL": 0,
+  "owner_only": "PASS",
+  "original_definition_unchanged": true,
+  "only_pending_official_draft": true,
+  "consumption_writes": 0
+}

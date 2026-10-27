@@ -1,0 +1,310 @@
+{
+  "status": "PASS_NUTRITION3_A_PRODUCTION",
+  "date_local": "2026-10-26",
+  "github_windows_nas_sha": "2f0275ba6c86b14a797a7671b43b6257282886ac",
+  "active_image": "sha256:adfb59b115705746d24f444e0aba8d75cbf32a8cc4f3ad09e72fb160a563ea66",
+  "preserved_D_image": "sha256:6e47b07df963f3f347cad7fadad2244ea7f11bfddf79b45075b9e7173c48c195",
+  "image": {
+    "status": "PASS",
+    "sha": "2f0275ba6c86b14a797a7671b43b6257282886ac",
+    "image": "sha256:adfb59b115705746d24f444e0aba8d75cbf32a8cc4f3ad09e72fb160a563ea66",
+    "architecture": "linux/amd64",
+    "python": "3.12",
+    "base_image": "sha256:6e47b07df963f3f347cad7fadad2244ea7f11bfddf79b45075b9e7173c48c195",
+    "approved_runtime": "immutable preserved C; no dependency install/update",
+    "D_candidate_pip_freeze_identical": true,
+    "pip_check": "PASS",
+    "git_files_byte_identical": 541,
+    "archive_checksum_load": "PASS",
+    "D_image_untouched": true
+  },
+  "backup": {
+    "status": "PASS",
+    "backup_id": "nutrition3-a-20261026T211943Z",
+    "consistent": true,
+    "checksums_verified": true,
+    "older_backups_preserved": true,
+    "bytes": 283748691
+  },
+  "restore": {
+    "status": "PASS",
+    "isolated_schema_storage": true,
+    "all_tables_columns_indexes_rows": "identical",
+    "regular_files_byte_identical": 2026,
+    "production_restore": false
+  },
+  "production_integrity": {
+    "status": "PASS",
+    "all_tables_columns_indexes_rows": "identical to fresh quiescent backup",
+    "new_migrations": false,
+    "db_check": "PASS",
+    "domain_writes_from_smoke": 0
+  },
+  "storage": {
+    "status": "PASS",
+    "regular_files_identical": 2026,
+    "no_extra_originals_from_production_smoke": true
+  },
+  "HTTP_HTTPS": {
+    "status": "PASS",
+    "sha": "2f0275ba6c86b14a797a7671b43b6257282886ac",
+    "image": "sha256:adfb59b115705746d24f444e0aba8d75cbf32a8cc4f3ad09e72fb160a563ea66",
+    "requests_per_route": 1,
+    "domain_POSTs": 0,
+    "fixture_writes": 0,
+    "protocols": {
+      "HTTP_internal": {
+        "status": "PASS",
+        "authentication": "real username/password + CSRF, cookies in memory only",
+        "GET_routes": {
+          "healthz": {
+            "status": 200,
+            "elapsed_ms": 3.5
+          },
+          "A_energy": {
+            "status": 200,
+            "elapsed_ms": 91.3
+          },
+          "B_sources": {
+            "status": 200,
+            "elapsed_ms": 53.4
+          },
+          "B_history": {
+            "status": 200,
+            "elapsed_ms": 13.5
+          },
+          "C_import": {
+            "status": 200,
+            "elapsed_ms": 42.3
+          },
+          "C_review": {
+            "status": 200,
+            "elapsed_ms": 10.8
+          },
+          "nutrition_2_1": {
+            "status": 200,
+            "elapsed_ms": 188.3
+          },
+          "legacy_list": {
+            "status": 200,
+            "elapsed_ms": 14.1
+          },
+          "legacy_import": {
+            "status": 200,
+            "elapsed_ms": 8.2
+          },
+          "legacy_manual": {
+            "status": 200,
+            "elapsed_ms": 9.4
+          },
+          "dashboard_7": {
+            "status": 200,
+            "elapsed_ms": 148.5
+          },
+          "dashboard_30": {
+            "status": 200,
+            "elapsed_ms": 36.6
+          },
+          "dashboard_90": {
+            "status": 200,
+            "elapsed_ms": 51.4
+          },
+          "today": {
+            "status": 200,
+            "elapsed_ms": 124.8
+          },
+          "dashboard_custom": {
+            "status": 200,
+            "elapsed_ms": 36.3
+          },
+          "dashboard_js": {
+            "status": 200,
+            "elapsed_ms": 2.8
+          },
+          "dashboard_css": {
+            "status": 200,
+            "elapsed_ms": 2.4
+          },
+          "micros_7": {
+            "status": 200,
+            "elapsed_ms": 70.3
+          },
+          "micros_30": {
+            "status": 200,
+            "elapsed_ms": 16.7
+          },
+          "micros_90": {
+            "status": 200,
+            "elapsed_ms": 25.0
+          },
+          "micros_missing_log": {
+            "status": 404,
+            "elapsed_ms": 10.6
+          }
+        },
+        "review_scope": "own existing canonical day",
+        "response_bodies_saved": false
+      },
+      "HTTPS_TLS": {
+        "status": "PASS",
+        "authentication": "real username/password + CSRF, cookies in memory only",
+        "GET_routes": {
+          "healthz": {
+            "status": 200,
+            "elapsed_ms": 21.5
+          },
+          "A_energy": {
+            "status": 200,
+            "elapsed_ms": 118.1
+          },
+          "B_sources": {
+            "status": 200,
+            "elapsed_ms": 37.7
+          },
+          "B_history": {
+            "status": 200,
+            "elapsed_ms": 81.8
+          },
+          "C_import": {
+            "status": 200,
+            "elapsed_ms": 59.7
+          },
+          "C_review": {
+            "status": 200,
+            "elapsed_ms": 33.9
+          },
+          "nutrition_2_1": {
+            "status": 200,
+            "elapsed_ms": 218.4
+          },
+          "legacy_list": {
+            "status": 200,
+            "elapsed_ms": 38.3
+          },
+          "legacy_import": {
+            "status": 200,
+            "elapsed_ms": 27.5
+          },
+          "legacy_manual": {
+            "status": 200,
+            "elapsed_ms": 35.5
+          },
+          "dashboard_7": {
+            "status": 200,
+            "elapsed_ms": 87.4
+          },
+          "dashboard_30": {
+            "status": 200,
+            "elapsed_ms": 79.1
+          },
+          "dashboard_90": {
+            "status": 200,
+            "elapsed_ms": 70.6
+          },
+          "today": {
+            "status": 200,
+            "elapsed_ms": 64.7
+          },
+          "dashboard_custom": {
+            "status": 200,
+            "elapsed_ms": 61.4
+          },
+          "dashboard_js": {
+            "status": 200,
+            "elapsed_ms": 36.0
+          },
+          "dashboard_css": {
+            "status": 200,
+            "elapsed_ms": 22.0
+          },
+          "micros_7": {
+            "status": 200,
+            "elapsed_ms": 41.3
+          },
+          "micros_30": {
+            "status": 200,
+            "elapsed_ms": 71.0
+          },
+          "micros_90": {
+            "status": 200,
+            "elapsed_ms": 57.3
+          },
+          "micros_missing_log": {
+            "status": 404,
+            "elapsed_ms": 30.3
+          }
+        },
+        "review_scope": "own existing canonical day",
+        "response_bodies_saved": false
+      }
+    },
+    "effective_flags": {
+      "NUTRITION_INTELLIGENCE_ENABLED": true,
+      "NUTRITION_EXTERNAL_LOOKUP_ENABLED": false,
+      "AI_ENABLED": true
+    },
+    "micros": {
+      "periods": [
+        7,
+        30,
+        90
+      ],
+      "daily_summary_parity": "PASS",
+      "SQL_instrumented_Flask_GET_DML": 0,
+      "owner_only": "QA_two_owner_gate_and_production_own_records",
+      "historical_log_scope": "no own snapshots; synthetic states verified in isolated QA",
+      "personal_values_saved": false
+    },
+    "alembic": "20261018_0046",
+    "unified_dashboard": {
+      "authenticated_periods": [
+        7,
+        30,
+        90
+      ],
+      "dynamic_date": "PASS",
+      "custom_selector_returns_to_7d": true,
+      "separate_charts_tables_Coach_assets": "PASS",
+      "canonical_point_mean_denominator_parity": "PASS",
+      "own_records_only": true,
+      "response_bodies_saved": false
+    }
+  },
+  "alembic": "20261018_0046",
+  "new_migrations": false,
+  "catalog_active": 13685,
+  "flags": {
+    "NUTRITION_INTELLIGENCE_ENABLED": "true",
+    "NUTRITION_EXTERNAL_LOOKUP_ENABLED": "false",
+    "AI_ENABLED": "true"
+  },
+  "previous_backups": {
+    "D_image_archive_checksum": "PASS",
+    "D_and_C_backup_checksums": "PASS",
+    "older_backup_sets_preserved": 6
+  },
+  "new_errors": 0,
+  "new_http5xx": 0,
+  "restarts": 0,
+  "observation_seconds": 22.8,
+  "nutrition3_A": "operational",
+  "known_debt": [
+    "Native 200% zoom not technically corroborated; no additional manual round",
+    "WCAG 2.2.1: no explicit time-extension mechanism; 15-minute signatures preserved",
+    "No full WCAG certification"
+  ],
+  "accessibility_or_full_suites_repeated": false,
+  "rollback": "Preserved D image over current DB/storage; no downgrade or old-backup restore",
+  "private_data_in_Git": false,
+  "operational_incidents": [
+    "Initial probe incorrectly assumed Energy cache headers on Nutrition; baseline equivalence verified, candidate unchanged",
+    "CRLF prevented first harness edit; correction verified on NAS",
+    "Retry guard for existing private probe configuration retained; a fresh probe configuration was used",
+    "All failed attempts recovered only the compatible previous image; no data restore or downgrade"
+  ],
+  "cache_headers": {
+    "baseline_and_A": "Vary: Cookie; no explicit Cache-Control on Nutrition",
+    "no_public_cache_directive": true,
+    "explicit_no_store_hardening": "deferred to B review; not changed in reviewed A"
+  }
+}

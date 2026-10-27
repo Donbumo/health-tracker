@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "sha": "2f0275ba6c86b14a797a7671b43b6257282886ac",
+  "NAS_config_image": "sha256:adfb59b115705746d24f444e0aba8d75cbf32a8cc4f3ad09e72fb160a563ea66",
+  "local_id": "sha256:0528dc1079ec1f012a9842068b7e8a05063a63b342a8bc687efe0ec7b1d2d2ab",
+  "archive_sha256": "a5f7c180c4ff8fa7eae1514fb7ec0d3f69fab0d7de2c946842aad70a234d1ed3",
+  "archive_bytes": 901712896,
+  "same_config_rootfs_platform": true,
+  "config_blob_verified": true
+}

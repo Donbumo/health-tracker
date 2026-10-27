@@ -2,6 +2,7 @@
 Run B runtime with working-tree app read-only at /app/app and fixtures at /qa.
 """
 import copy,io,json,re,os,tempfile,uuid,threading
+from datetime import timedelta
 from pathlib import Path
 from html import unescape
 from concurrent.futures import ThreadPoolExecutor
@@ -94,6 +95,13 @@ with app.app_context():
  assert client.get(response.location).status_code==200
  # Concurrent requests for one normal ten-record file, both signed before POST.
  row2=imports.start(uid,(fixture/'normal-10.json').read_bytes(),'QA concurrent normal-10.json');db.session.commit();key2=row2.public_id;revision2=row2.revision
+ row2.created_at-=timedelta(days=2);db.session.commit();oldkey=key2;oldcreated=row2.created_at
+ expired=client.get('/nutrition/import/'+oldkey);assert expired.status_code==200 and 'REVISIÓN VENCIDA' in expired.text and 'Confirmar y guardar' not in expired.text
+ assert client.post('/nutrition/import/'+oldkey+'/recover',data={'revision':revision2}).status_code==400
+ recovered=client.post('/nutrition/import/'+oldkey+'/recover',data={'revision':revision2,'csrf_token':csrf});assert recovered.status_code==302
+ db.session.rollback();db.session.expire_all();key2=recovered.location.rsplit('/',1)[1];row2=imports.owned(uid,key2);revision2=row2.revision
+ assert imports.owned(uid,oldkey).created_at==oldcreated and key2!=oldkey
+ assert client.post('/nutrition/import/'+oldkey+'/recover',data={'revision':1,'csrf_token':csrf}).location==recovered.location
  db.session.rollback()
 barrier=threading.Barrier(2)
 def concurrent(_):
@@ -105,5 +113,30 @@ with app.app_context():
  assert db.session.scalar(db.select(db.func.count(NutritionPlan.id)).where(NutritionPlan.user_id==uid))==2
  assert db.session.scalar(db.select(db.func.count(NutritionImportReceipt.id)).where(NutritionImportReceipt.user_id==uid))==2
  assert imports.owned(uid,key2).state=='completed'
+ if not db.session.get(FoodCatalogSource,'qa_diet_closeout'):
+  catalog.stage(json.loads((fixture/'representative-catalog.json').read_text()));catalog.activate('qa_diet_closeout','1',1);db.session.commit()
+ representative=imports.start(uid,(fixture/'representative-plan.csv').read_bytes(),'QA no IDs.csv');db.session.commit();repkey=representative.public_id
+ assert compact.overview(representative)['counts']==dict(ready=0,decision=6,invalid=0,omitted=0)
+ reprefs={h['source_food_id']:h['ref'] for h in catalog.search(uid,source='qa_diet_closeout')}
+ for indices in [range(3),range(3,6)]:
+  fields={f'r{i}_p-1_ref':reprefs[str(i%3+1)] for i in indices}
+  assert client.post('/nutrition/import/'+repkey+'/decisions',data=dict(fields,revision=representative.revision,csrf_token=csrf)).status_code==302
+  db.session.rollback();db.session.expire_all()
+  if indices.start==0:
+   assert compact.overview(representative)['counts']['ready']==3
+   assert imports.start(uid,(fixture/'representative-plan.csv').read_bytes(),'QA resume no IDs.csv').id==representative.id;db.session.commit()
+ assert compact.overview(representative)['counts']['ready']==6
+ signed=review_token(client,repkey)
+ assert client.post('/nutrition/import/'+repkey+'/confirm',data={'revision':representative.revision,'token':signed,'csrf_token':csrf}).status_code==200
+ db.session.rollback();db.session.expire_all()
+ assert db.session.scalar(db.select(db.func.count(NutritionPlan.id)).where(NutritionPlan.user_id==uid))==3
+ insufficient=imports.start(uid,(fixture/'representative-insufficient.csv').read_bytes(),'QA insufficient.csv');db.session.commit()
+ compact.save_decisions(uid,insufficient.public_id,insufficient.revision,{f'r{i}_p-1_ref':reprefs[str(i%3+1)] for i in range(5)});db.session.commit()
+ assert compact.overview(insufficient)['counts']['ready']==5 and compact.overview(insufficient)['counts']['decision']==1
+ from app.services.nutrition_math import NutritionError
+ try:compact.document(insufficient)
+ except NutritionError:pass
+ else:raise AssertionError('Insufficient quantity was imported')
+ report['closeout']={'expired_GET':200,'expired_recovery_idempotent':True,'expired_TTL_not_extended':True,'CSV_without_ids':{'detected':6,'initial_ready':0,'initial_decisions':6,'manual_identity_selections':6,'partial_review_resumed':True,'saved_records':6},'insufficient_quantity':{'ready':5,'decisions':1,'domain_imported':0}}
  report.update(alembic='20261018_0046',db_check='PASS',GET_DML_DDL=0,initial_ready=10,initial_decisions=3,one_exception_POST='PASS',global_confirm='PASS',csrf_signature_expiry_owner='PASS',pending_completion_atomic='PASS',rollback_after_domain_flush='PASS',replay_reupload='PASS',concurrent_statuses=statuses,concurrent_no_duplicates=True,FoodProduct_MealLog_Recipe_unchanged=True,partial_import_enabled=False,partial_review_decisions_resume=True,original_SHA256_retained=True)
 out=Path('/evidence')/('mariadb-'+os.environ.get('QA_ISOLATION','READ COMMITTED').replace(' ','_')+'.json');out.write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report))

@@ -7,6 +7,24 @@
       "data": "fictional isolated LOCAL MariaDB only",
       "new_DDL": false,
       "isolation": "READ-COMMITTED",
+      "closeout": {
+        "expired_GET": 200,
+        "expired_recovery_idempotent": true,
+        "expired_TTL_not_extended": true,
+        "CSV_without_ids": {
+          "detected": 6,
+          "initial_ready": 0,
+          "initial_decisions": 6,
+          "manual_identity_selections": 6,
+          "partial_review_resumed": true,
+          "saved_records": 6
+        },
+        "insufficient_quantity": {
+          "ready": 5,
+          "decisions": 1,
+          "domain_imported": 0
+        }
+      },
       "alembic": "20261018_0046",
       "db_check": "PASS",
       "GET_DML_DDL": 0,
@@ -33,6 +51,24 @@
       "data": "fictional isolated LOCAL MariaDB only",
       "new_DDL": false,
       "isolation": "REPEATABLE-READ",
+      "closeout": {
+        "expired_GET": 200,
+        "expired_recovery_idempotent": true,
+        "expired_TTL_not_extended": true,
+        "CSV_without_ids": {
+          "detected": 6,
+          "initial_ready": 0,
+          "initial_decisions": 6,
+          "manual_identity_selections": 6,
+          "partial_review_resumed": true,
+          "saved_records": 6
+        },
+        "insufficient_quantity": {
+          "ready": 5,
+          "decisions": 1,
+          "domain_imported": 0
+        }
+      },
       "alembic": "20261018_0046",
       "db_check": "PASS",
       "GET_DML_DDL": 0,
@@ -45,8 +81,8 @@
       "rollback_after_domain_flush": "PASS",
       "replay_reupload": "PASS",
       "concurrent_statuses": [
-        200,
-        409
+        409,
+        200
       ],
       "concurrent_no_duplicates": true,
       "FoodProduct_MealLog_Recipe_unchanged": true,

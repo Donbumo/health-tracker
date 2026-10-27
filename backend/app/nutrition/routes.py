@@ -67,7 +67,7 @@ def food_error(error):
 
 
 def render(view, **values):
-    return render_template("nutrition/experience.html" if view in {'history','import_upload','import_review','import_result','library','external'} else "nutrition/page.html",view=view,nutrients=NUTRIENTS,
+    return render_template("nutrition/experience.html" if view in {'history','import_upload','import_review','import_result','import_expired','library','external'} else "nutrition/page.html",view=view,nutrients=NUTRIENTS,
         coverage_explanation=COVERAGE_EXPLANATION,enabled=current_app.config.get("NUTRITION_INTELLIGENCE_ENABLED"),**values)
 
 
@@ -327,7 +327,11 @@ def import_upload():
     if request.method=='GET':
         from app.services.importers.registry import ImportAdapterRegistry
         pending=db.session.scalars(db.select(NutritionImportDraft).where(NutritionImportDraft.user_id==current_user.id, NutritionImportDraft.state=='pending').order_by(NutritionImportDraft.id.desc()).limit(20)).all()
-        return render('import_upload',adapter=ImportAdapterRegistry().get('nutrition_sources'),pending_reviews=pending)
+        from app.services import nutrition_import as imports
+        statuses=[(review,imports.review_status(review)) for review in pending]
+        return render('import_upload',adapter=ImportAdapterRegistry().get('nutrition_sources'),
+            pending_reviews=[review for review,status in statuses if status['can_resume']],
+            unavailable_reviews=[(review,status) for review,status in statuses if not status['can_resume']])
     from app.services import nutrition_import as imports
     file=request.files.get('file')
     if not file:raise NutritionError('Selecciona un archivo.')
@@ -346,6 +350,9 @@ def import_review(key):
     receipt=_import_receipt(row)
     if receipt:
         return _import_result(row,receipt)
+    status=imports.review_status(row)
+    if row.state=='pending' and not status['can_resume']:
+        return render('import_expired',row=row,status=status,original_policy=imports.original_policy(row))
     view=compact.overview(row)
     document=None;plan=None;token=None;blocking=[]
     if row.state=='pending':
@@ -389,6 +396,16 @@ def _import_result(row,receipt):
     from app.services import nutrition_import as imports
     result={'committed':True,'inserts':0,'skips':1,'conflicts':0,'invalid':0,'errors':[]}
     return render('import_result',result=result,receipt=receipt,row=row,original_policy=imports.original_policy(row))
+
+
+@nutrition_bp.post('/import/<key>/recover')
+@login_required
+def import_recover(key):
+    from app.services import nutrition_import as imports
+    row=imports.recover(current_user.id,key,request.form.get('revision'))
+    db.session.commit()
+    flash('Se abrió una revisión vigente desde el original verificado. Las decisiones vencidas no se copiaron; revisa otra vez las excepciones.','info')
+    return redirect(url_for('nutrition.import_review',key=row.public_id))
 
 
 @nutrition_bp.post('/import/<key>/decisions')

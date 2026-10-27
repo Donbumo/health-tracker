@@ -1,6 +1,6 @@
 # Importación nutricional: subir, revisar excepciones, guardar
 
-Entrega para PR independiente desde master
+Entrega del PR #29, con cierre focal autorizado, desde master
 `430164e4f868e0ad5743b49223f87a330107c0b0`, rama
 `codex/nutrition-import-three-screens`. **Sin merge ni despliegue.**
 Prioridad UX sobre la ampliación de enriquecimiento personal. No se accedió al
@@ -210,3 +210,82 @@ sólo resultados agregados se incluyen en la evidencia.
 [listo para confirmar](../design/nutrition-import-ux/qa/ready-390.png),
 [resultado](../design/nutrition-import-ux/qa/result-390.png),
 [escritorio oscuro](../design/nutrition-import-ux/qa/summary-dark-1366.png).
+
+
+## Cierre de hallazgos del PR #29 — 27-10-2026
+
+La revisión publicada sobre `ec7d3b7` contiene una precisión corregida:
+`NutritionError` **hereda de ValueError** (`nutrition_math.py`). El GET ya capturaba
+la caducidad; no se reprodujo ni se afirma un HTTP 500 por ese motivo. El problema
+real era ofrecer como reanudable una revisión que había superado 24 horas.
+
+Ahora el listado separa vigentes de vencidas/sin original. El acceso directo a
+una vencida devuelve 200 con explicación y acción de recuperación, sin el formulario
+firmado de guardado. La recuperación es POST + CSRF + owner + revisión; verifica
+bytes/SHA/tamaño mediante el resolvedor oficial y vuelve a extraer el original
+retenido. Crea una revisión nueva o reutiliza la vigente para esa fuente bajo
+lock del owner. No copia decisiones vencidas ni cambia created_at/TTL de la
+anterior. Ambas revisiones mantienen el vínculo al mismo original y trazabilidad
+recovered_from/recovered_to. Repetir recuperación o reupload devuelve la revisión
+vigente, sin duplicar importaciones. Si no hay original íntegro, bloquea y ofrece
+subirlo de nuevo o preparar desde biblioteca. Las firmas siguen en 15 minutos;
+ninguna firma antigua se reactiva.
+
+### Archivo cotidiano sin referencias del catálogo
+
+Nueva [fixture CSV ficticia](../examples/qa/nutrition-import-ux/representative-plan.csv):
+pollo cocido sin aceite, arroz blanco cocido y ensalada de lechuga/pepino sin
+aderezo; seis registros de dos momentos de comida, gramos y declaraciones
+explícitas. No contiene source, source_food_id, revision, preparation ni refs.
+El [catálogo QA separado](../examples/qa/nutrition-import-ux/representative-catalog.json)
+es inventado, no una fuente real ni una afirmación nutricional sobre alimentos del usuario.
+
+| Medición nueva Flask/Edge | Resultado |
+| --- | --- |
+| Detectados / listos / requieren decisión / no importables al subir | 6 / 0 / 6 / 0 |
+| Selecciones manuales de identidad | **6**, ninguna automática |
+| POST incluyendo guardar tres decisiones, salir y reanudar | **4** |
+| Botones/enlaces del recorrido con salida/reanudación | **8** |
+| Búsquedas locales incluidas en esas acciones | 2, una antes y otra al retomar |
+| Guardado final | 6 registros de plan; 0 pendientes; **0 consumos** |
+
+El número de ocho excluye escritura, selects, selector de archivos y navegación
+instrumental QA. Incluye subir, dos búsquedas, dos aplicaciones de decisiones,
+salir a importaciones, retomar y confirmar. Guardar tres decisiones deja 3 listos y
+3 pendientes **sin importación de dominio**. No se extrapolan los dos envíos de
+`normal-10.json` a cualquier PDF/CSV. La identidad de cada alimento sin referencia
+sigue requiriendo una elección informada; la búsqueda no prueba preparación ni
+composición, especialmente en platos compuestos.
+
+La [variante insuficiente](../examples/qa/nutrition-import-ux/representative-insufficient.csv)
+omite la cantidad de la última ensalada: tras cinco identidades elegidas quedan
+5 listos / 1 decisión. El lote completo sigue bloqueado, sin plan, recibo ni consumo
+nuevo de ese archivo. El original y las decisiones permanecen para retomar; no
+se deduce la cantidad a partir de la base declarada ni de otros alimentos.
+
+### Evidencia nueva, reutilizada y no realizada
+
+- **Nueva:** 112 pruebas focales PASS (recuperación, resumen, Nutrition 2.1,
+  retención de original y ejecutor/web de importación). Incluyen las fixtures
+  de diez y trece registros; no se repite la campaña global de 161 como si fuera
+  una prueba nueva de esta corrección.
+- **Nueva:** MariaDB QA 0046 RC/RR: recuperación, TTL original, replay/reupload,
+  archivo sin IDs, decisiones parciales, cantidad insuficiente, firma/CSRF/owner,
+  rollback tras flush, concurrencia y db check PASS. La app candidata se monta
+  read-only en el runtime B. Original/SHA conservados.
+- **Nueva:** Flask/Edge real sólo en estados modificados, móvil 390 claro y
+  escritorio 1366 oscuro: listado, vencida, CSV sin IDs, reanudación y recuperación.
+  Sin overflow, errores JS o peticiones externas; no-store y GET 200 comprobados.
+  [Resultados](../design/nutrition-import-ux/qa/closeout-ui.json),
+  [vencida móvil](../design/nutrition-import-ux/qa/closeout-expired-mobile.png),
+  [listado escritorio](../design/nutrition-import-ux/qa/closeout-list-desktop.png),
+  [CSV móvil](../design/nutrition-import-ux/qa/closeout-noids-mobile.png).
+- **Reutilizada:** métricas anteriores 110→4, capturas de seis anchos/ambos temas,
+  tests de A/B, Energy/Unified y límites de autoridad que no cambiaron. No son
+  mediciones de un archivo sin IDs.
+- **No realizada:** importación del archivo real o acceso a su revisión pendiente;
+  no se utiliza producción para QA de escritura. Enriquecimiento personal C,
+  guardado parcial de dominio, nuevas tablas/schemas y proveedores IA fuera de alcance.
+
+El procedimiento productivo se registra en un informe local de cierre posterior;
+esta evidencia de desarrollo no afirma un despliegue antes de ejecutarlo.

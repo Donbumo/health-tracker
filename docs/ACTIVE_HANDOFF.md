@@ -2,7 +2,13 @@
 
 Índice de reglas y guías: [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md).
 
-## Estado actual — simplificación de importación nutricional para revisión
+## Estado actual — cierre autorizado de PR #29
+
+- Usuario autoriza corregir los dos gates focales, publicar respuesta y realizar squash/despliegue si pasan. Recuperación segura desde original: vigentes/vencidos separados, nuevo borrador sin decisiones vencidas, TTL 24 h y firma 15 min intactos. NutritionError hereda de ValueError: no atribuir un 500 al GET.
+- CSV cotidiano ficticio sin IDs: 6 detectados / 0 listos / 6 decisiones; seis selecciones de identidad, 4 POST y 8 botones/enlaces incluyendo salir/reanudar. Guardado final seis entradas de plan, cero consumos. Variante sin cantidad: 5 listos / 1 pendiente, lote bloqueado y original conservado.
+- Nuevos gates: 112 focales PASS, MariaDB QA 0046 RC/RR y Flask móvil/escritorio de estados modificados PASS. Evidencia previa se reutiliza sin repetir campañas generales. No se accedió a importación real pendiente ni se implementó C. [Detalle y límites](NUTRITION_IMPORT_UX.md).
+
+## Antecedente — implementación inicial de importación UX
 
 - Prioridad UX autorizada después de B productiva (master base `430164e4f868e0ad5743b49223f87a330107c0b0`). Rama independiente `codex/nutrition-import-three-screens`; [auditoría y QA](NUTRITION_IMPORT_UX.md). Subir → resumen de excepciones → resultado, sin confirmación individual de filas inequívocas. No continuar enriquecimiento personal C en este PR.
 - Fixture ficticia de 13 registros/26 ingredientes: navegador anterior 110 activaciones de botones/enlaces y 81 POST; nuevo 4 activaciones y 3 POST. Archivo inequívoco de diez registros: dos POST. No se cuentan entradas de texto/selects/casillas o selector nativo de archivo como botones/enlaces. Capturas Flask/Edge móvil/escritorio y claro/oscuro; 12 combinaciones responsive.

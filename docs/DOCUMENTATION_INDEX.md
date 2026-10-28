@@ -104,3 +104,5 @@ No leas `history/` para una tarea normal. Si un archivo histórico contradice sc
 - Medios de Gym por identidad, cobertura y QA: [GYM_EXERCISE_MEDIA.md](GYM_EXERCISE_MEDIA.md).
 
 - Propuesta futura de catálogo externo y mappings: [GYM_EXTERNAL_CATALOG_PROPOSAL.md](GYM_EXTERNAL_CATALOG_PROPOSAL.md).
+
+- Corrección funcional de consumos declarados sin catálogo: [contrato, escenario de 21 filas y QA reproducible](NUTRITION_IMPORT_CONSUMED_FIX.md).

@@ -35,6 +35,12 @@ SEARCH_WORDS = {
     'harina': ('harina', 'flour'), 'leche': ('leche', 'milk'),
     'refritos': ('refritos','refrito','refried'),
 }
+# Candidate retrieval only; these translations never establish identity.
+for terms in [('jitomate','tomate','tomato','tomatoes'),('huevo','huevos','egg','eggs'),
+              ('queso','cheese'),('atun','tuna'),('aguacate','avocado'),
+              ('manzana','apple'),('platano','banana'),('nopal','nopales','cactus')]:
+    for term in terms:SEARCH_WORDS[term]=terms
+
 SEARCH_STATES = {'crudo': 'raw', 'cruda': 'raw', 'raw': 'raw',
                  'crudos':'raw','crudas':'raw','cocidos':'cooked','cocidas':'cooked',
                  'cocido': 'cooked', 'cocida': 'cooked', 'cooked': 'cooked'}
@@ -195,7 +201,7 @@ def catalog_query():
         SourceState.active_revision==FoodCatalogRevision.revision)
 
 
-def search(user_id, text="", limit=50, *, source=None, state=None, food_type=None, brand=None, barcode=None, offset=0):
+def search(user_id, text="", limit=50, *, source=None, state=None, food_type=None, brand=None, barcode=None, offset=0, progressive=False):
     text = text.strip()[:100]
     tokens = [token for token in search_text(text).split()[:10] if token not in {'de', 'del', 'la', 'el', 'los', 'las'}]
     query = catalog_query()
@@ -210,14 +216,23 @@ def search(user_id, text="", limit=50, *, source=None, state=None, food_type=Non
                        (db.and_(cooked_name,classified),'cooked'),
                        (db.and_(raw_name,classified),'raw'),else_=CatalogFood.preparation_state)
     private = db.select(FoodProduct).where(FoodProduct.user_id == user_id, FoodProduct.is_active.is_(True))
+    catalog_matches=[];private_matches=[]
+    private_text=func.lower(func.concat(FoodProduct.name,' ',func.coalesce(FoodProduct.brand,''))) if db.engine.dialect.name!='sqlite' else func.lower(FoodProduct.name+' '+func.coalesce(FoodProduct.brand,''))
+    for accent,plain in [('á','a'),('é','e'),('í','i'),('ó','o'),('ú','u'),('ñ','n')]:
+        private_text=func.replace(private_text,accent,plain)
     for token in tokens:
         alternatives = SEARCH_WORDS.get(token, (token,))
         words = r'\b(?:' + '|'.join(re.escape(word) for word in alternatives) + r')\b'
         if token in SEARCH_STATES:
             query = query.where(final_state == SEARCH_STATES[token])
         else:
-            query = query.where(or_(CatalogFood.search_text.regexp_match(words), func.lower(CatalogFood.name).regexp_match(words)))
-        private = private.where(or_(func.lower(FoodProduct.name).regexp_match(words),func.lower(FoodProduct.brand).regexp_match(words)))
+            catalog_matches.append(or_(CatalogFood.search_text.regexp_match(words), func.lower(CatalogFood.name).regexp_match(words)))
+        private_matches.append(private_text.regexp_match(words))
+    catalog_identity=or_(CatalogFood.barcode==text,CatalogFood.source_food_id==text,CatalogFood.public_id==text.removeprefix('catalog:'))
+    private_identity=or_(FoodProduct.public_id==text.removeprefix('user:'),FoodProduct.nutrition_json['barcode'].as_string()==text)
+    if tokens:
+        if catalog_matches:query=query.where(or_(catalog_identity,or_(*catalog_matches)) if progressive else db.and_(*catalog_matches))
+        private=private.where(or_(private_identity,or_(*private_matches)) if progressive else db.and_(*private_matches))
     if set(tokens) & {'frijol','frijoles'}:
         # English green/snap beans are ejotes, not the mature-seed frijol.
         query=query.where(~func.lower(CatalogFood.name).regexp_match(
@@ -261,6 +276,10 @@ def search(user_id, text="", limit=50, *, source=None, state=None, food_type=Non
     ranks.append(case((or_(CatalogFood.search_text.like(starts, escape='\\'),
                            CatalogFood.search_text.like(ordered_prefix,escape='\\'),
                            CatalogFood.search_text.like(like_pattern(search_text(text),prefix=True),escape='\\')), 0), else_=1))
+    if progressive:
+        ranks=[case((catalog_identity,0),else_=1), *([-sum(case((match,1),else_=0) for match in catalog_matches)] if catalog_matches else []), *ranks]
+        private=private.order_by(case((private_identity,0),else_=1))
+        if private_matches:private=private.order_by(-sum(case((match,1),else_=0) for match in private_matches))
     rows = db.session.execute(query.order_by(*ranks, CatalogFood.name, CatalogFood.id).offset(offset).limit(limit)).scalars().all()
     products = [] if source or state or food_type else db.session.execute(private.order_by(FoodProduct.name, FoodProduct.id).offset(offset).limit(limit)).scalars().all()
     def visible_state(row):

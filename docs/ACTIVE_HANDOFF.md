@@ -1,5 +1,10 @@
 # Handoff activo
 
+## Corrección de consumos declarados — pendiente de revisión
+
+- Rama independiente desde PR #29: [causa raíz, contrato y QA de 21 consumos](NUTRITION_IMPORT_CONSUMED_FIX.md). Declaración sin catálogo, creación privada contextual, búsquedas independientes y porciones verificadas; importador/recibo atómicos, 0046 sin migración.
+- Fixture equivalente totalmente ficticia: 1 listo/20 decisiones → 21 consumos guardados. SQLite, MariaDB QA RC/RR, navegador móvil/escritorio y export/restore. Producción y su revisión pendiente no se accedieron. Integración/despliegue preparados para después de revisión; no iniciar C.
+
 Índice de reglas y guías: [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md).
 
 ## Estado actual — cierre autorizado de PR #29

@@ -365,18 +365,19 @@ def import_review(key):
                 token=_import_serializer().dumps({'owner':current_user.id,'draft':row.public_id,'revision':row.revision,
                     'document':ni.hash_document(document),'executor':executor.build_confirmation_token(user_id=current_user.id,target_type='nutrition_import',payload=document,plan=plan)})
         except ValueError as error:blocking=[str(error)]
-    query=request.args.get('q','').strip()[:100]
     cache={}
     for record in view['records']:
         for problem in record['issues']:
             if problem['code']=='ingredient':
-                text=query or problem['proposal'].get('name','')[:100]
+                problem['query_name']=f"r{record['index']}_p{problem['part']}_query"
+                text=request.args.get(problem['query_name'],problem['proposal'].get('search_query') or problem['proposal'].get('barcode') or problem['proposal'].get('name',''))[:100]
+                problem['query']=text
                 if text not in cache:
-                    hits=catalog.search(current_user.id,text,limit=12) if text else []
+                    hits=catalog.search(current_user.id,text,limit=12,progressive=True) if text else []
                     foods=catalog.details(current_user.id,[{'ref':hit['ref']} for hit in hits])
                     cache[text]=[dict(hit,revision=food['revision']) for hit,food in zip(hits,foods)]
                 problem['candidates']=cache[text]
-    return render('import_review',row=row,**view,token=token,blocking=blocking,query=query,
+    return render('import_review',row=row,**view,token=token,blocking=blocking,
                   original_policy=imports.original_policy(row),pending=view['counts']['decision']+view['counts']['invalid'])
 
 

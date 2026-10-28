@@ -191,7 +191,10 @@ def confirm(user_id, token, *, authority=None):
         MealLog.client_event_id==row.public_id).with_for_update()).scalar_one_or_none()
     if existing is not None:
         return existing, True
-    if row.state != "pending" or pending(row) or not row.snapshot_json["ingredients"]:
+    declaration = row.snapshot_json.get('declared_nutrition') or {}
+    declared_consumption = (declaration.get('confirmed') is True and
+        any(v.get('state')=='known' for v in declaration.get('nutrients',{}).values()))
+    if row.state != "pending" or pending(row) or (not row.snapshot_json["ingredients"] and not declared_consumption):
         raise NutritionError("Confirma identidad y cantidad de todos los ingredientes.")
     snapshot = copy.deepcopy(row.snapshot_json)
     # Only server-owned food snapshots are inputs; never trust client totals.

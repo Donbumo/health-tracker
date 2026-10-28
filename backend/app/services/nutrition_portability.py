@@ -67,7 +67,10 @@ def validate_snapshot(snapshot,plan=False):
         except (ValueError, TypeError, ZoneInfoNotFoundError) as error:
             raise NutritionError('Fecha o zona horaria del snapshot inválida.') from error
     entries=snapshot['ingredients']
-    if not entries or len(entries)>100:
+    declaration=snapshot.get('declared_nutrition') or {}
+    declared_consumption=(not plan and declaration.get('confirmed') is True and
+        any(v.get('state')=='known' for v in declaration.get('nutrients',{}).values()))
+    if (not entries and not declared_consumption) or len(entries)>100:
         raise NutritionError('Snapshot requiere ingredientes válidos.')
     calculated=[ingredient(e['food'],e['amount'],e['unit'],e.get('serving_id')) for e in entries]
     if hash_document(calculated)!=hash_document(entries) or hash_document(snapshot_summary(dict(snapshot,ingredients=calculated)))!=hash_document(snapshot['summary']):

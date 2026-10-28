@@ -1,0 +1,44 @@
+{
+  "status": "PASS",
+  "base_sha": "1cf8d830ba801a8c8121cf594b07a0269a6d6e6f",
+  "data": "fictional QA only",
+  "area_run": {
+    "passed": 188
+  },
+  "final_focal_run": {
+    "passed": 75,
+    "consumed_cases": 19,
+    "overlaps_area_run": true
+  },
+  "backup_restore_unified_energy_run": {
+    "passed": 102,
+    "warning": "intentional duplicate ZIP entry fixture warning"
+  },
+  "compileall": "PASS",
+  "compose_synthetic_config": "PASS",
+  "db_check_MariaDB_RC_RR": "PASS",
+  "GET_post_consumption_routes": {
+    "passed": 28,
+    "DML_DDL": 0
+  },
+  "schemas_changed": false,
+  "migrations_changed": false,
+  "mobile_contract_changed": false,
+  "production_access": false,
+  "code_sha256": {
+    "backend/app/nutrition/routes.py": "5f5ebe72046656f085f15e26314184ecaef56d6783abd7598b4ba2de7701c89a",
+    "backend/app/services/nutrition_import.py": "b318f8616315f590ad8e66db16c4b98fbfdaafd6ddad55ec44f2911d53ba0a2a",
+    "backend/app/services/nutrition_import_review.py": "2509efdb2095721ac6f062c3806294a2b825d183634160d5c4afa0ef2d297b67",
+    "backend/app/services/nutrition_import_portions.py": "55da41959a9f73f916b64f1f374059a82b79b01b8c5a16af0c1306a06541099a",
+    "backend/app/services/nutrition_intelligence.py": "0c7bb0acc26223c36bc420d11c1457d4e66bfd654620c8f9a7d774e4c1e5e1bf",
+    "backend/app/services/nutrition_portability.py": "6f5e0a7a8c60d651be04d13df8ae7b6e0df76a8447949109606caaff3b32dcc7",
+    "backend/app/services/food_catalog.py": "62ac8e859970f6763ce31e8c1c92001f549b5800c1f80958f6adc68ccc72d55b",
+    "backend/app/services/importers/nutrition_sources.py": "493f9e2891a4d7fa5031459dffc69cbdb6f906e5496cee15ebb99895d8bf80ef",
+    "backend/app/templates/nutrition/import_review_steps.html": "4a5d0af55059421a63e80d23b277eefd28727b8f72d4475a5eb44cd44d50eb22"
+  },
+  "last_consumed_run": {
+    "passed": 19,
+    "warnings": 0,
+    "overlaps_final_focal_run": true
+  }
+}

@@ -1,0 +1,267 @@
+{
+  "schema_version": "1.0",
+  "record_type": "daily_nutrition",
+  "source_type": "manual_generated",
+  "user_id": 999999,
+  "data": {
+    "date": "2026-01-15",
+    "source": "QA ficticia",
+    "notes": "QA: no contiene datos personales.",
+    "meals": [
+      {
+        "meal_type": "breakfast",
+        "items": [
+          {
+            "name": "QA LEGACY FICTICIO elemento 01",
+            "quantity": 120,
+            "unit": "g",
+            "protein_g": 2.0,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios.",
+            "calories_per_100g": 80,
+            "basis_amount": "100",
+            "basis_unit": "g"
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 02",
+            "quantity": 121,
+            "unit": "ml",
+            "calories_kcal": 41,
+            "protein_g": 2.1,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios."
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 03",
+            "quantity": 1,
+            "unit": "pieza (19 g)",
+            "calories_kcal": 42,
+            "protein_g": 2.2,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios."
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 04",
+            "quantity": 1,
+            "unit": "barra de 37 g",
+            "calories_kcal": 43,
+            "protein_g": 2.3,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: estimación de composición con referencia genérica; no es medición."
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 05",
+            "quantity": 2,
+            "unit": "botella",
+            "calories_kcal": 44,
+            "protein_g": 2.4,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios."
+          }
+        ]
+      },
+      {
+        "meal_type": "lunch",
+        "items": [
+          {
+            "name": "QA LEGACY FICTICIO elemento 06",
+            "quantity": 1.5,
+            "unit": "1.5 porciones grandes",
+            "calories_kcal": 45,
+            "protein_g": 2.5,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios."
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 07",
+            "quantity": 5,
+            "unit": "sobres de 6 g (~30 g)",
+            "calories_kcal": 46,
+            "protein_g": 2.6,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios."
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 08",
+            "quantity": 1,
+            "unit": "cucharada (~12 g estimados)",
+            "calories_kcal": 47,
+            "protein_g": 2.7,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios."
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 09",
+            "quantity": 150,
+            "unit": "g",
+            "notes": "QA: datos completamente ficticios.",
+            "calories_per_100g": 48,
+            "protein_g_per_100g": 2.8,
+            "fat_g_per_100g": 1,
+            "net_carbs_g_per_100g": 6,
+            "fiber_g_per_100g": 0
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 10",
+            "quantity": 250,
+            "unit": "ml",
+            "notes": "QA: datos completamente ficticios.",
+            "calories_per_100ml": 49,
+            "protein_g_per_100ml": 2.9,
+            "fat_g_per_100ml": 1,
+            "net_carbs_g_per_100ml": 6,
+            "fiber_g_per_100ml": 0
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 11",
+            "quantity": 2,
+            "unit": "pieza de peso variable",
+            "calories_kcal": 50,
+            "protein_g": 3.0,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: fuente externa sin base ni equivalencia inequívoca.",
+            "unrecognized_semantics": "QA ambiguous on purpose"
+          }
+        ]
+      },
+      {
+        "meal_type": "snack",
+        "items": [
+          {
+            "name": "QA LEGACY FICTICIO elemento 12",
+            "quantity": 1,
+            "unit": "barra de 37 g",
+            "calories_kcal": 51,
+            "protein_g": 3.1,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: fibra no cuantificada; 0 sólo marcador operativo para compatibilidad."
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 13",
+            "quantity": 2,
+            "unit": "latas de 210 ml",
+            "calories_kcal": 52,
+            "protein_g": 3.2,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios."
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 14",
+            "quantity": 1.5,
+            "unit": "1.5 porciones grandes",
+            "calories_kcal": 53,
+            "protein_g": 3.3,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios."
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 15",
+            "quantity": 5,
+            "unit": "sobres de 6 g (~30 g)",
+            "calories_kcal": 54,
+            "protein_g": 3.4,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios."
+          }
+        ]
+      },
+      {
+        "meal_type": "dinner",
+        "items": [
+          {
+            "name": "QA LEGACY FICTICIO elemento 16",
+            "quantity": 1,
+            "unit": "cucharada (~12 g estimados)",
+            "calories_kcal": 55,
+            "protein_g": 3.5,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios."
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 17",
+            "quantity": 136,
+            "unit": "g",
+            "calories_kcal": 56,
+            "protein_g": 3.6,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios."
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 18",
+            "quantity": 137,
+            "unit": "ml",
+            "calories_kcal": 57,
+            "protein_g": 3.7,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios."
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 19",
+            "quantity": 1,
+            "unit": "pieza (19 g)",
+            "calories_kcal": 58,
+            "protein_g": 3.8,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios."
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 20",
+            "quantity": 1,
+            "unit": "barra de 37 g",
+            "calories_kcal": 59,
+            "protein_g": 3.9,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios."
+          },
+          {
+            "name": "QA LEGACY FICTICIO elemento 21",
+            "quantity": 2,
+            "unit": "botella",
+            "calories_kcal": 60,
+            "protein_g": 4.0,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios."
+          }
+        ]
+      }
+    ]
+  }
+}

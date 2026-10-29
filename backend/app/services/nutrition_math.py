@@ -214,7 +214,9 @@ def snapshot_summary(snapshot):
                         total_weight=str(expected_mass) if expected_mass is not None else None,
                         coverage='100' if expected_mass is not None else None,
                         known_items=len(snapshot['ingredients']), total_items=len(snapshot['ingredients']))
-            item['sources'] = sorted(set(item['sources']) | {'confirmed_source_declaration'})
+            interpretation=declaration.get('provenance',{}).get('basis_interpretation') or {}
+            source=('estimated_source_declaration' if interpretation.get('quality')=='estimated' else 'confirmed_source_declaration')
+            item['sources'] = sorted(set(item['sources']) | {source})
     return result
 
 

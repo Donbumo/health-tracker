@@ -37,6 +37,7 @@ def source_label(source):
     return {'usda_sr_legacy':'USDA SR Legacy','usda_foundation':'USDA Foundation',
             'usda_fndds':'USDA FNDDS','open_food_facts':'Open Food Facts','user':'Tu declaración privada',
             'confirmed_source_declaration':'Declaración de origen confirmada',
+            'estimated_source_declaration':'Estimación declarada · no medida',
             'legacy':'Registro legacy','legacy_recipe':'Receta legacy'}.get(source,source)
 
 

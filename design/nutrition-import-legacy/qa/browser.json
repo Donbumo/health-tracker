@@ -1,0 +1,81 @@
+{
+  "status": "PASS",
+  "source": "Real Flask on loopback through browser UI; synthetic owners only",
+  "ports": [
+    8038
+  ],
+  "cases": [
+    {
+      "viewport": "mobile",
+      "initial_ready": 1,
+      "initial_pending": 20,
+      "after_extract_ready": 3,
+      "after_extract_pending": 18,
+      "grouped_interpretations": 17,
+      "contextual_decisions": 2,
+      "final_ready": 21,
+      "final_pending": 0,
+      "products": 0,
+      "logs": 21,
+      "receipts": 1,
+      "previous_unchanged": true
+    },
+    {
+      "viewport": "desktop",
+      "initial_ready": 1,
+      "initial_pending": 20,
+      "after_extract_ready": 3,
+      "after_extract_pending": 18,
+      "grouped_interpretations": 17,
+      "contextual_decisions": 2,
+      "final_ready": 21,
+      "final_pending": 0,
+      "products": 0,
+      "logs": 21,
+      "receipts": 1,
+      "previous_unchanged": true
+    }
+  ],
+  "POSTs_after_opening_previous_review": 4,
+  "button_activations": 4,
+  "checkbox_activations": 3,
+  "select_decisions": 2,
+  "nutrient_values_reentered": 0,
+  "catalog_links_selected": 0,
+  "equivalences_verified_as_measured": 0,
+  "layout_checks": [
+    {
+      "target": 360,
+      "actual_css_width": 359,
+      "overflow": false
+    },
+    {
+      "target": 390,
+      "actual_css_width": 391,
+      "overflow": false
+    },
+    {
+      "target": 430,
+      "actual_css_width": 430,
+      "overflow": false
+    },
+    {
+      "target": 768,
+      "actual_css_width": 768,
+      "overflow": false
+    },
+    {
+      "target": 1024,
+      "actual_css_width": 1023,
+      "overflow": false
+    },
+    {
+      "target": 1366,
+      "actual_css_width": 1366,
+      "overflow": false
+    }
+  ],
+  "theme_observed": "dark; existing theme CSS unchanged",
+  "production_access": false,
+  "viewport_override_reset": true
+}

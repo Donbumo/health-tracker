@@ -8,7 +8,7 @@ from app.services.nutrition_math import NutritionError, decimal
 NUMBER = r'\d+(?:[.,]\d+)?'
 NOUNS = {'piezas':'pieza','pieces':'pieza','piece':'pieza','latas':'lata','cans':'lata','can':'lata',
          'botellas':'botella','bottles':'botella','bottle':'botella','barras':'barra','bars':'barra','bar':'barra',
-         'sobres':'sobre','sachets':'sobre','sachet':'sobre','tortillas':'tortilla',
+         'sobres':'sobre','sachets':'sobre','sachet':'sobre','tortillas':'tortilla','cucharadas':'cucharada',
          'porciones':'porcion','portions':'porcion','portion':'porcion','servings':'porcion','serving':'porcion'}
 for noun in list(NOUNS.values()):NOUNS[noun]=noun
 

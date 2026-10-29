@@ -106,3 +106,5 @@ No leas `history/` para una tarea normal. Si un archivo histórico contradice sc
 - Propuesta futura de catálogo externo y mappings: [GYM_EXTERNAL_CATALOG_PROPOSAL.md](GYM_EXTERNAL_CATALOG_PROPOSAL.md).
 
 - Corrección funcional de consumos declarados sin catálogo: [contrato, escenario de 21 filas y QA reproducible](NUTRITION_IMPORT_CONSUMED_FIX.md).
+
+- Contrato legacy diario y revisión agrupada tras aceptación fallida: [corrección semántica y QA estructural](NUTRITION_IMPORT_LEGACY_SEMANTICS.md).

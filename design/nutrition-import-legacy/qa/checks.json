@@ -1,0 +1,37 @@
+{
+  "status": "FOCAL PASS; general suite has unrelated missing-fixture limitations",
+  "sqlite_focal_unique_cases_validated": 131,
+  "new_semantic_cases_final_passed": 19,
+  "remaining_focal_cases_preceding_passed": 112,
+  "related_activity_tests_after_generating_existing_FIT_fixtures": {
+    "passed": 29,
+    "skipped": 2
+  },
+  "full_suite_once": {
+    "passed": 1502,
+    "skipped": 35,
+    "initial_failures": 5,
+    "subsequently_resolved_and_revalidated": 3,
+    "remaining_missing_fixture_tests": [
+      "test_tcx_course_creates_route_end_to_end",
+      "test_real_file_qa_fixtures_parse"
+    ]
+  },
+  "mariadb": {
+    "RC": "PASS",
+    "RR": "PASS",
+    "alembic": "20261018_0046",
+    "db_check": "PASS",
+    "predecessor_cases": 8
+  },
+  "compileall": "PASS",
+  "compose_config_synthetic_values_only": "PASS",
+  "migration_files_changed": 0,
+  "public_schemas_changed": 0,
+  "production_access": false,
+  "notes": [
+    "Full suite was run once; no global PASS is claimed.",
+    "A focused ownership test needed clearing Flask-Login g cache because the fixture holds one app context across clients; final owner 404 checks pass.",
+    "Concurrent confirmation may return 409 for one contender; retry returns 200 with one receipt."
+  ]
+}

@@ -106,6 +106,13 @@ def issue(code, message, **values):
 def row_issues(row, review, index):
     item = review['rows'][index]
     errors = []
+    interpretation=item.get('basis_interpretation') or {}
+    if (review['destination']=='consumed' and interpretation and
+            interpretation.get('status') not in {'accepted','explicit'}):
+        errors.append(issue('interpretation','Confirma si los nutrientes pertenecen a la cantidad original, a la cantidad consumida o a una base distinta.'))
+    for nutrient in item.get('quality_problems',[]):
+        if nutrient not in item.get('resolved_nutrients',[]):
+            errors.append(issue('nutrient','La nota de origen describe un marcador operativo, no un cero conocido. Conserva desconocido o introduce un valor verificado.',nutrient=nutrient))
     if item.get('unsupported_vector'):
         errors.append(issue('unsupported','El vector de nutrientes no cumple el vocabulario o las unidades: corrige el archivo y vuelve a subirlo.'))
     if not item.get('name') and review['destination'] != 'daily_aggregate':
@@ -154,7 +161,7 @@ def row_issues(row, review, index):
                 messages.append('Componentes anidados: separa la composición en el archivo; no se aplana automáticamente.')
             if messages:
                 errors.append(issue('ingredient', ' '.join(messages), part=part, proposal=proposal, identity_bound=bool(binding)))
-    if not item.get('ingredients') and review['destination'] in {'plan', 'consumed', 'recipes'} and not item.get('summary_bindings') and not declared_only:
+    if not item.get('ingredients') and review['destination'] in {'plan', 'consumed', 'recipes'} and not item.get('summary_bindings') and not declared_only and not interpretation:
         # A single explicit food can be resolved by the same strict identity rule.
         binding = exact_binding(row.user_id, item, {})
         if binding:
@@ -220,9 +227,13 @@ def overview(row):
         try:
             from app.services.nutrition_import_portions import sufficient
             sufficient(record['item'])
-            if not record['item'].get('ingredients'):eligible+=1
+            if not record['item'].get('ingredients') and record['item'].get('resolution') not in {'declared','private'}:eligible+=1
         except NutritionError:pass
-    return dict(review=review, records=records, counts=counts, day_conflicts=conflicts, declaration_eligible=eligible)
+    from app.services.importers.nutrition_legacy_semantics import grouped
+    return dict(review=review, records=records, counts=counts, day_conflicts=conflicts, declaration_eligible=eligible,
+        legacy_total_count=sum(grouped(item) for item in review['rows'] if not item.get('skip')),
+        newly_extracted_declarations=sum('new_source_declaration_requires_review' in detail['fields']
+            for detail in row.source_json.get('retained_decisions',[])))
 
 
 def document(row, view=None):
@@ -251,6 +262,8 @@ def save_decisions(user_id, key, revision, data):
         review['destination'] = data['destination']
     for index, item in enumerate(review['rows']):
         prefix = f'r{index}_'
+        from app.services.importers.nutrition_legacy_semantics import grouped,accept
+        group_requested=data.get('accept_legacy_totals')=='yes' and grouped(item)
         day_prefix='day_'+str(item.get('date',''))+'_'
         for field in ('conflict_action','authority'):
             if data.get(day_prefix+field):item[field]=data[day_prefix+field]
@@ -296,6 +309,12 @@ def save_decisions(user_id, key, revision, data):
             item['equivalence']=dict(item.get('equivalence') or {},verification='user_verified_quantity')
         if data.get(prefix+'portion_text_reviewed')=='yes':item['portion_text_reviewed']=True
         if data.get(prefix+'portion_label_confirmed')=='yes':item['portion_label_confirmed']=True
+        semantic_choice=data.get(prefix+'interpretation')
+        if semantic_choice or group_requested:
+            # A group may accept only the unchanged source quantity and base.
+            if group_requested and not semantic_choice and not grouped(item):
+                raise NutritionError('La cantidad cambió; revisa su interpretación individual.')
+            accept(item,semantic_choice or 'source_total')
         choice=data.get(prefix+'resolution')
         selected_identity=any(k.startswith(prefix) and k.endswith('_ref') and v for k,v in data.items())
         if data.get('use_declarations')=='yes' and not item.get('ingredients') and not choice and not selected_identity:

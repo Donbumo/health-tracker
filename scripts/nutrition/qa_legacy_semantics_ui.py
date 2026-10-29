@@ -21,11 +21,13 @@ states={}
 with app.app_context():
  db.create_all();fixture=ROOT/'examples/qa/nutrition-import-ux'
  catalog.stage(json.loads((fixture/'consumed-catalog.json').read_text()));catalog.activate('qa_import_consumed','1',1);db.session.commit()
- for label in ['mobile','desktop']:
+ for label in ['mobile','desktop','mobile-gate','desktop-gate']:
   owner=User(username='qa-semantic-'+label,role='user',display_name='QA ficticia',timezone='America/Mexico_City');owner.set_password('fictional-semantic-ui-password')
   db.session.add(owner);db.session.commit()
   ref=next(h['ref'] for h in catalog.search(owner.id,source='qa_import_consumed') if h['source_food_id']=='1')
-  old=service.start(owner.id,(fixture/'legacy-daily-semantic-21.json').read_bytes(),'QA daily legacy fictional.json')
+  payload=json.loads((fixture/'legacy-daily-semantic-21.json').read_bytes())
+  if label.endswith('gate'):payload['data']['meals'][0]['items'][1]['unit']='g'
+  old=service.start(owner.id,json.dumps(payload).encode(),'QA daily legacy fictional.json')
   service.update(owner.id,old.public_id,old.revision,'destination',{'destination':'consumed','name':'QA revisión #30 conservada'})
   service.update(owner.id,old.public_id,old.revision,'bind',{'index':'0','ref':ref,'food_revision':'1','amount':'120','unit':'g'});db.session.commit()
   states[owner.id]={'key':old.public_id,'review':copy.deepcopy(old.review_json),'source':copy.deepcopy(old.source_json)}

@@ -1,0 +1,14 @@
+{
+  "status": "BASELINE_ABSENCE_VERIFIED",
+  "missing_from_master": {
+    "activity_track.gpx": true,
+    "route_only.gpx": true,
+    "activity.tcx": true,
+    "course.tcx": true,
+    "weigh_in_es.csv": true,
+    "weigh_in_en_lb.csv": true,
+    "energy_es_semicolon.csv": true,
+    "test_module_matches_master": true
+  },
+  "full_suite_repeated": false
+}

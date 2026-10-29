@@ -45,6 +45,7 @@ def sufficient(item):
     if not any(value['state'] == 'known' for value in vector.values()):
         raise NutritionError('Se necesita al menos un nutriente absoluto declarado; los ausentes siguen desconocidos.')
     interpretation=item.get('basis_interpretation') or {}
-    if interpretation and interpretation.get('status') not in {'accepted','explicit'}:
+    from app.services.importers.nutrition_legacy_semantics import current
+    if interpretation and not current(item):
         raise NutritionError('Confirma a qué cantidad corresponden los valores del archivo legacy; no hace falta un producto.')
     return consumption(item)

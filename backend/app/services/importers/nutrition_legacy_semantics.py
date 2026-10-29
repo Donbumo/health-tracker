@@ -10,6 +10,53 @@ from app.services.nutrition_math import NutritionError, decimal
 from app.services.validation import validate_json_document
 
 
+def _number(value):
+    if value in (None, ''):return None
+    try:return format(decimal(value).normalize(),'f')
+    except NutritionError:return {'invalid':str(value)}
+
+
+def _label(value):
+    return ' '.join(str(value or '').split()).casefold()
+
+
+def equivalence_inputs(item):
+    equivalent=item.get('equivalence') or {}
+    return {'amount':_number(equivalent.get('amount')),'unit':_label(equivalent.get('unit'))}
+
+
+def semantic_inputs(item, choice=None):
+    """Stable semantic values, not display formatting or unrelated draft fields."""
+    interpretation=item.get('basis_interpretation') or {}
+    result={key:_number(item.get(key)) for key in ('amount','basis_amount')}
+    result.update({key:_label(item.get(key)) for key in ('unit','basis_unit','unit_label','basis_label')})
+    result['choice']=choice or interpretation.get('choice') or 'explicit_basis'
+    result['kind']=interpretation.get('kind')
+    result['equivalence']=None
+    if result['unit']!=result['basis_unit']:
+        result['equivalence']={**equivalence_inputs(item),
+            'confirmed':item.get('equivalence_confirmed') is True}
+    return result
+
+
+def current(item):
+    interpretation=item.get('basis_interpretation') or {}
+    if not interpretation:return True
+    if interpretation.get('status')=='accepted':
+        return (item.get('canonical_basis_inputs') or interpretation.get('accepted_inputs'))==semantic_inputs(item)
+    if interpretation.get('status')=='explicit':
+        return (item.get('canonical_basis_inputs') or interpretation.get('explicit_inputs'))==semantic_inputs(item,'explicit_basis')
+    return False
+
+
+def invalidate_changed(item):
+    interpretation=item.get('basis_interpretation') or {}
+    if interpretation.get('status') in {'accepted','explicit'} and not current(item):
+        item.pop('canonical_basis_inputs',None)
+        item['basis_interpretation']=dict(interpretation,status='proposed',
+            stale_reason='Cambió la cantidad, base, unidad, etiqueta o equivalencia. Confirma de nuevo a qué cantidad pertenecen los nutrientes.')
+
+
 def annotate(row, document, meal, original):
     candidate = dict(document,data=dict(document['data'],meals=[dict(meal,items=[original])]))
     supported = document.get('schema_version') == '1.0'
@@ -53,6 +100,8 @@ def annotate(row, document, meal, original):
         interpretation.update(kind='contradictory_basis',status='proposed')
         row.pop('resolution',None)
     row['basis_interpretation'] = interpretation
+    if interpretation['status']=='explicit':
+        interpretation['explicit_inputs']=semantic_inputs(row,'explicit_basis')
     row['kind_hint'] = 'consumed'
     for nutrient, value in row['declaration'].items():
         value['provenance'] = dict(value.get('provenance') or {},
@@ -71,8 +120,9 @@ def grouped(item):
     source = interpretation.get('source_basis') or {}
     return (interpretation.get('kind') == 'consumed_total' and interpretation.get('status') == 'proposed'
         and bool(source) and item.get('unit') == source.get('basis_unit')
-        and str(item.get('amount')) == str(source.get('basis_amount'))
-        and all(str(item.get(key) or '')==str(source.get(key) or '') for key in source)
+        and _number(item.get('amount')) == _number(source.get('basis_amount'))
+        and all((_number(item.get(key))==_number(source.get(key)) if key=='basis_amount' else
+            _label(item.get(key))==_label(source.get(key))) for key in source)
         and not item.get('ingredients') and not item.get('resolution')
         and not item.get('portion_conflict'))
 
@@ -81,6 +131,7 @@ def accept(item, choice):
     interpretation = item.get('basis_interpretation') or {}
     if not interpretation:
         raise NutritionError('Este registro no tiene una interpretación legacy pendiente.')
+    item.pop('canonical_basis_inputs',None)
     if choice == 'source_total':
         source = interpretation.get('source_basis')
         if interpretation.get('kind') != 'consumed_total' or not source:
@@ -94,6 +145,8 @@ def accept(item, choice):
         raise NutritionError('Selecciona una interpretación explícita de los valores.')
     item['basis_interpretation'] = dict(interpretation, status='accepted',
         choice=choice, confirmed_by='user', measurement_verified=False)
+    item['basis_interpretation']['accepted_inputs']=semantic_inputs(item,choice)
+    item['basis_interpretation'].pop('stale_reason',None)
     from app.services.nutrition_import_portions import sufficient
     sufficient(item)
     item.update(resolution='declared', ingredients=[], summary_bindings=False, composition_complete=False)

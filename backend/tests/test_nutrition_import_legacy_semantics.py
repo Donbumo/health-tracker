@@ -91,7 +91,7 @@ def test_totals_scale_once_quality_unknown_zero_trace_limit(app,client,user):
         assert stmt.lstrip().split()[0].upper() not in {'INSERT','UPDATE','DELETE','CREATE','ALTER','DROP','REPLACE'}
     event.listen(db.engine,'before_cursor_execute',no_dml)
     try:
-        paths=['/nutrition/?date=2026-01-15','/dashboard?as_of=2026-01-15','/energy?date=2026-01-15','/nutrition/library']
+        paths=['/today','/nutrition/?date=2026-01-15','/dashboard?as_of=2026-01-15','/energy?date=2026-01-15','/nutrition/library']
         paths+=['/nutrition/micronutrients?date=2026-01-15&period='+str(period) for period in [7,30,90]]
         for path in paths:
             response=client.get(path);assert response.status_code==200,(path,response.status_code)
@@ -285,3 +285,97 @@ def test_equivalent_explicit_numeric_basis_is_not_a_false_conflict(app,user):
     row=start(app,user,json.dumps(doc).encode())
     assert row.review_json['rows'][0]['basis_interpretation']['status']=='explicit'
     assert compact.overview(row)['records'][0]['state']=='ready'
+
+
+def test_two_posts_invalidate_consumed_total_then_match_one_post(app,client,user):
+    row=start(app,user);login(client);path='/nutrition/import/'+row.public_id+'/decisions'
+    # Explicitly use grams for this gate; 41 kcal belong to the recorded 121 g.
+    data=copy.deepcopy(row.review_json);data['rows'][1].update(unit='g',basis_unit='g')
+    data['rows'][1]['basis_interpretation']['source_basis']['basis_unit']='g'
+    row.review_json=data;db.session.commit()
+    assert client.post(path,data={'revision':row.revision,'r1_interpretation':'consumed_total'}).status_code==302
+    accepted=copy.deepcopy(row.review_json['rows'][1]['basis_interpretation'])
+    rev=row.revision
+    assert client.post(path,data={'revision':rev,'r1_amount':'180','r1_resolution':'declared'}).status_code==302
+    assert row.review_json['rows'][1]['basis_interpretation']['status']=='proposed'
+    assert row.review_json['rows'][1]['basis_interpretation']['accepted_inputs']==accepted['accepted_inputs']
+    assert compact.overview(row)['records'][1]['state']=='decision'
+    with pytest.raises(NutritionError):compact.document(row)
+    assert client.post(path,data={'revision':rev,'r1_interpretation':'consumed_total'}).status_code==409
+    assert client.post(path,data={'revision':row.revision,'r1_interpretation':'consumed_total'}).status_code==302
+    assert compact.overview(row)['records'][1]['preview']['energy']['value']=='41'
+    entry=imports.canonical(row,compact.prepared(row),only_index=1)['data']['entries'][0]
+    assert imports.meal_snapshot(entry,[],'UTC')['summary']['energy']['value']=='41'
+    assert db.session.query(MealLog).count()==db.session.query(FoodProduct).count()==db.session.query(NutritionImportReceipt).count()==0
+
+
+@pytest.mark.parametrize('choice',['source_total','consumed_total','per_100g','per_100ml','explicit_basis'])
+@pytest.mark.parametrize('field,value',[('amount','180'),('basis_amount','150'),('unit','g'),('basis_unit','g'),('unit_label','otra unidad'),('basis_label','otra base')])
+def test_all_interpretations_bind_relevant_fields(app,user,choice,field,value):
+    row=start(app,user)
+    if choice=='per_100g':
+        data=copy.deepcopy(row.review_json);data['rows'][1].update(unit='g',basis_unit='g');row.review_json=data;db.session.commit()
+        if field in {'unit','basis_unit'}:value='ml'
+    compact.save_decisions(user,row.public_id,row.revision,{'r1_interpretation':choice});db.session.commit()
+    compact.save_decisions(user,row.public_id,row.revision,{'r1_'+field:value});db.session.commit()
+    assert row.review_json['rows'][1]['basis_interpretation']['status']=='proposed'
+    assert compact.overview(row)['records'][1]['state']=='decision'
+
+
+@pytest.mark.parametrize('choice',['source_total','consumed_total','per_100ml','explicit_basis'])
+def test_display_format_and_unrelated_fields_do_not_invalidate(app,user,choice):
+    row=start(app,user);compact.save_decisions(user,row.public_id,row.revision,{'r1_interpretation':choice});db.session.commit()
+    basis=row.review_json['rows'][1]['basis_amount']
+    compact.save_decisions(user,row.public_id,row.revision,{'r1_amount':'121.000','r1_basis_amount':basis+'.00','r1_name':'QA unrelated edit'});db.session.commit()
+    assert row.review_json['rows'][1]['basis_interpretation']['status']=='accepted'
+    assert compact.overview(row)['records'][1]['state']=='ready'
+
+
+def test_group_excludes_one_changed_row_and_commits_the_other_decisions(app,client,user):
+    row=start(app,user);login(client)
+    response=client.post('/nutrition/import/'+row.public_id+'/decisions',data={'revision':row.revision,
+        'accept_legacy_totals':'yes','r1_amount':'180','r3_name':'QA retained simultaneous correction'})
+    assert response.status_code==302
+    db.session.expire_all();row=imports.owned(user,row.public_id)
+    view=compact.overview(row)
+    assert view['counts']['ready']==18 and view['counts']['decision']==3
+    assert row.review_json['rows'][1]['amount']=='180'
+    assert row.review_json['rows'][1]['basis_interpretation']['status']=='proposed'
+    assert row.review_json['rows'][3]['name']=='QA retained simultaneous correction'
+    assert row.review_json['rows'][3]['basis_interpretation']['status']=='accepted'
+    assert row.review_json['rows'][2]['basis_interpretation']['status']=='accepted'
+    compact.save_decisions(user,row.public_id,row.revision,{'r1_interpretation':'consumed_total'});db.session.commit()
+    assert compact.overview(row)['records'][1]['preview']['energy']['value']=='41'
+    assert db.session.query(MealLog).count()==db.session.query(NutritionImportReceipt).count()==0
+
+
+def test_used_equivalence_is_bound_and_requires_reverification(app,user):
+    doc=json.loads((FIXTURE.parent/'legacy-commercial-basis.json').read_bytes())
+    item=doc['data']['meals'][0]['items'][0];item.update(quantity=1,unit='pieza (21 g)',basis_amount='100',basis_unit='g')
+    row=start(app,user,json.dumps(doc).encode())
+    compact.save_decisions(user,row.public_id,row.revision,{'r0_equivalence_confirmed':'yes','r0_interpretation':'explicit_basis'});db.session.commit()
+    assert compact.overview(row)['records'][0]['state']=='ready'
+    compact.save_decisions(user,row.public_id,row.revision,{'r0_equivalence_amount':'30','r0_equivalence_unit':'g'});db.session.commit()
+    assert row.review_json['rows'][0]['basis_interpretation']['status']=='proposed'
+    assert row.review_json['rows'][0]['equivalence_confirmed'] is False
+    assert compact.overview(row)['records'][0]['state']=='decision'
+    compact.save_decisions(user,row.public_id,row.revision,{'r0_equivalence_confirmed':'yes','r0_interpretation':'explicit_basis'});db.session.commit()
+    assert compact.overview(row)['records'][0]['preview']['energy']['value']=='15.6'
+
+
+def test_canonical_roundtrip_binds_normalized_representation_on_later_edit(app,user):
+    row=start(app,user);resolve(row,user)
+    document=compact.document(row);fresh=start(app,user,json.dumps(document).encode())
+    assert compact.overview(fresh)['counts']['ready']==21
+    compact.save_decisions(user,fresh.public_id,fresh.revision,{'r1_amount':'180'});db.session.commit()
+    assert fresh.review_json['rows'][1]['basis_interpretation']['status']=='proposed'
+    assert compact.overview(fresh)['records'][1]['state']=='decision'
+
+
+def test_portion_labels_reformat_and_group_quantity_reformat_are_not_changes(app,user):
+    row=start(app,user)
+    compact.save_decisions(user,row.public_id,row.revision,{'accept_legacy_totals':'yes','r1_amount':'121.00'});db.session.commit()
+    assert row.review_json['rows'][1]['basis_interpretation']['status']=='accepted'
+    compact.save_decisions(user,row.public_id,row.revision,{'r2_unit_label':' PIEZA ','r2_basis_label':'pieza  '});db.session.commit()
+    assert row.review_json['rows'][2]['basis_interpretation']['status']=='accepted'
+    assert compact.overview(row)['records'][2]['state']=='ready'

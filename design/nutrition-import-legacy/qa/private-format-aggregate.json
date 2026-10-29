@@ -1,0 +1,32 @@
+{
+  "status": "PRIVATE_READONLY_DIAGNOSED",
+  "extractor": "nutrition-legacy-semantics-v3",
+  "records": 21,
+  "source_schema_valid": false,
+  "schema_error_categories": {
+    "maxLength": 1
+  },
+  "kinds": {
+    "consumed_total": 20,
+    "unresolved": 1
+  },
+  "group_eligible": 18,
+  "estimated_quality": 6,
+  "unverified_marker_rows": 2,
+  "missing_base_fields": 0,
+  "declarations_present": 21,
+  "proposed_equivalences": 5,
+  "sufficient_after_in_memory_group": 17,
+  "remaining_blocker_categories": {
+    "semantic_or_quantity_decision": 3,
+    "unverified_nutrient_marker": 1
+  },
+  "owner_route_sha_size_verified": true,
+  "original_unchanged": true,
+  "old_review_unchanged": true,
+  "SQL_statements": 0,
+  "DML_DDL": 0,
+  "drafts_created": 0,
+  "network": "none",
+  "data_left_NAS": false
+}

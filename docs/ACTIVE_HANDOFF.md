@@ -9,6 +9,8 @@
 
 ## Trabajo en curso
 
+- Gate de revisión corregido: huella semántica, invalidación de POST posteriores y exclusión de filas editadas del grupo sin perder el resto. Diagnóstico privado real anterior al merge: 18 agrupables; existen excepciones legítimas, no prometer 21/0.
+
 - Adaptador semántico diario 1.0: totales por elemento, bases explícitas por 100 g/ml y por unidad; revisión agrupada sólo con fundamento documentado. Declaraciones suficientes sin identidades obligatorias.
 - Extractor `nutrition-legacy-semantics-v3`; nuevo fork trazable desde #29/#30, sin renovar firmas ni copiar consentimiento. Conserva correcciones, originales y revisiones previas.
 - Fixture ficticia de estructura legacy de 21 elementos/20 sin base explícita. Ambigüedades, marcadores y equivalencias aproximadas requieren decisión; estimaciones etiquetadas y nutrientes ausentes desconocidos.
@@ -16,7 +18,7 @@
 
 ## Bloqueadores y riesgos
 
-- No desplegar ni fusionar automáticamente. La aceptación personal posterior exige versión revisada/desplegada y consentimiento nuevo para guardar consumos.
+- El propietario autoriza cerrar la revisión 5704011429, squash y despliegue de sólo web tras los gates. La confirmación de consumos reales continúa prohibida en esta ejecución.
 - Esta entrega no reabre la sesión productiva ni copia el archivo personal a QA. El diagnóstico público se limita a agregados de la aceptación autorizada anterior.
 - Confirmaciones concurrentes pueden producir un 409 seguro en el intento perdedor durante el hueco de auditoría; el reintento devuelve el recibo existente sin duplicar.
 - Mantener datos actuales ante recuperación: sólo imagen web compatible, nunca restaurar backups antiguos sobre escrituras nuevas.

@@ -1,0 +1,45 @@
+{
+  "review": "5704011429",
+  "status": "PASS",
+  "sqlite_focal_passed": 169,
+  "legacy_semantic_cases": 58,
+  "two_POSTs_121g_41kcal_then_180g": {
+    "stale_acceptance_blocked": true,
+    "conscious_consumed_total_snapshot_kcal": "41",
+    "same_as_single_POST": true
+  },
+  "choices_bound": [
+    "source_total",
+    "consumed_total",
+    "per_100g",
+    "per_100ml",
+    "explicit_basis"
+  ],
+  "fields_bound": [
+    "amount",
+    "unit",
+    "basis_amount",
+    "basis_unit",
+    "unit_label",
+    "basis_label",
+    "kind",
+    "choice",
+    "used_equivalence"
+  ],
+  "format_only_and_unrelated_changes_remain_valid": true,
+  "group_after_edit": {
+    "ready": 20,
+    "pending": 1,
+    "rest_of_batch_preserved": true,
+    "POST_status": 302
+  },
+  "browser_mobile_and_desktop": {
+    "partial_capture": true,
+    "after_conscious_row_decision_ready": 21,
+    "pending": 0,
+    "edited_row_quantity_g": "180",
+    "edited_row_snapshot_energy_kcal": "41",
+    "QA_only": true
+  },
+  "domain_writes_before_QA_confirmation": 0
+}

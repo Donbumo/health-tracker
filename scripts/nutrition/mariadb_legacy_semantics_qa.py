@@ -74,10 +74,23 @@ for version in ['29','30']:
    fresh=imports.owned(uid,newkey);rev=fresh.revision
    assert fresh.review_json['rows'][1]['name']=='QA retained name' and fresh.review_json['rows'][1]['amount']=='180'
    assert fresh.review_json['rows'][1]['basis_amount']=='121'
-  data={'revision':rev,'csrf_token':csrf,'accept_previous':'yes','accept_legacy_totals':'yes','use_declarations':'yes',
+  # Consecutive POSTs: an accepted consumed_total cannot outlive a quantity edit.
+  assert c.post('/nutrition/import/'+newkey+'/decisions',data={'revision':rev,'csrf_token':csrf,'r1_interpretation':'consumed_total'}).status_code==302
+  with app.app_context():rev=imports.owned(uid,newkey).revision
+  assert c.post('/nutrition/import/'+newkey+'/decisions',data={'revision':rev,'csrf_token':csrf,'r1_amount':'190'}).status_code==302
+  with app.app_context():
+   changed=imports.owned(uid,newkey);rev=changed.revision
+   assert changed.review_json['rows'][1]['basis_interpretation']['status']=='proposed'
+   assert compact.overview(changed)['records'][1]['state']=='decision'
+  data={'revision':rev,'csrf_token':csrf,'r2_amount':'2','accept_previous':'yes','accept_legacy_totals':'yes','use_declarations':'yes',
     'r1_interpretation':'source_total','r10_interpretation':'consumed_total','r11_nutrient_fiber_action':'unknown'}
   assert c.post('/nutrition/import/'+newkey+'/decisions',data=data).status_code==302
   assert c.post(path,data={'revision':revision,'csrf_token':csrf}).location==locations[0]
+  with app.app_context():
+   changed=imports.owned(uid,newkey);rev=changed.revision;view=compact.overview(changed)
+   assert view['counts']['ready']==20 and view['counts']['decision']==1,view['counts']
+   assert changed.review_json['rows'][2]['basis_interpretation']['status']=='proposed'
+  assert c.post('/nutrition/import/'+newkey+'/decisions',data={'revision':rev,'csrf_token':csrf,'r2_interpretation':'consumed_total'}).status_code==302
   with app.app_context():
    fresh=imports.owned(uid,newkey);view=compact.overview(fresh);assert view['counts']['ready']==21,[(r['index'],r['issues']) for r in view['records'] if r['issues']]
    document=compact.document(fresh);rev=fresh.revision
@@ -110,7 +123,7 @@ for version in ['29','30']:
    old=imports.owned(uid,key);assert old.review_json==frozen and old.source_json==source and old.created_at==created
    assert all(l.timezone=='America/Mexico_City' for l in logs)
    report['cases'].append(dict(version=version,expired=expired,before_ready=1,before_pending=20,after_ready=21,after_pending=0,
-     products=0,receipts=1,concurrent_fork_and_confirm=True,concurrent_confirm_statuses=[c[0] for c in codes],retry_status=200,old_unchanged=True,GET_DML_DDL=0,quantity_correction_preserved=True))
+     stale_interpretation_invalidated=True,group_edit_excluded_one_and_kept_others=True,products=0,receipts=1,concurrent_fork_and_confirm=True,concurrent_confirm_statuses=[c[0] for c in codes],retry_status=200,old_unchanged=True,GET_DML_DDL=0,quantity_correction_preserved=True))
 report.update(alembic='20261018_0046',db_check='PASS',production_access=False,new_migrations=False)
 Path('/evidence', 'legacy-mariadb-'+os.environ['QA_ISOLATION'].replace(' ','_')+'.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps(report))

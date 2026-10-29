@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "data": "fictional isolated LOCAL MariaDB only",
+  "production_access": false,
+  "isolation": "READ-COMMITTED",
+  "alembic": "20261018_0046",
+  "db_check": "PASS",
+  "detected": 21,
+  "initial_ready": 1,
+  "initial_decision": 20,
+  "saved": 21,
+  "existing_candidate_bindings": 2,
+  "private_products": 1,
+  "declared_without_catalog": 18,
+  "GET_DML_DDL": 0,
+  "owner_CSRF_signature_consent": "PASS",
+  "legacy_date_explicit_decision": "PASS",
+  "historical_snapshot_unchanged": true,
+  "original_SHA_retained": true,
+  "rollback_after_product_and_log_flush": "PASS",
+  "concurrent_statuses": [
+    200,
+    409
+  ],
+  "replay_no_duplicates": true,
+  "canonical_JSON_review": "PASS",
+  "export_restore": "PASS",
+  "massless_portion": true,
+  "totals_kcal": "3729.95",
+  "new_DDL": false
+}

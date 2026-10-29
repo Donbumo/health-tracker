@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "data": "fictional LOCAL QA only",
+  "legacy_code_sha": "1cf8d830ba801a8c8121cf594b07a0269a6d6e6f",
+  "cases": [
+    {
+      "expired": false,
+      "legacy_revision": 5,
+      "initial_ready": 1,
+      "initial_pending": 20,
+      "saved": 21,
+      "products": 0,
+      "previous_review_unchanged": true,
+      "reupload_preserves_decisions": true,
+      "concurrent_reprocess_same_review": true,
+      "independently_edited_new_review_preserved": true,
+      "equivalence_verifications": 7,
+      "portion_base_verification": 1,
+      "GET_DML_DDL": 0,
+      "replay_no_duplicates": true,
+      "totals_kcal": "4042.79"
+    },
+    {
+      "expired": true,
+      "legacy_revision": 5,
+      "initial_ready": 1,
+      "initial_pending": 20,
+      "saved": 21,
+      "products": 0,
+      "previous_review_unchanged": true,
+      "reupload_preserves_decisions": true,
+      "concurrent_reprocess_same_review": true,
+      "independently_edited_new_review_preserved": true,
+      "equivalence_verifications": 7,
+      "portion_base_verification": 1,
+      "GET_DML_DDL": 0,
+      "replay_no_duplicates": true,
+      "totals_kcal": "4042.79"
+    }
+  ],
+  "isolation": "READ-COMMITTED",
+  "alembic": "20261018_0046",
+  "db_check": "PASS",
+  "new_DDL": false,
+  "production_access": false
+}

@@ -1,0 +1,79 @@
+{
+  "status": "PASS",
+  "data": "fictional QA only; actual #29 code creates both predecessor drafts",
+  "reports": [
+    {
+      "viewport": "mobile",
+      "expired": false,
+      "legacy_revision": 5,
+      "equivalences_verified": 7,
+      "portion_base_verified": 1,
+      "retained_fields_accepted_once": true,
+      "reprocess_replay_same_review": true,
+      "POSTs_browser": 5,
+      "additional_API_replays": 2,
+      "result": {
+        "corrected_name_kept": true,
+        "logs": 21,
+        "previous_unchanged": true,
+        "products": 0,
+        "receipts": 1,
+        "total_kcal": "4042.79"
+      }
+    },
+    {
+      "viewport": "desktop",
+      "expired": true,
+      "legacy_revision": 5,
+      "equivalences_verified": 7,
+      "portion_base_verified": 1,
+      "retained_fields_accepted_once": true,
+      "reprocess_replay_same_review": true,
+      "POSTs_browser": 5,
+      "additional_API_replays": 2,
+      "result": {
+        "corrected_name_kept": true,
+        "logs": 21,
+        "previous_unchanged": true,
+        "products": 0,
+        "receipts": 1,
+        "total_kcal": "4042.79"
+      }
+    },
+    {
+      "case": "contextual fallback",
+      "macros_reentered": false,
+      "user_verified_mass_g": 31,
+      "logs": 1,
+      "products": 0,
+      "total_kcal": "31.00"
+    }
+  ],
+  "layouts": [
+    {
+      "width": 360,
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "overflow": false
+    },
+    {
+      "width": 430,
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "overflow": false
+    },
+    {
+      "width": 1024,
+      "overflow": false
+    },
+    {
+      "width": 1366,
+      "overflow": false
+    }
+  ],
+  "errors": []
+}

@@ -21,6 +21,8 @@ from PIL import Image
 from app.services.nutrition_math import NutritionError, NUTRIENTS, validate_vector
 from app.services.importers.schema_detector import SchemaDetector
 
+EXTRACTOR_VERSION = "nutrition-portions-review-30-v2"
+
 MAX_BYTES = 10 * 1024 * 1024
 MAX_EXPANDED = 40 * 1024 * 1024
 MAX_ROWS = 250
@@ -49,6 +51,7 @@ ALIASES = {
     'ingredients': ('ingredients','ingredientes','components','componentes'),
     'notes': ('notes','notas','instructions','instrucciones','preparacion_texto'),
     'basis_amount': ('basis_amount','base_cantidad'), 'basis_unit': ('basis_unit','base_unidad'),
+    'equivalence': ('equivalence','equivalencia'),
     'total_mass_g': ('total_mass_g','yield_weight_g','peso_total_g','peso total g'),
     'yield_factor': ('yield_factor','factor_rendimiento','factor de rendimiento'),
 }
@@ -109,12 +112,32 @@ def normalized_row(raw, evidence):
     if 'amount' in keys and keys['amount'][1] not in (None,''):
         raw_amount=str(keys['amount'][1]).strip()
         match=re.fullmatch(r'(\d+(?:[.,]\d+)?)\s*(g|gramos?|ml|mililitros?)',raw_amount,re.I)
-        try:row['amount']=number(match[1] if match else raw_amount)
+        portion_match=re.fullmatch(r'(\d+(?:[.,]\d+)?)\s*(botellas?|bottles?|latas?|cans?|barras?|bars?|sobres?|sachets?|piezas?|pieces?|tortillas?|porciones?|porcion|portions?|servings?)',fold(raw_amount))
+        try:row['amount']=number(match[1] if match else portion_match[1] if portion_match else raw_amount)
         except NutritionError:row['warnings'].append('Cantidad ilegible o ambigua.')
+        if portion_match:row['unit']=portion_match[2]
         if match:row['unit']='ml' if fold(match[2]).startswith('m') else 'g'
         elif keys['amount'][0] in {'gramos','weight_g','quantity_g','grams','peso_g'}:row['unit']='g'
     if 'unit' in keys and keys['unit'][1] not in (None,''):
         value=fold(keys['unit'][1]);row['unit']={'gramos':'g','gramo':'g','mililitros':'ml'}.get(value,value)
+    # Named portions remain portions. Only explicit equivalents can bridge to g/ml.
+    portion_names = {'portion','portions','serving','servings','porcion','porciones','pieza','piezas','piece','pieces',
+                     'botella','botellas','bottle','bottles','lata','latas','can','cans',
+                     'barra','barras','bar','bars','sobre','sobres','sachet','sachets','tortilla','tortillas'}
+    singular = {'servings':'porcion','portions':'porcion','porciones':'porcion','serving':'porcion','portion':'porcion','piezas':'pieza','pieces':'pieza','piece':'pieza',
+                'botellas':'botella','bottle':'botella','bottles':'botella','latas':'lata','can':'lata','cans':'lata',
+                'barras':'barra','bar':'barra','bars':'barra','sobres':'sobre','sachet':'sobre','sachets':'sobre','tortillas':'tortilla'}
+    for field, label in [('unit','unit_label'),('basis_unit','basis_label')]:
+        value=fold(row.get(field,''))
+        if value in portion_names:
+            row[label]=singular.get(value,value);row[field]='portion'
+    equivalent=keys.get('equivalence',('',None))[1]
+    if isinstance(equivalent,dict):
+        row['equivalence']=dict(equivalent)
+        row['equivalence_confirmed']=False
+    from app.services.importers.nutrition_portion_text import normalize
+    try:normalize(row,keys.get('amount',('',None))[1],keys.get('unit',('',None))[1],keys.get('basis_unit',('',None))[1])
+    except NutritionError:row['warnings'].append('Descripción de porción ambigua: corrige cantidad, unidad o equivalencia.')
     units=raw.get('units') if isinstance(raw.get('units'),dict) else {}
     for nutrient in NUTRIENTS:
         candidate=keys.get(nutrient)
@@ -357,9 +380,11 @@ def extract(payload,filename,mime=None,depth=0):
         else:rows=text_rows(text,dict(evidence,method='plain_text'));profile='nutrition_text'
     if len(rows)>MAX_ROWS:raise NutritionError('Importación supera 250 elementos; divide el archivo.')
     text='\n'.join(texts)
+    explicit_destination = document.get('destination') if profile in {'external_json_aliases','external_json_array'} and isinstance(document,dict) else None
     plan_words={'dieta','prescrito','plan alimentario','meal plan','prescribed'}
     hints={row.get('kind_hint') for row in rows if row.get('kind_hint')}
     hint='plan' if any(word in fold(text) for word in plan_words) else 'products' if profile=='label_local_ocr' else next(iter(hints)) if len(hints)==1 else 'consumed' if profile=='myfitnesspal_csv' else 'ambiguous'
+    if explicit_destination in {'consumed','plan','products','recipes','daily_aggregate'}:hint=explicit_destination
     if not rows and standard is None:warnings.append('No se reconocieron filas con este perfil. Requiere estructurar el texto o completar manualmente; no se inventaron alimentos.')
     return {'rows':rows,'standard':standard,'profile':profile,'classification_hint':hint,'warnings':warnings,
             'text':text[:MAX_TEXT],'source':evidence,'mime_claim':str(mime or ''),'signature_detected':True}

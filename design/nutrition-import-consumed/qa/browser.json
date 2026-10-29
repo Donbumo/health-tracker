@@ -1,0 +1,117 @@
+{
+  "status": "PASS",
+  "data": "fictional QA only",
+  "reports": [
+    {
+      "domain": {
+        "bound_snapshots": 2,
+        "candidate_bound": true,
+        "logs": 21,
+        "products": 0,
+        "receipts": 1
+      },
+      "viewport": "mobile",
+      "detected": 21,
+      "initial_ready": 1,
+      "initial_decision": 20,
+      "saved": 21,
+      "pending": 0,
+      "private_products": 0,
+      "independent_queries": true,
+      "existing_candidate_selected": true,
+      "confirmed_equivalences": 5,
+      "declared_without_mass": true,
+      "replay_HTTP": 200,
+      "POSTs_browser": 4,
+      "POSTs_including_replay": 5,
+      "Cache_Control": "private, no-store"
+    },
+    {
+      "domain": {
+        "bound_snapshots": 3,
+        "candidate_bound": true,
+        "logs": 21,
+        "products": 1,
+        "receipts": 1
+      },
+      "viewport": "desktop",
+      "detected": 21,
+      "initial_ready": 1,
+      "initial_decision": 20,
+      "saved": 21,
+      "pending": 0,
+      "private_products": 1,
+      "independent_queries": true,
+      "existing_candidate_selected": true,
+      "confirmed_equivalences": 5,
+      "declared_without_mass": true,
+      "replay_HTTP": 200,
+      "POSTs_browser": 4,
+      "POSTs_including_replay": 5,
+      "Cache_Control": "private, no-store"
+    }
+  ],
+  "layouts": [
+    {
+      "width": 360,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "width": 360,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "width": 390,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "width": 430,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "width": 430,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "width": 768,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "width": 1024,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "width": 1024,
+      "theme": "dark",
+      "overflow": false
+    },
+    {
+      "width": 1366,
+      "theme": "light",
+      "overflow": false
+    },
+    {
+      "width": 1366,
+      "theme": "dark",
+      "overflow": false
+    }
+  ],
+  "errors": []
+}

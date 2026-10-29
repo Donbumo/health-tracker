@@ -1,5 +1,11 @@
 # Handoff activo
 
+## PR #30 — gates de revisión atendidos, sin merge ni despliegue
+
+- Cierre 29-10 de revisión 5693363166: borradores generados por parser/servicio exactos #29, reprocesado trazable sin sobrescribir revisión 5 ni decisiones; vigente/vencido, replay/concurrencia. Gramática textual de porciones con verificación, sin equivalencias preestructuradas. 46 pruebas focales, MariaDB RC/RR 0046 y Flask móvil/escritorio PASS; 21 consumos, 0 productos por caso, corrección contextual sin rehacer macros. Evidencia en el informe.
+- Rama independiente desde PR #29: [causa raíz, contrato y QA de 21 consumos](NUTRITION_IMPORT_CONSUMED_FIX.md). Declaración sin catálogo, creación privada contextual, búsquedas independientes y porciones verificadas; importador/recibo atómicos, 0046 sin migración.
+- Fixture equivalente totalmente ficticia: 1 listo/20 decisiones → 21 consumos guardados. SQLite, MariaDB QA RC/RR, navegador móvil/escritorio y export/restore. Producción y su revisión pendiente no se accedieron. Integración/despliegue preparados para después de revisión; no iniciar C.
+
 Índice de reglas y guías: [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md).
 
 ## Estado actual — cierre autorizado de PR #29

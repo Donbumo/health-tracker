@@ -16,7 +16,7 @@ from app.extensions import db
 from app.models import FoodProduct, Recipe, DailyNutrition, NutritionImportDraft, NutritionImportReceipt, NutritionPlan, UploadedFile
 from app.services import food_catalog, nutrition_intelligence as ni
 from app.services.nutrition_math import NutritionError, NUTRIENTS, PRODUCT, LEGACY, decimal, validate_vector, ingredient, summarize, snapshot_summary, precise
-from app.services.importers.nutrition_sources import extract, MAX_BYTES
+from app.services.importers.nutrition_sources import extract, MAX_BYTES, EXTRACTOR_VERSION
 from app.services.validation import validate_json_document
 
 
@@ -44,7 +44,7 @@ def start(user_id,payload,filename,mime=None):
     return _review_from_source(user_id,found,source)
 
 
-def _review_from_source(user_id,found,source):
+def _review_from_source(user_id,found,source,*,reuse=True):
     found['source']['file']=source.original_filename
     for item in found['rows']:
         if item['evidence'].get('sha256')==source.sha256:
@@ -60,21 +60,28 @@ def _review_from_source(user_id,found,source):
             review['rows'].append(dict(copy.deepcopy(entry),original=copy.deepcopy(entry),declaration=(entry.get('declaration') or {}).get('nutrients',{}),
                 basis_amount=(entry.get('declaration') or {}).get('basis_amount'),basis_unit=(entry.get('declaration') or {}).get('basis_unit'),
                 ingredients=entry['bindings'],confirmed=False,skip=entry.get('skip',False),warnings=[],
+                amount=entry.get('portion_amount'),unit=entry.get('portion_unit'),
                 composition_complete=entry['composition']['complete'],total_mass_g=entry['composition'].get('total_mass_g')))
+            if document['data']['destination']=='consumed' and not entry['bindings'] and entry.get('declaration'):
+                review['rows'][-1]['resolution']='declared'
     row=NutritionImportDraft(user_id=user_id,source_sha256=source.sha256,
         source_json={'upload_id':source.id,'profile':found['profile'],'classification_hint':found['classification_hint'],
-            'warnings':found['warnings'],'text':found['text'],'evidence':found['source']},review_json=review)
+            'warnings':found['warnings'],'text':found['text'],'evidence':found['source'],'extractor_version':EXTRACTOR_VERSION},review_json=review)
     if prior:
         row.source_json=dict(row.source_json,already_imported=True)
         row.state='completed'
-    else:
+    elif reuse:
         existing=db.session.execute(db.select(NutritionImportDraft).where(
             NutritionImportDraft.user_id==user_id,NutritionImportDraft.source_sha256==source.sha256,
             NutritionImportDraft.state=='pending').order_by(NutritionImportDraft.id.desc())).scalars()
-        for pending in existing:
+        for number,pending in enumerate(existing):
             if pending.source_json.get('plan_identity'):continue
             try:assert_pending(pending,pending.revision)
-            except NutritionError:continue
+            except NutritionError:
+                # Reupload is not permission to discard an older parser's
+                # decisions. Offer its explicit verified reprocess action.
+                if number==0 and pending.source_json.get('extractor_version')!=EXTRACTOR_VERSION:return pending
+                continue
             return pending
     db.session.add(row);db.session.flush();return row
 
@@ -101,7 +108,8 @@ def review_status(row):
     pending=row.state=='pending'
     return {'expired':expired,'expires_at':expires,'original_available':available,
             'can_resume':pending and not expired and (available or bool(row.source_json.get('plan_identity'))),
-            'can_recover':pending and expired and available}
+            'can_recover':pending and expired and available,
+            'can_reprocess':pending and available and not row.source_json.get('plan_identity') and row.source_json.get('extractor_version')!=EXTRACTOR_VERSION}
 
 
 def recover(user_id,key,revision):
@@ -111,6 +119,22 @@ def recover(user_id,key,revision):
     except (ValueError,TypeError):valid_revision=False
     if not valid_revision or row.state!='pending' or not review_status(row)['expired']:
         raise NutritionError('Sólo se recupera una revisión vencida sin cambios posteriores.',409)
+    if row.source_json.get('extractor_version')!=EXTRACTOR_VERSION:
+        from app.services.nutrition_import_reprocess import reprocess
+        return reprocess(user_id,key,revision)
+    source,found=verified_original(row)
+    fresh=_review_from_source(user_id,found,source)
+    # Only link technical reviews; never copy expired user decisions or reset created_at.
+    if fresh.public_id!=row.public_id:
+        fresh.source_json=dict(fresh.source_json,recovered_from=row.public_id,decisions_reset=True)
+        row.source_json=dict(row.source_json,recovered_to=fresh.public_id)
+    db.session.flush()
+    return fresh
+
+
+def verified_original(row):
+    """Owner-bound retained upload, bounded bytes, size and SHA checked first."""
+    user_id=row.user_id
     upload_id=row.source_json.get('upload_id')
     source=db.session.scalar(db.select(UploadedFile).where(UploadedFile.id==upload_id,
         UploadedFile.user_id==user_id).with_for_update()) if upload_id else None
@@ -126,13 +150,7 @@ def recover(user_id,key,revision):
         raise NutritionError('El original no está disponible o no supera la comprobación de integridad. No se creó otra revisión.',409) from error
     if source.sha256!=row.source_sha256 or found['source']['sha256']!=row.source_sha256:
         raise NutritionError('La evidencia del original no coincide; no se recupera la revisión.',409)
-    fresh=_review_from_source(user_id,found,source)
-    # Only link technical reviews; never copy expired user decisions or reset created_at.
-    if fresh.public_id!=row.public_id:
-        fresh.source_json=dict(fresh.source_json,recovered_from=row.public_id,decisions_reset=True)
-        row.source_json=dict(row.source_json,recovered_to=fresh.public_id)
-    db.session.flush()
-    return fresh
+    return source,found
 
 
 def original_policy(row):
@@ -304,13 +322,20 @@ def canonical(row,review=None,only_index=None):
         entry={'name':item.get('name',''),'bindings':copy.deepcopy(item['ingredients']), 'declaration':declaration,
                'composition':{'complete':item.get('composition_complete',False),'total_mass_g':item.get('total_mass_g') or (item.get('amount') if item.get('unit')=='g' else None)},
                'evidence':dict(item['evidence'],review_row=index,original_fields=copy.deepcopy(item['original'])),'confirmed':True}
+        if review['destination']=='consumed' and (item.get('resolution') in {'declared','private'} or item.get('unit')=='portion'):
+            from app.services.nutrition_import_portions import sufficient
+            amount,unit,quantity=sufficient(item)
+            declaration['provenance']['consumed_quantity']=quantity
+            declaration['provenance']['basis_label']=item.get('basis_label') or item.get('basis_unit')
+            entry.update(composition={'complete':False,'total_mass_g':amount if unit=='g' else None},
+                         portion_amount=amount,portion_unit=unit)
         if not item.get('name') and review['destination']=='daily_aggregate':entry.pop('name')
         if item.get('yield_factor'):
             entry['composition'].update(yield_factor=str(decimal(item['yield_factor'],positive=True)),
                 notes='Rendimiento declarado conservado; no implica retención de nutrientes ni equivalencia crudo/cocido.')
         for field in ('date','planned_for','meal_type','authority','conflict_action'):
             if item.get(field):entry[field]=item[field]
-        if item.get('amount') and item.get('unit'):
+        if item.get('amount') and item.get('unit') and not (review['destination']=='consumed' and (item.get('resolution') in {'declared','private'} or item.get('unit')=='portion')):
             entry.update(portion_amount=str(decimal(item['amount'],positive=True)),portion_unit=item['unit'])
         entries.append(entry)
     if not entries:raise NutritionError('No quedan filas para guardar.')
@@ -366,7 +391,7 @@ def meal_snapshot(entry,entries,timezone_name):
     if entry.get('date'):snapshot.update(local_date=entry['date'],timezone=timezone_name)
     if entry['declaration']:
         declared=copy.deepcopy(entry['declaration'])
-        if entry.get('portion_amount') and declared['basis_unit']!='portion':
+        if entry.get('portion_amount') and (declared['basis_unit']!='portion' or entry.get('portion_unit')=='portion'):
             if declared['basis_unit']!=entry.get('portion_unit'):
                 raise NutritionError('Porción y base declarada tienen unidades distintas; sin equivalencia explícita no se convierten.')
             factor=decimal(entry['portion_amount'],positive=True)/decimal(declared['basis_amount'],positive=True)
@@ -400,6 +425,7 @@ def validate_document(document,user_id):
         if not plan:raise NutritionError('Plan no encontrado.',404)
         if destination!='plan' or plan.revision!=data['plan_revision']:raise NutritionError('El plan cambió; revisa su revisión actual.',409)
     seen_products=set()
+    date_decisions={}
     for entry in data['entries']:
         if entry.get('date'):
             try:date.fromisoformat(entry['date'])
@@ -419,11 +445,24 @@ def validate_document(document,user_id):
             day=db.session.execute(db.select(DailyNutrition).where(DailyNutrition.user_id==user_id,DailyNutrition.date==date.fromisoformat(entry['date']))).scalar_one_or_none()
             if day:raise NutritionError('Ya existe registro en esta fecha. No se sobrescribe un agregado; omite la fila o revisa comidas distintas.',409)
             continue
-        if not entry.get('meal_type') or not entry['bindings']:raise NutritionError('Revisa momento y al menos una identidad/ingrediente; no se inventa composición.')
+        declaration_only=destination=='consumed' and not entry['bindings'] and entry.get('declaration')
+        if not entry.get('meal_type') or (not entry['bindings'] and not declaration_only):
+            raise NutritionError('Revisa momento y al menos una identidad/ingrediente; no se inventa composición.')
+        if declaration_only:
+            if not entry.get('portion_amount') or entry.get('portion_unit')!=entry['declaration']['basis_unit']:
+                raise NutritionError('La declaración requiere cantidad consumida compatible con su base.')
+            decimal(entry['portion_amount'],positive=True)
+            if not any(v['state']=='known' for v in entry['declaration']['nutrients'].values()):
+                raise NutritionError('No hay nutrientes absolutos declarados para este consumo.')
+            if entry['composition']['complete']:raise NutritionError('Una declaración no demuestra composición completa.')
         if destination in {'consumed','recipes'} and not entry.get('date'):raise NutritionError('Selecciona una fecha explícita para el evento o la referencia de receta.')
         snapshot=meal_snapshot(entry,resolved_entries(entry,user_id),owner.timezone or 'UTC')
         if destination=='recipes':ni.validate_recipe_projection(snapshot)
         if destination=='consumed':
+            decision=(entry.get('conflict_action'),entry.get('authority'))
+            if entry['date'] in date_decisions and date_decisions[entry['date']]!=decision:
+                raise NutritionError('Resuelve de forma consistente la autoridad y el conflicto de todos los consumos de la misma fecha.',409)
+            date_decisions[entry['date']]=decision
             day=db.session.execute(db.select(DailyNutrition).where(DailyNutrition.user_id==user_id,DailyNutrition.date==date.fromisoformat(entry['date']))).scalar_one_or_none()
             if day and entry.get('conflict_action')!='keep_and_add':raise NutritionError('La fecha contiene datos: confirma que es otro consumo u omite esta fila.',409)
             if day and day.authority is None and entry.get('authority') not in {'derive_items','disjoint_aggregate'}:raise NutritionError('Resuelve el solapamiento del agregado legacy explícitamente.',409)

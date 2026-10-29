@@ -226,6 +226,8 @@ def overview(row):
 
 
 def document(row, view=None):
+    if row.source_json.get('reprocess_pending'):
+        raise NutritionError('Revisa y acepta los campos conservados de la revisión anterior antes de confirmar.')
     view = view or overview(row)
     if view['counts']['decision'] or view['counts']['invalid']:
         raise NutritionError('Resuelve las excepciones agrupadas antes de confirmar el lote.')
@@ -259,7 +261,7 @@ def save_decisions(user_id, key, revision, data):
                     raise NutritionError('Corrige explícitamente el estado y la unidad antes de introducir un valor absoluto.')
                 item['declaration'][nutrient]=dict(state='known',value=str(decimal(raw)),unit=NUTRIENTS[nutrient][1],
                     provenance={'method':'user_confirmed','evidence':item['evidence']})
-        for field in ('name', 'date', 'planned_for', 'meal_type', 'basis_amount', 'basis_unit', 'amount', 'unit', 'conflict_action', 'authority', 'brand', 'barcode'):
+        for field in ('name', 'date', 'planned_for', 'meal_type', 'basis_amount', 'basis_unit', 'amount', 'unit', 'conflict_action', 'authority', 'brand', 'barcode', 'unit_label', 'basis_label'):
             if prefix + field in data:
                 item[field] = data[prefix + field].strip()[:200]
         choice = data.get(prefix + 'carbohydrate')
@@ -292,6 +294,8 @@ def save_decisions(user_id, key, revision, data):
         if data.get(prefix+'equivalence_confirmed')=='yes':
             item['equivalence_confirmed']=True
             item['equivalence']=dict(item.get('equivalence') or {},verification='user_verified_quantity')
+        if data.get(prefix+'portion_text_reviewed')=='yes':item['portion_text_reviewed']=True
+        if data.get(prefix+'portion_label_confirmed')=='yes':item['portion_label_confirmed']=True
         choice=data.get(prefix+'resolution')
         selected_identity=any(k.startswith(prefix) and k.endswith('_ref') and v for k,v in data.items())
         if data.get('use_declarations')=='yes' and not item.get('ingredients') and not choice and not selected_identity:
@@ -341,6 +345,8 @@ def save_decisions(user_id, key, revision, data):
                 else:
                     item['ingredients'] = [selected]
         item['confirmed'] = False
+    if row.source_json.get('reprocess_pending') and data.get('accept_previous')=='yes':
+        row.source_json=dict(row.source_json,reprocess_pending=False)
     row.review_json = review
     row.revision += 1
     db.session.flush()

@@ -21,6 +21,8 @@ from PIL import Image
 from app.services.nutrition_math import NutritionError, NUTRIENTS, validate_vector
 from app.services.importers.schema_detector import SchemaDetector
 
+EXTRACTOR_VERSION = "nutrition-portions-review-30-v2"
+
 MAX_BYTES = 10 * 1024 * 1024
 MAX_EXPANDED = 40 * 1024 * 1024
 MAX_ROWS = 250
@@ -133,6 +135,9 @@ def normalized_row(raw, evidence):
     if isinstance(equivalent,dict):
         row['equivalence']=dict(equivalent)
         row['equivalence_confirmed']=False
+    from app.services.importers.nutrition_portion_text import normalize
+    try:normalize(row,keys.get('amount',('',None))[1],keys.get('unit',('',None))[1],keys.get('basis_unit',('',None))[1])
+    except NutritionError:row['warnings'].append('Descripción de porción ambigua: corrige cantidad, unidad o equivalencia.')
     units=raw.get('units') if isinstance(raw.get('units'),dict) else {}
     for nutrient in NUTRIENTS:
         candidate=keys.get(nutrient)

@@ -378,7 +378,7 @@ def import_review(key):
                     cache[text]=[dict(hit,revision=food['revision']) for hit,food in zip(hits,foods)]
                 problem['candidates']=cache[text]
     return render('import_review',row=row,**view,token=token,blocking=blocking,
-                  original_policy=imports.original_policy(row),pending=view['counts']['decision']+view['counts']['invalid'])
+                  original_policy=imports.original_policy(row),status=status,pending=view['counts']['decision']+view['counts']['invalid'])
 
 
 def _import_serializer():
@@ -397,6 +397,15 @@ def _import_result(row,receipt):
     from app.services import nutrition_import as imports
     result={'committed':True,'inserts':0,'skips':1,'conflicts':0,'invalid':0,'errors':[]}
     return render('import_result',result=result,receipt=receipt,row=row,original_policy=imports.original_policy(row))
+
+
+@nutrition_bp.post('/import/<key>/reprocess')
+@login_required
+def import_reprocess(key):
+    from app.services.nutrition_import_reprocess import reprocess
+    row=reprocess(current_user.id,key,request.form.get('revision'))
+    db.session.commit()
+    return redirect(url_for('nutrition.import_review',key=row.public_id))
 
 
 @nutrition_bp.post('/import/<key>/recover')

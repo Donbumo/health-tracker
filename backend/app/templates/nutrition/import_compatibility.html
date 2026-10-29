@@ -1,0 +1,15 @@
+{% if status.can_reprocess %}
+<section class="ni-card ni-import-compatibility" aria-labelledby="reprocess-title">
+<h2 id="reprocess-title">Este borrador usa un importador anterior</h2>
+<p>Reprocesa el original conservado para reconocer las porciones actuales. Se comprobará su integridad. Tu borrador, sus decisiones y su vigencia se conservan intactos.</p>
+<form method="post" action="{{ url_for('nutrition.import_reprocess',key=row.public_id) }}">{{ csrf() }}<input type="hidden" name="revision" value="{{ row.revision }}"><button>Reprocesar original con importador actualizado</button><p>Crea o retoma una revisión nueva vinculada a ésta. Los campos conservados requieren nueva revisión; no guarda consumos ni productos.</p></form>
+</section>
+{% endif %}
+{% if row.source_json.reprocessed_from %}
+<section class="ni-card ni-import-retained" aria-labelledby="retained-title"><h2 id="retained-title">Original reprocesado; decisiones anteriores conservadas</h2>
+<p>Campos conservados de {{ row.source_json.retained_decisions|length }} registros. Las cantidades o unidades incompatibles se muestran con la extracción nueva. Las equivalencias deben verificarse otra vez.</p>
+{% set unaligned=row.source_json.retained_decisions|selectattr('unapplied')|list %}{% if unaligned %}<p role="alert">{{ unaligned|length }} registros no pudieron alinearse de forma segura. Sus decisiones siguen en la revisión anterior; compruébalos antes de aceptar esta revisión nueva.</p>{% endif %}
+<p><a href="{{ url_for('nutrition.import_review',key=row.source_json.reprocessed_from) }}">Consultar revisión anterior conservada</a>. No se sobrescribieron sus datos ni se renovaron sus firmas.</p>
+{% if row.source_json.reprocess_pending %}<form method="post" action="{{ url_for('nutrition.import_decisions',key=row.public_id) }}">{{ csrf() }}<input type="hidden" name="revision" value="{{ row.revision }}"><label class="ni-check"><input type="checkbox" name="accept_previous" value="yes" required> He revisado los campos conservados y los acepto para esta revisión nueva.</label><button>Aceptar campos conservados</button></form>{% endif %}
+</section>
+{% endif %}

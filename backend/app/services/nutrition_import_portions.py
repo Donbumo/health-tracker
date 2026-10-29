@@ -14,9 +14,18 @@ def consumption(item):
     if unit not in {'g', 'ml', 'portion'} or basis not in {'g', 'ml', 'portion'}:
         raise NutritionError('Confirma cantidad, unidad y base de los nutrientes.')
     evidence = {'amount': str(amount), 'unit': item.get('unit_label') or unit}
+    if item.get('portion_text'):evidence['source_text']=item['portion_text']
+    if item.get('portion_text_reviewed'):evidence['text_reviewed']=True
+    if item.get('portion_conflict') and not item.get('portion_text_reviewed'):
+        raise NutritionError(item['portion_conflict'])
+    if item.get('portion_note_pending') and not (item.get('portion_text_reviewed') or item.get('equivalence_confirmed')):
+        raise NutritionError('Revisa la nota de porción y corrige sus cantidades o equivalencias antes de aceptarla.')
     if unit == basis:
-        if unit == 'portion' and item.get('basis_label', 'portion') != item.get('unit_label', 'portion'):
+        if unit == 'portion' and item.get('basis_label', 'portion') != item.get('unit_label', 'portion') and not item.get('portion_label_confirmed'):
             raise NutritionError('La porción consumida y la base tienen nombres distintos; confirma su equivalencia.')
+        if unit=='portion':
+            evidence['basis_portion_label']=item.get('basis_label') or 'portion'
+            evidence['same_portion_confirmed']=bool(item.get('portion_label_confirmed'))
         return str(amount), unit, evidence
     equivalent = item.get('equivalence') or {}
     if unit != 'portion' or equivalent.get('unit') != basis or not item.get('equivalence_confirmed'):

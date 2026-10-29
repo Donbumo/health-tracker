@@ -16,7 +16,7 @@ from app.extensions import db
 from app.models import FoodProduct, Recipe, DailyNutrition, NutritionImportDraft, NutritionImportReceipt, NutritionPlan, UploadedFile
 from app.services import food_catalog, nutrition_intelligence as ni
 from app.services.nutrition_math import NutritionError, NUTRIENTS, PRODUCT, LEGACY, decimal, validate_vector, ingredient, summarize, snapshot_summary, precise
-from app.services.importers.nutrition_sources import extract, MAX_BYTES
+from app.services.importers.nutrition_sources import extract, MAX_BYTES, EXTRACTOR_VERSION
 from app.services.validation import validate_json_document
 
 
@@ -44,7 +44,7 @@ def start(user_id,payload,filename,mime=None):
     return _review_from_source(user_id,found,source)
 
 
-def _review_from_source(user_id,found,source):
+def _review_from_source(user_id,found,source,*,reuse=True):
     found['source']['file']=source.original_filename
     for item in found['rows']:
         if item['evidence'].get('sha256')==source.sha256:
@@ -66,18 +66,22 @@ def _review_from_source(user_id,found,source):
                 review['rows'][-1]['resolution']='declared'
     row=NutritionImportDraft(user_id=user_id,source_sha256=source.sha256,
         source_json={'upload_id':source.id,'profile':found['profile'],'classification_hint':found['classification_hint'],
-            'warnings':found['warnings'],'text':found['text'],'evidence':found['source']},review_json=review)
+            'warnings':found['warnings'],'text':found['text'],'evidence':found['source'],'extractor_version':EXTRACTOR_VERSION},review_json=review)
     if prior:
         row.source_json=dict(row.source_json,already_imported=True)
         row.state='completed'
-    else:
+    elif reuse:
         existing=db.session.execute(db.select(NutritionImportDraft).where(
             NutritionImportDraft.user_id==user_id,NutritionImportDraft.source_sha256==source.sha256,
             NutritionImportDraft.state=='pending').order_by(NutritionImportDraft.id.desc())).scalars()
-        for pending in existing:
+        for number,pending in enumerate(existing):
             if pending.source_json.get('plan_identity'):continue
             try:assert_pending(pending,pending.revision)
-            except NutritionError:continue
+            except NutritionError:
+                # Reupload is not permission to discard an older parser's
+                # decisions. Offer its explicit verified reprocess action.
+                if number==0 and pending.source_json.get('extractor_version')!=EXTRACTOR_VERSION:return pending
+                continue
             return pending
     db.session.add(row);db.session.flush();return row
 
@@ -104,7 +108,8 @@ def review_status(row):
     pending=row.state=='pending'
     return {'expired':expired,'expires_at':expires,'original_available':available,
             'can_resume':pending and not expired and (available or bool(row.source_json.get('plan_identity'))),
-            'can_recover':pending and expired and available}
+            'can_recover':pending and expired and available,
+            'can_reprocess':pending and available and not row.source_json.get('plan_identity') and row.source_json.get('extractor_version')!=EXTRACTOR_VERSION}
 
 
 def recover(user_id,key,revision):
@@ -114,6 +119,22 @@ def recover(user_id,key,revision):
     except (ValueError,TypeError):valid_revision=False
     if not valid_revision or row.state!='pending' or not review_status(row)['expired']:
         raise NutritionError('Sólo se recupera una revisión vencida sin cambios posteriores.',409)
+    if row.source_json.get('extractor_version')!=EXTRACTOR_VERSION:
+        from app.services.nutrition_import_reprocess import reprocess
+        return reprocess(user_id,key,revision)
+    source,found=verified_original(row)
+    fresh=_review_from_source(user_id,found,source)
+    # Only link technical reviews; never copy expired user decisions or reset created_at.
+    if fresh.public_id!=row.public_id:
+        fresh.source_json=dict(fresh.source_json,recovered_from=row.public_id,decisions_reset=True)
+        row.source_json=dict(row.source_json,recovered_to=fresh.public_id)
+    db.session.flush()
+    return fresh
+
+
+def verified_original(row):
+    """Owner-bound retained upload, bounded bytes, size and SHA checked first."""
+    user_id=row.user_id
     upload_id=row.source_json.get('upload_id')
     source=db.session.scalar(db.select(UploadedFile).where(UploadedFile.id==upload_id,
         UploadedFile.user_id==user_id).with_for_update()) if upload_id else None
@@ -129,13 +150,7 @@ def recover(user_id,key,revision):
         raise NutritionError('El original no está disponible o no supera la comprobación de integridad. No se creó otra revisión.',409) from error
     if source.sha256!=row.source_sha256 or found['source']['sha256']!=row.source_sha256:
         raise NutritionError('La evidencia del original no coincide; no se recupera la revisión.',409)
-    fresh=_review_from_source(user_id,found,source)
-    # Only link technical reviews; never copy expired user decisions or reset created_at.
-    if fresh.public_id!=row.public_id:
-        fresh.source_json=dict(fresh.source_json,recovered_from=row.public_id,decisions_reset=True)
-        row.source_json=dict(row.source_json,recovered_to=fresh.public_id)
-    db.session.flush()
-    return fresh
+    return source,found
 
 
 def original_policy(row):

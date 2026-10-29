@@ -1,0 +1,41 @@
+{
+  "status": "PASS",
+  "review_id": 5693363166,
+  "previous_PR_head": "917b40a828de66642219a3486b2eaeb1330578d8",
+  "predecessor_code_sha": "1cf8d830ba801a8c8121cf594b07a0269a6d6e6f",
+  "SQLite": {
+    "passed": 46,
+    "new_gate_cases": 12,
+    "test_files": [
+      "test_nutrition_import_review_gates.py",
+      "test_nutrition_import_recovery.py",
+      "test_nutrition_import_consumed.py",
+      "test_nutrition_import_summary.py"
+    ]
+  },
+  "MariaDB": [
+    "READ COMMITTED PASS",
+    "REPEATABLE READ PASS"
+  ],
+  "Alembic": "20261018_0046",
+  "db_check": "PASS",
+  "Flask_Edge": "PASS mobile active + desktop expired + contextual fallback",
+  "compileall": "PASS",
+  "compose_synthetic_config": "PASS",
+  "GET_DML_DDL": 0,
+  "new_DDL": false,
+  "schemas_changed": false,
+  "production_access": false,
+  "code_sha256": {
+    "backend/app/services/importers/nutrition_sources.py": "bfa5744cfeeed98387646ce45a3f74c504df6e3af8a1ba47e1422622cc5e8681",
+    "backend/app/services/importers/nutrition_portion_text.py": "0507afb3eb348e02f693a36e0de08f1a25d28418b4276b132c9be02676c13d44",
+    "backend/app/services/nutrition_import.py": "335b9b4ae40d2300c24cbd091a566e544d89b351cd781952f052dc831caf7c2a",
+    "backend/app/services/nutrition_import_portions.py": "f8f672f49bda73fc46c6ae3cc97714faf3cd18fb45ac288874ecf4566733a5d2",
+    "backend/app/services/nutrition_import_reprocess.py": "fbd6116b8e0b7d07cc7bd687ac857583e449655031501d0d526679930a1749d7",
+    "backend/app/services/nutrition_import_review.py": "ce172fdf19f59745ea08714bdff562a2c1a56b6475cdd9c352d13042bdf7d5fb",
+    "backend/app/nutrition/routes.py": "0cbbba75008ae62c13261a0f6a7e5ef6cf8998f3ae837feb1decf7c733a121ad",
+    "backend/app/templates/nutrition/import_compatibility.html": "06dce5e32d64fa01dbdd21d53989e5db84f243ecc6cd69b0daa097bbe054d3fc",
+    "backend/app/templates/nutrition/import_review_steps.html": "da534ae91b821802d8d8068b5556a6ed434317e11396f262cf7baba5bb8ff2f0",
+    "backend/app/templates/nutrition/experience.html": "4c59ed04ec4abad8dd415c54eef7d4937f987cb88cf4324e9ec7bd4fb5a823a9"
+  }
+}

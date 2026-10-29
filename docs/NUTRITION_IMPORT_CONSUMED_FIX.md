@@ -3,6 +3,57 @@
 Fecha: 28-10-2026. Base: master `1cf8d830ba801a8c8121cf594b07a0269a6d6e6f` (PR #29).
 Rama: `codex/nutrition-import-declared-consumption`. PR correctivo independiente; pendiente de revisión técnica. Sin merge ni despliegue.
 
+## Cierre de los dos gates de revisión — 29-10-2026
+
+Se atiende íntegramente la [revisión técnica 5693363166](https://github.com/Donbumo/health-tracker/pull/30#pullrequestreview-5693363166) publicada sobre HEAD `917b40a828de66642219a3486b2eaeb1330578d8`. PR #30 continúa abierto en la misma rama, sin merge ni despliegue. Los apartados siguientes conservan la evidencia de la entrega inicial; este cierre añade sólo los dos gates solicitados.
+
+### Gate 1: borradores generados realmente por #29
+
+La reproducción utiliza **el parser y el servicio de importación exactos de master #29** `1cf8d830ba801a8c8121cf594b07a0269a6d6e6f`, leídos de dos blobs públicos conocidos y verificados antes de ejecutarlos en QA. No se simula el problema borrando un campo de versión de un borrador nuevo. El helper [qa_legacy_import_29.py](../scripts/nutrition/qa_legacy_import_29.py) crea el borrador con ese código y guarda decisiones mediante su `update`: destino, nombre/marca corregidos, cantidad de 150 g y un binding explícito. Así se llega a revisión 5 con 21 filas, 1 lista y 20 pendientes. Se prueba una copia vigente y otra vencida, siempre con storage temporal y datos ficticios.
+
+Reabrir y volver a subir los mismos bytes conserva el borrador anterior. Si el último borrador pertenece al parser antiguo, incluso vencido, la subida muestra sus opciones de reprocesado; no lo sustituye por una extracción nueva que descarte las decisiones.
+
+La acción POST **Reprocesar original con importador actualizado**:
+
+1. Valida login/CSRF, propietario efectivo, revisión optimista, estado y ausencia de recibo confirmado.
+2. Reutiliza la comprobación de original: upload owner-only, ruta oficial, tamaño, SHA-256 y extracción acotada.
+3. Crea una revisión técnica nueva, trazada al identificador público y revisión del borrador anterior, con la versión del extractor en el JSON técnico existente.
+4. Conserva nombre, marca, fecha/momento, cantidades/bases válidas, declaración y decisiones de binding como propuestas para revisar. Sólo alinea filas cuya posición y `original` coinciden; las no alineables se señalan y permanecen consultables en el borrador anterior. Las unidades antiguas incompatibles dejan paso a la extracción nueva. No copia confirmaciones, firmas ni aceptaciones de equivalencias.
+5. Exige una aceptación global nueva de los campos conservados; después siguen la revisión de excepciones y el consentimiento final de consumo. El borrador anterior conserva `review_json`, `source_json`, revisión y `created_at` byte a byte; su TTL no se renueva.
+
+Reintentos y dos solicitudes concurrentes para la misma revisión anterior convergen en la misma revisión nueva vigente. Si ésta ya recibió ediciones, se devuelve tal cual, sin sobrescribirlas. La siguiente reupload retoma esa revisión actualizada. Un fallo tras crear/flush del borrador nuevo revierte esa creación; no modifica dominio ni el borrador anterior. Para un borrador antiguo vencido, la ruta previa de recuperación utiliza esta misma vía conservadora. La recuperación de un borrador del extractor actual mantiene su contrato anterior.
+
+La prueba verifica también correcciones nutricionales hechas por el escritor de revisión #29: 222 kcal, proteína conocida cero y nutrientes ausentes conservados como ausentes. Tokens del borrador anterior no sirven para confirmar la revisión nueva. Cambios de owner, CSRF ausente, revisión obsoleta y original alterado se rechazan.
+
+### Gate 2: formas textuales de entrada
+
+Nueva fixture totalmente ficticia: [consumed-text-portions-21.json](../examples/qa/nutrition-import-ux/consumed-text-portions-21.json). Sus porciones están escritas en los campos de cantidad o unidad, **sin `equivalence` preestructurada**. Se conserva el objeto original y el texto fuente; no se infieren gramos del nombre del alimento.
+
+| Entrada original | Cantidad nominal | Propuesta por unidad | Decisión necesaria |
+| --- | ---: | --- | --- |
+| `1 pieza (21 g)` | 1 pieza | 21 g | Verificar equivalencia |
+| `2 latas de 473 ml` | 2 latas | 473 ml | Verificar equivalencia; resultado 946 ml |
+| Cantidad `2`, unidad `latas de 473 ml` | 2 latas | 473 ml | Misma verificación, sin duplicar el factor 2 |
+| `5 sobres de 8 g (~40 g)` | 5 sobres | 8 g | Verificar equivalencia; nota de total original conservada |
+| `7 piezas (~25 g c/u)` | 7 piezas | 25 g, aproximada en origen | Comprobar el valor antes de utilizarlo; sin aceptación automática |
+| `1.5 porciones grandes` | 1,5 porciones grandes | Ninguna masa inventada | Confirmar que la base nutricional corresponde a esa misma porción o corregirla |
+| `1 pieza de peso variable` | 1 pieza | Ninguna conversión deducida | Corrección contextual; QA introduce y verifica 31 g sin rehacer los macros |
+
+La gramática es acotada y anclada. Una nota entre paréntesis para varias piezas sin `c/u` no se interpreta como peso por unidad. Descriptores desconocidos y totales contradictorios se muestran para corregirlos. Verificar sólo una equivalencia no resuelve silenciosamente un conflicto de cantidades: ese conflicto exige revisión explícita de la descripción. Las marcas de verificación, descripción fuente y correspondencia de base/porción quedan en la procedencia del consumo; estados y nutrientes originales siguen intactos.
+
+La fixture de 21 filas contiene **siete equivalencias propuestas**, una correspondencia de base para la porción grande, y el resto son declaraciones suficientes o el binding previo. No requiere veinte identidades ni veinte productos: se verifican esas siete equivalencias y la base de porción, se aceptan declaraciones suficientes en grupo, se revalidan los campos conservados una vez y se da el consentimiento final. Para una subida nueva con los mismos textos se aplican las mismas verificaciones de porción, sin el paso de campos heredados.
+
+### Resultado y evidencia de esta revisión
+
+- **SQLite: 46 pruebas focales PASS**, incluyendo 12 casos de los gates y las pruebas anteriores de consumos, resumen y recuperación. No se repiten suites generales. [Pruebas nuevas](../backend/tests/test_nutrition_import_review_gates.py).
+- **MariaDB QA aislada 0046 RC y RR: PASS**, `db check` PASS. Dos escenarios por aislamiento: borrador #29 vigente y vencido. Reopen/reupload, fork concurrente único, conservación de ediciones nuevas, GET sin DML/DDL, CSRF/revisión, confirmación y replay sin duplicados. Resultado por caso: **21 consumos, 0 productos, 1 recibo; 4.042,79 kcal**. Ese total incluye la corrección previa a 150 g y los nuevos textos de esta fixture; no sustituye el total de la fixture inicial distinta. [RC](../design/nutrition-import-consumed/qa/review-gates-mariadb-READ_COMMITTED.json), [RR](../design/nutrition-import-consumed/qa/review-gates-mariadb-REPEATABLE_READ.json).
+- **Flask/Edge: móvil 390 claro y escritorio 1366 oscuro PASS**, con seis anchos de 360 a 1366 sin overflow. Reupload conserva el borrador, reprocesado crea/retoma la revisión nueva, los campos previos y las ediciones posteriores sobreviven al replay, la aceptación global desbloquea la confirmación y se verifican los conteos en la base QA. Caso contextual adicional: **1 consumo, 0 productos, 31 kcal**, sin reintroducir macros. [Resultados](../design/nutrition-import-consumed/qa/review-gates-browser.json), [borrador anterior móvil](../design/nutrition-import-consumed/qa/review-gates-old-mobile.png), [preview móvil](../design/nutrition-import-consumed/qa/review-gates-preview-mobile.png), [resultado escritorio](../design/nutrition-import-consumed/qa/review-gates-saved-desktop.png), [corrección contextual](../design/nutrition-import-consumed/qa/review-gates-contextual-mobile.png).
+- Compilación y `git diff --check` PASS. [Comprobaciones de cierre](../design/nutrition-import-consumed/qa/review-gates-checks.json). Sin DDL, migraciones, writers de dominio, schemas ni dependencias nuevos; sin parcial ni C. La escritura final sigue pasando por el ejecutor oficial. QA MariaDB usa el runtime anterior con código de esta rama montado read-only; no se afirma validar una nueva imagen productiva todavía.
+
+Reproducción focal desde raíz con Python del proyecto: `-m pytest -q backend/tests/test_nutrition_import_review_gates.py backend/tests/test_nutrition_import_recovery.py backend/tests/test_nutrition_import_consumed.py backend/tests/test_nutrition_import_summary.py`. Navegador: ejecutar `scripts/nutrition/qa_review_gates_ui.py` (loopback 8037, SQLite/storage temporales) y después `node scripts/nutrition/ui_qa_review_gates.cjs` con Playwright disponible. Reiniciar ese servidor crea cuentas/borradores nuevos. El arnés MariaDB [mariadb_review_gates_qa.py](../scripts/nutrition/mariadb_review_gates_qa.py) admite sólo la base QA local autorizada en 0046; los dos blobs #29 se montan read-only en `QA_LEGACY_CODE` y se verifican contra el Git SHA conocido antes de ejecutarlos. Credenciales fuera de Git y nunca impresas. No usar estos arneses en una cuenta personal.
+
+**No se abrió la importación operativa pendiente ni se accedió al NAS.** El PR espera revisión final; merge y despliegue continúan expresamente pendientes.
+
 ## Causa raíz y corrección
 
 El bloqueo era de dominio. `nutrition_import.validate_document` exigía bindings para cada consumo y `nutrition_intelligence.confirm` rechazaba snapshots con ingredientes vacíos. Además, `nutrition_portability.validate_snapshot` repetía esa restricción. Por eso una declaración válida quedaba bloqueada si no había una referencia al catálogo. El schema 2.1 ya permite bindings/ingredientes vacíos y declara por separado nutrientes y composición: no se necesita DDL ni ampliar el JSON público.
@@ -74,7 +125,7 @@ Escenario mixto: dos identidades existentes (incluida la única exacta inicial),
 
 Total del lote: **3729.95 kcal**. Las 2 latas de 473 ml dan 946 ml y 993,3 kcal según su base ficticia de 100 ml. La barra de 45 g da 47,7 kcal, sin sumar nuevamente su composición. Las 1,5 porciones sin masa dan 163,5 kcal y mantienen masa/cobertura por masa desconocidas. El día legacy QA conserva sus 200 kcal de baseline disjunto y queda en 3929.95 kcal; el snapshot del día previo permanece idéntico.
 
-## Validación y evidencia
+## Validación y evidencia de la entrega inicial (HEAD 917b40a)
 
 - SQLite: 188 pruebas del área de Nutrition/importador PASS; 102 pruebas de restore/backup y vistas Unified/Energy PASS. Bloque final: 75 PASS, incluidas 19 pruebas de consumos, tras los últimos ajustes; [resultados finales](../design/nutrition-import-consumed/qa/checks.json). Última verificación de consumos: 19 PASS sin warnings; se solapa con el bloque focal. No se suman repeticiones como pruebas nuevas.
 - MariaDB QA local aislada: 0046, `db check` PASS en READ COMMITTED y REPEATABLE READ. Fixture 21, selección existente, producto privado, nutrientes declarados, conversión/porción sin masa, mismo día, baseline legacy, owner/CSRF/firma/consentimiento, GET sin DML/DDL, rollback tras flush, confirmación concurrente 200/409 sin duplicados, replay, revisión del JSON estándar sin bindings y exportación/restore PASS. Runtime desplegado de #29 con código de esta rama montado read-only para QA; **no se afirma haber probado una imagen productiva nueva**.

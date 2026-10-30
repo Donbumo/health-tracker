@@ -93,5 +93,134 @@
       "products": 0,
       "receipts": 1
     }
-  ]
+  ],
+  "review_closeout": {
+    "identity": [
+      {
+        "case": "ref",
+        "explicit_binding_preserved": true,
+        "declared_fallback": false,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "source_ids",
+        "explicit_binding_preserved": true,
+        "declared_fallback": false,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "missing_revision",
+        "explicit_binding_preserved": false,
+        "declared_fallback": true,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "missing_preparation",
+        "explicit_binding_preserved": false,
+        "declared_fallback": true,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "wrong_revision",
+        "explicit_binding_preserved": false,
+        "declared_fallback": true,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "wrong_preparation",
+        "explicit_binding_preserved": false,
+        "declared_fallback": true,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "name_only",
+        "explicit_binding_preserved": false,
+        "declared_fallback": true,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "manual",
+        "explicit_binding_preserved": true,
+        "declared_fallback": false,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "private",
+        "explicit_binding_preserved": false,
+        "declared_fallback": false,
+        "records": 1,
+        "products": 1,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      }
+    ],
+    "grouping": [
+      {
+        "records": 4,
+        "independent_snapshots": 4,
+        "groups": 3,
+        "prior_history_unchanged": true,
+        "owner_date_meal_isolated": true,
+        "order_and_totals": true,
+        "products": 0,
+        "batch_receipts": 1,
+        "roundtrip": true
+      },
+      {
+        "records": 21,
+        "independent_snapshots": 21,
+        "groups": 3,
+        "prior_history_unchanged": true,
+        "owner_date_meal_isolated": true,
+        "order_and_totals": true,
+        "products": 0,
+        "batch_receipts": 1,
+        "roundtrip": true
+      },
+      {
+        "records": 51,
+        "independent_snapshots": 51,
+        "groups": 3,
+        "prior_history_unchanged": true,
+        "owner_date_meal_isolated": true,
+        "order_and_totals": true,
+        "products": 0,
+        "batch_receipts": 1,
+        "roundtrip": true
+      }
+    ]
+  }
 }

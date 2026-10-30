@@ -51,7 +51,7 @@ def prepared(row,destination=None):
     review = copy.deepcopy(row.review_json)
     if destination is not None:review['destination']=destination
     cache = {}
-    for index,item in enumerate(review['rows']):
+    for item in review['rows']:
         proposals = item.get('ingredient_proposals')
         # Preserve compositions already reviewed through the legacy endpoint.
         if proposals and (item.get('summary_bindings') or not item.get('ingredients')):
@@ -74,11 +74,12 @@ def prepared(row,destination=None):
                 item['ingredients']=[private_proposal(item)]
             except NutritionError:
                 pass
-        # Derive a sufficient declaration without a technical acceptance POST.
-        # prepared() copies JSON: GET never persists this choice.
+        # Explicit source identities resolved above and user-selected bindings
+        # take precedence. Only an unbound prepared row may use a sufficient
+        # declaration automatically. GET still never persists this choice.
         if (row.source_json.get('extractor_version')==imports.EXTRACTOR_VERSION and
                 review['destination']=='consumed' and not item.get('resolution') and
-                not row.review_json['rows'][index].get('ingredients') and
+                not item.get('ingredients') and
                 not any(p.get('decision_binding') for p in item.get('ingredient_proposals',[]))):
             try:
                 from app.services.nutrition_import_portions import sufficient

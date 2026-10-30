@@ -14,12 +14,14 @@ import tempfile
 import threading
 import types
 import uuid
+import hashlib
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 from datetime import timedelta
 from html import unescape
 from pathlib import Path
 from unittest.mock import patch
+from sqlalchemy.engine import make_url
 
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'backend'))
@@ -38,12 +40,17 @@ from qa_preview_fixtures import source,table
 isolation=os.environ.get('QA_ISOLATION','READ COMMITTED')
 assert isolation in {'READ COMMITTED','REPEATABLE READ'}
 root=Path(tempfile.mkdtemp(prefix='issue32-mariadb-qa-'))
+qa_url=os.environ.get('QA_DATABASE_URL','mysql+pymysql://root:fictional-issue32-db-password@127.0.0.1:33432/nutrition_preview_qa?charset=utf8mb4')
+destination=make_url(qa_url)
+assert destination.host in {'127.0.0.1','qa-nutrition-legacy-db-20261029'} and destination.database=='nutrition_preview_qa'
+runtime=Path(__import__('app').__file__).resolve().parents[1]
+schema_root=runtime/'schemas' if (runtime/'schemas').is_dir() else ROOT/'schemas'
 app=create_app(dict(SECRET_KEY='fictional-issue32-maria-signing-key-over-32-characters',
     API_TOKEN_SIGNING_KEY='fictional-issue32-maria-api-key-over-32-characters',
-    SQLALCHEMY_DATABASE_URI='mysql+pymysql://root:fictional-issue32-db-password@127.0.0.1:33432/nutrition_preview_qa?charset=utf8mb4',
+    SQLALCHEMY_DATABASE_URI=qa_url,
     SQLALCHEMY_ENGINE_OPTIONS={'isolation_level':isolation,'pool_pre_ping':True},
     DATA_ROOT=root,UPLOAD_ROOT=root/'uploads/raw',GENERATED_UPLOAD_ROOT=root/'generated',PORTABILITY_ROOT=root/'portable',
-    SCHEMA_ROOT=ROOT/'schemas',NUTRITION_INTELLIGENCE_ENABLED=True,APP_TIMEZONE='UTC',
+    SCHEMA_ROOT=schema_root,NUTRITION_INTELLIGENCE_ENABLED=True,APP_TIMEZONE='UTC',
     AI_ENABLED=False,NUTRITION_EXTERNAL_LOOKUP_ENABLED=False))
 report={'status':'PASS','data':'fictional only, disposable MariaDB tmpfs','isolation':isolation,'cases':[]}
 
@@ -86,9 +93,9 @@ def counts(uid):
 with app.app_context():
     assert db.session.scalar(text('SELECT DATABASE()'))=='nutrition_preview_qa'
     db.session.rollback()
-    upgrade(directory=str(ROOT/'backend/migrations'))
+    upgrade(directory=str(runtime/'migrations'))
     assert db.session.scalar(text('SELECT version_num FROM alembic_version'))=='20261018_0046'
-    check(directory=str(ROOT/'backend/migrations'))
+    check(directory=str(runtime/'migrations'))
     report['head']='20261018_0046';report['db_check']='PASS'
     assert db.session.scalar(text('SELECT @@tx_isolation'))==isolation.replace(' ','-')
 
@@ -181,7 +188,12 @@ report['prior_reprocess']=[]
 for version,sha in [('29','1cf8d830ba801a8c8121cf594b07a0269a6d6e6f'),('30','12bad71a60b96b57d282cfaf745fc0dc4ed27ab6'),('31','c9cbb86b7b558d6b8c1e838e64966e2a48700bd9')]:
     modules={}
     for kind,path in [('parser','backend/app/services/importers/nutrition_sources.py'),('service','backend/app/services/nutrition_import.py')]:
-        code=subprocess.check_output(['git','show',sha+':'+path],cwd=ROOT)
+        if os.environ.get('QA_PRIOR_CODE'):
+            prior=Path(os.environ['QA_PRIOR_CODE']);manifest=json.loads((prior/'manifest.json').read_text())
+            assert manifest[version]['commit']==sha
+            code=(prior/version/Path(path).name).read_bytes()
+            assert hashlib.sha256(code).hexdigest()==manifest[version][kind]
+        else:code=subprocess.check_output(['git','show',sha+':'+path],cwd=ROOT)
         module=types.ModuleType('qa_maria_prior_'+kind);exec(compile(code,sha+'/'+path,'exec'),module.__dict__);modules[kind]=module
     service=modules['service'];service.extract=modules['parser'].extract
     service.EXTRACTOR_VERSION=getattr(modules['parser'],'EXTRACTOR_VERSION','nutrition-import-v1')
@@ -219,6 +231,14 @@ for version,sha in [('29','1cf8d830ba801a8c8121cf594b07a0269a6d6e6f'),('30','12b
             assert counts(uid)==dict(meal_logs=21,food_products=0,nutrition_import_receipts=1)
             old=imports.owned(uid,oldkey);assert old.review_json==frozen and old.created_at==oldcreated
         report['prior_reprocess'].append(dict(version=version,expired=expired,previous_unchanged=True,records=21,products=0,receipts=1))
-out=ROOT/'design/nutrition-import-preview/qa';out.mkdir(parents=True,exist_ok=True)
+from qa_review_closeout_cases import identity_case,grouping_case
+report['review_closeout']={'identity':[],'grouping':[]}
+for case in ['ref','source_ids','missing_revision','missing_preparation','wrong_revision','wrong_preparation','name_only','manual','private']:
+    uid,name=owner();client,csrf=login(name)
+    with app.app_context():report['review_closeout']['identity'].append(identity_case(uid,client,case,csrf))
+for size in [4,21,51]:
+    uid,name=owner();client,csrf=login(name)
+    with app.app_context():report['review_closeout']['grouping'].append(grouping_case(uid,client,size,csrf))
+out=Path(os.environ.get('QA_EVIDENCE_ROOT',str(ROOT/'design/nutrition-import-preview/qa')));out.mkdir(parents=True,exist_ok=True)
 (out/('mariadb-'+isolation.replace(' ','_')+'.json')).write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
 print(json.dumps(report))

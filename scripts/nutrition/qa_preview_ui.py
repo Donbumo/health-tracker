@@ -15,11 +15,13 @@ from app.services import nutrition_import_review as compact, nutrition_import as
 from flask_login import current_user,login_required
 
 root=Path(tempfile.mkdtemp(prefix='issue32-fictional-flask-'))
+runtime=Path(__import__('app').__file__).resolve().parents[1]
+schemas=runtime/'schemas' if (runtime/'schemas').is_dir() else ROOT/'schemas'
 app=create_app(dict(TESTING=True,SECRET_KEY='qa-preview-fictional-secret-longer-than-32-characters',
     API_TOKEN_SIGNING_KEY='qa-preview-fictional-api-key-longer-than-32-characters',
     SQLALCHEMY_DATABASE_URI='sqlite:///'+(root/'qa.sqlite').as_posix(),SQLALCHEMY_ENGINE_OPTIONS={},
     DATA_ROOT=root,UPLOAD_ROOT=root/'uploads/raw',GENERATED_UPLOAD_ROOT=root/'generated',PORTABILITY_ROOT=root/'portable',
-    SCHEMA_ROOT=ROOT/'schemas',NUTRITION_INTELLIGENCE_ENABLED=True,NUTRITION_QA_LABEL=True,
+    SCHEMA_ROOT=schemas,NUTRITION_INTELLIGENCE_ENABLED=True,NUTRITION_QA_LABEL=True,
     AI_ENABLED=False,NUTRITION_EXTERNAL_LOOKUP_ENABLED=False,APP_TIMEZONE='UTC'))
 with app.app_context():
     db.create_all()

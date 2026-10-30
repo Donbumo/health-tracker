@@ -1,7 +1,8 @@
 # Issue #32 — vista previa editable de importación nutricional
 
 Base comprobada local/remota: `c9cbb86b7b558d6b8c1e838e64966e2a48700bd9`.
-Rama: `codex/issue-32-nutrition-preview`. No fusionar ni desplegar automáticamente.
+Rama: `codex/issue-32-nutrition-preview`. El cierre autorizado exige los gates de
+revisión, QA, protecciones, backup y restore antes del despliegue web.
 
 ## Comportamiento
 
@@ -79,6 +80,24 @@ oficial `nutrition_intelligence.confirm`, con comprobación owner/día/tipo y m�
 200 elementos por grupo. Mantiene 51 MealLogs/snapshots individuales. No reagrupa
 historial previo ni cambia el contrato público. Export/restore de los 51 está probado.
 
+### Cierre de revisión 5714776632
+
+`prepared()` comprueba los ingredientes del estado ya preparado: una identidad
+exacta del archivo con revisión y preparación verificables conserva su binding,
+igual que una selección explícita del usuario. Sólo una fila sin binding puede
+derivar automáticamente una declaración suficiente. Un nombre coincidente no
+identifica catálogo; revisión/preparación ausentes o incorrectas no autorizan un
+binding. Crear un producto privado sigue siendo una decisión expresa.
+
+Las pruebas compartidas SQLite/MariaDB cubren nueve variantes de identidad,
+GET repetido, reupload, canonical, snapshots y export/restore oficial. La
+agrupación se comprueba con 4, 21 y 51 alimentos: owner, fecha y momento separados;
+orden y todos los macros, micros presentes, cero conocido y desconocidos;
+historial previo intacto, replay y recibo único por lote. Cuando varios nombres
+individuales comparten fecha/momento, la proyección común no adopta un nombre
+individual: `NutritionMeal.name` queda vacío. Cada `NutritionItem.name` y snapshot
+conserva el nombre de su alimento.
+
 ## QA reproducible y evidencia ficticia
 
 Fixtures [JSON limpio de 21](../examples/qa/nutrition-import-preview/clean-21.json),
@@ -103,14 +122,15 @@ frente a 2 ahora. Además, la tabla antes estaba cerrada y los 21 formularios de
 excepción protagonizaban la revisión. La comparación se comprueba ejecutando los
 blobs de Git; no se atribuye esa medición al segundo archivo personal.
 
-- **247 pruebas SQLite focales PASS** cubren legacy, aliases externos, 2.1, CSV, TSV, XLSX y texto;
+- **266 pruebas SQLite focales PASS** (incluidas 12 de revisión) cubren legacy, aliases externos, 2.1, CSV, TSV, XLSX y texto;
   unidades/calidad, ediciones exactas, cancelación, originales, owner/CSRF,
   revisiones, vencimiento, reprocesado exacto #29/#30/#31, conflictos, firma,
   consentimiento, replay, rollback y export/restore. Las pruebas previas conservan
   PDF/OCR e imágenes dentro de los límites ya soportados.
 - MariaDB **0046 RC y RR PASS**, `db check` sin operaciones nuevas; tres escenarios
   por aislamiento y seis reprocesados #29/#30/#31 vigentes/vencidos, rollback tras escritura, concurrencia de edición (302/409),
-  guardado concurrente (200/409), un recibo y export/restore oficial.
+  guardado concurrente (200/409), un recibo y export/restore oficial. El cierre
+  añade nueve identidades y agrupaciones de 4/21/51 en ambos aislamientos.
   [RC](../design/nutrition-import-preview/qa/mariadb-READ_COMMITTED.json),
   [RR](../design/nutrition-import-preview/qa/mariadb-REPEATABLE_READ.json).
 - Flask/Edge real: móvil 390 claro y escritorio 1366 oscuro; matriz 360, 390,
@@ -149,10 +169,11 @@ Reproducir desde raíz con Python del proyecto:
 
 ## Despliegue posterior a revisión
 
-No se accedió al NAS, `.env`, `/data`, volúmenes persistentes ni importación real.
 Los documentos/evidencias operativos locales preexistentes quedan fuera del PR.
+Los resultados del despliegue y aceptación real se registran por separado;
+esta evidencia de QA contiene únicamente fixtures ficticias. Nunca se lee `.env`.
 
-Después de aprobación explícita: comprobar base/HEAD/protecciones; conservar
+Para el cierre autorizado: comprobar base/HEAD/protecciones; conservar
 imagen compatible; obtener backup nuevo consistente DB/storage con checksum y
 restore aislado completo mediante el procedimiento existente; construir desde
 el squash revisado; validar 0046 y `db check`; recrear sólo web con el Compose
@@ -163,4 +184,5 @@ micronutrientes/dashboard/energía, no-store y GET sin escrituras. Verificar tan
 subida nueva como fork de revisión anterior conservando originales/decisiones.
 Ante fallo crítico, recuperar sólo imagen compatible; no restaurar un backup
 antiguo sobre escrituras nuevas. La aceptación privada del segundo archivo real
-queda para el propietario; no se copió ni se confirmó ningún consumo personal.
+usa exclusivamente la sesión autorizada del propietario y permite sólo escrituras
+técnicas de borrador: consentimiento desmarcado y ningún consumo confirmado.

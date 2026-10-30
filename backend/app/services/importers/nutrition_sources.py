@@ -21,7 +21,7 @@ from PIL import Image
 from app.services.nutrition_math import NutritionError, NUTRIENTS, validate_vector
 from app.services.importers.schema_detector import SchemaDetector
 
-EXTRACTOR_VERSION = "nutrition-portions-review-30-v2"
+EXTRACTOR_VERSION = "nutrition-legacy-semantics-v3"
 
 MAX_BYTES = 10 * 1024 * 1024
 MAX_EXPANDED = 40 * 1024 * 1024
@@ -62,6 +62,8 @@ for key,(label,unit,_) in NUTRIENTS.items():
     if key not in ALIASES:
         ALIASES[key]=(key, key+'_'+unit, fold(label), fold(label)+' ('+unit+')')
     elif key not in ALIASES[key]:ALIASES[key]=(key,*ALIASES[key])
+    ALIASES[key]=(*ALIASES[key],key+'_'+unit+'_per_100ml',key+'_'+unit+'_per_100g')
+ALIASES['energy']=(*ALIASES['energy'],'calories_per_100ml')
 
 
 def bounded_rows(rows):
@@ -129,6 +131,7 @@ def normalized_row(raw, evidence):
                 'barras':'barra','bar':'barra','bars':'barra','sobres':'sobre','sachet':'sobre','sachets':'sobre','tortillas':'tortilla'}
     for field, label in [('unit','unit_label'),('basis_unit','basis_label')]:
         value=fold(row.get(field,''))
+        if value in {'g','ml'}:row[field]=value
         if value in portion_names:
             row[label]=singular.get(value,value);row[field]='portion'
     equivalent=keys.get('equivalence',('',None))[1]
@@ -152,10 +155,10 @@ def normalized_row(raw, evidence):
             row['warnings'].append('Valor declarado ambiguo: '+nutrient);continue
         unit=fold(match[2]).replace('µ','u').replace('μ','u') if match else units.get(nutrient)
         if unit is not None:unit=fold(unit).replace('µ','u').replace('μ','u')
-        if unit is None and (alias.endswith('_g') or alias.endswith('_g_per_100g') or '(g)' in alias):unit='g'
-        if unit is None and (alias.endswith('_mg') or alias.endswith('_mg_per_100g') or '(mg)' in alias):unit='mg'
-        if unit is None and (alias.endswith('_ug') or '(ug)' in alias):unit='ug'
-        if unit is None and nutrient=='energy' and (alias in {'kcal','calories (kcal)','calories_kcal','calories_per_100g'} or alias.endswith('_kcal')):unit='kcal'
+        if unit is None and (alias.endswith('_g') or alias.endswith(('_g_per_100g','_g_per_100ml')) or '(g)' in alias):unit='g'
+        if unit is None and (alias.endswith('_mg') or alias.endswith(('_mg_per_100g','_mg_per_100ml')) or '(mg)' in alias):unit='mg'
+        if unit is None and (alias.endswith(('_ug','_ug_per_100g','_ug_per_100ml')) or '(ug)' in alias):unit='ug'
+        if unit is None and nutrient=='energy' and (alias in {'kcal','calories (kcal)','calories_kcal','calories_per_100g','calories_per_100ml'} or alias.endswith(('_kcal','_kcal_per_100ml','_kcal_per_100g'))):unit='kcal'
         row['declaration'][nutrient]={'value':value,'unit':unit,'state':'known',
             'provenance':{'method':'file_declared','source_field':alias}}
         if nutrient=='carbohydrate_total' and alias in {'carbohydrates','carbohydrate','carbohidratos','carbs','carbs (g)','carbs_g_per_100g'}:
@@ -179,8 +182,16 @@ def normalized_row(raw, evidence):
         row['ingredient_proposals']=[normalized_row(item,dict(evidence,ingredient=index+1)) for index,item in enumerate(keys['ingredients'][1])]
     if not row.get('name'):
         row['warnings'].append('Falta nombre; no se inventa uno.')
-    if any('per_100g' in key for key in folded):
-        row['basis_amount']='100';row['basis_unit']='g';row['kind_hint']='products'
+    per_units={unit for suffix,unit in [('per_100g','g'),('per_100ml','ml')] if any(key.endswith(suffix) for key in folded)}
+    if per_units:
+        per_unit=next(iter(per_units))
+        explicit_conflict=False
+        if row.get('basis_amount') or row.get('basis_unit'):
+            try:explicit_conflict=Decimal(number(row.get('basis_amount')))!=Decimal('100') or row.get('basis_unit')!=per_unit
+            except NutritionError:explicit_conflict=True
+        row['basis_conflict']=len(per_units)>1 or explicit_conflict
+        if not row['basis_conflict']:
+            row.update(basis_amount='100',basis_unit=per_unit,kind_hint='products')
     return row
 
 
@@ -194,7 +205,10 @@ def json_rows(document, evidence):
         data=document['data'];rows=[]
         for meal in data.get('meals',[]):
             for item in meal.get('items',[]):
-                rows.append(normalized_row(dict(item,date=data.get('date'),meal_type=meal.get('meal_type')),dict(evidence,row=len(rows)+1)))
+                row=normalized_row(dict(item,date=data.get('date'),meal_type=meal.get('meal_type')),dict(evidence,row=len(rows)+1))
+                from app.services.importers.nutrition_legacy_semantics import annotate
+                annotate(row,document,meal,item)
+                rows.append(row)
         if not rows:
             row=normalized_row(data,evidence);row.update(kind_hint='daily_aggregate',basis_amount='1',basis_unit='portion');rows=[row]
         return rows

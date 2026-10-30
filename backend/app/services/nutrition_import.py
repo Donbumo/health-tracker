@@ -64,6 +64,21 @@ def _review_from_source(user_id,found,source,*,reuse=True):
                 composition_complete=entry['composition']['complete'],total_mass_g=entry['composition'].get('total_mass_g')))
             if document['data']['destination']=='consumed' and not entry['bindings'] and entry.get('declaration'):
                 review['rows'][-1]['resolution']='declared'
+            interpretation=(entry.get('declaration') or {}).get('provenance',{}).get('basis_interpretation')
+            if interpretation:
+                item=review['rows'][-1]
+                item['basis_interpretation']=copy.deepcopy(interpretation)
+                provenance=entry['declaration']['provenance']
+                if item.get('unit')=='portion':
+                    item['unit_label']=provenance.get('consumed_quantity',{}).get('unit')
+                    item['basis_label']=provenance.get('basis_label')
+                # The canonical document already expresses explicit quantity/
+                # base units, possibly converted from nominal source portions.
+                # Bind edits to that representation, preserving historical
+                # source acceptance/evidence unchanged in provenance.
+                from app.services.importers.nutrition_legacy_semantics import semantic_inputs
+                if interpretation.get('status') in {'accepted','explicit'}:
+                    item['canonical_basis_inputs']=semantic_inputs(item)
     row=NutritionImportDraft(user_id=user_id,source_sha256=source.sha256,
         source_json={'upload_id':source.id,'profile':found['profile'],'classification_hint':found['classification_hint'],
             'warnings':found['warnings'],'text':found['text'],'evidence':found['source'],'extractor_version':EXTRACTOR_VERSION},review_json=review)
@@ -310,6 +325,10 @@ def canonical(row,review=None,only_index=None):
     for index,item in enumerate(review['rows']):
         if only_index is not None and index!=only_index:continue
         if item.get('skip'):continue
+        interpretation=item.get('basis_interpretation') or {}
+        from app.services.importers.nutrition_legacy_semantics import current as interpretation_current
+        if review['destination']=='consumed' and interpretation and not interpretation_current(item):
+            raise NutritionError('Confirma la interpretación de la declaración legacy antes de guardar.')
         if only_index is None and not item.get('confirmed'):raise NutritionError('Hay filas pendientes de identidad, cantidad o destino.')
         vector=validate_vector(item['declaration'])
         if item.get('carbohydrate_proposal') and not item.get('carbohydrate_reviewed'):
@@ -319,6 +338,8 @@ def canonical(row,review=None,only_index=None):
             declaration={'basis_amount':str(decimal(item.get('basis_amount') or item.get('amount'),positive=True)),
                 'basis_unit':item.get('basis_unit') or item.get('unit'),'nutrients':vector,'confirmed':True,
                 'provenance':{'method':'user_confirmed_file','evidence':item['evidence']},'original_values':copy.deepcopy(item['original'])}
+            if item.get('basis_interpretation'):
+                declaration['provenance']['basis_interpretation']=copy.deepcopy(item['basis_interpretation'])
         entry={'name':item.get('name',''),'bindings':copy.deepcopy(item['ingredients']), 'declaration':declaration,
                'composition':{'complete':item.get('composition_complete',False),'total_mass_g':item.get('total_mass_g') or (item.get('amount') if item.get('unit')=='g' else None)},
                'evidence':dict(item['evidence'],review_row=index,original_fields=copy.deepcopy(item['original'])),'confirmed':True}

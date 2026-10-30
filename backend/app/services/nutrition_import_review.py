@@ -10,6 +10,7 @@ from app.extensions import db
 from app.models.nutrition_intelligence import CatalogFood, FoodCatalogRevision
 from app.services import food_catalog as catalog, nutrition_import as imports
 from app.services.nutrition_math import NUTRIENTS, NutritionError, decimal, ingredient
+from app.services.importers.nutrition_legacy_semantics import current as interpretation_current
 
 
 def exact_binding(user_id, proposal, cache):
@@ -106,6 +107,13 @@ def issue(code, message, **values):
 def row_issues(row, review, index):
     item = review['rows'][index]
     errors = []
+    interpretation=item.get('basis_interpretation') or {}
+    if (review['destination']=='consumed' and interpretation and
+            not interpretation_current(item)):
+        errors.append(issue('interpretation',interpretation.get('stale_reason') or 'Confirma si los nutrientes pertenecen a la cantidad original, a la cantidad consumida o a una base distinta.'))
+    for nutrient in item.get('quality_problems',[]):
+        if nutrient not in item.get('resolved_nutrients',[]):
+            errors.append(issue('nutrient','La nota de origen describe un marcador operativo, no un cero conocido. Conserva desconocido o introduce un valor verificado.',nutrient=nutrient))
     if item.get('unsupported_vector'):
         errors.append(issue('unsupported','El vector de nutrientes no cumple el vocabulario o las unidades: corrige el archivo y vuelve a subirlo.'))
     if not item.get('name') and review['destination'] != 'daily_aggregate':
@@ -154,7 +162,7 @@ def row_issues(row, review, index):
                 messages.append('Componentes anidados: separa la composición en el archivo; no se aplana automáticamente.')
             if messages:
                 errors.append(issue('ingredient', ' '.join(messages), part=part, proposal=proposal, identity_bound=bool(binding)))
-    if not item.get('ingredients') and review['destination'] in {'plan', 'consumed', 'recipes'} and not item.get('summary_bindings') and not declared_only:
+    if not item.get('ingredients') and review['destination'] in {'plan', 'consumed', 'recipes'} and not item.get('summary_bindings') and not declared_only and not interpretation:
         # A single explicit food can be resolved by the same strict identity rule.
         binding = exact_binding(row.user_id, item, {})
         if binding:
@@ -220,9 +228,13 @@ def overview(row):
         try:
             from app.services.nutrition_import_portions import sufficient
             sufficient(record['item'])
-            if not record['item'].get('ingredients'):eligible+=1
+            if not record['item'].get('ingredients') and record['item'].get('resolution') not in {'declared','private'}:eligible+=1
         except NutritionError:pass
-    return dict(review=review, records=records, counts=counts, day_conflicts=conflicts, declaration_eligible=eligible)
+    from app.services.importers.nutrition_legacy_semantics import grouped
+    return dict(review=review, records=records, counts=counts, day_conflicts=conflicts, declaration_eligible=eligible,
+        legacy_total_count=sum(grouped(item) for item in review['rows'] if not item.get('skip')),
+        newly_extracted_declarations=sum('new_source_declaration_requires_review' in detail['fields']
+            for detail in row.source_json.get('retained_decisions',[])))
 
 
 def document(row, view=None):
@@ -251,6 +263,8 @@ def save_decisions(user_id, key, revision, data):
         review['destination'] = data['destination']
     for index, item in enumerate(review['rows']):
         prefix = f'r{index}_'
+        from app.services.importers.nutrition_legacy_semantics import grouped,accept,invalidate_changed,semantic_inputs,equivalence_inputs
+        previous_semantics=semantic_inputs(item)
         day_prefix='day_'+str(item.get('date',''))+'_'
         for field in ('conflict_action','authority'):
             if data.get(day_prefix+field):item[field]=data[day_prefix+field]
@@ -264,6 +278,15 @@ def save_decisions(user_id, key, revision, data):
         for field in ('name', 'date', 'planned_for', 'meal_type', 'basis_amount', 'basis_unit', 'amount', 'unit', 'conflict_action', 'authority', 'brand', 'barcode', 'unit_label', 'basis_label'):
             if prefix + field in data:
                 item[field] = data[prefix + field].strip()[:200]
+                if field in {'unit','basis_unit','unit_label','basis_label'}:
+                    item[field]=' '.join(item[field].split()).casefold()
+        proposed_semantics=semantic_inputs(item)
+        labels_changed=any(previous_semantics[k]!=proposed_semantics[k] for k in ('unit','basis_unit','unit_label','basis_label'))
+        if labels_changed:
+            item['equivalence_confirmed']=False
+            item['portion_label_confirmed']=False
+        if labels_changed or previous_semantics['amount']!=proposed_semantics['amount']:
+            item['portion_text_reviewed']=False
         choice = data.get(prefix + 'carbohydrate')
         if choice:
             if choice not in {'total', 'net', 'unknown'}:
@@ -288,14 +311,22 @@ def save_decisions(user_id, key, revision, data):
                 raise NutritionError('Decisión de nutriente inválida.')
             if action:
                 item['resolved_nutrients'] = list(set(item.get('resolved_nutrients', [])) | {nutrient})
+        old_equivalence=equivalence_inputs(item)
         if prefix+'equivalence_amount' in data and data[prefix+'equivalence_amount'].strip():
             item['equivalence']={'amount':str(decimal(data[prefix+'equivalence_amount'],positive=True)),
                                  'unit':data.get(prefix+'equivalence_unit')}
+        if equivalence_inputs(item)!=old_equivalence:
+            item['equivalence_confirmed']=False
         if data.get(prefix+'equivalence_confirmed')=='yes':
             item['equivalence_confirmed']=True
             item['equivalence']=dict(item.get('equivalence') or {},verification='user_verified_quantity')
         if data.get(prefix+'portion_text_reviewed')=='yes':item['portion_text_reviewed']=True
         if data.get(prefix+'portion_label_confirmed')=='yes':item['portion_label_confirmed']=True
+        invalidate_changed(item)
+        semantic_choice=data.get(prefix+'interpretation')
+        group_requested=data.get('accept_legacy_totals')=='yes' and grouped(item)
+        if semantic_choice or group_requested:
+            accept(item,semantic_choice or 'source_total')
         choice=data.get(prefix+'resolution')
         selected_identity=any(k.startswith(prefix) and k.endswith('_ref') and v for k,v in data.items())
         if data.get('use_declarations')=='yes' and not item.get('ingredients') and not choice and not selected_identity:
@@ -307,11 +338,11 @@ def save_decisions(user_id, key, revision, data):
             if choice not in {'declared','private','catalog'}:raise NutritionError('Resolución inválida.')
             if choice=='declared' and review['destination']!='consumed':raise NutritionError('La declaración sin producto sólo registra consumos.')
             item['resolution']=choice
-            if choice=='declared':
+            if choice=='declared' and interpretation_current(item):
                 from app.services.nutrition_import_portions import sufficient
                 sufficient(item)
                 item['ingredients']=[];item['summary_bindings']=False;item['composition_complete']=False
-        if choice=='private' or data.get(prefix + 'private') == 'yes':
+        if (choice=='private' or data.get(prefix + 'private') == 'yes') and interpretation_current(item):
             item['ingredients'] = [private_proposal(item)]
             item['summary_bindings'] = False
             item['resolution']='private'

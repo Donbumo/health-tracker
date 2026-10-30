@@ -1,0 +1,95 @@
+{
+  "status": "PASS",
+  "fixture": "fictional legacy structure 21 / 20 missing bases",
+  "cases": [
+    {
+      "version": "29",
+      "expired": false,
+      "before_ready": 1,
+      "before_pending": 20,
+      "after_ready": 21,
+      "after_pending": 0,
+      "stale_interpretation_invalidated": true,
+      "group_edit_excluded_one_and_kept_others": true,
+      "products": 0,
+      "receipts": 1,
+      "concurrent_fork_and_confirm": true,
+      "concurrent_confirm_statuses": [
+        200,
+        409
+      ],
+      "retry_status": 200,
+      "old_unchanged": true,
+      "GET_DML_DDL": 0,
+      "quantity_correction_preserved": true
+    },
+    {
+      "version": "29",
+      "expired": true,
+      "before_ready": 1,
+      "before_pending": 20,
+      "after_ready": 21,
+      "after_pending": 0,
+      "stale_interpretation_invalidated": true,
+      "group_edit_excluded_one_and_kept_others": true,
+      "products": 0,
+      "receipts": 1,
+      "concurrent_fork_and_confirm": true,
+      "concurrent_confirm_statuses": [
+        200,
+        409
+      ],
+      "retry_status": 200,
+      "old_unchanged": true,
+      "GET_DML_DDL": 0,
+      "quantity_correction_preserved": true
+    },
+    {
+      "version": "30",
+      "expired": false,
+      "before_ready": 1,
+      "before_pending": 20,
+      "after_ready": 21,
+      "after_pending": 0,
+      "stale_interpretation_invalidated": true,
+      "group_edit_excluded_one_and_kept_others": true,
+      "products": 0,
+      "receipts": 1,
+      "concurrent_fork_and_confirm": true,
+      "concurrent_confirm_statuses": [
+        200,
+        409
+      ],
+      "retry_status": 200,
+      "old_unchanged": true,
+      "GET_DML_DDL": 0,
+      "quantity_correction_preserved": true
+    },
+    {
+      "version": "30",
+      "expired": true,
+      "before_ready": 1,
+      "before_pending": 20,
+      "after_ready": 21,
+      "after_pending": 0,
+      "stale_interpretation_invalidated": true,
+      "group_edit_excluded_one_and_kept_others": true,
+      "products": 0,
+      "receipts": 1,
+      "concurrent_fork_and_confirm": true,
+      "concurrent_confirm_statuses": [
+        409,
+        200
+      ],
+      "retry_status": 200,
+      "old_unchanged": true,
+      "GET_DML_DDL": 0,
+      "quantity_correction_preserved": true
+    }
+  ],
+  "isolation": "REPEATABLE-READ",
+  "alembic": "20261018_0046",
+  "db_check": "PASS",
+  "production_access": false,
+  "new_migrations": false
+}

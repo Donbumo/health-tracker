@@ -33,7 +33,19 @@ def carry_decisions(previous, fresh):
         try:vector=validate_vector(old.get('declaration',{}))
         except NutritionError:pass
         else:
-            item['declaration']=copy.deepcopy(old.get('declaration',{}));copied.append('declaration')
+            # An empty extraction from an older parser is not an explicit
+            # deletion of newly recognized source fields (e.g. per_100ml).
+            # A reviewed basis or nutrient decision still retains that empty
+            # vector; neither legacy nor new reviews are mutated in place.
+            if old.get('declaration') or old.get('basis_amount') or old.get('resolved_nutrients'):
+                item['declaration']=copy.deepcopy(old.get('declaration',{}));copied.append('declaration')
+            elif item.get('declaration'):
+                copied.append('new_source_declaration_requires_review')
+            interpretation=item.get('basis_interpretation') or {}
+            if interpretation:
+                for value in item['declaration'].values():
+                    value['provenance']=dict(value.get('provenance') or {},
+                        origin_contract=interpretation['origin'],quality=interpretation['quality'],measurement_verified=False)
         if old.get('ingredients'):
             item['ingredients']=copy.deepcopy(old['ingredients']);copied.append('ingredients')
         old_parts=old.get('ingredient_proposals',[]);parts=item.get('ingredient_proposals',[])

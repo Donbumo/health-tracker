@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "record_type": "daily_nutrition",
+  "source_type": "manual_generated",
+  "user_id": 999999,
+  "data": {
+    "date": "2026-01-15",
+    "source": "QA ficticia",
+    "notes": "QA: no contiene datos personales.",
+    "meals": [
+      {
+        "meal_type": "lunch",
+        "items": [
+          {
+            "name": "QA LEGACY FICTICIO elemento 13",
+            "quantity": 2,
+            "unit": "latas de 210 ml",
+            "calories_kcal": 52,
+            "protein_g": 3.2,
+            "fat_g": 1,
+            "net_carbs_g": 6,
+            "fiber_g": 0,
+            "notes": "QA: datos completamente ficticios.",
+            "basis_amount": "1",
+            "basis_unit": "lata"
+          }
+        ]
+      }
+    ]
+  }
+}

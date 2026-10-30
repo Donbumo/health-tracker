@@ -18,7 +18,10 @@ def consumption(item):
     if item.get('portion_text_reviewed'):evidence['text_reviewed']=True
     if item.get('portion_conflict') and not item.get('portion_text_reviewed'):
         raise NutritionError(item['portion_conflict'])
-    if item.get('portion_note_pending') and not (item.get('portion_text_reviewed') or item.get('equivalence_confirmed')):
+    interpretation=item.get('basis_interpretation') or {}
+    nominal_total=(interpretation.get('status')=='accepted' and interpretation.get('choice') in {'source_total','consumed_total'}
+        and unit==basis=='portion' and amount==decimal(item.get('basis_amount'),positive=True))
+    if item.get('portion_note_pending') and not (nominal_total or item.get('portion_text_reviewed') or item.get('equivalence_confirmed')):
         raise NutritionError('Revisa la nota de porción y corrige sus cantidades o equivalencias antes de aceptarla.')
     if unit == basis:
         if unit == 'portion' and item.get('basis_label', 'portion') != item.get('unit_label', 'portion') and not item.get('portion_label_confirmed'):
@@ -41,4 +44,8 @@ def sufficient(item):
     vector = validate_vector(item.get('declaration', {}))
     if not any(value['state'] == 'known' for value in vector.values()):
         raise NutritionError('Se necesita al menos un nutriente absoluto declarado; los ausentes siguen desconocidos.')
+    interpretation=item.get('basis_interpretation') or {}
+    from app.services.importers.nutrition_legacy_semantics import current
+    if interpretation and not current(item):
+        raise NutritionError('Confirma a qué cantidad corresponden los valores del archivo legacy; no hace falta un producto.')
     return consumption(item)

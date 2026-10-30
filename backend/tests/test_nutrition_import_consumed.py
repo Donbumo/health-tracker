@@ -37,7 +37,7 @@ def resolve(row,user,private=False):
 
 def test_21_save_correct_totals_no_products_replay(app,client,user,consumed):
     row=consumed
-    assert compact.overview(row)['counts']==dict(ready=1,decision=20,invalid=0,omitted=0)
+    assert compact.overview(row)['counts']==dict(ready=16,decision=5,invalid=0,omitted=0)
     resolve(row,user)
     view=compact.overview(row)
     assert view['counts']['ready']==21, [(r['index'],r['issues']) for r in view['records'] if r['issues']]
@@ -109,7 +109,10 @@ def test_independent_queries_preserve_other_decisions(app,client,user,consumed):
     data={'revision':consumed.revision,'r1_p-1_query':'pollo nombre comercial largo QA','r2_p-1_query':'frijoles','r3_resolution':'declared'}
     assert client.post('/nutrition/import/'+consumed.public_id+'/decisions',data=data).status_code==302
     page=client.get('/nutrition/import/'+consumed.public_id)
-    assert 'pollo nombre comercial largo QA' in page.text and 'name="r2_p-1_query" value="frijoles"' in page.text
+    assert consumed.review_json['rows'][1]['search_query']=='pollo nombre comercial largo QA'
+    assert consumed.review_json['rows'][2]['search_query']=='frijoles'
+    page=client.get('/nutrition/import/'+consumed.public_id+'?edit=1&panel=catalog')
+    assert 'name="r1_p-1_query" value="pollo nombre comercial largo QA"' in page.text
     assert consumed.review_json['rows'][3]['resolution']=='declared'
     hits=catalog.search(user,'pollo nombre comercial largo QA',progressive=True)
     assert any(hit['source_food_id']=='2' for hit in hits)
@@ -164,9 +167,9 @@ def test_atomic_rollback_after_product_and_consumption(app,client,user,consumed)
     login(client);signed=token(client,consumed)
     actual=ni.confirm
     def fail_after_flush(*args,**kwargs):
-        actual(*args,**kwargs)
+        result=actual(*args,**kwargs)
         if db.session.query(FoodProduct).count():raise NutritionError('QA induced failure after flush')
-        return None,False
+        return result
     with patch.object(ni,'confirm',side_effect=fail_after_flush):
         response=client.post('/nutrition/import/'+consumed.public_id+'/confirm',data=dict(revision=consumed.revision,token=signed,consent_consumed='yes'))
     assert response.status_code==409
@@ -201,7 +204,7 @@ def test_consumed_get_owner_csrf_and_binding(app,client,user,consumed):
     selected=next(h for h in hits if h['source_food_id']=='2')
     compact.save_decisions(user,consumed.public_id,consumed.revision,{'r1_p-1_ref':selected['ref'],'r1_p-1_amount':'100','r1_p-1_unit':'g'})
     db.session.commit()
-    assert compact.overview(consumed)['counts']['ready']==2
+    assert compact.overview(consumed)['counts']['ready']==16
 
 
 @pytest.mark.parametrize('amount,unit,label',[('1 botella','portion','botella'),('2 latas','portion','lata'),('1 barra','portion','barra'),('5 sobres','portion','sobre'),('1.5 porciones','portion','porcion'),('1 porcion','portion','porcion'),('2 servings','portion','porcion')])

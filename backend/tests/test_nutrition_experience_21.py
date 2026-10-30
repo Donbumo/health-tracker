@@ -166,7 +166,7 @@ def test_functional_flask_history_import_library_templates(app,client,user,enabl
         assert response.status_code==200,(path,response.status_code)
     row=reviewed(user,enabled)
     response=client.get('/nutrition/import/'+row.public_id+'?step=4')
-    assert response.status_code==200 and 'Confirmar y guardar'.encode() in response.data
+    assert response.status_code==200 and 'Guardar todo'.encode() in response.data
 
 
 def test_plan_and_receipt_official_json_restore(app,user,enabled):

@@ -21,7 +21,7 @@ from PIL import Image
 from app.services.nutrition_math import NutritionError, NUTRIENTS, validate_vector
 from app.services.importers.schema_detector import SchemaDetector
 
-EXTRACTOR_VERSION = "nutrition-legacy-semantics-v3"
+EXTRACTOR_VERSION = "nutrition-editable-preview-v4"
 
 MAX_BYTES = 10 * 1024 * 1024
 MAX_EXPANDED = 40 * 1024 * 1024
@@ -192,6 +192,10 @@ def normalized_row(raw, evidence):
         row['basis_conflict']=len(per_units)>1 or explicit_conflict
         if not row['basis_conflict']:
             row.update(basis_amount='100',basis_unit=per_unit,kind_hint='products')
+        scaled=[value.get('provenance',{}).get('source_field','').endswith(('per_100g','per_100ml')) for value in row['declaration'].values()]
+        if any(scaled) and not all(scaled) and 'basis_amount' not in keys:row['basis_conflict']=True
+    if raw.get('quality')=='estimated' or re.search(r'estimad|aprox|proxy|referencia gen',str(raw.get('notes','')),re.I):
+        row['source_quality']='estimated'
     return row
 
 

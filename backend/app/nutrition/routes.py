@@ -343,7 +343,7 @@ def import_upload():
 
 @nutrition_bp.get('/import/<key>')
 @login_required
-def import_review(key):
+def import_review(key,edit_error=None):
     from app.services import nutrition_import as imports
     from app.services.importers.standard_import_executor import StandardImportExecutor
     from app.services import nutrition_import_review as compact
@@ -366,9 +366,18 @@ def import_review(key):
                 token=_import_serializer().dumps({'owner':current_user.id,'draft':row.public_id,'revision':row.revision,
                     'document':ni.hash_document(document),'executor':executor.build_confirmation_token(user_id=current_user.id,target_type='nutrition_import',payload=document,plan=plan)})
         except ValueError as error:blocking=[str(error)]
+    try:editing=int(request.args.get('edit',request.form.get('edit_index','')))
+    except (ValueError,TypeError):editing=None
+    if editing is not None and not 0 <= editing < len(view['records']):editing=None
+    panel=request.args.get('panel',request.form.get('editor_panel','quantity'))
+    if panel not in {'quantity','nutrition','identity','date','basis','correction','catalog'}:panel='quantity'
+    if panel=='catalog' and editing is not None:
+        record=view['records'][editing]
+        record['catalog_issues']=[compact.issue('ingredient','Elige un alimento sólo si comprobaste su identidad y preparación.',
+            part=-1,proposal=record['item'],identity_bound=False)]
     cache={}
     for record in view['records']:
-        for problem in record['issues']:
+        for problem in record['issues']+record.get('catalog_issues',[]):
             if problem['code']=='ingredient':
                 problem['query_name']=f"r{record['index']}_p{problem['part']}_query"
                 text=request.args.get(problem['query_name'],problem['proposal'].get('search_query') or problem['proposal'].get('barcode') or problem['proposal'].get('name',''))[:100]
@@ -378,7 +387,7 @@ def import_review(key):
                     foods=catalog.details(current_user.id,[{'ref':hit['ref']} for hit in hits])
                     cache[text]=[dict(hit,revision=food['revision']) for hit,food in zip(hits,foods)]
                 problem['candidates']=cache[text]
-    return render('import_review',row=row,**view,token=token,blocking=blocking,
+    return render('import_review',row=row,**view,token=token,blocking=blocking,editing=editing,editor_panel=panel,edit_error=edit_error,
                   original_policy=imports.original_policy(row),status=status,pending=view['counts']['decision']+view['counts']['invalid'])
 
 
@@ -427,9 +436,12 @@ def import_decisions(key):
     except NutritionError as error:
         db.session.rollback()
         if error.status==404:raise
+        if request.form.get('edit_index') is not None:return import_review(key,edit_error=str(error)),error.status
         flash(str(error),'error')
         return import_review(key),error.status
     db.session.commit()
+    if request.form.get('edit_index') is not None:
+        return redirect(url_for('nutrition.import_review',key=row.public_id)+'#record-'+str(int(request.form['edit_index'])))
     return redirect(url_for('nutrition.import_review',key=row.public_id)+'#import-summary')
 
 

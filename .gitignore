@@ -19,6 +19,7 @@
 # Explicitly fictional, bounded routine-import QA fixtures.
 !backend/tests/fixtures/gym_qa/routine.csv
 !backend/tests/fixtures/gym_qa/routine.xlsx
+!examples/qa/nutrition-import-preview/clean-21.csv
 
 __pycache__/
 *.py[cod]

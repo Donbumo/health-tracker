@@ -70,7 +70,7 @@ def test_three_screens_global_confirm_replay_and_resume(app, client, user, batch
     login(client)
     page = client.get('/nutrition/import/' + row.public_id)
     assert 'PASO 2 DE 3' in page.text and 'Guardar identificación' not in page.text
-    assert page.text.count('class="ni-import-exception"') == 3
+    assert page.text.count('class="ni-preview-record needs-attention"') == 3
     assert 'Confirmar identidad, cantidad y datos' not in page.text
     assert 'Revisiones vigentes' in client.get('/nutrition/import').text
     response = client.post('/nutrition/import', data={'file': (io.BytesIO(payload), 'QA renamed.json')})

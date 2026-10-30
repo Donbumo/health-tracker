@@ -64,6 +64,10 @@ def _review_from_source(user_id,found,source,*,reuse=True):
                 composition_complete=entry['composition']['complete'],total_mass_g=entry['composition'].get('total_mass_g')))
             if document['data']['destination']=='consumed' and not entry['bindings'] and entry.get('declaration'):
                 review['rows'][-1]['resolution']='declared'
+            if (entry.get('declaration') or {}).get('provenance',{}).get('quality')=='estimated':
+                review['rows'][-1]['source_quality']='estimated'
+            if 'display_brand' in (entry.get('declaration') or {}).get('provenance',{}):
+                review['rows'][-1]['brand']=entry['declaration']['provenance']['display_brand']
             interpretation=(entry.get('declaration') or {}).get('provenance',{}).get('basis_interpretation')
             if interpretation:
                 item=review['rows'][-1]
@@ -340,9 +344,14 @@ def canonical(row,review=None,only_index=None):
                 'provenance':{'method':'user_confirmed_file','evidence':item['evidence']},'original_values':copy.deepcopy(item['original'])}
             if item.get('basis_interpretation'):
                 declaration['provenance']['basis_interpretation']=copy.deepcopy(item['basis_interpretation'])
+            if item.get('corrections'):
+                declaration['provenance']['corrections']=copy.deepcopy(item['corrections'])
+            if item.get('source_quality'):declaration['provenance']['quality']=item['source_quality']
+            if 'brand' in item:declaration['provenance']['display_brand']=item['brand']
         entry={'name':item.get('name',''),'bindings':copy.deepcopy(item['ingredients']), 'declaration':declaration,
                'composition':{'complete':item.get('composition_complete',False),'total_mass_g':item.get('total_mass_g') or (item.get('amount') if item.get('unit')=='g' else None)},
                'evidence':dict(item['evidence'],review_row=index,original_fields=copy.deepcopy(item['original'])),'confirmed':True}
+        if item.get('corrections'):entry['evidence']['corrections']=copy.deepcopy(item['corrections'])
         if review['destination']=='consumed' and (item.get('resolution') in {'declared','private'} or item.get('unit')=='portion'):
             from app.services.nutrition_import_portions import sufficient
             amount,unit,quantity=sufficient(item)
@@ -498,6 +507,7 @@ def apply_document(document,user_id):
         prior._nutrition_import_replay=True
         return prior
     owner=ni.lock_owner(user_id);counts={'foods':0,'linked_foods':0,'plans':0,'recipes':0,'logs':0,'daily_aggregates':0,'omitted':data.get('omitted_count',0),'rejected':0};planned=[]
+    projection_groups={}
     for index,entry in enumerate(data['entries']):
         destination=data['destination'];entries=resolved_entries(entry,user_id,True)
         counts['foods']+=sum('new_food' in b for b in entry['bindings'])
@@ -521,7 +531,11 @@ def apply_document(document,user_id):
         draft=ni.create_draft(user_id,target=entry['date'],name=entry['name'],meal_type=entry['meal_type'])
         draft.public_id=str(uuid5(NAMESPACE_URL,f'health-tracker/nutrition-import/{user_id}/{data["event_key"]}/{index}'))
         draft.snapshot_json=snapshot;draft.accepted_json=list(range(len(entries)));db.session.flush()
-        ni.confirm(user_id,ni.confirmation_token(draft),authority=entry.get('authority'));counts['logs']+=1
+        group=(entry['date'],entry['meal_type'])
+        log,_=ni.confirm(user_id,ni.confirmation_token(draft),authority=entry.get('authority'),projection_meal=projection_groups.get(group))
+        from app.models import NutritionItem
+        projection_groups[group]=db.session.get(NutritionItem,log.projection_item_id).meal
+        counts['logs']+=1
     if planned:
         snapshot={'schema_version':'2.1','name':data['name'],'meals':planned,'provenance':{'source_sha256':data['source_sha256']}}
         if data.get('plan_identity'):

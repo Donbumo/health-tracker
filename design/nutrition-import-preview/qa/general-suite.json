@@ -1,0 +1,11 @@
+{
+  "full_suite": {
+    "passed": 1567,
+    "skipped": 35,
+    "failed": 1,
+    "failure": "test_active_handoff: existing local operational handoff exceeds 80 lines",
+    "local_handoff_lines": 160,
+    "user_files_modified_by_issue32": false
+  },
+  "same_documentation_test_on_committed_HEAD": "PASS"
+}

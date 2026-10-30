@@ -175,7 +175,7 @@ def recalculate(day):
     day.nutrition_summary_json = daily_summary(day.user_id,day.date,lock=True)['summary']
 
 
-def confirm(user_id, token, *, authority=None):
+def confirm(user_id, token, *, authority=None, projection_meal=None):
     enabled()
     try:
         claims = URLSafeTimedSerializer(current_app.secret_key,salt="nutrition-meal-confirm-v2").loads(token,max_age=1800)
@@ -212,14 +212,29 @@ def confirm(user_id, token, *, authority=None):
         db.session.flush()
     else:
         resolve_authority(day,authority)
-    sort = (db.session.execute(db.select(db.func.max(NutritionMeal.sort_order)).where(NutritionMeal.daily_nutrition_id==day.id).with_for_update()).scalar_one() or 0)+1
-    meal = NutritionMeal(user_id=user_id,daily_nutrition_id=day.id,meal_type=snapshot["meal_type"],name=snapshot["name"],sort_order=sort)
-    db.session.add(meal)
-    db.session.flush()
+    meal=None;item_order=1
+    if projection_meal is not None:
+        # Internal batch grouping only. Neither an ID nor a model passed by a
+        # caller can cross the effective owner, date or meal boundary.
+        meal=db.session.scalar(db.select(NutritionMeal).where(NutritionMeal.id==projection_meal.id,
+            NutritionMeal.user_id==user_id,NutritionMeal.daily_nutrition_id==day.id,
+            NutritionMeal.meal_type==snapshot['meal_type']).with_for_update())
+        if meal is None:raise NutritionError('La comida de destino no pertenece a este consumo.',404)
+        item_order=(db.session.scalar(db.select(db.func.max(NutritionItem.sort_order)).where(
+            NutritionItem.user_id==user_id,NutritionItem.nutrition_meal_id==meal.id)) or 0)+1
+        if item_order>200:meal=None;item_order=1
+    if meal is None:
+        sort = (db.session.execute(db.select(db.func.max(NutritionMeal.sort_order)).where(NutritionMeal.daily_nutrition_id==day.id).with_for_update()).scalar_one() or 0)+1
+        meal = NutritionMeal(user_id=user_id,daily_nutrition_id=day.id,meal_type=snapshot["meal_type"],name=snapshot["name"],sort_order=sort)
+        db.session.add(meal)
+        db.session.flush()
+    else:
+        # Individual food names remain in the items and immutable MealLogs.
+        meal.name=None
     values = {column:Decimal(snapshot["summary"][key]["value"]).quantize(Decimal('0.001'),rounding=ROUND_HALF_UP) if snapshot["summary"][key]["value"] is not None else None for key,column in LEGACY.items()}
     if any(value is not None and value >= Decimal('1000000000') for value in values.values()):
         raise NutritionError('El aporte supera la capacidad del formato legacy. Revisa las cantidades.')
-    item = NutritionItem(user_id=user_id,nutrition_meal_id=meal.id,name=snapshot["name"],sort_order=1,
+    item = NutritionItem(user_id=user_id,nutrition_meal_id=meal.id,name=snapshot["name"],sort_order=item_order,
         source="manual",client_event_id=row.public_id,**values)
     db.session.add(item)
     db.session.flush()

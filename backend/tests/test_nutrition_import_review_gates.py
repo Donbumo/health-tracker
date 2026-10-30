@@ -176,7 +176,7 @@ def test_contextual_fallback_does_not_require_reentering_nutrients(app,client,us
     row=imports.start(user,json.dumps({'destination':'consumed','records':[raw]}).encode(),'QA variable.json');db.session.commit()
     assert compact.overview(row)['counts']['decision']==1
     login(client)
-    page=client.get('/nutrition/import/'+row.public_id)
+    page=client.get('/nutrition/import/'+row.public_id+'?edit=0&panel=correction')
     assert '1 pieza de peso variable' in page.text and 'r0_equivalence_amount' in page.text
     response=client.post('/nutrition/import/'+row.public_id+'/decisions',data={'revision':row.revision,'r0_resolution':'declared',
         'r0_equivalence_amount':'31','r0_equivalence_unit':'g','r0_equivalence_confirmed':'yes','r0_portion_text_reviewed':'yes'})

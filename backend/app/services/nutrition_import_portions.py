@@ -42,6 +42,8 @@ def consumption(item):
 def sufficient(item):
     from app.services.nutrition_math import validate_vector
     vector = validate_vector(item.get('declaration', {}))
+    if item.get('basis_conflict') and not item.get('basis_conflict_resolved'):
+        raise NutritionError('El archivo declara bases nutricionales contradictorias. Revisa a qué cantidad pertenecen sus valores.')
     if not any(value['state'] == 'known' for value in vector.values()):
         raise NutritionError('Se necesita al menos un nutriente absoluto declarado; los ausentes siguen desconocidos.')
     interpretation=item.get('basis_interpretation') or {}

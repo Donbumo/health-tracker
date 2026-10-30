@@ -195,7 +195,7 @@ def test_get_owner_csrf_signature_rollback_existing_day_and_stale_revision(app,c
     event.listen(db.engine,'before_cursor_execute',guard)
     try:
         response=client.get('/nutrition/import/'+key)
-        assert response.status_code==200 and 'Interpretación del archivo' in response.text
+        assert response.status_code==200 and 'Interpretación compartida' in response.text
         assert 'private, no-store' in response.headers.get('Cache-Control','')
     finally:event.remove(db.engine,'before_cursor_execute',guard)
     other=User(username='QA another owner',role='user');other.set_password('QA');db.session.add(other);db.session.commit()

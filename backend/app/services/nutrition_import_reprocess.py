@@ -16,7 +16,8 @@ def carry_decisions(previous, fresh):
     retained=[]
     fields=('name','brand','barcode','date','planned_for','meal_type','notes','skip',
             'composition_complete','total_mass_g','yield_factor','conflict_action','authority',
-            'carbohydrate_reviewed','carbohydrate_classification','resolved_nutrients','resolution','search_query')
+            'carbohydrate_reviewed','carbohydrate_classification','resolved_nutrients','resolution','search_query',
+            'corrections','preview_change')
     for index,old in enumerate(previous.review_json['rows']):
         if index>=len(review['rows']) or old.get('original')!=review['rows'][index].get('original'):
             retained.append({'row':index+1,'fields':[],'unapplied':True})

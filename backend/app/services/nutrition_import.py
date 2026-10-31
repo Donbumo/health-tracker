@@ -17,7 +17,7 @@ from app.models import FoodProduct, Recipe, DailyNutrition, NutritionImportDraft
 from app.services import food_catalog, nutrition_intelligence as ni
 from app.services.nutrition_math import NutritionError, NUTRIENTS, PRODUCT, LEGACY, decimal, validate_vector, ingredient, summarize, snapshot_summary, precise
 from app.services.importers.nutrition_sources import extract, MAX_BYTES, EXTRACTOR_VERSION
-from app.services.validation import validate_json_document
+from app.services.validation import validate_json_document,JsonSchemaValidationError
 
 
 DESTINATIONS={'plan','consumed','products','recipes','daily_aggregate'}
@@ -31,17 +31,33 @@ def owned(user_id,key,lock=False):
     return row
 
 
-def start(user_id,payload,filename,mime=None):
+def start(user_id,payload,filename,mime=None,*,commit=False):
     ni.enabled()
     if len(payload)>MAX_BYTES:raise NutritionError('Archivo mayor de 10 MiB.')
-    try:found=extract(payload,filename,mime)
+    try:
+        found=extract(payload,filename,mime)
+        if found.get('standard'):validate_json_document(found['standard'],'nutrition_import_2_1')
     except NutritionError:raise
     except Exception as error:raise NutritionError('No se pudo extraer el documento; revisa su formato y límites.') from error
     # Reuse the official owner-isolated original upload store only AFTER parse.
     from app.services.files import store_uploaded_file
-    source,_=store_uploaded_file(FileStorage(stream=io.BytesIO(payload),filename=filename,content_type=mime),user_id)
-    ni.lock_owner(user_id)
-    return _review_from_source(user_id,found,source)
+    source=None;duplicate=True;path=None
+    try:
+        ni.lock_owner(user_id)
+        source,duplicate=store_uploaded_file(FileStorage(stream=io.BytesIO(payload),filename=filename,content_type=mime),user_id,commit=False)
+        if not duplicate:
+            directory=(Path(current_app.config['UPLOAD_ROOT'])/f'user_{user_id}').resolve()
+            path=(directory/source.stored_filename).resolve()
+            if path.parent!=directory:raise NutritionError('Almacenamiento del original no válido.')
+        row=_review_from_source(user_id,found,source)
+        if commit:db.session.commit()
+        return row
+    except Exception as error:
+        db.session.rollback()
+        if path is not None and not duplicate:path.unlink(missing_ok=True)
+        if isinstance(error,(JsonSchemaValidationError,TypeError,KeyError)):
+            raise NutritionError('El documento nutricional no tiene una estructura válida para revisión.') from error
+        raise
 
 
 def _review_from_source(user_id,found,source,*,reuse=True):
@@ -62,6 +78,11 @@ def _review_from_source(user_id,found,source,*,reuse=True):
                 ingredients=entry['bindings'],confirmed=False,skip=entry.get('skip',False),warnings=[],
                 amount=entry.get('portion_amount'),unit=entry.get('portion_unit'),
                 composition_complete=entry['composition']['complete'],total_mass_g=entry['composition'].get('total_mass_g')))
+            if document['data']['destination']=='consumed':
+                # A source document cannot pre-authorize adding to an existing
+                # day or decide its legacy aggregate authority for this owner.
+                review['rows'][-1].pop('conflict_action',None)
+                review['rows'][-1].pop('authority',None)
             if document['data']['destination']=='consumed' and not entry['bindings'] and entry.get('declaration'):
                 review['rows'][-1]['resolution']='declared'
             if (entry.get('declaration') or {}).get('provenance',{}).get('quality')=='estimated':

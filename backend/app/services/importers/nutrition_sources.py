@@ -21,7 +21,7 @@ from PIL import Image
 from app.services.nutrition_math import NutritionError, NUTRIENTS, validate_vector
 from app.services.importers.schema_detector import SchemaDetector
 
-EXTRACTOR_VERSION = "nutrition-note-semantics-v5"
+EXTRACTOR_VERSION = "nutrition-source-21-v6"
 
 MAX_BYTES = 10 * 1024 * 1024
 MAX_EXPANDED = 40 * 1024 * 1024
@@ -203,8 +203,18 @@ def json_rows(document, evidence):
     """Select a parent collection once; never also import its ingredient children."""
     if isinstance(document,list):return [normalized_row(row,dict(evidence,row=i+1)) for i,row in enumerate(bounded_rows(document))]
     if not isinstance(document,dict):raise NutritionError('JSON nutricional debe ser objeto o lista.')
-    if document.get('schema_version')=='2.1' and document.get('type')=='nutrition_import':
+    if document.get('type')=='nutrition_import':
+        if document.get('schema_version')!='2.1':raise NutritionError('Versión nutrition_import no admitida; usa el contrato 2.1.')
+        from app.services.validation import validate_json_document,JsonSchemaValidationError
+        try:validate_json_document(document,'nutrition_import_2_1');strict=True
+        except JsonSchemaValidationError:strict=False
+        from app.services.importers.nutrition_source_21 import source_rows
+        rows=source_rows(document,evidence,strict=strict)
+        if rows is not None:return rows
+        if not strict:raise NutritionError('El documento 2.1 no cumple el contrato de su destino y no admite revisión de consumos.')
         return [], document
+    if document.get('schema_version')=='2.1' and document.get('type') not in {'food_catalog'}:
+        raise NutritionError('Tipo de documento 2.1 no admitido para la importación nutricional.')
     if document.get('record_type')=='daily_nutrition' and isinstance(document.get('data'),dict):
         data=document['data'];rows=[]
         from app.services.importers.nutrition_legacy_semantics import annotate,general_note_context
@@ -386,6 +396,8 @@ def extract(payload,filename,mime=None,depth=0):
         result=json_rows(document,dict(evidence,method='json_fields'))
         if isinstance(result,tuple):rows,standard=result
         else:rows=result
+        if isinstance(document,dict) and document.get('type')=='nutrition_import' and isinstance(document.get('data'),dict):
+            if isinstance(document['data'].get('notes'),str):document_notes.append(document['data']['notes'])
         if isinstance(document,dict) and document.get('record_type')=='daily_nutrition' and isinstance(document.get('data'),dict):
             from app.services.importers.nutrition_legacy_semantics import general_note_context
             context=general_note_context(document)

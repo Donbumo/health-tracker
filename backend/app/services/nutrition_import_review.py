@@ -52,6 +52,11 @@ def prepared(row,destination=None):
     if destination is not None:review['destination']=destination
     cache = {}
     for item in review['rows']:
+        if item.get('source_identity') and item.get('ingredients'):
+            binding=item['ingredients'][0]
+            try:food=catalog.detail(row.user_id,binding['ref'],binding.get('food_revision'))
+            except NutritionError:pass
+            else:item.update(name=food['name'],brand=food.get('brand'))
         proposals = item.get('ingredient_proposals')
         # Preserve compositions already reviewed through the legacy endpoint.
         if proposals and (item.get('summary_bindings') or not item.get('ingredients')):

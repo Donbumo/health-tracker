@@ -55,6 +55,18 @@ def carry_decisions(previous, fresh):
                 for key in ('decision_binding','search_query'):
                     if key in part:parts[number][key]=copy.deepcopy(part[key]);copied.append('ingredient_'+key)
         if old.get('summary_bindings'):item['summary_bindings']=True
+        # Preserve an already verified semantic decision only when the new
+        # extractor reconstructs exactly the same meaning and effective inputs.
+        # A changed/unrecognized contract or file contradiction cannot pass.
+        from app.services.importers.nutrition_legacy_semantics import current,semantic_inputs
+        previous_basis=old.get('basis_interpretation') or {}
+        fresh_basis=item.get('basis_interpretation') or {}
+        semantics=('kind','origin','quality','measurement_verified','source_basis','file_conflict')
+        if (fresh_basis.get('kind') in {'consumed_total','explicit_basis'} and current(old) and
+                all(previous_basis.get(k)==fresh_basis.get(k) for k in semantics) and
+                semantic_inputs(old)==semantic_inputs(item,previous_basis.get('choice'))):
+            item['basis_interpretation']=copy.deepcopy(previous_basis)
+            if old.get('canonical_basis_inputs'):item['canonical_basis_inputs']=copy.deepcopy(old['canonical_basis_inputs'])
         # A parsed equivalent is always a new unverified proposal, even if an
         # older draft had accepted another conversion or composition.
         item['confirmed']=False

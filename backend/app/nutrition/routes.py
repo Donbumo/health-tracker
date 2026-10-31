@@ -336,8 +336,7 @@ def import_upload():
     from app.services import nutrition_import as imports
     file=request.files.get('file')
     if not file:raise NutritionError('Selecciona un archivo.')
-    row=imports.start(current_user.id,file.stream.read(10*1024*1024+1),file.filename,file.mimetype)
-    db.session.commit()
+    row=imports.start(current_user.id,file.stream.read(10*1024*1024+1),file.filename,file.mimetype,commit=True)
     return redirect(url_for('nutrition.import_review',key=row.public_id))
 
 

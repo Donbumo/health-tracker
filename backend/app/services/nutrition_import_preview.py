@@ -92,6 +92,9 @@ def presentation(records, destination):
         record['display_amount'] = (item.get('basis_amount') if destination == 'products' else item.get('amount'))
         record['display_unit'] = ((item.get('basis_label') or item.get('basis_unit')) if destination == 'products'
                                   else (item.get('unit_label') or item.get('unit')))
+        if item.get('source_display_quantity'):
+            record['display_amount']=item['source_display_quantity']['amount']
+            record['display_unit']=item['source_display_quantity']['unit']
         if record['display_unit'] in {'portion','serving'}:record['display_unit']='porción'
     for group in groups.values():group['summary'] = aggregate(group['records'])
     active = [record for record in records if record['state'] != 'omitted']
@@ -109,6 +112,10 @@ def original_fields(item):
     """Allowlisted nutrition evidence, never arbitrary source metadata/secrets."""
     from app.services.importers.nutrition_sources import ALIASES,fold
     original=item.get('original') or {}
+    if isinstance(original.get('new_food'),dict) and isinstance(original['new_food'].get('nutrition'),dict):
+        food=original['new_food'];nutrition=food['nutrition']
+        original=dict(original,name=food.get('name'),brand=food.get('brand'),
+            nutrients=nutrition.get('nutrients',{}),basis_amount=nutrition.get('basis_amount'),basis_unit=nutrition.get('basis_unit'))
     labels=dict(name='Nombre',brand='Marca',amount='Cantidad',unit='Unidad',date='Fecha',meal_type='Comida',
                 basis_amount='Cantidad de referencia',basis_unit='Unidad de referencia')
     labels.update({key:definition[0] for key,definition in NUTRIENTS.items()})

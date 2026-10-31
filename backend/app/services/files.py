@@ -25,6 +25,7 @@ def mark_import_status(
     status: str,
     detected_type: str | None = None,
     error_message: str | None = None,
+    commit: bool = True,
 ) -> UploadedFile:
     if record.user_id != user_id:
         raise UploadError("File does not belong to this user")
@@ -42,7 +43,7 @@ def mark_import_status(
         if status == "error" and error_message
         else None
     )
-    db.session.commit()
+    db.session.commit() if commit else db.session.flush()
     return record
 
 
@@ -55,7 +56,7 @@ def _original_filename(filename: str | None) -> str:
     return name[:255]
 
 
-def store_uploaded_file(file: FileStorage, user_id: int) -> tuple[UploadedFile, bool]:
+def store_uploaded_file(file: FileStorage, user_id: int, *, commit: bool = True) -> tuple[UploadedFile, bool]:
     """Persist an upload and return (database record, was_duplicate)."""
     original_filename = _original_filename(file.filename)
     upload_root = Path(current_app.config["UPLOAD_ROOT"])
@@ -83,7 +84,7 @@ def store_uploaded_file(file: FileStorage, user_id: int) -> tuple[UploadedFile, 
         ).scalar_one_or_none()
         if existing:
             temporary_path.unlink(missing_ok=True)
-            mark_import_status(existing, user_id, status="duplicate")
+            mark_import_status(existing, user_id, status="duplicate",commit=commit)
             return existing, True
 
         # The digest remains metadata; storage names must not disclose content
@@ -108,7 +109,7 @@ def store_uploaded_file(file: FileStorage, user_id: int) -> tuple[UploadedFile, 
             mime_type=(file.mimetype or None),
         )
         db.session.add(record)
-        db.session.commit()
+        db.session.commit() if commit else db.session.flush()
         return record, False
     except IntegrityError:
         db.session.rollback()
@@ -122,7 +123,7 @@ def store_uploaded_file(file: FileStorage, user_id: int) -> tuple[UploadedFile, 
             )
         ).scalar_one_or_none()
         if existing:
-            mark_import_status(existing, user_id, status="duplicate")
+            mark_import_status(existing, user_id, status="duplicate",commit=commit)
             return existing, True
         raise
     except Exception:

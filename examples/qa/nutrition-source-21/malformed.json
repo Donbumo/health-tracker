@@ -1,0 +1,13 @@
+{
+  "type": "nutrition_import",
+  "schema_version": "2.1",
+  "source_type": "uploaded",
+  "user_id": 999999,
+  "data": {
+    "name": "QA synthetic four meals and 21 foods",
+    "destination": "consumed",
+    "entries": {
+      "not": "a list"
+    }
+  }
+}

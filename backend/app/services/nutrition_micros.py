@@ -53,11 +53,13 @@ def identities(user_id, logs):
 
 
 def qualifiers(logs):
-    """Qualitative composition evidence, independent of effective declarations."""
+    """Qualitative evidence from composition or a standalone declaration."""
     result = {key: {'trace': 0, 'below_limit': 0} for key in NUTRIENTS}
     for log in logs:
-        for entry in log.snapshot_json['ingredients']:
-            for key, value in entry['contribution'].items():
+        vectors=[entry['contribution'] for entry in log.snapshot_json['ingredients']]
+        if not vectors:vectors=[(log.snapshot_json.get('declared_nutrition') or {}).get('nutrients',{})]
+        for vector in vectors:
+            for key, value in vector.items():
                 if key in result and value['state'] in result[key]:
                     result[key][value['state']] += 1
     return result

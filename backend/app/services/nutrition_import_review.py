@@ -126,7 +126,7 @@ def row_issues(row, review, index):
         errors.append(issue('basis_conflict','El archivo declara bases nutricionales contradictorias. Revisa a qué cantidad pertenecen sus valores.'))
     interpretation=item.get('basis_interpretation') or {}
     if (review['destination']=='consumed' and interpretation and
-            not interpretation_current(item)):
+            not interpretation_current(item) and interpretation.get('kind')!='file_basis_conflict'):
         errors.append(issue('interpretation',interpretation.get('stale_reason') or 'Confirma si los nutrientes pertenecen a la cantidad original, a la cantidad consumida o a una base distinta.'))
     for nutrient in item.get('quality_problems',[]):
         if nutrient not in item.get('resolved_nutrients',[]):
@@ -195,6 +195,8 @@ def row_issues(row, review, index):
             errors.append(issue('basis', 'Indica la base exacta de los valores declarados.'))
     if errors:
         return errors
+    if review['destination']=='consumed' and interpretation.get('file_conflict') and row.source_json.get('file_issues'):
+        return []  # The file-level block is shown once, outside individual rows.
     try:
         document = imports.canonical(row, review, only_index=index)
         imports.validate_document(document, row.user_id)
@@ -209,10 +211,13 @@ def overview(row):
     records = []
     foods = {}
     counts = dict(ready=0, decision=0, invalid=0, omitted=0)
+    file_issues=row.source_json.get('file_issues',[]) if review['destination']=='consumed' else []
     for index, item in enumerate(review['rows']):
         errors = [] if item.get('skip') else row_issues(row, review, index)
         empty = not item.get('name') and not item.get('declaration') and not item.get('ingredients') and not item.get('ingredient_proposals')
         state = 'omitted' if item.get('skip') else 'invalid' if empty or item.get('unsupported_vector') else 'decision' if errors else 'ready'
+        if state=='ready' and file_issues and (item.get('basis_interpretation') or {}).get('file_conflict'):
+            state='blocked';counts.setdefault('blocked',0)
         counts[state] += 1
         bindings = []
         for binding in item.get('ingredients', []):
@@ -245,7 +250,7 @@ def overview(row):
         except NutritionError:pass
     from app.services.importers.nutrition_legacy_semantics import grouped
     from app.services.nutrition_import_preview import presentation
-    return dict(review=review, records=records, counts=counts, day_conflicts=conflicts, declaration_eligible=eligible,
+    return dict(review=review, records=records, counts=counts, file_issues=file_issues, day_conflicts=conflicts, declaration_eligible=eligible,
         **presentation(records,review['destination']),
         legacy_total_count=sum(grouped(item) for item in review['rows'] if not item.get('skip')),
         newly_extracted_declarations=sum('new_source_declaration_requires_review' in detail['fields']
@@ -253,6 +258,8 @@ def overview(row):
 
 
 def document(row, view=None):
+    if (row.review_json.get('destination')=='consumed' and row.source_json.get('file_issues')):
+        raise NutritionError(row.source_json['file_issues'][0])
     if row.source_json.get('reprocess_pending'):
         raise NutritionError('Revisa y acepta los campos conservados de la revisión anterior antes de confirmar.')
     view = view or overview(row)

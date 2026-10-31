@@ -1,0 +1,309 @@
+{
+  "schema_version": "1.0",
+  "record_type": "daily_nutrition",
+  "user_id": 999999,
+  "source_type": "uploaded",
+  "data": {
+    "date": "2026-02-03",
+    "source": "QA ficticia Issue34",
+    "notes": "QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficticia: observaciones editoriales conservadas. QA ficti",
+    "meals": [
+      {
+        "meal_type": "breakfast",
+        "items": [
+          {
+            "name": "QA alimento ficticio 01",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 05",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 09",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 13",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 17",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 21",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          }
+        ]
+      },
+      {
+        "meal_type": "lunch",
+        "items": [
+          {
+            "name": "QA alimento ficticio 02",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA estimado"
+          },
+          {
+            "name": "QA alimento ficticio 06",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 10",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 14",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 18",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 22",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          }
+        ]
+      },
+      {
+        "meal_type": "dinner",
+        "items": [
+          {
+            "name": "QA alimento ficticio 03",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 07",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 11",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 15",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 19",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 23",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          }
+        ]
+      },
+      {
+        "meal_type": "snack",
+        "items": [
+          {
+            "name": "QA alimento ficticio 04",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 08",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 12",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 16",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          },
+          {
+            "name": "QA alimento ficticio 20",
+            "quantity": 100,
+            "unit": "g",
+            "calories_kcal": 200,
+            "protein_g": 10,
+            "total_carbs_g": 20,
+            "net_carbs_g": 19,
+            "fat_g": 8,
+            "fiber_g": 0,
+            "notes": "QA dato ficticio"
+          }
+        ]
+      }
+    ]
+  }
+}

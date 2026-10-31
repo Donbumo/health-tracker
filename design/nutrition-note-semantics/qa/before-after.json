@@ -1,0 +1,18 @@
+{
+  "data": "fictional only",
+  "base_commit": "6ff1e9a1b43a4ec50431ef7afbf64f72784dcefc",
+  "notes_length": 5000,
+  "records": 23,
+  "v4": {
+    "grouped_proposals": 0,
+    "rows_without_current_basis": 23
+  },
+  "v5": {
+    "extractor_version": "nutrition-note-semantics-v5",
+    "grouped_proposals": 23,
+    "file_blocks": 0,
+    "notes_preserved": true
+  },
+  "same_input_SHA": true,
+  "official_schema_still_rejects_overlong_note": true
+}

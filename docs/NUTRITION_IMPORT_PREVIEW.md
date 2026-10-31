@@ -36,7 +36,9 @@ del resumen; el consentimiento de consumos reales permanece desmarcado.
 - La aceptación semántica legacy respaldada por el contrato sigue agrupada y
   desmarcada. Las incertidumbres auténticas se corrigen individualmente. Una
   advertencia/estimación etiquetada no es por sí sola un bloqueo.
-- El extractor interno pasa de v3 a `nutrition-editable-preview-v4`. GET no
+- El extractor de la UI #33 fue `nutrition-editable-preview-v4`; el seguimiento
+  [Issue #34](NUTRITION_IMPORT_NOTE_SEMANTICS.md) pasa a `nutrition-note-semantics-v5`
+  para reconocimiento de notas generales extensas. GET no
   reescribe revisiones anteriores. Reprocesado #29/#30/#31 crea/reutiliza fork
   trazable desde bytes/SHA verificados; conserva originales y decisiones compatibles,
   con aceptación separada de campos heredados. No traslada firmas ni consentimientos.

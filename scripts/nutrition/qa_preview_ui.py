@@ -26,7 +26,7 @@ app=create_app(dict(TESTING=True,SECRET_KEY='qa-preview-fictional-secret-longer-
 with app.app_context():
     db.create_all()
     for screen in ['mobile','desktop']:
-        for case in ['clean','error','edit']:
+        for case in ['clean','error','edit','note','note-conflict']:
             account=User(username='qa-preview-'+case+'-'+screen,role='user',display_name='QA ficticia')
             account.set_password('fictional-preview-ui-password');db.session.add(account)
     manual=User(username='qa-preview-manual',role='user',display_name='QA visual ficticia')
@@ -47,6 +47,10 @@ def state():
         first_energy=logs[0].snapshot_json['summary']['energy']['value'] if logs else None,
         first_protein=logs[0].snapshot_json['summary']['protein']['value'] if logs else None,
         corrected_rows=sum(bool(r.get('corrections')) for r in row.review_json['rows']) if row else 0,
+        file_blocks=len(row.source_json.get('file_issues',[])) if row else 0,
+        legacy_total_count=compact.overview(row)['legacy_total_count'] if row and row.state=='pending' else 0,
+        notes_length=len(row.source_json.get('document_notes',[''])[0]) if row else 0,
+        original_notes_preserved=row.source_json.get('document_notes',[])==imports.verified_original(row)[1].get('document_notes',[]) if row else True,
         original_unchanged=[r['original'] for r in row.review_json['rows']]==[r['original'] for r in imports.verified_original(row)[1]['rows']] if row else True)
 
 

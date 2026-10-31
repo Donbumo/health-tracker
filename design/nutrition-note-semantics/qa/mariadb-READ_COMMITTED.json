@@ -1,0 +1,344 @@
+{
+  "status": "PASS",
+  "data": "fictional only, disposable MariaDB tmpfs",
+  "isolation": "READ COMMITTED",
+  "cases": [
+    {
+      "scenario": "clean_csv_21",
+      "records": 21,
+      "products": 0,
+      "receipts": 1,
+      "rollback": "PASS",
+      "owner_csrf_signature_consent": "PASS",
+      "export_restore": "PASS",
+      "get_no_writes": "PASS"
+    },
+    {
+      "scenario": "one_error_51",
+      "records": 51,
+      "products": 0,
+      "receipts": 1,
+      "rollback": "PASS",
+      "owner_csrf_signature_consent": "PASS",
+      "export_restore": "PASS",
+      "get_no_writes": "PASS"
+    },
+    {
+      "scenario": "voluntary_edit",
+      "records": 21,
+      "products": 0,
+      "receipts": 1,
+      "rollback": "PASS",
+      "owner_csrf_signature_consent": "PASS",
+      "export_restore": "PASS",
+      "get_no_writes": "PASS"
+    }
+  ],
+  "head": "20261018_0046",
+  "db_check": "PASS",
+  "concurrent_edit": [
+    302,
+    409
+  ],
+  "concurrent_save": [
+    200,
+    409
+  ],
+  "prior_reprocess": [
+    {
+      "version": "29",
+      "expired": false,
+      "previous_unchanged": true,
+      "records": 21,
+      "products": 0,
+      "receipts": 1
+    },
+    {
+      "version": "29",
+      "expired": true,
+      "previous_unchanged": true,
+      "records": 21,
+      "products": 0,
+      "receipts": 1
+    },
+    {
+      "version": "30",
+      "expired": false,
+      "previous_unchanged": true,
+      "records": 21,
+      "products": 0,
+      "receipts": 1
+    },
+    {
+      "version": "30",
+      "expired": true,
+      "previous_unchanged": true,
+      "records": 21,
+      "products": 0,
+      "receipts": 1
+    },
+    {
+      "version": "31",
+      "expired": false,
+      "previous_unchanged": true,
+      "records": 21,
+      "products": 0,
+      "receipts": 1
+    },
+    {
+      "version": "31",
+      "expired": true,
+      "previous_unchanged": true,
+      "records": 21,
+      "products": 0,
+      "receipts": 1
+    }
+  ],
+  "review_closeout": {
+    "identity": [
+      {
+        "case": "ref",
+        "explicit_binding_preserved": true,
+        "declared_fallback": false,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "source_ids",
+        "explicit_binding_preserved": true,
+        "declared_fallback": false,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "missing_revision",
+        "explicit_binding_preserved": false,
+        "declared_fallback": true,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "missing_preparation",
+        "explicit_binding_preserved": false,
+        "declared_fallback": true,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "wrong_revision",
+        "explicit_binding_preserved": false,
+        "declared_fallback": true,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "wrong_preparation",
+        "explicit_binding_preserved": false,
+        "declared_fallback": true,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "name_only",
+        "explicit_binding_preserved": false,
+        "declared_fallback": true,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "manual",
+        "explicit_binding_preserved": true,
+        "declared_fallback": false,
+        "records": 1,
+        "products": 0,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      },
+      {
+        "case": "private",
+        "explicit_binding_preserved": false,
+        "declared_fallback": false,
+        "records": 1,
+        "products": 1,
+        "receipts": 1,
+        "original_unchanged": true,
+        "roundtrip": true
+      }
+    ],
+    "grouping": [
+      {
+        "records": 4,
+        "independent_snapshots": 4,
+        "groups": 3,
+        "prior_history_unchanged": true,
+        "owner_date_meal_isolated": true,
+        "order_and_totals": true,
+        "products": 0,
+        "batch_receipts": 1,
+        "roundtrip": true
+      },
+      {
+        "records": 21,
+        "independent_snapshots": 21,
+        "groups": 3,
+        "prior_history_unchanged": true,
+        "owner_date_meal_isolated": true,
+        "order_and_totals": true,
+        "products": 0,
+        "batch_receipts": 1,
+        "roundtrip": true
+      },
+      {
+        "records": 51,
+        "independent_snapshots": 51,
+        "groups": 3,
+        "prior_history_unchanged": true,
+        "owner_date_meal_isolated": true,
+        "order_and_totals": true,
+        "products": 0,
+        "batch_receipts": 1,
+        "roundtrip": true
+      }
+    ]
+  },
+  "note_semantics": {
+    "lengths": [
+      {
+        "notes_length": 1999,
+        "records": 23,
+        "grouped_proposals": 23,
+        "group_POSTs": 1,
+        "ready_after_group": 23,
+        "row_corrections": 0,
+        "products": 0,
+        "receipts": 1,
+        "original_sha_and_notes_preserved": true,
+        "roundtrip": true
+      },
+      {
+        "notes_length": 2000,
+        "records": 23,
+        "grouped_proposals": 23,
+        "group_POSTs": 1,
+        "ready_after_group": 23,
+        "row_corrections": 0,
+        "products": 0,
+        "receipts": 1,
+        "original_sha_and_notes_preserved": true,
+        "roundtrip": true
+      },
+      {
+        "notes_length": 2001,
+        "records": 23,
+        "grouped_proposals": 23,
+        "group_POSTs": 1,
+        "ready_after_group": 23,
+        "row_corrections": 0,
+        "products": 0,
+        "receipts": 1,
+        "original_sha_and_notes_preserved": true,
+        "roundtrip": true
+      },
+      {
+        "notes_length": 5000,
+        "records": 23,
+        "grouped_proposals": 23,
+        "group_POSTs": 1,
+        "ready_after_group": 23,
+        "row_corrections": 0,
+        "products": 0,
+        "receipts": 1,
+        "original_sha_and_notes_preserved": true,
+        "roundtrip": true
+      }
+    ],
+    "conflicts": [
+      {
+        "records": 23,
+        "file_blocks": 1,
+        "row_errors": 0,
+        "grouped_proposals": 0,
+        "domain_writes": 0
+      },
+      {
+        "records": 23,
+        "file_blocks": 1,
+        "row_errors": 0,
+        "grouped_proposals": 0,
+        "domain_writes": 0
+      },
+      {
+        "records": 23,
+        "file_blocks": 1,
+        "row_errors": 0,
+        "grouped_proposals": 0,
+        "domain_writes": 0
+      },
+      {
+        "records": 23,
+        "file_blocks": 1,
+        "row_errors": 0,
+        "grouped_proposals": 0,
+        "domain_writes": 0
+      },
+      {
+        "records": 23,
+        "file_blocks": 1,
+        "row_errors": 0,
+        "grouped_proposals": 0,
+        "domain_writes": 0
+      },
+      {
+        "records": 23,
+        "file_blocks": 1,
+        "row_errors": 0,
+        "grouped_proposals": 0,
+        "domain_writes": 0
+      }
+    ],
+    "v4_reprocess": [
+      {
+        "expired": false,
+        "previous_unchanged": true,
+        "records": 23,
+        "grouped_proposals": 23,
+        "ready_after_group": 23,
+        "original_sha_preserved": true,
+        "later_fork_edits_preserved": true,
+        "domain_writes": 0
+      },
+      {
+        "expired": true,
+        "previous_unchanged": true,
+        "records": 23,
+        "grouped_proposals": 23,
+        "ready_after_group": 23,
+        "original_sha_preserved": true,
+        "later_fork_edits_preserved": true,
+        "domain_writes": 0
+      }
+    ]
+  }
+}

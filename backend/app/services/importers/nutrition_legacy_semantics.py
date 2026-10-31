@@ -1,13 +1,45 @@
 """Read-only interpretation of daily_nutrition 1.0 item totals.
 
 The legacy importer/exporter store item nutrients without quantity scaling.
-Only a schema-valid item in its original envelope establishes that contract.
+The sole editorial exception is data.notes/maxLength=2000, for semantic
+recognition only. Official validation and all original evidence stay intact.
 Extensions, conflicting bases and free text never establish a new contract.
 """
 import re
+import unicodedata
+
+from flask import current_app
 
 from app.services.nutrition_math import NutritionError, decimal
-from app.services.validation import validate_json_document
+from app.services.validation import _load_validator
+
+
+def general_note_context(document):
+    """Conservative evidence flags, not a free-text nutrition interpreter."""
+    if document.get('schema_version')!='1.0' or document.get('record_type')!='daily_nutrition':
+        return {}
+    note=document.get('data',{}).get('notes')
+    if not isinstance(note,str):return {}
+    text=''.join(c for c in unicodedata.normalize('NFKD',note.casefold()) if not unicodedata.combining(c))
+    nutrition=bool(re.search(r'\b(?:valores|macros|nutrientes|calorias|energia|proteinas?|grasas?|carbohidratos?|aportes?|ingesta|intake|consumption|declarados?|nutrition(?:al)?|nutrients?|values|calories|protein|fat|carbs)\b',text))
+    different_basis=bool(re.search(r'\b(?:por|per|cada)\s*(?:100\s*(?:g|gramos?|grams?|ml|mililitros?)\b|(?:una?\s+)?(?:porcion|serving|unidad|pieza|envase)\b)|\bbases?\s+(?:distintas?|diferentes?|mixtas?|different|mixed)\b',text))
+    not_consumed=bool(re.search(r'\b(?:no\s+(?:son|representan|corresponden|describen)|not\s+(?:actual|consumed|intake|consumption))\b[^.;\n]{0,100}\b(?:consumid[oa]s?|consumos?|aportes?|intake|consumption)\b|\b(?:reference only|not consumed|not intake|not consumption)\b',text))
+    fiber_placeholder=('fibra' in text or 'fiber' in text) and bool(re.search(r'\b0\b',text)) and bool(
+        re.search(r'no cuantificada|no declarada|no registrar fibra|unquantified|not declared',text)) and bool(
+        re.search(r'marcador|compatibilidad|placeholder|compatibility',text))
+    carbohydrate_conflict=bool(re.search(r'carbohidratos?|carbohydrates?|carbs',text)) and bool(
+        re.search(r'\bnet[oa]?s?\b[^.;\n]{0,80}\b(?:no|not)\s+(?:son\s+)?total(?:es)?\b',text))
+    return dict(long=len(note)>2000,conflict=not_consumed or (nutrition and different_basis) or fiber_placeholder or carbohydrate_conflict,
+        estimated=bool(re.search(r'estimad|aprox|proxy|referencia gen',text)))
+
+
+def semantic_support(candidate):
+    """Allowlist one exact validation error; never change the validator/schema."""
+    if candidate.get('schema_version')!='1.0':return False
+    validator=_load_validator(str(current_app.config['SCHEMA_ROOT']),'daily_nutrition')
+    errors=list(validator.iter_errors(candidate))
+    return not errors or all(tuple(error.absolute_path)==('data','notes') and
+        error.validator=='maxLength' and error.validator_value==2000 for error in errors)
 
 
 def _number(value):
@@ -57,15 +89,12 @@ def invalidate_changed(item):
             stale_reason='Cambió la cantidad, base, unidad, etiqueta o equivalencia. Confirma de nuevo a qué cantidad pertenecen los nutrientes.')
 
 
-def annotate(row, document, meal, original):
+def annotate(row, document, meal, original, note_context=None):
     candidate = dict(document,data=dict(document['data'],meals=[dict(meal,items=[original])]))
-    supported = document.get('schema_version') == '1.0'
-    try:
-        validate_json_document(candidate, 'daily_nutrition')
-    except ValueError:
-        supported = False
+    supported = semantic_support(candidate)
+    note_context=general_note_context(document) if note_context is None else note_context
     notes = str(original.get('notes', '')).casefold()
-    estimated = bool(re.search(r'estimad|aprox|proxy|referencia gen', notes)) or original.get('quality') == 'estimated'
+    estimated = bool(re.search(r'estimad|aprox|proxy|referencia gen', notes)) or original.get('quality') == 'estimated' or note_context.get('estimated',False)
     interpretation = dict(kind='unresolved', status='proposed',
         origin='daily_nutrition_1_0' if supported else 'unrecognized_daily_nutrition',
         quality='estimated' if estimated else 'file_declared_unverified', measurement_verified=False)
@@ -73,7 +102,7 @@ def annotate(row, document, meal, original):
     if explicit:
         interpretation.update(kind='explicit_basis', status='explicit')
         row['resolution']='declared'
-    elif supported:
+    elif supported and not note_context.get('conflict'):
         interpretation['kind'] = 'consumed_total'
         try:
             decimal(row.get('amount'), positive=True)
@@ -89,6 +118,11 @@ def annotate(row, document, meal, original):
         interpretation['source_basis'] = {key:row.get(key) for key in ('basis_amount','basis_unit','basis_label')}
     if row.get('basis_conflict'):
         interpretation.update(kind='contradictory_basis',status='proposed')
+        row.pop('resolution',None)
+    if note_context.get('conflict'):
+        # One file-level decision, never N inferred bases or N row errors.
+        interpretation.update(kind='file_basis_conflict',status='proposed',file_conflict=True)
+        interpretation.pop('source_basis',None)
         row.pop('resolution',None)
     if not explicit and re.search(r'(?:valores|macros|nutrientes)\s+(?:expresados\s+|declarados\s+|son\s+)?por\s+(?:100\s*(?:g|ml)\b|porci[oó]n|unidad|pieza|envase)',notes):
         # Free text is evidence of ambiguity, never a conversion instruction.

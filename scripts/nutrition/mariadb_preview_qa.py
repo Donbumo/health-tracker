@@ -239,6 +239,18 @@ for case in ['ref','source_ids','missing_revision','missing_preparation','wrong_
 for size in [4,21,51]:
     uid,name=owner();client,csrf=login(name)
     with app.app_context():report['review_closeout']['grouping'].append(grouping_case(uid,client,size,csrf))
+from qa_note_semantics_cases import case as note_case,conflicting_case as note_conflict,reprocess_case as note_reprocess
+report['note_semantics']={'lengths':[],'conflicts':[],'v4_reprocess':[]}
+for length in [1999,2000,2001,5000]:
+    uid,name=owner();client,csrf=login(name)
+    with app.app_context():report['note_semantics']['lengths'].append(note_case(uid,client,length,csrf))
+for phrase in ['Los macros son por 100 g.','Los nutrientes son por 100 ml.','Los valores no son aportes consumidos.','Los valores usan bases distintas.',
+               'Fibra 0 como marcador de compatibilidad: no cuantificada.','Los carbohidratos son netos, no totales.']:
+    uid,name=owner();client,csrf=login(name)
+    with app.app_context():report['note_semantics']['conflicts'].append(note_conflict(uid,client,phrase,csrf))
+for expired in [False,True]:
+    uid,name=owner();client,csrf=login(name)
+    with app.app_context():report['note_semantics']['v4_reprocess'].append(note_reprocess(uid,client,expired,csrf))
 out=Path(os.environ.get('QA_EVIDENCE_ROOT',str(ROOT/'design/nutrition-import-preview/qa')));out.mkdir(parents=True,exist_ok=True)
 (out/('mariadb-'+isolation.replace(' ','_')+'.json')).write_text(json.dumps(report,indent=2)+'\n',encoding='utf-8')
 print(json.dumps(report))

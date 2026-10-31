@@ -1,0 +1,52 @@
+{
+  "status": "FOCAL_PASS_GENERAL_PREEXISTING_FAILURE",
+  "base": "6ff1e9a1b43a4ec50431ef7afbf64f72784dcefc",
+  "extractor": "nutrition-note-semantics-v5",
+  "SQLite": {
+    "focal_passed": 307,
+    "contained_in_full_suite": true,
+    "general_passed": 1627,
+    "general_skipped": 35,
+    "general_failed": 1,
+    "failure": "preexisting operational ACTIVE_HANDOFF 160 lines; maximum 80",
+    "global_PASS": false
+  },
+  "MariaDB": {
+    "READ_COMMITTED": {
+      "status": "PASS",
+      "alembic": "20261018_0046",
+      "db_check": "PASS",
+      "length_cases": 4,
+      "conflicts": 6,
+      "v4_forks": 2,
+      "PR31_PR33_regressions": "PASS"
+    },
+    "REPEATABLE_READ": {
+      "status": "PASS",
+      "alembic": "20261018_0046",
+      "db_check": "PASS",
+      "length_cases": 4,
+      "conflicts": 6,
+      "v4_forks": 2,
+      "PR31_PR33_regressions": "PASS"
+    }
+  },
+  "browser": {
+    "status": "PASS",
+    "new_scenarios": 4,
+    "new_layout_checks": 48,
+    "regression_scenarios": 6,
+    "regression_layout_checks": 24,
+    "group_POSTs_for_23": 1,
+    "row_corrections_for_benign_note": 0,
+    "contradictory_note_file_blocks": 1
+  },
+  "compileall": "PASS",
+  "compose_config_without_dotenv": "PASS",
+  "source_manifest_sha256": "328b321e43030210d5ffed6ea1dba496cc024fc3b55f03b8d3b7273053579091",
+  "prior_operational_files_preserved": 53,
+  "schema_migration_dependency_changes": false,
+  "production_accessed_or_changed": false,
+  "personal_source_used": false,
+  "merge_or_deploy": false
+}

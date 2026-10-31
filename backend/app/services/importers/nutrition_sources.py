@@ -21,7 +21,7 @@ from PIL import Image
 from app.services.nutrition_math import NutritionError, NUTRIENTS, validate_vector
 from app.services.importers.schema_detector import SchemaDetector
 
-EXTRACTOR_VERSION = "nutrition-editable-preview-v4"
+EXTRACTOR_VERSION = "nutrition-note-semantics-v5"
 
 MAX_BYTES = 10 * 1024 * 1024
 MAX_EXPANDED = 40 * 1024 * 1024
@@ -207,11 +207,12 @@ def json_rows(document, evidence):
         return [], document
     if document.get('record_type')=='daily_nutrition' and isinstance(document.get('data'),dict):
         data=document['data'];rows=[]
+        from app.services.importers.nutrition_legacy_semantics import annotate,general_note_context
+        note_context=general_note_context(document)
         for meal in data.get('meals',[]):
             for item in meal.get('items',[]):
                 row=normalized_row(dict(item,date=data.get('date'),meal_type=meal.get('meal_type')),dict(evidence,row=len(rows)+1))
-                from app.services.importers.nutrition_legacy_semantics import annotate
-                annotate(row,document,meal,item)
+                annotate(row,document,meal,item,note_context)
                 rows.append(row)
         if not rows:
             row=normalized_row(data,evidence);row.update(kind_hint='daily_aggregate',basis_amount='1',basis_unit='portion');rows=[row]
@@ -308,7 +309,7 @@ def extract(payload,filename,mime=None,depth=0):
     if not payload or len(payload)>MAX_BYTES:raise NutritionError('Archivo vacío o mayor de 10 MiB.')
     name=str(filename).replace('\\','/').rsplit('/',1)[-1][:200]
     evidence={'file':name,'sha256':hashlib.sha256(payload).hexdigest()}
-    rows=[];texts=[];warnings=[];profile=None;standard=None
+    rows=[];texts=[];warnings=[];profile=None;standard=None;file_issues=[];document_notes=[]
     stripped=payload.lstrip()
     if payload.startswith(b'%PDF-'):
         from pypdf import PdfReader
@@ -371,6 +372,7 @@ def extract(payload,filename,mime=None,depth=0):
                     child=archive.read(item)
                     try:
                         found=extract(child,item.filename,depth=1);rows.extend(found['rows']);warnings.extend(found['warnings']);texts.append(found.get('text',''))
+                        file_issues.extend(found.get('file_issues',[]));document_notes.extend(found.get('document_notes',[]))
                     except NutritionError as error:
                         raise NutritionError('Una entrada del ZIP no es compatible; separa los archivos nutricionales antes de revisar.') from error
     elif stripped.startswith((b'{',b'[')):
@@ -384,6 +386,14 @@ def extract(payload,filename,mime=None,depth=0):
         result=json_rows(document,dict(evidence,method='json_fields'))
         if isinstance(result,tuple):rows,standard=result
         else:rows=result
+        if isinstance(document,dict) and document.get('record_type')=='daily_nutrition' and isinstance(document.get('data'),dict):
+            from app.services.importers.nutrition_legacy_semantics import general_note_context
+            context=general_note_context(document)
+            if isinstance(document['data'].get('notes'),str):document_notes.append(document['data']['notes'])
+            if context.get('long'):
+                warnings.append('La nota general extensa se conserva íntegra. Su longitud no cambia por sí sola la base nutricional; la validación oficial del archivo sigue siendo estricta.')
+            if context.get('conflict'):
+                file_issues.append('La nota general contiene indicaciones sobre bases o valores nutricionales que requieren revisión antes de asumir aportes consumidos. Revisa esa indicación del archivo antes de interpretar los alimentos.')
     else:
         try:text=payload.decode('utf-8-sig')
         except UnicodeError as error:raise NutritionError('Firma/MIME no compatible; usa CSV UTF-8, JSON, PDF, XLSX o imagen.') from error
@@ -405,4 +415,5 @@ def extract(payload,filename,mime=None,depth=0):
     if explicit_destination in {'consumed','plan','products','recipes','daily_aggregate'}:hint=explicit_destination
     if not rows and standard is None:warnings.append('No se reconocieron filas con este perfil. Requiere estructurar el texto o completar manualmente; no se inventaron alimentos.')
     return {'rows':rows,'standard':standard,'profile':profile,'classification_hint':hint,'warnings':warnings,
-            'text':text[:MAX_TEXT],'source':evidence,'mime_claim':str(mime or ''),'signature_detected':True}
+            'text':text[:MAX_TEXT],'source':evidence,'mime_claim':str(mime or ''),'signature_detected':True,
+            'file_issues':list(dict.fromkeys(file_issues)),'document_notes':document_notes}

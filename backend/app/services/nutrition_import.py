@@ -86,6 +86,8 @@ def _review_from_source(user_id,found,source,*,reuse=True):
     row=NutritionImportDraft(user_id=user_id,source_sha256=source.sha256,
         source_json={'upload_id':source.id,'profile':found['profile'],'classification_hint':found['classification_hint'],
             'warnings':found['warnings'],'text':found['text'],'evidence':found['source'],'extractor_version':EXTRACTOR_VERSION},review_json=review)
+    for key in ('file_issues','document_notes'):
+        if found.get(key):row.source_json=dict(row.source_json,**{key:copy.deepcopy(found[key])})
     if prior:
         row.source_json=dict(row.source_json,already_imported=True)
         row.state='completed'
@@ -325,6 +327,8 @@ def update(user_id,key,revision,action,data):
 def canonical(row,review=None,only_index=None):
     review=review or row.review_json
     if review['destination'] not in DESTINATIONS:raise NutritionError('Clasifica el destino de la importación.')
+    if review['destination']=='consumed' and row.source_json.get('file_issues'):
+        raise NutritionError(row.source_json['file_issues'][0])
     entries=[]
     for index,item in enumerate(review['rows']):
         if only_index is not None and index!=only_index:continue

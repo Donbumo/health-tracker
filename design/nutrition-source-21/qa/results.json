@@ -1,0 +1,56 @@
+{
+  "status": "FOCAL_PASS_GENERAL_HAS_PREEXISTING_LOCAL_DOC_FAILURE",
+  "data": "entirely fictional",
+  "sqlite_source21": {
+    "passed": 19
+  },
+  "sqlite_regressions": {
+    "passed": 186
+  },
+  "mariadb_source21": {
+    "READ COMMITTED": {
+      "passed": 19,
+      "alembic": "20261018_0046",
+      "db_check": "PASS"
+    },
+    "REPEATABLE READ": {
+      "passed": 19,
+      "alembic": "20261018_0046",
+      "db_check": "PASS"
+    }
+  },
+  "browser": {
+    "scenarios": 6,
+    "layout_theme_checks": 72,
+    "errors": 0,
+    "clear_file_POSTs": 2,
+    "one_conflict_POSTs": 3,
+    "products_before_or_after": 0
+  },
+  "supplied_synthetic_reference": {
+    "rows": 21,
+    "declarations": 21,
+    "unsupported_vectors": 0,
+    "base_conflicts": 0,
+    "public_copy": false
+  },
+  "schema_model_dependency_migration_changes": false,
+  "production_access_or_changes": false,
+  "full_suite_final": {
+    "passed": 1644,
+    "skipped": 35,
+    "failed": 1,
+    "failure": "pre-existing local ACTIVE_HANDOFF length 160 > 80; committed baseline 35 lines; not part of PR",
+    "scope": "Run before the final two edge regressions; the complete 19-case source21 module passed afterward against final code on SQLite and both MariaDB isolation profiles."
+  },
+  "browser_regressions": {
+    "scenarios": 10,
+    "layout_checks": 72,
+    "errors": 0
+  },
+  "browser_total": {
+    "scenarios": 16,
+    "layout_checks": 144,
+    "errors": 0
+  }
+}

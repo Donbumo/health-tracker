@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "data": "entirely fictional",
+  "fixture": "mixed-quality.json",
+  "records": 21,
+  "groups": 4,
+  "nutrients": 30,
+  "before_estimate_badges": 0,
+  "after_estimate_badges": 5,
+  "fully_estimated": 4,
+  "mixed": 1,
+  "verified_source_labels_preserved": 16,
+  "mixed_fiber": "estimated",
+  "mixed_protein": "verified",
+  "all_nutrient_vectors_and_quantities_exactly_unchanged": true,
+  "original_and_per_nutrient_provenance_unchanged": true,
+  "production_access": false
+}

@@ -1,0 +1,3910 @@
+{
+  "type": "nutrition_import",
+  "schema_version": "2.1",
+  "source_type": "uploaded",
+  "user_id": 999999,
+  "data": {
+    "name": "QA synthetic four meals and 21 foods",
+    "destination": "consumed",
+    "entries": [
+      {
+        "name": "QA fictional breakfast",
+        "date": "2026-01-15",
+        "meal_type": "breakfast",
+        "confirmed": true,
+        "conflict_action": "block",
+        "composition": {
+          "complete": true,
+          "total_mass_g": null
+        },
+        "declaration": null,
+        "evidence": {
+          "method": "synthetic_qa_only",
+          "notes": "No personal data. Additional prose is not counted."
+        },
+        "bindings": [
+          {
+            "amount": "1",
+            "unit": "bolsa",
+            "new_food": {
+              "name": "QA synthetic food 01",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "1",
+                "basis_unit": "bolsa",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "100",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "0.18",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "0.19",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "0.2",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "0.21",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "0.22",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "0.23",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "0.24",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "0.25",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "0.26",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "0.27",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "0.28",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "0.29",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "0.3",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "0.31",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "0.32",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "0.33",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "0.34",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "0.35",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "0.36",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "0.37",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "0.38",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "0.39",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "0.4",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "file_declared_unverified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: valor aproximado."
+                }
+              }
+            }
+          },
+          {
+            "amount": "25",
+            "unit": "g",
+            "new_food": {
+              "name": "QA synthetic food 02",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "25",
+                "basis_unit": "g",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "103",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "0.28",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "0.29",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "0.3",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "0.31",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "0.32",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "0.33",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "0.34",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "0.35",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "0.36",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "0.37",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "0.38",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "0.39",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "0.4",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "0.41",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "0.42",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "0.43",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "0.44",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "0.45",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "0.46",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "0.47",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "0.48",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "0.49",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "0.5",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "file_declared_unverified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: referencia provisional."
+                }
+              }
+            }
+          },
+          {
+            "amount": "30",
+            "unit": "g",
+            "new_food": {
+              "name": "QA synthetic food 03",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "30",
+                "basis_unit": "g",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "106",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "0.38",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "0.39",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "0.4",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "0.41",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "0.42",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "0.43",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "0.44",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "0.45",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "0.46",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "0.47",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "0.48",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "0.49",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "0.5",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "0.51",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "0.52",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "0.53",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "0.54",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "0.55",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "0.56",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "0.57",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "0.58",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "0.59",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "0.6",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "file_declared_unverified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: valor de proxy."
+                }
+              }
+            }
+          },
+          {
+            "amount": "35",
+            "unit": "g",
+            "new_food": {
+              "name": "QA synthetic food 04",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "35",
+                "basis_unit": "g",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "109",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "0.48",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "0.49",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "0.5",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "0.51",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "0.52",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "0.53",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "0.54",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "0.55",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "0.56",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "0.57",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "0.58",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "0.59",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "0.6",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "0.61",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "0.62",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "0.63",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "0.64",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "0.65",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "0.66",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "0.67",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "0.68",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "0.69",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "0.7",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "file_declared_unverified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: incertidumbre nutricional."
+                }
+              }
+            }
+          },
+          {
+            "amount": "40",
+            "unit": "ml",
+            "new_food": {
+              "name": "QA synthetic food 05",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "40",
+                "basis_unit": "ml",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "112",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g",
+                    "provenance": {
+                      "method": "composition_proxy",
+                      "limitations": "QA: fibra aproximada."
+                    }
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "0.58",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "0.59",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "0.6",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "0.61",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "0.62",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "0.63",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "0.64",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "0.65",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "0.66",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "0.67",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "0.68",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "0.69",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "0.7",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "0.71",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "0.72",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "0.73",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "0.74",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "0.75",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "0.76",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "0.77",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "0.78",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "0.79",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "0.8",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "QA fictional lunch",
+        "date": "2026-01-15",
+        "meal_type": "lunch",
+        "confirmed": true,
+        "conflict_action": "block",
+        "composition": {
+          "complete": true,
+          "total_mass_g": null
+        },
+        "declaration": null,
+        "evidence": {
+          "method": "synthetic_qa_only",
+          "notes": "No personal data. Additional prose is not counted."
+        },
+        "bindings": [
+          {
+            "amount": "45",
+            "unit": "g",
+            "new_food": {
+              "name": "QA synthetic food 06",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "45",
+                "basis_unit": "g",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "115",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "0.68",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "0.69",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "0.7",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "0.71",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "0.72",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "0.73",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "0.74",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "0.75",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "0.76",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "0.77",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "0.78",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "0.79",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "0.8",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "0.81",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "0.82",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "0.83",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "0.84",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "0.85",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "0.86",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "0.87",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "0.88",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "0.89",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "0.9",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: fecha provisional; etiqueta verificada."
+                }
+              }
+            }
+          },
+          {
+            "amount": "50",
+            "unit": "g",
+            "new_food": {
+              "name": "QA synthetic food 07",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "50",
+                "basis_unit": "g",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "118",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "0.78",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "0.79",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "0.8",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "0.81",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "0.82",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "0.83",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "0.84",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "0.85",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "0.86",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "0.87",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "0.88",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "0.89",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "0.9",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "0.91",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "0.92",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "0.93",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "0.94",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "0.95",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "0.96",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "0.97",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "0.98",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "0.99",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "1.0",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          },
+          {
+            "amount": "1",
+            "unit": "envase",
+            "new_food": {
+              "name": "QA synthetic food 08",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "1",
+                "basis_unit": "envase",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "121",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "0.88",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "0.89",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "0.9",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "0.91",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "0.92",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "0.93",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "0.94",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "0.95",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "0.96",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "0.97",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "0.98",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "0.99",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "1.0",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "1.01",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "1.02",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "1.03",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "1.04",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "1.05",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "1.06",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "1.07",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "1.08",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "1.09",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "1.1",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          },
+          {
+            "amount": "60",
+            "unit": "ml",
+            "new_food": {
+              "name": "QA synthetic food 09",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "60",
+                "basis_unit": "ml",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "124",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "0.98",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "0.99",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "1.0",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "1.01",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "1.02",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "1.03",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "1.04",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "1.05",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "1.06",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "1.07",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "1.08",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "1.09",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "1.1",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "1.11",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "1.12",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "1.13",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "1.14",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "1.15",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "1.16",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "1.17",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "1.18",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "1.19",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "1.2",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          },
+          {
+            "amount": "65",
+            "unit": "g",
+            "new_food": {
+              "name": "QA synthetic food 10",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "65",
+                "basis_unit": "g",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "127",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "1.08",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "1.09",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "1.1",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "1.11",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "1.12",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "1.13",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "1.14",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "1.15",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "1.16",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "1.17",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "1.18",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "1.19",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "1.2",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "1.21",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "1.22",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "1.23",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "1.24",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "1.25",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "1.26",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "1.27",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "1.28",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "1.29",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "1.3",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "QA fictional snack",
+        "date": "2026-01-15",
+        "meal_type": "snack",
+        "confirmed": true,
+        "conflict_action": "block",
+        "composition": {
+          "complete": true,
+          "total_mass_g": null
+        },
+        "declaration": null,
+        "evidence": {
+          "method": "synthetic_qa_only",
+          "notes": "No personal data. Additional prose is not counted."
+        },
+        "bindings": [
+          {
+            "amount": "70",
+            "unit": "g",
+            "new_food": {
+              "name": "QA synthetic food 11",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "70",
+                "basis_unit": "g",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "130",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "1.18",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "1.19",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "1.2",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "1.21",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "1.22",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "1.23",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "1.24",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "1.25",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "1.26",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "1.27",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "1.28",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "1.29",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "1.3",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "1.31",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "1.32",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "1.33",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "1.34",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "1.35",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "1.36",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "1.37",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "1.38",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "1.39",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "1.4",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          },
+          {
+            "amount": "75",
+            "unit": "g",
+            "new_food": {
+              "name": "QA synthetic food 12",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "75",
+                "basis_unit": "g",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "133",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "1.28",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "1.29",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "1.3",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "1.31",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "1.32",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "1.33",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "1.34",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "1.35",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "1.36",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "1.37",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "1.38",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "1.39",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "1.4",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "1.41",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "1.42",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "1.43",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "1.44",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "1.45",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "1.46",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "1.47",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "1.48",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "1.49",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "1.5",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          },
+          {
+            "amount": "80",
+            "unit": "ml",
+            "new_food": {
+              "name": "QA synthetic food 13",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "80",
+                "basis_unit": "ml",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "136",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "1.38",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "1.39",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "1.4",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "1.41",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "1.42",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "1.43",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "1.44",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "1.45",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "1.46",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "1.47",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "1.48",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "1.49",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "1.5",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "1.51",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "1.52",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "1.53",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "1.54",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "1.55",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "1.56",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "1.57",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "1.58",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "1.59",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "1.6",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          },
+          {
+            "amount": "85",
+            "unit": "g",
+            "new_food": {
+              "name": "QA synthetic food 14",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "85",
+                "basis_unit": "g",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "139",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "1.48",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "1.49",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "1.5",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "1.51",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "1.52",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "1.53",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "1.54",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "1.55",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "1.56",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "1.57",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "1.58",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "1.59",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "1.6",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "1.61",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "1.62",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "1.63",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "1.64",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "1.65",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "1.66",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "1.67",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "1.68",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "1.69",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "1.7",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          },
+          {
+            "amount": "1",
+            "unit": "pieza",
+            "new_food": {
+              "name": "QA synthetic food 15",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "1",
+                "basis_unit": "pieza",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "142",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "1.58",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "1.59",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "1.6",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "1.61",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "1.62",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "1.63",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "1.64",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "1.65",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "1.66",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "1.67",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "1.68",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "1.69",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "1.7",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "1.71",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "1.72",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "1.73",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "1.74",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "1.75",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "1.76",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "1.77",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "1.78",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "1.79",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "1.8",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "QA fictional dinner",
+        "date": "2026-01-15",
+        "meal_type": "dinner",
+        "confirmed": true,
+        "conflict_action": "block",
+        "composition": {
+          "complete": true,
+          "total_mass_g": null
+        },
+        "declaration": null,
+        "evidence": {
+          "method": "synthetic_qa_only",
+          "notes": "No personal data. Additional prose is not counted."
+        },
+        "bindings": [
+          {
+            "amount": "95",
+            "unit": "g",
+            "new_food": {
+              "name": "QA synthetic food 16",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "95",
+                "basis_unit": "g",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "145",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "1.68",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "1.69",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "1.7",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "1.71",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "1.72",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "1.73",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "1.74",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "1.75",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "1.76",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "1.77",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "1.78",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "1.79",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "1.8",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "1.81",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "1.82",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "1.83",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "1.84",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "1.85",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "1.86",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "1.87",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "1.88",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "1.89",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "1.9",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          },
+          {
+            "amount": "100",
+            "unit": "ml",
+            "new_food": {
+              "name": "QA synthetic food 17",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "100",
+                "basis_unit": "ml",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "148",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "1.78",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "1.79",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "1.8",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "1.81",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "1.82",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "1.83",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "1.84",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "1.85",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "1.86",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "1.87",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "1.88",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "1.89",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "1.9",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "1.91",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "1.92",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "1.93",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "1.94",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "1.95",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "1.96",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "1.97",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "1.98",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "1.99",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "2.0",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          },
+          {
+            "amount": "105",
+            "unit": "g",
+            "new_food": {
+              "name": "QA synthetic food 18",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "105",
+                "basis_unit": "g",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "151",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "1.88",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "1.89",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "1.9",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "1.91",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "1.92",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "1.93",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "1.94",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "1.95",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "1.96",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "1.97",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "1.98",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "1.99",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "2.0",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "2.01",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "2.02",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "2.03",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "2.04",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "2.05",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "2.06",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "2.07",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "2.08",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "2.09",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "2.1",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          },
+          {
+            "amount": "110",
+            "unit": "g",
+            "new_food": {
+              "name": "QA synthetic food 19",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "110",
+                "basis_unit": "g",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "154",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "1.98",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "1.99",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "2.0",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "2.01",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "2.02",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "2.03",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "2.04",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "2.05",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "2.06",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "2.07",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "2.08",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "2.09",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "2.1",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "2.11",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "2.12",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "2.13",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "2.14",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "2.15",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "2.16",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "2.17",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "2.18",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "2.19",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "2.2",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          },
+          {
+            "amount": "115",
+            "unit": "g",
+            "new_food": {
+              "name": "QA synthetic food 20",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "115",
+                "basis_unit": "g",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "157",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "2.08",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "2.09",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "2.1",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "2.11",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "2.12",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "2.13",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "2.14",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "2.15",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "2.16",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "2.17",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "2.18",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "2.19",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "2.2",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "2.21",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "2.22",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "2.23",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "2.24",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "2.25",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "2.26",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "2.27",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "2.28",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "2.29",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "2.3",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          },
+          {
+            "amount": "120",
+            "unit": "ml",
+            "new_food": {
+              "name": "QA synthetic food 21",
+              "brand": "QA fictional brand",
+              "nutrition": {
+                "basis_amount": "120",
+                "basis_unit": "ml",
+                "servings": [],
+                "density_g_ml": null,
+                "nutrients": {
+                  "energy": {
+                    "state": "known",
+                    "value": "160",
+                    "unit": "kcal"
+                  },
+                  "protein": {
+                    "state": "known",
+                    "value": "3",
+                    "unit": "g"
+                  },
+                  "carbohydrate_total": {
+                    "state": "known",
+                    "value": "10",
+                    "unit": "g"
+                  },
+                  "net_carbs": {
+                    "state": "known",
+                    "value": "8",
+                    "unit": "g"
+                  },
+                  "fat": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "fiber": {
+                    "state": "known",
+                    "value": "2",
+                    "unit": "g"
+                  },
+                  "sugar": {
+                    "state": "known",
+                    "value": "1",
+                    "unit": "g"
+                  },
+                  "sodium": {
+                    "state": "known",
+                    "value": "2.18",
+                    "unit": "mg"
+                  },
+                  "potassium": {
+                    "state": "known",
+                    "value": "2.19",
+                    "unit": "mg"
+                  },
+                  "calcium": {
+                    "state": "known",
+                    "value": "2.2",
+                    "unit": "mg"
+                  },
+                  "iron": {
+                    "state": "known",
+                    "value": "2.21",
+                    "unit": "mg"
+                  },
+                  "magnesium": {
+                    "state": "known",
+                    "value": "2.22",
+                    "unit": "mg"
+                  },
+                  "phosphorus": {
+                    "state": "known",
+                    "value": "2.23",
+                    "unit": "mg"
+                  },
+                  "zinc": {
+                    "state": "known",
+                    "value": "2.24",
+                    "unit": "mg"
+                  },
+                  "vitamin_a_rae": {
+                    "state": "known",
+                    "value": "2.25",
+                    "unit": "ug"
+                  },
+                  "retinol": {
+                    "state": "known",
+                    "value": "2.26",
+                    "unit": "ug"
+                  },
+                  "vitamin_a_re": {
+                    "state": "known",
+                    "value": "2.27",
+                    "unit": "ug"
+                  },
+                  "vitamin_c": {
+                    "state": "known",
+                    "value": "2.28",
+                    "unit": "mg"
+                  },
+                  "vitamin_d": {
+                    "state": "known",
+                    "value": "2.29",
+                    "unit": "ug"
+                  },
+                  "vitamin_e_alpha": {
+                    "state": "known",
+                    "value": "2.3",
+                    "unit": "mg"
+                  },
+                  "vitamin_k1": {
+                    "state": "known",
+                    "value": "2.31",
+                    "unit": "ug"
+                  },
+                  "vitamin_k2": {
+                    "state": "known",
+                    "value": "2.32",
+                    "unit": "ug"
+                  },
+                  "thiamin": {
+                    "state": "known",
+                    "value": "2.33",
+                    "unit": "mg"
+                  },
+                  "riboflavin": {
+                    "state": "known",
+                    "value": "2.34",
+                    "unit": "mg"
+                  },
+                  "niacin": {
+                    "state": "known",
+                    "value": "2.35",
+                    "unit": "mg"
+                  },
+                  "vitamin_b6": {
+                    "state": "known",
+                    "value": "2.36",
+                    "unit": "mg"
+                  },
+                  "vitamin_b12": {
+                    "state": "known",
+                    "value": "2.37",
+                    "unit": "ug"
+                  },
+                  "folate_dfe": {
+                    "state": "known",
+                    "value": "2.38",
+                    "unit": "ug"
+                  },
+                  "folate_food": {
+                    "state": "known",
+                    "value": "2.39",
+                    "unit": "ug"
+                  },
+                  "choline": {
+                    "state": "known",
+                    "value": "2.4",
+                    "unit": "mg"
+                  }
+                },
+                "provenance": {
+                  "method": "nutrition_label",
+                  "quality": "label_verified",
+                  "notes": "QA only: caffeine 99 mg and selenium 7 ug are prose, not verified nutrient amounts.",
+                  "additional_nutrients": {
+                    "caffeine": {
+                      "value": "99",
+                      "unit": "mg"
+                    },
+                    "selenium": {
+                      "value": "7",
+                      "unit": "ug"
+                    }
+                  },
+                  "limitations": "QA: sin aproximación; no se estimó."
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

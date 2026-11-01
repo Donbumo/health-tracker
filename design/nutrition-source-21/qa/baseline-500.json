@@ -1,0 +1,14 @@
+{
+  "status": "REPRODUCED",
+  "base": "01b49cafc36ec95e11d0aed3aca11dcfdf49a5c0",
+  "HTTP": 500,
+  "exception": "JsonSchemaValidationError",
+  "frames": [
+    "nutrition_sources.json_rows: unconditional standard bypass",
+    "nutrition_import.start: stored original",
+    "nutrition_import._review_from_source",
+    "validation.validate_json_document"
+  ],
+  "stored_uploads_after_failure": 1,
+  "data": "entirely fictional"
+}

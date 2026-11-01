@@ -46,7 +46,8 @@ def nutritional_preview(item, destination, user_id):
             entry['declaration'] = dict(basis_amount=str(decimal(item.get('basis_amount') or item.get('amount'), positive=True)),
                 basis_unit=item.get('basis_unit') or item.get('unit'), nutrients=vector, confirmed=True,
                 provenance={'basis_interpretation': copy.deepcopy(item.get('basis_interpretation') or {}),
-                            'quality':item.get('source_quality')})
+                            'quality':item.get('source_quality'),
+                            'nutrient_quality':copy.deepcopy(item.get('nutrient_quality',{}))})
             if destination == 'products':
                 # These are product definitions, not recorded intake.
                 entry['composition'] = {'complete': False, 'total_mass_g': None}
@@ -77,10 +78,12 @@ def presentation(records, destination):
         item = record['item']
         record['original_fields']=original_fields(item)
         preview = record['preview']
-        estimated = (item.get('source_quality')=='estimated' or (item.get('basis_interpretation') or {}).get('quality') == 'estimated' or
+        mixed = item.get('source_quality')=='mixed'
+        estimated = (mixed or item.get('source_quality')=='estimated' or (item.get('basis_interpretation') or {}).get('quality') == 'estimated' or
             any((value.get('provenance') or {}).get('quality') == 'estimated' for value in item.get('declaration', {}).values()))
         partial = not preview or any(preview[key]['state'] != 'complete' for key in MACROS)
-        record['quality'] = 'Estimado' if estimated else 'Parcial' if preview and partial else 'Sin dato' if not preview else ''
+        record['quality'] = 'Contiene estimaciones' if mixed else 'Estimado' if estimated else 'Parcial' if preview and partial else 'Sin dato' if not preview else ''
+        record['nutrient_quality'] = item.get('nutrient_quality',{})
         record['estimated'] = estimated
         record['partial'] = partial
         record['editor_panel'] = ('basis' if destination=='products' or any(
@@ -92,6 +95,9 @@ def presentation(records, destination):
         record['display_amount'] = (item.get('basis_amount') if destination == 'products' else item.get('amount'))
         record['display_unit'] = ((item.get('basis_label') or item.get('basis_unit')) if destination == 'products'
                                   else (item.get('unit_label') or item.get('unit')))
+        if item.get('source_display_quantity'):
+            record['display_amount']=item['source_display_quantity']['amount']
+            record['display_unit']=item['source_display_quantity']['unit']
         if record['display_unit'] in {'portion','serving'}:record['display_unit']='porción'
     for group in groups.values():group['summary'] = aggregate(group['records'])
     active = [record for record in records if record['state'] != 'omitted']
@@ -109,6 +115,10 @@ def original_fields(item):
     """Allowlisted nutrition evidence, never arbitrary source metadata/secrets."""
     from app.services.importers.nutrition_sources import ALIASES,fold
     original=item.get('original') or {}
+    if isinstance(original.get('new_food'),dict) and isinstance(original['new_food'].get('nutrition'),dict):
+        food=original['new_food'];nutrition=food['nutrition']
+        original=dict(original,name=food.get('name'),brand=food.get('brand'),
+            nutrients=nutrition.get('nutrients',{}),basis_amount=nutrition.get('basis_amount'),basis_unit=nutrition.get('basis_unit'))
     labels=dict(name='Nombre',brand='Marca',amount='Cantidad',unit='Unidad',date='Fecha',meal_type='Comida',
                 basis_amount='Cantidad de referencia',basis_unit='Unidad de referencia')
     labels.update({key:definition[0] for key,definition in NUTRIENTS.items()})

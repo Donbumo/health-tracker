@@ -87,6 +87,10 @@ def _review_from_source(user_id,found,source,*,reuse=True):
                 review['rows'][-1]['resolution']='declared'
             if (entry.get('declaration') or {}).get('provenance',{}).get('quality')=='estimated':
                 review['rows'][-1]['source_quality']='estimated'
+            provenance=(entry.get('declaration') or {}).get('provenance',{})
+            if provenance.get('quality') in {'mixed','verified'}:review['rows'][-1]['source_quality']=provenance['quality']
+            for field in ('nutrient_quality','source_provenance'):
+                if isinstance(provenance.get(field),dict):review['rows'][-1][field]=copy.deepcopy(provenance[field])
             if 'display_brand' in (entry.get('declaration') or {}).get('provenance',{}):
                 review['rows'][-1]['brand']=entry['declaration']['provenance']['display_brand']
             interpretation=(entry.get('declaration') or {}).get('provenance',{}).get('basis_interpretation')
@@ -372,6 +376,8 @@ def canonical(row,review=None,only_index=None):
             if item.get('corrections'):
                 declaration['provenance']['corrections']=copy.deepcopy(item['corrections'])
             if item.get('source_quality'):declaration['provenance']['quality']=item['source_quality']
+            for field in ('nutrient_quality','source_provenance'):
+                if field in item:declaration['provenance'][field]=copy.deepcopy(item[field])
             if 'brand' in item:declaration['provenance']['display_brand']=item['brand']
         entry={'name':item.get('name',''),'bindings':copy.deepcopy(item['ingredients']), 'declaration':declaration,
                'composition':{'complete':item.get('composition_complete',False),'total_mass_g':item.get('total_mass_g') or (item.get('amount') if item.get('unit')=='g' else None)},

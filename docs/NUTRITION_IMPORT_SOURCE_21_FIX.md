@@ -23,7 +23,7 @@ La reproducción contra los blobs públicos de la base certifica HTTP 500, clase
 - Tipos/versiones desconocidos y estructuras irrecuperables devuelven 422 seguro antes de almacenar. No se muestran mensajes de validación con el payload. El alta HTTP de archivo y borrador comparte transacción; un fallo posterior revierte ambos y elimina exclusivamente el archivo nuevo no compartido. Un upload duplicado previo queda intacto.
 - `confirmed:true` del archivo no es consentimiento. Tampoco puede preaceptar añadir consumos a una fecha existente o decidir la autoridad de un agregado previo. Se conservan revisión optimista, CSRF, firma y consentimiento explícito de consumo.
 
-Extractor: `nutrition-source-21-v6`. El reprocesado conserva una interpretación ya aceptada sólo si el nuevo extractor reproduce exactamente significado e inputs efectivos. Las contradicciones y equivalencias no verificadas siguen requiriendo revisión. Se prueba contra código v5 real, vigente y vencido, sin modificar la revisión anterior ni renovar su TTL.
+Extractor actual: `nutrition-source-21-v7`. El reprocesado conserva una interpretación ya aceptada sólo si el nuevo extractor reproduce exactamente significado e inputs efectivos. Las contradicciones y equivalencias no verificadas siguen requiriendo revisión. Se prueba contra código v5 real, vigente y vencido, sin modificar la revisión anterior ni renovar su TTL.
 
 ## Macros, micros y evidencia no contabilizada
 
@@ -43,7 +43,7 @@ Todas las cifras, nombres, marcas, notas y fechas publicadas son ficticias, gene
 | E | [Una base contradictoria](../examples/qa/nutrition-source-21/one-conflict.json): 20 listos y una excepción; corregir sólo esa fila |
 | F | [Parciales, netos y estados cualificados](../examples/qa/nutrition-source-21/partial-net.json): desconocidos, traza y límites preservados |
 
-Resultados observados y comandos:
+Campaña inicial del adaptador v6: resultados observados y comandos. La corrección focal v7 y su QA posterior se detallan más abajo.
 
 - **19 pruebas nuevas SQLite PASS**, incluyendo vector completo, recorrido hasta Unified Summary, export/restore, recuperación v5, identidades exactas, composición canónica, seguridad, rollback, replay y uploads sin huérfanos.
 - **186 regresiones SQLite PASS**: 1.0, notas extensas/contradictorias, revisiones previas, 21 limpios, 51 con una excepción, consentimientos, micros y edición contextual.
@@ -71,6 +71,34 @@ Antes: una subida terminaba en 500 y no había preview utilizable; no se inventa
 ![Preview ficticio escritorio](../design/nutrition-source-21/qa/clean-preview-desktop.png)
 ![Preview ficticio móvil](../design/nutrition-source-21/qa/clean-preview-mobile.png)
 ![Micros parciales y cualificados ficticios](../design/nutrition-source-21/qa/partial-micros-mobile.png)
+
+## Corrección focal de calidad · revisión PM del PR #37
+
+La [revisión PM](https://github.com/Donbumo/health-tracker/pull/37#pullrequestreview-5725889720) detectó que buscar únicamente `estimat`/`estimad` perdía incertidumbre explícita. El [clasificador acotado](../backend/app/services/importers/nutrition_source_quality.py) ahora reconoce aproximaciones, proxies/sustitutos, provisionalidad e incertidumbre en metadatos de procedencia, en español/inglés. Respeta negaciones como «no se estimó», «sin aproximación» y «not estimated»; fechas/marcas inciertas no degradan el vector nutricional.
+
+La precedencia es: calidad explícita por nutriente → limitación que identifica ese nutriente → calidad explícita general → señales generales. Una etiqueta declarada como verificada conserva esa atribución; el clasificador no convierte un método con nombre de etiqueta en una verificación. Una excepción de fibra estimada no cambia la calidad declarada de la proteína. La UI muestra **«Contiene estimaciones»** en la fila mixta y distingue en el detalle los nutrientes estimados de la calidad declarada como verificada.
+
+`source_provenance` conserva los metadatos originales; `nutrient_quality` registra su interpretación por clave dentro de la procedencia canónica ya extensible. Los métodos y la procedencia originales por nutriente permanecen intactos. La única modificación de `nutrition_math` selecciona la etiqueta `sources` por nutriente: no cambia ninguna operación Decimal, cantidad, base, macro, micro, estado ni límite. El extractor v7 evita reutilizar una clasificación v6 como si fuera actual; las revisiones existentes no se reescriben.
+
+La nueva [fixture de calidad mixta](../examples/qa/nutrition-source-21/mixed-quality.json) es enteramente ficticia e independiente del archivo personal. Tiene los mismos valores que la fixture limpia: cuatro declaraciones con «aproximado», «referencia provisional», «proxy» e «incertidumbre», una fila mixta y 16 etiquetas declaradas verificadas. La [comparación reproducible](../scripts/nutrition/qa_source_21_quality.py) con el código revisado acredita **0 → 5 advertencias**, de las cuales cuatro son `Estimado` y una `Contiene estimaciones`, con todos los vectores, cantidades, bases y originales exactamente iguales. [Resultado](../design/nutrition-source-21/qa/quality-review/classification.json).
+
+- **SQLite: 189 PASS**: 49 casos del adaptador/clasificador y 140 regresiones de micros, 1.0, notas extensas/contradictorias y preview limpio/con excepción.
+- **MariaDB 0046 RC/RR: 49 PASS por perfil**, incluidos 21 casos de integración real y 28 del clasificador sin DB; migraciones y `db check` PASS.
+- **Flask/Edge: ocho escenarios / 96 combinaciones PASS**, móvil/escritorio y ambos temas; incluye calidad mixta, 21 alimentos / cuatro comidas, consentimiento inicialmente desmarcado, cero productos y cero escrituras de dominio antes de confirmar en QA. [Navegador](../design/nutrition-source-21/qa/quality-review/browser.json).
+- Las 30 claves mantienen sus valores exactos en preflight, canónico, MealLog, resumen diario, micros 7/30/90, Unified Summary y export/restore. `known`, `unknown`, `trace` y `below_limit` permanecen intactos. Compilación, sintaxis JS y diff check PASS. [Resumen focal](../design/nutrition-source-21/qa/quality-review/results.json).
+
+Estos son resultados locales; no se declara CI PASS. No se repitió la campaña general ni se accedió al archivo personal o a producción. La aceptación privada 2.1 sigue siendo el gate posterior del despliegue controlado, sin guardar consumos personales.
+
+```powershell
+$env:FLASK_SKIP_DOTENV='1'
+.venv/Scripts/python.exe scripts/nutrition/qa_source_21_quality.py
+.venv/Scripts/python.exe -m pytest -q backend/tests/test_nutrition_import_source_21.py backend/tests/test_nutrition_micros.py backend/tests/test_nutrition_import_note_semantics.py backend/tests/test_nutrition_import_legacy_semantics.py backend/tests/test_nutrition_import_preview.py
+```
+
+Para RC/RR, usar el destino QA guardado anteriormente y el mismo módulo `test_nutrition_import_source_21.py`. `ui_qa_source_21.cjs` escribe ahora exclusivamente en `quality-review/`; conserva la evidencia de la campaña inicial.
+
+![Fila mixta ficticia móvil](../design/nutrition-source-21/qa/quality-review/mixed-preview-mobile.png)
+![Detalle de calidad por nutriente ficticio](../design/nutrition-source-21/qa/quality-review/mixed-quality-detail-desktop.png)
 
 ## Plan seguro posterior a revisión
 

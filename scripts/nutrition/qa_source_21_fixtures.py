@@ -47,3 +47,18 @@ def variant(case):
     elif case=='malformed':doc['data']['entries']={'not':'a list'}
     elif case!='clean':raise ValueError('Unknown fictional case')
     return doc
+
+
+def mixed_quality():
+    """All amounts match source21; only fictional quality metadata differs."""
+    doc=source21()
+    foods=[b['new_food']['nutrition'] for entry in doc['data']['entries'] for b in entry['bindings']]
+    for nutrition in foods:
+        nutrition['provenance'].update(method='nutrition_label',quality='label_verified',limitations='QA: sin aproximación; no se estimó.')
+    for nutrition,limitation in zip(foods,('QA: valor aproximado.','QA: referencia provisional.',
+            'QA: valor de proxy.','QA: incertidumbre nutricional.')):
+        nutrition['provenance'].update(quality='file_declared_unverified',limitations=limitation)
+    # A verified label stays verified for every other nutrient.
+    foods[4]['nutrients']['fiber']['provenance']={'method':'composition_proxy','limitations':'QA: fibra aproximada.'}
+    foods[5]['provenance']['limitations']='QA: fecha provisional; etiqueta verificada.'
+    return doc

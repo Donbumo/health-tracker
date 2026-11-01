@@ -1,0 +1,41 @@
+{
+  "status": "PASS",
+  "scope": "PM quality/provenance correction in PR 37; local focal QA only",
+  "data": "entirely fictional",
+  "extractor": "nutrition-source-21-v7",
+  "sqlite": {
+    "passed": 189,
+    "source21": 49,
+    "micros_legacy_notes_preview_regressions": 140
+  },
+  "mariadb": {
+    "READ COMMITTED": {"passed": 49, "integration": 21, "classifier_without_db": 28, "head": "20261018_0046", "db_check": "PASS"},
+    "REPEATABLE READ": {"passed": 49, "integration": 21, "classifier_without_db": 28, "head": "20261018_0046", "db_check": "PASS"}
+  },
+  "browser": {
+    "scenarios": 8,
+    "layout_theme_checks": 96,
+    "javascript_errors": 0,
+    "mixed_desktop_and_mobile": "PASS",
+    "records": 21,
+    "meal_groups": 4,
+    "supported_nutrients": 30,
+    "all_nutrient_preview_daily_summary_parity": true,
+    "consent_initially_unchecked": true,
+    "writes_before_confirmation": 0,
+    "private_products_before_and_after": 0
+  },
+  "nutrients": {
+    "supported_keys": 30,
+    "exact_vectors_and_quantities_unchanged": true,
+    "canonical_and_snapshot_values": "PASS",
+    "daily_micros_7_30_90_unified_summary_export_restore": "PASS",
+    "known_unknown_trace_below_limit_preserved": true,
+    "source_and_per_nutrient_provenance_preserved": true
+  },
+  "compile_js_syntax_diff_check": "PASS",
+  "schema_model_migration_dependency_changes": false,
+  "quantity_basis_or_decimal_algorithm_changes": false,
+  "github_ci_claimed": false,
+  "production_access_or_changes": false
+}

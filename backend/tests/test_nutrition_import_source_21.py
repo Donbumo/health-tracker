@@ -24,7 +24,7 @@ from tests.test_nutrition_import_summary import token
 
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'scripts/nutrition'))
-from qa_source_21_fixtures import source21,variant
+from qa_source_21_fixtures import source21,variant,mixed_quality
 
 
 @pytest.fixture
@@ -68,6 +68,53 @@ def test_source21_upload_recovers_nested_foods(app,client,user):
     assert 'ni-row-edit-form' not in page.text and not re.search(r'name="consent_consumed"[^>]*checked',page.text)
 
 
+@pytest.mark.parametrize('text',[
+    'Valores aproximados.', 'Referencia provisional.', 'Proxy nutricional.',
+    'Incertidumbre en valores.', 'Composición sustituta.', 'Estimación de composición.',
+    'Approximate values.', 'Provisional reference.', 'Nutritional proxy.',
+    'High uncertainty.', 'Substitute composition.', 'Estimated composition.',
+])
+def test_quality_limitations_recognized_without_changing_values(text):
+    from app.services.importers.nutrition_source_quality import classification
+    vector={key:dict(state='known',value='1',unit=definition[1]) for key,definition in NUTRIENTS.items()}
+    before=copy.deepcopy(vector)
+    quality,per_nutrient=classification({'method':'nutrition_label','limitations':text},vector)
+    assert quality=='estimated' and set(per_nutrient.values())=={'estimated'}
+    assert vector==before
+
+
+@pytest.mark.parametrize('text',[
+    'No se estimó.', 'Sin aproximación.', 'Sin proxy.', 'No hay incertidumbre.',
+    'Not estimated.', 'Without approximation.', 'No provisional reference.',
+    'No uncertainty.', 'Fecha provisional.', 'Brand uncertain.',
+])
+def test_quality_negations_and_unrelated_fields_are_not_estimates(text):
+    from app.services.importers.nutrition_source_quality import classification
+    vector={'fiber':dict(state='known',value='2',unit='g')}
+    quality,per_nutrient=classification({'method':'nutrition_label','limitations':text},vector)
+    assert quality=='file_declared_unverified' and per_nutrient['fiber']!='estimated'
+
+
+@pytest.mark.parametrize('metadata,expected',[
+    ({'quality':'label_verified','limitations':'Referencia provisional.'},'verified'),
+    ({'quality':'estimated','limitations':'Sin aproximación.'},'estimated'),
+    ({'quality':'unverified','limitations':'Aproximado.'},'estimated'),
+    ({'method':'nutrition_label','limitations':'Fibra aproximada.'},'mixed'),
+    ({'quality':'label_verified','limitations':'Fibra aproximada; proteína de etiqueta.'},'mixed'),
+    ({'quality':'label_verified','nutrients':{'fiber':{'method':'proxy'}}},'mixed'),
+])
+def test_quality_explicit_precedence_and_scoped_nutrients(metadata,expected):
+    from app.services.importers.nutrition_source_quality import classification
+    vector={key:dict(state='known',value='2',unit='g') for key in ['fiber','protein']}
+    quality,per_nutrient=classification(metadata,vector)
+    assert quality==expected
+    if expected=='mixed':assert per_nutrient['fiber']=='estimated' and per_nutrient['protein']!='estimated'
+    # Direct verified nutrient provenance wins over global uncertainty.
+    vector['protein']['provenance']={'method':'nutrition_label','quality':'label_verified'}
+    quality,per_nutrient=classification({'limitations':'Approximate values.'},vector)
+    assert quality=='mixed' and per_nutrient['protein']=='verified'
+
+
 def start(app,user,document=None):
     app.config['NUTRITION_INTELLIGENCE_ENABLED']=True
     row=imports.start(user,json.dumps(document or source21()).encode(),'QA fictional source21.json')
@@ -85,12 +132,14 @@ def expected(document):
     return totals
 
 
-def test_all_nutrients_preview_daily_micros_dashboard_and_restore(app,client,user):
+@pytest.mark.parametrize('quality_mix',[False,True])
+def test_all_nutrients_preview_daily_micros_dashboard_and_restore(app,client,user,quality_mix):
     from app.services import nutrition_intelligence as ni,nutrition_micros
     from app.services.exporters.user_data import build_user_data_document
     from app.services.account_restore import AccountRestoreService
     from app.services.nutrition_portability import export_bundle,semantic_snapshot
-    doc=source21();totals=expected(doc);row=start(app,user,doc);login(client)
+    doc=mixed_quality() if quality_mix else source21()
+    totals=expected(doc);row=start(app,user,doc);login(client)
     view=review.overview(row)
     assert view['counts']==dict(ready=21,decision=0,invalid=0,omitted=0)
     assert len(view['groups'])==4 and len(view['day_summaries'])==1
@@ -101,6 +150,20 @@ def test_all_nutrients_preview_daily_micros_dashboard_and_restore(app,client,use
     assert all(not r['confirmed'] and r['resolution']=='declared' and not r['ingredients'] for r in row.review_json['rows'])
     assert 'No contabilizados:' in client.get('/nutrition/import/'+row.public_id).text
     canonical=review.document(row);validate_json_document(canonical,'nutrition_import_2_1')
+    if quality_mix:
+        assert [r['quality'] for r in view['records'][:5]]==['Estimado']*4+['Contiene estimaciones']
+        assert all(not r['estimated'] for r in view['records'][5:])
+        original_foods=[b['new_food']['nutrition'] for e in doc['data']['entries'] for b in e['bindings']]
+        for entry,original in zip(canonical['data']['entries'],original_foods):
+            assert entry['declaration']['provenance']['source_provenance']==original['provenance']
+            for key,value in original['nutrients'].items():
+                assert {k:entry['declaration']['nutrients'][key].get(k) for k in value}==value
+        mixed=view['records'][4]
+        assert mixed['preview']['fiber']['sources']==['estimated_source_declaration']
+        assert mixed['preview']['protein']['sources']==['confirmed_source_declaration']
+        assert 'Contiene estimaciones' in client.get('/nutrition/import/'+row.public_id).text
+        again=start(app,user,canonical)
+        assert review.overview(again)['records'][4]['quality']=='Contiene estimaciones'
     with pytest.raises(JsonSchemaValidationError):validate_json_document(doc,'nutrition_import_2_1')
     values=dict(revision=row.revision,token=token(client,row))
     assert client.post('/nutrition/import/'+row.public_id+'/confirm',data=values).status_code==422
@@ -119,7 +182,7 @@ def test_all_nutrients_preview_daily_micros_dashboard_and_restore(app,client,use
     assert len(db.session.query(DailyNutrition).one().meals)==4
     for period in [7,30,90]:
         micros=nutrition_micros.overview(user,date(2026,1,15),period,'calcium')
-        assert Decimal(micros['summary']['calcium']['value'])==totals['calcium']
+        for key,total in totals.items():assert Decimal(micros['summary'][key]['value'])==total
         assert len(micros['chart']['samples'])==period
         assert client.get('/nutrition/micronutrients?date=2026-01-15&period='+str(period)).status_code==200
         assert client.get('/dashboard?period='+str(period)+'&as_of=2026-01-15').status_code==200
@@ -166,8 +229,16 @@ def test_post_storage_validation_failure_no_orphans_or_duplicate_damage(app,clie
     assert list(Path(app.config['UPLOAD_ROOT']).rglob('*'))==files
 
 
-def test_partial_qualifiers_and_net_only_remain_unknown(app,client,user):
-    row=start(app,user,variant('partial'));view=review.overview(row);login(client)
+@pytest.mark.parametrize('quality_mix',[False,True])
+def test_partial_qualifiers_and_net_only_remain_unknown(app,client,user,quality_mix):
+    doc=variant('partial')
+    if quality_mix:
+        for entry in doc['data']['entries']:
+            for b in entry['bindings']:
+                b['new_food']['nutrition']['provenance'].update(method='nutrition_label',quality='label_verified',limitations='sin aproximación')
+                b['new_food']['nutrition']['nutrients']['fiber']['provenance']={'method':'proxy','limitations':'fibra aproximada'}
+    row=start(app,user,doc);view=review.overview(row);login(client)
+    if quality_mix:assert all(r['quality']=='Contiene estimaciones' for r in view['records'])
     assert view['counts']['ready']==21
     for key in ['vitamin_d','iron','zinc','carbohydrate_total']:
         assert view['batch_summary'][key]['value'] is None
@@ -177,6 +248,12 @@ def test_partial_qualifiers_and_net_only_remain_unknown(app,client,user):
     view=overview(user,date(2026,1,15),7,'iron')
     assert view['qualifiers']['iron']['trace']==21 and view['qualifiers']['zinc']['below_limit']==21
     assert view['summary']['vitamin_d']['value'] is None
+    if quality_mix:
+        logs=db.session.scalars(db.select(MealLog)).all()
+        for log in logs:
+            nutrients=log.snapshot_json['declared_nutrition']['nutrients']
+            assert nutrients['vitamin_d']['state']=='unknown' and nutrients['iron']['state']=='trace'
+            assert nutrients['zinc']['state']=='below_limit' and nutrients['zinc']['limit']=='0.1'
 
 
 def test_one_conflict_scoped_correction_and_strict_canonical_roundtrip(app,user):

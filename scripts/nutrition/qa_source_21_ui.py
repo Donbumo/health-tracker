@@ -9,7 +9,7 @@ from flask_login import login_required,current_user
 
 with app.app_context():
     for screen in ['mobile','desktop']:
-        for case in ['clean','conflict','partial']:
+        for case in ['clean','conflict','partial','mixed']:
             user=User(username='qa-source21-'+case+'-'+screen,role='user',display_name='QA synthetic only')
             user.set_password('fictional-preview-ui-password');db.session.add(user)
     db.session.commit()
@@ -21,6 +21,7 @@ def source_state():
     row=db.session.scalar(db.select(NutritionImportDraft).where(NutritionImportDraft.user_id==uid).order_by(NutritionImportDraft.id.desc()))
     view=review.overview(row) if row and row.state=='pending' else None
     return dict(counts=view['counts'] if view else None,groups=len(view['groups']) if view else None,
+        qualities=[r['quality'] for r in view['records']] if view else None,
         summary=view['batch_summary'] if view else ni.daily_summary(uid,date(2026,1,15))['summary'],
         logs=db.session.query(MealLog).filter_by(user_id=uid).count(),products=db.session.query(FoodProduct).filter_by(user_id=uid).count(),
         receipts=db.session.query(NutritionImportReceipt).filter_by(user_id=uid).count())

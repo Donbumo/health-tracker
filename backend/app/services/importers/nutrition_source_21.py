@@ -62,9 +62,10 @@ def source_rows(document,evidence,*,strict):
         row['original']['source_entry']={k:copy.deepcopy(v) for k,v in entry.items()
             if k!='bindings' and (first or k in {'name','date','meal_type'})}
         row.update(kind_hint='consumed',source_quality='file_declared_unverified')
+        from app.services.importers.nutrition_source_quality import classification
         provenance=nutrition.get('provenance') or {}
-        if isinstance(provenance,dict) and (provenance.get('quality')=='estimated' or 'estimat' in str(provenance).casefold() or 'estimad' in str(provenance).casefold()):
-            row['source_quality']='estimated'
+        row['source_quality'],row['nutrient_quality']=classification(provenance,supported)
+        row['source_provenance']=copy.deepcopy(provenance)
         row['warnings'].extend(parent_warnings+uncounted_warnings((nutrition.get('provenance'),food.get('notes'),vector)))
         if set(vector)-NUTRIENTS.keys():row['warnings'].append('Hay nutrientes estructurados no admitidos: se conservan en el original y no se contabilizan.')
         for field,label in [('unit','unit_label'),('basis_unit','basis_label')]:

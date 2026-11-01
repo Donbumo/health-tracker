@@ -46,7 +46,8 @@ def nutritional_preview(item, destination, user_id):
             entry['declaration'] = dict(basis_amount=str(decimal(item.get('basis_amount') or item.get('amount'), positive=True)),
                 basis_unit=item.get('basis_unit') or item.get('unit'), nutrients=vector, confirmed=True,
                 provenance={'basis_interpretation': copy.deepcopy(item.get('basis_interpretation') or {}),
-                            'quality':item.get('source_quality')})
+                            'quality':item.get('source_quality'),
+                            'nutrient_quality':copy.deepcopy(item.get('nutrient_quality',{}))})
             if destination == 'products':
                 # These are product definitions, not recorded intake.
                 entry['composition'] = {'complete': False, 'total_mass_g': None}
@@ -77,10 +78,12 @@ def presentation(records, destination):
         item = record['item']
         record['original_fields']=original_fields(item)
         preview = record['preview']
-        estimated = (item.get('source_quality')=='estimated' or (item.get('basis_interpretation') or {}).get('quality') == 'estimated' or
+        mixed = item.get('source_quality')=='mixed'
+        estimated = (mixed or item.get('source_quality')=='estimated' or (item.get('basis_interpretation') or {}).get('quality') == 'estimated' or
             any((value.get('provenance') or {}).get('quality') == 'estimated' for value in item.get('declaration', {}).values()))
         partial = not preview or any(preview[key]['state'] != 'complete' for key in MACROS)
-        record['quality'] = 'Estimado' if estimated else 'Parcial' if preview and partial else 'Sin dato' if not preview else ''
+        record['quality'] = 'Contiene estimaciones' if mixed else 'Estimado' if estimated else 'Parcial' if preview and partial else 'Sin dato' if not preview else ''
+        record['nutrient_quality'] = item.get('nutrient_quality',{})
         record['estimated'] = estimated
         record['partial'] = partial
         record['editor_panel'] = ('basis' if destination=='products' or any(

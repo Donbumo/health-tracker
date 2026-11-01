@@ -21,7 +21,7 @@ from PIL import Image
 from app.services.nutrition_math import NutritionError, NUTRIENTS, validate_vector
 from app.services.importers.schema_detector import SchemaDetector
 
-EXTRACTOR_VERSION = "nutrition-source-21-v6"
+EXTRACTOR_VERSION = "nutrition-source-21-v7"
 
 MAX_BYTES = 10 * 1024 * 1024
 MAX_EXPANDED = 40 * 1024 * 1024

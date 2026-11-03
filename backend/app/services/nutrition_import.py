@@ -178,12 +178,13 @@ def recover(user_id,key,revision):
     return fresh
 
 
-def verified_original(row):
+def verified_original(row, *, lock=True):
     """Owner-bound retained upload, bounded bytes, size and SHA checked first."""
     user_id=row.user_id
     upload_id=row.source_json.get('upload_id')
-    source=db.session.scalar(db.select(UploadedFile).where(UploadedFile.id==upload_id,
-        UploadedFile.user_id==user_id).with_for_update()) if upload_id else None
+    query=db.select(UploadedFile).where(UploadedFile.id==upload_id,UploadedFile.user_id==user_id)
+    if lock:query=query.with_for_update()
+    source=db.session.scalar(query) if upload_id else None
     if not source:
         raise NutritionError('No hay original disponible. Sube de nuevo el archivo o prepara una revisión desde la biblioteca.',409)
     from app.services.backups import resolve_uploaded_download,BackupError

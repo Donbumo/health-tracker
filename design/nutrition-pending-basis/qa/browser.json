@@ -1,0 +1,929 @@
+{
+  "status": "PASS",
+  "data": "entirely fictional",
+  "cases": [
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "records": 18,
+      "groups": 4,
+      "ready": 18,
+      "pending": 0,
+      "nutrients": 30,
+      "all_totals_exact": true,
+      "semantic_POSTs": 1,
+      "individual_edits": 0,
+      "consent": false,
+      "domain_writes": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "records": 18,
+      "groups": 4,
+      "ready": 17,
+      "pending": 1,
+      "nutrients": 30,
+      "all_totals_exact": true,
+      "semantic_POSTs": 1,
+      "individual_edits": 0,
+      "consent": false,
+      "domain_writes": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "records": 18,
+      "groups": 4,
+      "ready": 18,
+      "pending": 0,
+      "nutrients": 30,
+      "all_totals_exact": true,
+      "semantic_POSTs": 1,
+      "individual_edits": 0,
+      "consent": false,
+      "domain_writes": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "records": 18,
+      "groups": 4,
+      "ready": 17,
+      "pending": 1,
+      "nutrients": 30,
+      "all_totals_exact": true,
+      "semantic_POSTs": 1,
+      "individual_edits": 0,
+      "consent": false,
+      "domain_writes": 0
+    }
+  ],
+  "layouts": [
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 360,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 430,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 768,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 1024,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 1366,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 360,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 430,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 768,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 1024,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 1366,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 360,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 430,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 768,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 1024,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 1366,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 360,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 430,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 768,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 1024,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 1366,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 360,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 430,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 768,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 1024,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 1366,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 360,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 430,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 768,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 1024,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 1366,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 360,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 430,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 768,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 1024,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 1366,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 360,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 430,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 768,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 1024,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "desktop",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 1366,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 360,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 430,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 768,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 1024,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 1366,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 360,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 430,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 768,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 1024,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "before",
+      "width": 1366,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 360,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 430,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 768,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 1024,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 1366,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 360,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 430,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 768,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 1024,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "clean",
+      "phase": "after",
+      "width": 1366,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 360,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 430,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 768,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 1024,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 1366,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 360,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 430,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 768,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 1024,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "before",
+      "width": 1366,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 360,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 390,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 430,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 768,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 1024,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 1366,
+      "theme": "light",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 360,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 390,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 430,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 768,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 1024,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    },
+    {
+      "screen": "mobile",
+      "scenario": "conflict",
+      "phase": "after",
+      "width": 1366,
+      "theme": "dark",
+      "overflow": false,
+      "tinyInputs": 0
+    }
+  ],
+  "errors": []
+}

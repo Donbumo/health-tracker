@@ -298,6 +298,10 @@ def save_decisions(user_id, key, revision, data):
     review = prepared(row,destination=data.get('destination') or None)
     from app.services.importers.nutrition_legacy_semantics import manual_total_candidate
     if data.get('accept_unresolved_totals')=='yes':
+        if (data.get('destination') or data.get('accept_legacy_totals') or
+                data.get('accept_previous') or any(key.startswith('day_') or
+                (key.startswith('r') and key[1:2].isdigit()) for key in data)):
+            raise NutritionError('La confirmación agrupada debe realizarse sin otras ediciones simultáneas.')
         if (review['destination']!='consumed' or row.source_json.get('file_issues')
                 or not any(manual_total_candidate(item) for item in review['rows'])):
             raise NutritionError('No hay declaraciones de cantidad consumida aptas para confirmación agrupada.')

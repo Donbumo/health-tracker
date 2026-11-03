@@ -68,7 +68,9 @@ def nutritional_preview(item, destination, user_id):
 
 def aggregate(records):
     empty = summarize([])
-    parts = [record['preview'] or empty for record in records if record['state'] != 'omitted']
+    # A declared value with an unresolved interpretation is not yet an intake.
+    parts = [record['preview'] if record['state']=='ready' and record['preview'] else empty
+             for record in records if record['state'] != 'omitted']
     return summarize_parts(parts)
 
 
@@ -82,7 +84,11 @@ def presentation(records, destination):
         estimated = (mixed or item.get('source_quality')=='estimated' or (item.get('basis_interpretation') or {}).get('quality') == 'estimated' or
             any((value.get('provenance') or {}).get('quality') == 'estimated' for value in item.get('declaration', {}).values()))
         partial = not preview or any(preview[key]['state'] != 'complete' for key in MACROS)
-        record['quality'] = 'Contiene estimaciones' if mixed else 'Estimado' if estimated else 'Parcial' if preview and partial else 'Sin dato' if not preview else ''
+        record['declared_pending'] = bool(not preview and item.get('declaration')
+            and record['state'] in {'decision','blocked'})
+        record['quality'] = ('Contiene estimaciones' if mixed else 'Estimado' if estimated
+            else 'Declarado · pendiente de validar' if record['declared_pending']
+            else 'Parcial' if preview and partial else 'Sin dato' if not preview else '')
         record['nutrient_quality'] = item.get('nutrient_quality',{})
         record['estimated'] = estimated
         record['partial'] = partial

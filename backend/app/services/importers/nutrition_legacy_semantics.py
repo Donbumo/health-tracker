@@ -161,6 +161,44 @@ def grouped(item):
         and not item.get('portion_conflict'))
 
 
+
+def manual_total_candidate(item):
+    """An unsupported 1.0 envelope can be reviewed, never inferred as consumed.
+
+    The owner must explicitly attest that each absolute value belongs to the
+    displayed consumed quantity. A contradictory base or an existing identity
+    decision is not eligible for that collective attestation.
+    """
+    interpretation=item.get('basis_interpretation') or {}
+    if not (interpretation.get('kind')=='unresolved' and
+            interpretation.get('status')=='proposed' and
+            interpretation.get('origin')=='unrecognized_daily_nutrition'):
+        return False
+    if any(item.get(key) for key in ('skip','ingredients','ingredient_proposals','summary_bindings',
+            'resolution','basis_amount','basis_unit','basis_conflict','portion_conflict',
+            'portion_note_pending','unsupported_vector','carbohydrate_proposal',
+            'quality_problems','equivalence','equivalence_confirmed')):
+        return False
+    if item.get('unit') not in {'g','ml','portion'}:
+        return False
+    if any(w.startswith(('Valor declarado ambiguo: ','Cantidad ilegible o ambigua.'))
+           for w in item.get('warnings',[])):
+        return False
+    # Notes that assert an alternative base must never be bypassed by a batch
+    # checkbox, even when a file fails strict schema recognition.
+    notes=str(item.get('original',{}).get('notes','')).casefold()
+    if re.search(r'(?:por|per)\s*100\s*(?:g|ml)\b|'
+                 r'(?:por|per)\s+(?:porcion|porción|serving|unidad|pieza)\b',notes):
+        return False
+    try:
+        from app.services.nutrition_math import validate_vector
+        decimal(item.get('amount'),positive=True)
+        vector=validate_vector(item.get('declaration',{}))
+    except NutritionError:
+        return False
+    return any(nutrient.get('state')=='known' for nutrient in vector.values())
+
+
 def accept(item, choice):
     interpretation = item.get('basis_interpretation') or {}
     if not interpretation:

@@ -68,9 +68,7 @@ def nutritional_preview(item, destination, user_id):
 
 def aggregate(records):
     empty = summarize([])
-    # A declared value with an unresolved interpretation is not yet an intake.
-    parts = [record['preview'] if record['state']=='ready' and record['preview'] else empty
-             for record in records if record['state'] != 'omitted']
+    parts = [record['preview'] or empty for record in records if record['state'] != 'omitted']
     return summarize_parts(parts)
 
 
@@ -80,15 +78,21 @@ def presentation(records, destination):
         item = record['item']
         record['original_fields']=original_fields(item)
         preview = record['preview']
+        from app.services.importers.nutrition_legacy_semantics import current
+        record['basis_pending']=not current(item) or any(p['code'] in {'basis','basis_conflict','portion'} for p in record['issues'])
+        record['declared_values']={}
+        for key,n in item.get('declaration',{}).items():
+            try:
+                if key in NUTRIENTS and n.get('state') in {'known','trace','below_limit'}:
+                    validate_vector({key:n});record['declared_values'][key]=n
+            except NutritionError:pass
         mixed = item.get('source_quality')=='mixed'
         estimated = (mixed or item.get('source_quality')=='estimated' or (item.get('basis_interpretation') or {}).get('quality') == 'estimated' or
             any((value.get('provenance') or {}).get('quality') == 'estimated' for value in item.get('declaration', {}).values()))
-        partial = not preview or any(preview[key]['state'] != 'complete' for key in MACROS)
-        record['declared_pending'] = bool(not preview and item.get('declaration')
-            and record['state'] in {'decision','blocked'})
-        record['quality'] = ('Contiene estimaciones' if mixed else 'Estimado' if estimated
-            else 'Declarado · pendiente de validar' if record['declared_pending']
-            else 'Parcial' if preview and partial else 'Sin dato' if not preview else '')
+        partial = (any(record['declared_values'].get(key,{}).get('state')!='known' for key in MACROS) if not preview
+                   else any(preview[key]['state'] != 'complete' for key in MACROS))
+        record['quality'] = ('Contiene estimaciones' if mixed else 'Estimado' if estimated else
+            'Declarado pendiente' if not preview and record['declared_values'] else 'Parcial' if preview and partial else 'Sin dato' if not preview else '')
         record['nutrient_quality'] = item.get('nutrient_quality',{})
         record['estimated'] = estimated
         record['partial'] = partial
@@ -105,16 +109,24 @@ def presentation(records, destination):
             record['display_amount']=item['source_display_quantity']['amount']
             record['display_unit']=item['source_display_quantity']['unit']
         if record['display_unit'] in {'portion','serving'}:record['display_unit']='porción'
-    for group in groups.values():group['summary'] = aggregate(group['records'])
+    for group in groups.values():
+        group['summary'] = aggregate(group['records'])
+        group['declared_pending']=sum(not r['preview'] and bool(r['declared_values']) for r in group['records'])
+        group['has_preview']=any(r['preview'] for r in group['records'])
     active = [record for record in records if record['state'] != 'omitted']
     days = OrderedDict()
     for record in active:
         target = record['item'].get('date') or record['item'].get('planned_for')
         if target:days.setdefault(target, []).append(record)
-    return dict(groups=list(groups.values()), batch_summary=aggregate(records),
-        day_summaries=[dict(date=target, summary=aggregate(items)) for target,items in days.items()],
+    return dict(groups=list(groups.values()), batch_summary=aggregate(records),has_consumed_preview=any(r['preview'] for r in active),
+        pending_declared_keys=sorted({key for r in active if not r['preview'] for key in r['declared_values']}),
+        source_qualifiers={key:sorted({r['declared_values'][key]['state'] for r in active
+            if key in r['declared_values'] and r['declared_values'][key]['state'] in {'trace','below_limit'}}) for key in NUTRIENTS},
+        day_summaries=[dict(date=target, summary=aggregate(items),has_preview=any(r['preview'] for r in items),
+            declared_pending=sum(not r['preview'] and bool(r['declared_values']) for r in items)) for target,items in days.items()],
         quality_counts=dict(estimated=sum(r['estimated'] for r in active), partial=sum(r['partial'] for r in active),
-                            unknown=sum(not r['preview'] for r in active)))
+                            unknown=sum(not r['preview'] and not r['declared_values'] for r in active),
+                            declared_pending=sum(not r['preview'] and bool(r['declared_values']) for r in active)))
 
 
 def original_fields(item):

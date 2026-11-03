@@ -43,7 +43,7 @@ def carry_decisions(previous, fresh):
             elif item.get('declaration'):
                 copied.append('new_source_declaration_requires_review')
             interpretation=item.get('basis_interpretation') or {}
-            if interpretation:
+            if isinstance(interpretation.get('origin'),str) and isinstance(interpretation.get('quality'),str):
                 for value in item['declaration'].values():
                     value['provenance']=dict(value.get('provenance') or {},
                         origin_contract=interpretation['origin'],quality=interpretation['quality'],measurement_verified=False)

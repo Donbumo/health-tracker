@@ -1,0 +1,111 @@
+{
+  "status": "QA_PASS_REAL_ACCEPTANCE_PENDING",
+  "date": "2026-11-02",
+  "base_commit": "0fc99ce323f80b72f00e101ba620a308c0b59148",
+  "qa_data": "Entirely fictional; no private source data copied into QA or Git",
+  "production_read_only_diagnosis": {
+    "contract": "nutrition_import 2.1, strict schema valid",
+    "records": 18,
+    "kind_status_origin_missing": 18,
+    "current_false": 18,
+    "legacy_grouped_false": 18,
+    "editorial_annotation_keys": [
+      "consumed_quantity",
+      "basis_unit",
+      "quality"
+    ],
+    "resolution_declared": 18,
+    "source_declarations": 18,
+    "compatible_original_quantity_and_basis": 18,
+    "originals_verified": true,
+    "genuine_basis_or_file_conflicts": 0,
+    "drafts_18_21_23_and_revisions_unchanged": true,
+    "domain_rows_unchanged": true,
+    "technical_or_semantic_draft_writes": 0,
+    "domain_writes": 0,
+    "current_counts": {
+      "ready": 0,
+      "pending": 18,
+      "invalid": 0
+    },
+    "consent_changed": false,
+    "save_all_executed": false,
+    "deployment_performed": false
+  },
+  "sqlite": {
+    "status": "PASS",
+    "tests": 209,
+    "new_cases": 20
+  },
+  "mariadb": {
+    "status": "PASS",
+    "profiles": {
+      "READ COMMITTED": {
+        "status": "PASS",
+        "focal_tests": 69,
+        "head": "20261018_0046"
+      },
+      "REPEATABLE READ": {
+        "status": "PASS",
+        "focal_tests": 69,
+        "head": "20261018_0046"
+      }
+    },
+    "version": "11.4",
+    "storage": "disposable tmpfs",
+    "prior_1_0_2_1_notes_21_23_51_concurrency_security_roundtrip": "PASS both isolation profiles",
+    "db_check": "PASS both isolation profiles"
+  },
+  "browser": {
+    "status": "PASS",
+    "engine": "Edge / Playwright",
+    "scenarios": 22,
+    "layout_checks": 264,
+    "viewport_widths": [
+      360,
+      390,
+      430,
+      768,
+      1024,
+      1366
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "errors": 0,
+    "clean18": {
+      "ready": 18,
+      "pending": 0,
+      "invalid": 0,
+      "meal_groups": 4,
+      "nutrients": 30,
+      "independent_decimal_totals": "PASS",
+      "semantic_POSTs": 1,
+      "individual_edits": 0,
+      "save_all_enabled": true,
+      "consent": false,
+      "domain_writes": 0
+    },
+    "one_exception18": {
+      "ready": 17,
+      "pending": 1,
+      "invalid": 0,
+      "exception_unchanged": true,
+      "save_all_enabled": false,
+      "consent": false,
+      "domain_writes": 0
+    }
+  },
+  "preservation": {
+    "preexisting_local_files_unchanged": 151,
+    "schema_model_migration_dependencies_changed": false
+  },
+  "static_checks": {
+    "python_compileall": "PASS",
+    "javascript_syntax": "PASS",
+    "compose_without_env_file": "PASS",
+    "diff_check": "PASS"
+  },
+  "real_acceptance": "PENDING PM review, integration, controlled deployment and owner UI semantic acceptance; Issue #38 remains open"
+}

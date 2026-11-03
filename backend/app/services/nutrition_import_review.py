@@ -50,6 +50,8 @@ def prepared(row,destination=None):
     """Resolve exact file identities without changing persistent review state."""
     review = copy.deepcopy(row.review_json)
     if destination is not None:review['destination']=destination
+    from app.services.nutrition_import_basis import prepare as prepare_basis
+    prepare_basis(row,review)
     cache = {}
     for item in review['rows']:
         if item.get('source_identity') and item.get('ingredients'):
@@ -132,7 +134,10 @@ def row_issues(row, review, index):
     interpretation=item.get('basis_interpretation') or {}
     if (review['destination']=='consumed' and interpretation and
             not interpretation_current(item) and interpretation.get('kind')!='file_basis_conflict'):
-        errors.append(issue('interpretation',interpretation.get('stale_reason') or 'Confirma si los nutrientes pertenecen a la cantidad original, a la cantidad consumida o a una base distinta.'))
+        from app.services.nutrition_import_basis import grouped as grouped_basis
+        message=('Confirma las bases declaradas mediante la acción compartida del lote.' if grouped_basis(item)
+                 else interpretation.get('stale_reason') or 'Confirma si los nutrientes pertenecen a la cantidad original, a la cantidad consumida o a una base distinta.')
+        errors.append(issue('interpretation',message))
     for nutrient in item.get('quality_problems',[]):
         if nutrient not in item.get('resolved_nutrients',[]):
             errors.append(issue('nutrient','La nota de origen describe un marcador operativo, no un cero conocido. Conserva desconocido o introduce un valor verificado.',nutrient=nutrient))
@@ -253,13 +258,13 @@ def overview(row):
             sufficient(record['item'])
             if not record['item'].get('ingredients') and record['item'].get('resolution') not in {'declared','private'}:eligible+=1
         except NutritionError:pass
-    from app.services.importers.nutrition_legacy_semantics import grouped,manual_total_candidate
+    from app.services.importers.nutrition_legacy_semantics import grouped
+    from app.services.nutrition_import_basis import grouped as grouped_basis
     from app.services.nutrition_import_preview import presentation
     return dict(review=review, records=records, counts=counts, file_issues=file_issues, day_conflicts=conflicts, declaration_eligible=eligible,
         **presentation(records,review['destination']),
         legacy_total_count=sum(grouped(item) for item in review['rows'] if not item.get('skip')),
-        manual_total_count=(sum(manual_total_candidate(item) for item in review['rows'])
-            if review['destination']=='consumed' and not file_issues else 0),
+        declared_basis_count=sum(grouped_basis(item) for item in review['rows'] if not item.get('skip')),
         newly_extracted_declarations=sum('new_source_declaration_requires_review' in detail['fields']
             for detail in row.source_json.get('retained_decisions',[])))
 
@@ -290,23 +295,22 @@ def save_decisions(user_id, key, revision, data):
         try:edit_index=int(data['edit_index'])
         except (TypeError,ValueError) as error:raise NutritionError('Registro inválido.') from error
         if not 0 <= edit_index < len(row.review_json['rows']):raise NutritionError('Registro inválido.')
-        if any(data.get(k) for k in ('destination','accept_previous','accept_legacy_totals','accept_unresolved_totals','use_declarations')) or any(k.startswith('day_') for k in data):
+        if any(data.get(k) for k in ('destination','accept_previous','accept_legacy_totals','accept_declared_bases','use_declarations')) or any(k.startswith('day_') for k in data):
             raise NutritionError('La edición de una fila no cambia el destino ni otras fechas.')
     if data.get('destination'):
         if data['destination'] not in imports.DESTINATIONS:
             raise NutritionError('Selecciona un destino válido.')
     review = prepared(row,destination=data.get('destination') or None)
-    from app.services.importers.nutrition_legacy_semantics import manual_total_candidate
-    if data.get('accept_unresolved_totals')=='yes':
-        if (data.get('destination') or data.get('accept_legacy_totals') or
-                data.get('accept_previous') or any(key.startswith('day_') or
-                (key.startswith('r') and key[1:2].isdigit()) for key in data)):
-            raise NutritionError('La confirmación agrupada debe realizarse sin otras ediciones simultáneas.')
-        if (review['destination']!='consumed' or row.source_json.get('file_issues')
-                or not any(manual_total_candidate(item) for item in review['rows'])):
-            raise NutritionError('No hay declaraciones de cantidad consumida aptas para confirmación agrupada.')
+    from app.services.nutrition_import_basis import grouped as grouped_basis
+    group_basis=data.get('accept_declared_bases')=='yes'
+    group_count=sum(grouped_basis(item) for item in review['rows'] if not item.get('skip'))
+    if group_basis and (not group_count or any(data.get(k) for k in ('destination','accept_previous','accept_legacy_totals','use_declarations')) or any(k.startswith(('r','day_')) for k in data if k not in {'revision'})):
+        raise NutritionError('La aceptación compartida sólo confirma las bases verificadas mostradas, sin otras ediciones.')
     persisted = copy.deepcopy(row.review_json)
     for index, item in enumerate(review['rows']):
+        if group_basis and not grouped_basis(item):
+            review['rows'][index]=persisted['rows'][index]
+            continue
         if edit_index is not None and index != edit_index:
             review['rows'][index]=persisted['rows'][index]
             continue
@@ -394,10 +398,9 @@ def save_decisions(user_id, key, revision, data):
         invalidate_changed(item)
         semantic_choice=data.get(prefix+'interpretation')
         group_requested=data.get('accept_legacy_totals')=='yes' and grouped(item)
-        manual_group_requested=(data.get('accept_unresolved_totals')=='yes'
-                                and manual_total_candidate(item))
-        if semantic_choice or group_requested or manual_group_requested:
-            accept(item,semantic_choice or ('consumed_total' if manual_group_requested else 'source_total'))
+        explicit_group=group_basis and not item.get('skip') and grouped_basis(item)
+        if semantic_choice or group_requested or explicit_group:
+            accept(item,semantic_choice or ('explicit_basis' if explicit_group else 'source_total'))
         choice=data.get(prefix+'resolution')
         selected_identity=any(k.startswith(prefix) and k.endswith('_ref') and v for k,v in data.items())
         if selected_identity and not choice:choice='catalog'
@@ -454,6 +457,10 @@ def save_decisions(user_id, key, revision, data):
             audit_edit(item,before,row.revision,user_id,review['destination'])
     if row.source_json.get('reprocess_pending') and data.get('accept_previous')=='yes':
         row.source_json=dict(row.source_json,reprocess_pending=False)
+    for item in review['rows']:item.pop('_shared_basis_verified',None)
+    if group_basis:
+        row.source_json=dict(row.source_json,semantic_actions=[*row.source_json.get('semantic_actions',[]),
+            dict(action='accept_declared_bases',count=group_count,revision=row.revision+1)])
     row.review_json = review
     row.revision += 1
     db.session.flush()

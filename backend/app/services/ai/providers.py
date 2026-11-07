@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 import json
 import re
@@ -228,6 +228,13 @@ class FakeAIProvider(AIProvider):
             )
 
         allowed_tool_names = tuple(item.name for item in request.tools)
+        if "get_energy_balance" in allowed_tool_names and (
+            len(allowed_tool_names) == 1 or self._is_energy_question(text)
+        ):
+            return AIProviderResponse(tool_calls=(AIProviderToolCall(
+                call_id=str(uuid.uuid4()), name="get_energy_balance",
+                arguments=self._energy_arguments(request, text),
+            ),), usage=self._usage(request, original))
         if len(allowed_tool_names) == 1:
             name = allowed_tool_names[0]
             comparison = any(
@@ -474,9 +481,9 @@ class FakeAIProvider(AIProvider):
     @staticmethod
     def _tool_for(topic: str, preset: str, comparison: bool) -> tuple[str, dict]:
         if topic == "weight":
-            return "get_weight_trend", {"preset": preset}
+            return "get_weight_trend", {"preset": preset, "compare_previous": comparison}
         if topic == "nutrition":
-            return "get_nutrition_summary", {"preset": preset}
+            return "get_nutrition_summary", {"preset": preset, "compare_previous": comparison}
         if topic == "steps":
             return "get_steps_summary", {"preset": preset}
         if topic == "training":
@@ -495,6 +502,56 @@ class FakeAIProvider(AIProvider):
             "preset": preset,
             "compare_previous": comparison,
         }
+
+    @staticmethod
+    def _is_energy_question(text):
+        return any(term in text for term in ("balance", "deficit", "superavit", "gasto", "expenditure"))
+
+    @classmethod
+    def _energy_arguments(cls, request, text):
+        """Deterministic offline QA adapter, using the server's local clock context.
+
+        Cloud providers use the same supplied schema and safety instructions.
+        """
+        from app.services.dashboard.date_range import DashboardDateRange
+        context = re.search(r"Current user-local date: (\d{4}-\d{2}-\d{2})", request.safety_instructions)
+        today = date.fromisoformat(context.group(1)) if context else date.today()
+        zone = re.search(r"User timezone: ([\w/+-]+)", request.safety_instructions)
+        timezone_name = zone.group(1) if zone else "UTC"
+        dates = re.findall(r"\b\d{4}-\d{2}-\d{2}\b", text)
+        if dates:
+            start, end = date.fromisoformat(dates[0]), date.fromisoformat(dates[1] if len(dates) > 1 else dates[0])
+        else:
+            months = ("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre")
+            month = next((name for name in months if re.search(rf"\b{name}\b", text)), None)
+            if month:
+                month_number = months.index(month) + 1
+                year = re.search(r"\b(19\d{2}|20\d{2})\b", text)
+                year_number = int(year.group(1)) if year else today.year
+                day = re.search(rf"\b(\d{{1,2}})\s+(?:de\s+)?{month}\b", text)
+                if day:
+                    start = end = date(year_number, month_number, int(day.group(1)))
+                else:
+                    start = date(year_number, month_number, 1)
+                    next_month = date(year_number + 1, 1, 1) if month_number == 12 else date(year_number, month_number + 1, 1)
+                    end = next_month - timedelta(days=1)
+            elif "semana pasada" in text or "semana anterior" in text:
+                end = today - timedelta(days=today.weekday() + 1)
+                start = end - timedelta(days=6)
+            else:
+                count = re.search(r"ultimos?\s+(\d+)\s+dias?", text)
+                if count:
+                    end, start = today, today - timedelta(days=int(count.group(1)) - 1)
+                else:
+                    selected = re.search(r"Validated plan period: (today|7d|30d|90d)", request.safety_instructions)
+                    preset = _explicit_preset(text) or (selected.group(1) if selected else "30d")
+                    period = DashboardDateRange.from_query({"preset": preset}, timezone_name, today=today)
+                    start, end = period.start_date, period.end_date
+        return {"date_from": start.isoformat(), "date_to": end.isoformat(),
+                "compare_previous": "Previous comparison requested: true" in request.safety_instructions or
+                                    any(term in text for term in ("compara", "frente", "versus", "respecto")),
+                "comparison_mode": "equal_days" if re.search(r"ultimos?\s+\d+\s+dias?", text) else "auto",
+                "include_daily": any(term in text for term in ("que dia", "cada dia", "diario", "tendencia"))}
 
     @classmethod
     def _arguments_for_allowed_tool(
@@ -741,7 +798,28 @@ class FakeAIProvider(AIProvider):
             else "el periodo consultado"
         )
 
-        if result.name == "get_dashboard_summary":
+        if result.name == "get_energy_balance":
+            coverage = data["coverage"]
+            content = (
+                f"Para {label}: ingesta registrada {_number(metrics.get('consumed_kcal'))} kcal; "
+                f"gasto total registrado {_number(metrics.get('expended_kcal'))} kcal. "
+                f"Balance de {coverage['both_known_days']} días comparables de {coverage['requested_days']}: "
+                f"{_number(metrics.get('balance_kcal'))} kcal. "
+                + ("Cobertura registrada completa. " if coverage['is_complete'] else
+                   "Cobertura parcial: no representa el balance completo del periodo. ")
+                + "Cálculo de Health Tracker sobre fuentes registradas, sin inferir calidad por fuente."
+            )
+            if "que dia" in _normalized(_last_user_text(request)):
+                highest = data.get("extremes", {}).get("highest_balance")
+                if highest:
+                    content += f" Mayor balance conocido: {highest['date']}, {_number(highest['balance_kcal'])} kcal."
+            if data.get("comparison"):
+                previous = data["comparison"]["previous"]
+                content += (f" Periodo anterior: {previous['period']['from']} a {previous['period']['to']}; "
+                            f"balance conocido {_number(previous['metrics']['balance_kcal'])} kcal "
+                            f"en {previous['coverage']['both_known_days']} días comparables. "
+                            "Los deltas de promedios indican sus denominadores; las muestras parciales tienen cobertura distinta.")
+        elif result.name == "get_dashboard_summary":
             energy = metrics.get("energy") or {}
             protein = metrics.get("protein") or {}
             weight = metrics.get("weight") or {}

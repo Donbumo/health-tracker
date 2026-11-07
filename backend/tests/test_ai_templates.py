@@ -209,7 +209,7 @@ def test_template_prepare_creates_empty_owner_scoped_conversation_without_auto_s
     ("template_id", "expected_tool"),
     (
         ("period-summary", "get_dashboard_summary"),
-        ("energy-balance", "get_dashboard_summary"),
+        ("energy-balance", "get_energy_balance"),
         ("nutrition-overview", "get_nutrition_summary"),
         ("weight-trend", "get_weight_trend"),
         ("activity-overview", "get_activity_summary"),

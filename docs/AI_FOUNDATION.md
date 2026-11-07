@@ -103,6 +103,7 @@ API keys ni payloads de salud.
 - `get_latest_body_measurement`
 - `get_weight_trend`
 - `get_nutrition_summary`
+- `get_energy_balance`
 - `get_food_patterns`
 - `get_training_summary`
 - `get_training_history`
@@ -111,6 +112,15 @@ API keys ni payloads de salud.
 - `get_steps_summary`
 - `get_goals_summary`
 - `get_data_sources_summary`
+
+`get_energy_balance` cruza nutrición y gasto total canónicos para fechas locales
+inclusivas (hasta 366 días). Declara balance de días comparables, balance completo
+cuando existe cobertura registrada suficiente, denominadores, exclusiones,
+procedencia y comparación contigua; un mes calendario completo se compara con el
+mes calendario anterior. Está autorizada por los manifests de Energía, Nutrición
+y Resumen, sin depender de clasificar la consulta exclusivamente como nutrición.
+Contrato, diagnóstico, regresiones y límites en
+[AI_ENERGY_BALANCE.md](AI_ENERGY_BALANCE.md).
 
 `get_latest_body_measurement` consulta la última medición sin ventana temporal, la última hasta una fecha o la medición de una fecha local exacta; devuelve peso, grasa corporal, masa muscular, agua corporal, grasa visceral, BMR e IMC cuando existen. `get_weight_trend` permanece reservado para cambios, promedios y periodos.
 

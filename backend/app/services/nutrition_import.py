@@ -4,6 +4,7 @@ Extraction never imports. Domain writes run exclusively inside the existing
 StandardImportExecutor transaction and persist one owner-local receipt.
 """
 import copy
+from app.services.nutrition_import_basis import interpretation as basis_metadata
 import io
 from pathlib import Path
 from datetime import date, datetime, timezone, timedelta
@@ -99,22 +100,8 @@ def _review_from_source(user_id,found,source,*,reuse=True):
             if 'basis_interpretation' in provenance:
                 interpretation=provenance['basis_interpretation']
                 item=review['rows'][-1]
-                if isinstance(interpretation,str):
-                    if not interpretation.strip() or len(interpretation)>500:
-                        raise NutritionError('data.entries[].declaration.provenance.basis_interpretation: texto vacío o demasiado largo.')
-                    item['basis_interpretation']=dict(
-                        kind='explicit_basis',status='proposed',origin='nutrition_import_2_1',
-                        quality=item.get('source_quality') or 'file_declared_unverified',
-                        measurement_verified=False,source_annotation=interpretation)
-                elif isinstance(interpretation,dict):
-                    if any(key in interpretation and not isinstance(interpretation[key],str)
-                           for key in ('kind','status','origin','choice','quality','stale_reason')):
-                        raise NutritionError('data.entries[].declaration.provenance.basis_interpretation: controles de decisión inválidos.')
-                    if 'source_basis' in interpretation and not isinstance(interpretation['source_basis'],dict):
-                        raise NutritionError('data.entries[].declaration.provenance.basis_interpretation.source_basis: objeto esperado.')
-                    item['basis_interpretation']=copy.deepcopy(interpretation)
-                else:
-                    raise NutritionError('data.entries[].declaration.provenance.basis_interpretation: se esperaba texto u objeto.')
+                from app.services.nutrition_import_basis import source_interpretation
+                item['basis_interpretation']=source_interpretation(interpretation,provenance.get('quality'))
                 if item.get('unit')=='portion':
                     consumed=provenance.get('consumed_quantity')
                     item['unit_label']=consumed.get('unit') if isinstance(consumed,dict) else None
@@ -375,7 +362,7 @@ def canonical(row,review=None,only_index=None):
     for index,item in enumerate(review['rows']):
         if only_index is not None and index!=only_index:continue
         if item.get('skip'):continue
-        interpretation=item.get('basis_interpretation') or {}
+        interpretation=basis_metadata(item)
         from app.services.importers.nutrition_legacy_semantics import current as interpretation_current
         if review['destination']=='consumed' and interpretation and not interpretation_current(item):
             raise NutritionError('Confirma la interpretación de la declaración legacy antes de guardar.')
@@ -389,7 +376,7 @@ def canonical(row,review=None,only_index=None):
                 'basis_unit':item.get('basis_unit') or item.get('unit'),'nutrients':vector,'confirmed':True,
                 'provenance':{'method':'user_confirmed_file','evidence':item['evidence']},'original_values':copy.deepcopy(item['original'])}
             if item.get('basis_interpretation'):
-                declaration['provenance']['basis_interpretation']=copy.deepcopy(item['basis_interpretation'])
+                declaration['provenance']['basis_interpretation']=copy.deepcopy(basis_metadata(item))
             if item.get('corrections'):
                 declaration['provenance']['corrections']=copy.deepcopy(item['corrections'])
             if item.get('source_quality'):declaration['provenance']['quality']=item['source_quality']

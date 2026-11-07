@@ -1,5 +1,6 @@
 """Explicit, owner-locked fork from a verified original. No domain writes."""
 import copy
+from app.services.nutrition_import_basis import interpretation as basis_metadata
 
 from app.extensions import db
 from app.models import NutritionImportDraft, NutritionImportReceipt
@@ -42,7 +43,7 @@ def carry_decisions(previous, fresh):
                 item['declaration']=copy.deepcopy(old.get('declaration',{}));copied.append('declaration')
             elif item.get('declaration'):
                 copied.append('new_source_declaration_requires_review')
-            interpretation=item.get('basis_interpretation') or {}
+            interpretation=basis_metadata(item)
             if isinstance(interpretation.get('origin'),str) and isinstance(interpretation.get('quality'),str):
                 for value in item['declaration'].values():
                     value['provenance']=dict(value.get('provenance') or {},
@@ -59,8 +60,8 @@ def carry_decisions(previous, fresh):
         # extractor reconstructs exactly the same meaning and effective inputs.
         # A changed/unrecognized contract or file contradiction cannot pass.
         from app.services.importers.nutrition_legacy_semantics import current,semantic_inputs
-        previous_basis=old.get('basis_interpretation') or {}
-        fresh_basis=item.get('basis_interpretation') or {}
+        previous_basis=basis_metadata(old)
+        fresh_basis=basis_metadata(item)
         semantics=('kind','origin','quality','measurement_verified','source_basis','file_conflict')
         if (fresh_basis.get('kind') in {'consumed_total','explicit_basis'} and current(old) and
                 all(previous_basis.get(k)==fresh_basis.get(k) for k in semantics) and

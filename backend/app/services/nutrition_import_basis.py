@@ -4,9 +4,44 @@ import re
 import unicodedata
 
 from app.services.nutrition_math import NutritionError, decimal, validate_vector
-from app.services.importers.nutrition_legacy_semantics import semantic_inputs, _number
 
 ORIGIN = 'nutrition_import_2_1'
+
+
+def source_interpretation(value, quality=None, _depth=0):
+    """Validate editorial metadata before any reader treats it as controls."""
+    path='data.entries[] / declaration / provenance / basis_interpretation'
+    def invalid():raise NutritionError(path+': se esperaba texto no vacío u objeto con metadatos válidos.')
+    if _depth>8:invalid()
+    if isinstance(value,str):
+        if not value.strip():invalid()
+        return dict(kind='explicit_basis',status='proposed',origin=ORIGIN,
+            quality=quality if isinstance(quality,str) else 'file_declared_unverified',
+            measurement_verified=False,source_annotation=value)
+    if not isinstance(value,dict):invalid()
+    for key in ('kind','status','origin','choice','quality','stale_reason','confirmed_by','basis_unit','consumed_quantity'):
+        if key in value and not isinstance(value[key],str):invalid()
+    for key in ('measurement_verified','file_conflict'):
+        if key in value and not isinstance(value[key],bool):invalid()
+    for key in ('source_basis','source_inputs','accepted_inputs','explicit_inputs'):
+        if key not in value:continue
+        part=value[key]
+        if not isinstance(part,dict):invalid()
+        for field in ('unit','basis_unit','unit_label','basis_label','choice','kind'):
+            if field in part and part[field] is not None and not isinstance(part[field],str):invalid()
+        for field in ('amount','basis_amount'):
+            if field in part and part[field] is not None:
+                try:decimal(part[field],positive=True)
+                except NutritionError:invalid()
+        if 'equivalence' in part and part['equivalence'] is not None and not isinstance(part['equivalence'],dict):invalid()
+    if 'source_annotation' in value:
+        source_interpretation(value['source_annotation'],_depth=_depth+1)
+    return copy.deepcopy(value)
+
+
+def interpretation(item):
+    if 'basis_interpretation' not in item:return {}
+    return source_interpretation(item['basis_interpretation'],item.get('source_quality'))
 
 
 def editorial(annotation):
@@ -32,6 +67,7 @@ def textual_consumed_basis(annotation):
         'los valores declarados corresponden a la cantidad consumida',
         'nutrients correspond to the consumed portion',
         'nutrients correspond to the consumed quantity',
+        'nutrientes expresados por la porcion total declarada, sin escalar en la importacion',
     }
 
 
@@ -49,9 +85,9 @@ def clean(item):
 def evidence_conflict(entry):
     text=str((entry.get('declaration') or {}).get('provenance',{}))+' '+str(entry.get('evidence',{}))
     text=text.casefold()
-    if re.search(r'not consumed|no son aportes|bases? distintas|contradict',text):return True
+    if re.search(r'not consumed|no son aportes|bases? distintas|contradict|\bno\s+(?:corresponden|representan|son)\b[^.;\n]{0,100}\b(?:consumid|aportes|ingesta)|\bnot\b[^.;\n]{0,100}\bconsumed\b',text):return True
     basis=entry['declaration']
-    for match in re.finditer(r'(?:valores|macros|nutrientes|values|nutrients)\s+(?:son|declarados|expresados|are)\s+(?:por|per)\s+100\s*(g|ml)\b',text):
+    for match in re.finditer(r'(?:valores|macros|nutrientes|values|nutrients)\s+(?:nutricionales\s+)?(?:(?:son|declarados|expresados|are)\s+)?(?:por|per)\s+100\s*(g|ml)\b',text):
         if decimal(basis['basis_amount'])!=100 or basis['basis_unit']!=match[1]:return True
     return bool(re.search(r'(?:carbohidratos|carbohydrates|carbs).*?netos?\s*,?\s*no\s+totales?',text)
                 and 'carbohydrate_total' in basis['nutrients'])
@@ -63,7 +99,10 @@ def prepare(row, review):
     Reverify the owner-bound original rather than trusting provenance supplied
     by a file. Current decisions, edited bases and bindings are never reset.
     """
-    for item in review['rows']:item.pop('_shared_basis_verified',None)
+    from app.services.importers.nutrition_legacy_semantics import semantic_inputs, _number
+    for item in review['rows']:
+        item.pop('_shared_basis_verified',None)
+        if 'basis_interpretation' in item:item['basis_interpretation']=interpretation(item)
     if review['destination']!='consumed' or row.source_json.get('file_issues'):return
     def pending_annotation(item):
         basis=item.get('basis_interpretation') or {}
@@ -101,14 +140,15 @@ def prepare(row, review):
             if not any(n['state']=='known' for n in vector.values()):continue
         except NutritionError:continue
         item['basis_interpretation']=dict(kind='explicit_basis',status='proposed',origin=ORIGIN,
-            quality=(annotation['quality'] if is_editorial else item.get('source_quality') or 'file_declared_unverified'),
+            quality=(annotation['quality'] if is_editorial else item['basis_interpretation'].get('quality') or 'file_declared_unverified'),
             measurement_verified=False,source_annotation=copy.deepcopy(annotation))
         item['basis_interpretation']['source_inputs']=semantic_inputs(item,'explicit_basis')
         item['_shared_basis_verified']=True
 
 
 def grouped(item):
-    basis=item.get('basis_interpretation') or {}
+    from app.services.importers.nutrition_legacy_semantics import semantic_inputs
+    basis=interpretation(item)
     return (item.get('_shared_basis_verified') is True and clean(item)
         and basis.get('origin')==ORIGIN and basis.get('kind')=='explicit_basis' and basis.get('status')=='proposed'
         and basis.get('source_inputs')==semantic_inputs(item,'explicit_basis'))

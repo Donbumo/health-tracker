@@ -4,6 +4,7 @@ Nutrient amounts use the same Decimal snapshot calculation as the final writer.
 Neither this module nor a contextual edit can persist a food or consumption.
 """
 import copy
+from app.services.nutrition_import_basis import interpretation as basis_metadata
 from collections import OrderedDict
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -45,7 +46,7 @@ def nutritional_preview(item, destination, user_id):
         if vector:
             entry['declaration'] = dict(basis_amount=str(decimal(item.get('basis_amount') or item.get('amount'), positive=True)),
                 basis_unit=item.get('basis_unit') or item.get('unit'), nutrients=vector, confirmed=True,
-                provenance={'basis_interpretation': copy.deepcopy(item.get('basis_interpretation') or {}),
+                provenance={'basis_interpretation': copy.deepcopy(basis_metadata(item)),
                             'quality':item.get('source_quality'),
                             'nutrient_quality':copy.deepcopy(item.get('nutrient_quality',{}))})
             if destination == 'products':
@@ -87,7 +88,7 @@ def presentation(records, destination):
                     validate_vector({key:n});record['declared_values'][key]=n
             except NutritionError:pass
         mixed = item.get('source_quality')=='mixed'
-        estimated = (mixed or item.get('source_quality')=='estimated' or (item.get('basis_interpretation') or {}).get('quality') == 'estimated' or
+        estimated = (mixed or item.get('source_quality')=='estimated' or basis_metadata(item).get('quality') == 'estimated' or
             any((value.get('provenance') or {}).get('quality') == 'estimated' for value in item.get('declaration', {}).values()))
         partial = (any(record['declared_values'].get(key,{}).get('state')!='known' for key in MACROS) if not preview
                    else any(preview[key]['state'] != 'complete' for key in MACROS))

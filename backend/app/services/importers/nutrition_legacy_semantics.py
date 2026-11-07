@@ -7,6 +7,7 @@ Extensions, conflicting bases and free text never establish a new contract.
 """
 import re
 import unicodedata
+from app.services.nutrition_import_basis import interpretation as basis_metadata
 
 from flask import current_app
 
@@ -59,7 +60,7 @@ def equivalence_inputs(item):
 
 def semantic_inputs(item, choice=None):
     """Stable semantic values, not display formatting or unrelated draft fields."""
-    interpretation=item.get('basis_interpretation') or {}
+    interpretation=basis_metadata(item)
     result={key:_number(item.get(key)) for key in ('amount','basis_amount')}
     result.update({key:_label(item.get(key)) for key in ('unit','basis_unit','unit_label','basis_label')})
     result['choice']=choice or interpretation.get('choice') or 'explicit_basis'
@@ -72,7 +73,7 @@ def semantic_inputs(item, choice=None):
 
 
 def current(item):
-    interpretation=item.get('basis_interpretation') or {}
+    interpretation=basis_metadata(item)
     if not interpretation:return True
     if interpretation.get('status')=='accepted':
         return (item.get('canonical_basis_inputs') or interpretation.get('accepted_inputs'))==semantic_inputs(item)
@@ -82,7 +83,7 @@ def current(item):
 
 
 def invalidate_changed(item):
-    interpretation=item.get('basis_interpretation') or {}
+    interpretation=basis_metadata(item)
     if interpretation.get('status') in {'accepted','explicit'} and not current(item):
         item.pop('canonical_basis_inputs',None)
         item['basis_interpretation']=dict(interpretation,status='proposed',
@@ -150,7 +151,7 @@ def annotate(row, document, meal, original, note_context=None):
 
 
 def grouped(item):
-    interpretation = item.get('basis_interpretation') or {}
+    interpretation = basis_metadata(item)
     source = interpretation.get('source_basis') or {}
     return (interpretation.get('kind') == 'consumed_total' and interpretation.get('status') == 'proposed'
         and bool(source) and item.get('unit') == source.get('basis_unit')
@@ -162,7 +163,7 @@ def grouped(item):
 
 
 def accept(item, choice):
-    interpretation = item.get('basis_interpretation') or {}
+    interpretation = basis_metadata(item)
     if not interpretation:
         raise NutritionError('Este registro no tiene una interpretación legacy pendiente.')
     item.pop('canonical_basis_inputs',None)

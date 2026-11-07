@@ -1,5 +1,6 @@
 """Explicit file portions, without inferred weights or catalog identities."""
 import copy
+from app.services.nutrition_import_basis import interpretation as basis_metadata
 
 from app.services.nutrition_math import NutritionError, decimal, precise
 
@@ -18,7 +19,7 @@ def consumption(item):
     if item.get('portion_text_reviewed'):evidence['text_reviewed']=True
     if item.get('portion_conflict') and not item.get('portion_text_reviewed'):
         raise NutritionError(item['portion_conflict'])
-    interpretation=item.get('basis_interpretation') or {}
+    interpretation=basis_metadata(item)
     nominal_total=(interpretation.get('status')=='accepted' and interpretation.get('choice') in {'source_total','consumed_total'}
         and unit==basis=='portion' and amount==decimal(item.get('basis_amount'),positive=True))
     if item.get('portion_note_pending') and not (nominal_total or item.get('portion_text_reviewed') or item.get('equivalence_confirmed')):
@@ -46,7 +47,7 @@ def sufficient(item):
         raise NutritionError('El archivo declara bases nutricionales contradictorias. Revisa a qué cantidad pertenecen sus valores.')
     if not any(value['state'] == 'known' for value in vector.values()):
         raise NutritionError('Se necesita al menos un nutriente absoluto declarado; los ausentes siguen desconocidos.')
-    interpretation=item.get('basis_interpretation') or {}
+    interpretation=basis_metadata(item)
     from app.services.importers.nutrition_legacy_semantics import current
     if interpretation and not current(item):
         raise NutritionError('Confirma a qué cantidad corresponden los valores del archivo legacy; no hace falta un producto.')

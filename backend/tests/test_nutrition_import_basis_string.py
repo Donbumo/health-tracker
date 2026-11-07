@@ -118,5 +118,5 @@ def test_text_and_object_basis_are_not_preconsented_by_file(app,client,user):
     assert all(r['item']['basis_interpretation']['status']=='proposed'
                for r in state['records'])
     assert client.post('/nutrition/import/'+row.public_id+'/confirm',
-                       data={'revision':row.revision,'token':'','consent_consumed':'yes'}).status_code==422
+                       data={'revision':row.revision,'token':'','consent_consumed':'yes'}).status_code==409
     assert domain_counts()==(0,0,0)

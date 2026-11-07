@@ -55,6 +55,7 @@ def test_string_basis_14_plus_four_editorial_objects_one_group_after_owner_actio
                for r in view['records'][:14])
     page=client.get('/nutrition/import/'+row.public_id)
     assert page.status_code==200 and 'name="accept_declared_bases"' in page.text
+    assert 'Nota editorial sobre la base:' in page.text and PHRASE in page.text
     assert 'Declarado:' in page.text and domain_counts()==(0,0,0)
     assert row.review_json==frozen
     posted=client.post('/nutrition/import/'+row.public_id+'/decisions',

@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "data": "entirely fictional",
+  "prior_sha": "4ed7d7620ea969ac0b4179bf7e40b8811b213a1d",
+  "before_HTTP": 500,
+  "before_tracebacks": [
+    {
+      "exception": "AttributeError",
+      "message": "'str' object has no attribute 'get'",
+      "frames": [
+        {
+          "file": "nutrition_import.py",
+          "line": 53,
+          "function": "start"
+        },
+        {
+          "file": "nutrition_import.py",
+          "line": 109,
+          "function": "_review_from_source"
+        }
+      ]
+    }
+  ],
+  "prior_snapshot_reader": "AttributeError: 'str' object has no attribute 'get'",
+  "after_upload_HTTP": 302,
+  "after_review_HTTP": 200,
+  "records": 14,
+  "proposed_group": 14,
+  "domain_writes": 0,
+  "prior_failed_import_orphan_files": 0,
+  "schema_changed": false
+}

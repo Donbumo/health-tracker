@@ -4,6 +4,7 @@ Read helpers copy draft JSON. Only save_decisions mutates a pending review;
 canonical domain writes still belong to StandardImportExecutor.
 """
 import copy
+from app.services.nutrition_import_basis import interpretation as basis_metadata
 from datetime import date
 
 from app.extensions import db
@@ -131,7 +132,7 @@ def row_issues(row, review, index):
     errors = []
     if item.get('basis_conflict') and not item.get('basis_conflict_resolved'):
         errors.append(issue('basis_conflict','El archivo declara bases nutricionales contradictorias. Revisa a qué cantidad pertenecen sus valores.'))
-    interpretation=item.get('basis_interpretation') or {}
+    interpretation=basis_metadata(item)
     if (review['destination']=='consumed' and interpretation and
             not interpretation_current(item) and interpretation.get('kind')!='file_basis_conflict'):
         from app.services.nutrition_import_basis import grouped as grouped_basis
@@ -226,7 +227,7 @@ def overview(row):
         errors = [] if item.get('skip') else row_issues(row, review, index)
         empty = not item.get('name') and not item.get('declaration') and not item.get('ingredients') and not item.get('ingredient_proposals')
         state = 'omitted' if item.get('skip') else 'invalid' if empty or item.get('unsupported_vector') else 'decision' if errors else 'ready'
-        if state=='ready' and file_issues and (item.get('basis_interpretation') or {}).get('file_conflict'):
+        if state=='ready' and file_issues and basis_metadata(item).get('file_conflict'):
             state='blocked';counts.setdefault('blocked',0)
         counts[state] += 1
         bindings = []
@@ -385,7 +386,7 @@ def save_decisions(user_id, key, revision, data):
         if data.get(prefix+'portion_text_reviewed')=='yes':item['portion_text_reviewed']=True
         if data.get(prefix+'portion_label_confirmed')=='yes':item['portion_label_confirmed']=True
         if edit_index is not None and interpretation_current(before):
-            interpretation=item.get('basis_interpretation') or {}
+            interpretation=basis_metadata(item)
             after_semantics=semantic_inputs(item)
             stable_basis=all(previous_semantics[k]==after_semantics[k] for k in previous_semantics if k!='amount')
             fixed_basis=(interpretation.get('status')=='explicit' or

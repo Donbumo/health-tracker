@@ -214,8 +214,10 @@ def snapshot_summary(snapshot):
                         total_weight=str(expected_mass) if expected_mass is not None else None,
                         coverage='100' if expected_mass is not None else None,
                         known_items=len(snapshot['ingredients']), total_items=len(snapshot['ingredients']))
-            interpretation=declaration.get('provenance',{}).get('basis_interpretation') or {}
             provenance=declaration.get('provenance',{})
+            from app.services.nutrition_import_basis import source_interpretation
+            interpretation=(source_interpretation(provenance['basis_interpretation'],provenance.get('quality'))
+                            if 'basis_interpretation' in provenance else {})
             qualities=provenance.get('nutrient_quality',{})
             quality=(qualities.get(key) if isinstance(qualities,dict) else None) or interpretation.get('quality',provenance.get('quality'))
             source=('estimated_source_declaration' if quality=='estimated' else 'confirmed_source_declaration')

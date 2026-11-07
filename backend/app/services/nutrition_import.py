@@ -4,6 +4,7 @@ Extraction never imports. Domain writes run exclusively inside the existing
 StandardImportExecutor transaction and persist one owner-local receipt.
 """
 import copy
+from app.services.nutrition_import_basis import interpretation as basis_metadata
 import io
 from pathlib import Path
 from datetime import date, datetime, timezone, timedelta
@@ -93,20 +94,22 @@ def _review_from_source(user_id,found,source,*,reuse=True):
                 if isinstance(provenance.get(field),dict):review['rows'][-1][field]=copy.deepcopy(provenance[field])
             if 'display_brand' in (entry.get('declaration') or {}).get('provenance',{}):
                 review['rows'][-1]['brand']=entry['declaration']['provenance']['display_brand']
-            interpretation=(entry.get('declaration') or {}).get('provenance',{}).get('basis_interpretation')
-            if interpretation:
+            # Source provenance is editorial evidence, not trusted draft
+            # decision state. Canonical 2.1 permits free-text annotations; do
+            # not call .get() on a string or silently grant it user authority.
+            if 'basis_interpretation' in provenance:
+                interpretation=provenance['basis_interpretation']
                 item=review['rows'][-1]
-                item['basis_interpretation']=copy.deepcopy(interpretation)
-                provenance=entry['declaration']['provenance']
+                from app.services.nutrition_import_basis import source_interpretation
+                item['basis_interpretation']=source_interpretation(interpretation,provenance.get('quality'))
                 if item.get('unit')=='portion':
-                    item['unit_label']=provenance.get('consumed_quantity',{}).get('unit')
+                    consumed=provenance.get('consumed_quantity')
+                    item['unit_label']=consumed.get('unit') if isinstance(consumed,dict) else None
                     item['basis_label']=provenance.get('basis_label')
-                # The canonical document already expresses explicit quantity/
-                # base units, possibly converted from nominal source portions.
-                # Bind edits to that representation, preserving historical
-                # source acceptance/evidence unchanged in provenance.
+                # A source cannot pre-accept a textual basis assertion. Historic
+                # structured decisions retain their existing explicit semantics.
                 from app.services.importers.nutrition_legacy_semantics import semantic_inputs
-                if interpretation.get('status') in {'accepted','explicit'}:
+                if item['basis_interpretation'].get('status') in {'accepted','explicit'}:
                     item['canonical_basis_inputs']=semantic_inputs(item)
     row=NutritionImportDraft(user_id=user_id,source_sha256=source.sha256,
         source_json={'upload_id':source.id,'profile':found['profile'],'classification_hint':found['classification_hint'],
@@ -359,7 +362,7 @@ def canonical(row,review=None,only_index=None):
     for index,item in enumerate(review['rows']):
         if only_index is not None and index!=only_index:continue
         if item.get('skip'):continue
-        interpretation=item.get('basis_interpretation') or {}
+        interpretation=basis_metadata(item)
         from app.services.importers.nutrition_legacy_semantics import current as interpretation_current
         if review['destination']=='consumed' and interpretation and not interpretation_current(item):
             raise NutritionError('Confirma la interpretación de la declaración legacy antes de guardar.')
@@ -373,7 +376,7 @@ def canonical(row,review=None,only_index=None):
                 'basis_unit':item.get('basis_unit') or item.get('unit'),'nutrients':vector,'confirmed':True,
                 'provenance':{'method':'user_confirmed_file','evidence':item['evidence']},'original_values':copy.deepcopy(item['original'])}
             if item.get('basis_interpretation'):
-                declaration['provenance']['basis_interpretation']=copy.deepcopy(item['basis_interpretation'])
+                declaration['provenance']['basis_interpretation']=copy.deepcopy(basis_metadata(item))
             if item.get('corrections'):
                 declaration['provenance']['corrections']=copy.deepcopy(item['corrections'])
             if item.get('source_quality'):declaration['provenance']['quality']=item['source_quality']

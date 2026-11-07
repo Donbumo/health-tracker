@@ -1,0 +1,217 @@
+{
+  "status": "ENGINEERING_QA_PASS_PRODUCTIVE_ACCEPTANCE_PENDING_PM",
+  "issue": 40,
+  "PR": 41,
+  "date": "2026-11-07",
+  "base_production_sha": "4ed7d7620ea969ac0b4179bf7e40b8811b213a1d",
+  "data": "Only invented data in fixtures, tests and screenshots",
+  "reproduction": {
+    "before_HTTP": 500,
+    "exception": "AttributeError: 'str' object has no attribute 'get'",
+    "site": "_review_from_source",
+    "additional_prior_reader": "snapshot_summary",
+    "after_upload_HTTP": 302,
+    "after_review_HTTP": 200
+  },
+  "SQLite": {
+    "status": "PASS",
+    "tests": 258,
+    "new_corrective_tests": 35
+  },
+  "MariaDB": {
+    "profiles": {
+      "READ COMMITTED": {
+        "status": "PASS",
+        "tests": 104,
+        "head": "20261018_0046"
+      },
+      "REPEATABLE READ": {
+        "status": "PASS",
+        "tests": 104,
+        "head": "20261018_0046"
+      }
+    },
+    "prior_regressions": {
+      "READ_COMMITTED": {
+        "status": "PASS",
+        "cases": 3,
+        "db_check": "PASS",
+        "notes_concurrency_security_prior_forks_roundtrip": "PASS"
+      },
+      "REPEATABLE_READ": {
+        "status": "PASS",
+        "cases": 3,
+        "db_check": "PASS",
+        "notes_concurrency_security_prior_forks_roundtrip": "PASS"
+      }
+    }
+  },
+  "browser": {
+    "status": "PASS",
+    "data": "entirely fictional",
+    "scenarios": 32,
+    "layouts": 480,
+    "errors": 0,
+    "primary_cases": [
+      {
+        "screen": "desktop",
+        "scenario": "clean",
+        "upload_status": 302,
+        "ready": 14,
+        "pending": 0,
+        "nutrients": 30,
+        "exact_decimal_totals": true,
+        "semantic_POSTs": 1,
+        "domain_writes": 0,
+        "consent": false
+      },
+      {
+        "screen": "desktop",
+        "scenario": "conflict",
+        "upload_status": 302,
+        "ready": 13,
+        "pending": 1,
+        "nutrients": 30,
+        "exact_decimal_totals": true,
+        "semantic_POSTs": 1,
+        "domain_writes": 0,
+        "consent": false
+      },
+      {
+        "screen": "desktop",
+        "scenario": "unknown",
+        "upload_status": 302,
+        "ready": 13,
+        "pending": 1,
+        "nutrients": 30,
+        "exact_decimal_totals": true,
+        "semantic_POSTs": 1,
+        "domain_writes": 0,
+        "consent": false
+      },
+      {
+        "screen": "desktop",
+        "scenario": "qualifiers",
+        "upload_status": 302,
+        "ready": 14,
+        "pending": 0,
+        "nutrients": 30,
+        "exact_decimal_totals": true,
+        "semantic_POSTs": 1,
+        "domain_writes": 0,
+        "consent": false
+      },
+      {
+        "screen": "desktop",
+        "scenario": "invalid",
+        "upload_status": 422,
+        "ready": 0,
+        "pending": 0,
+        "nutrients": 0,
+        "exact_decimal_totals": null,
+        "semantic_POSTs": 0,
+        "domain_writes": 0,
+        "consent": false
+      },
+      {
+        "screen": "mobile",
+        "scenario": "clean",
+        "upload_status": 302,
+        "ready": 14,
+        "pending": 0,
+        "nutrients": 30,
+        "exact_decimal_totals": true,
+        "semantic_POSTs": 1,
+        "domain_writes": 0,
+        "consent": false
+      },
+      {
+        "screen": "mobile",
+        "scenario": "conflict",
+        "upload_status": 302,
+        "ready": 13,
+        "pending": 1,
+        "nutrients": 30,
+        "exact_decimal_totals": true,
+        "semantic_POSTs": 1,
+        "domain_writes": 0,
+        "consent": false
+      },
+      {
+        "screen": "mobile",
+        "scenario": "unknown",
+        "upload_status": 302,
+        "ready": 13,
+        "pending": 1,
+        "nutrients": 30,
+        "exact_decimal_totals": true,
+        "semantic_POSTs": 1,
+        "domain_writes": 0,
+        "consent": false
+      },
+      {
+        "screen": "mobile",
+        "scenario": "qualifiers",
+        "upload_status": 302,
+        "ready": 14,
+        "pending": 0,
+        "nutrients": 30,
+        "exact_decimal_totals": true,
+        "semantic_POSTs": 1,
+        "domain_writes": 0,
+        "consent": false
+      },
+      {
+        "screen": "mobile",
+        "scenario": "invalid",
+        "upload_status": 422,
+        "ready": 0,
+        "pending": 0,
+        "nutrients": 0,
+        "exact_decimal_totals": null,
+        "semantic_POSTs": 0,
+        "domain_writes": 0,
+        "consent": false
+      }
+    ]
+  },
+  "private_real_file_inspection": {
+    "records": 14,
+    "textual_annotations": 14,
+    "strict_schema": "PASS",
+    "source_nutrient_types": 30,
+    "matching_quantity_basis_without_contradictions": 14,
+    "corresponding_NAS_variant_nutrients_quantity_basis_identity_parity": "14/14",
+    "full_documents_byte_identical": false,
+    "originals_integrity": "PASS",
+    "personal_file_copied_to_QA_or_Git": false,
+    "observed_500_site": "nutrition_import.py:_review_from_source",
+    "other_independent_traceback_types_in_reviewed_window": 0
+  },
+  "production": {
+    "status": "PASS",
+    "installed_sha": "4ed7d7620ea969ac0b4179bf7e40b8811b213a1d",
+    "active_image_unchanged": true,
+    "owner_drafts_unchanged": 34,
+    "previous_18_21_23_unchanged": true,
+    "nutrition_domain_unchanged": true,
+    "upload_metadata_changed_during_observation": true,
+    "upload_rows_delta": 3,
+    "HTTPS_health_and_authenticated_import_reached_main_web": true,
+    "TLS_unchanged": true,
+    "production_writes": 0,
+    "consumption_confirmation_POSTs": 0,
+    "production_deployment_performed": false,
+    "production_semantic_acceptances": 0,
+    "local_original_unchanged": true
+  },
+  "prior_local_files_preserved": 232,
+  "schema_models_migrations_dependencies_changed": false,
+  "static_checks": [
+    "compileall PASS",
+    "JS syntax PASS",
+    "Compose without .env PASS",
+    "diff check PASS"
+  ],
+  "limitation": "Production remains on the old SHA; PM integration/deployment and real owner acceptance remain pending. No merge or deployment performed."
+}

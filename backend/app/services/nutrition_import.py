@@ -93,20 +93,36 @@ def _review_from_source(user_id,found,source,*,reuse=True):
                 if isinstance(provenance.get(field),dict):review['rows'][-1][field]=copy.deepcopy(provenance[field])
             if 'display_brand' in (entry.get('declaration') or {}).get('provenance',{}):
                 review['rows'][-1]['brand']=entry['declaration']['provenance']['display_brand']
-            interpretation=(entry.get('declaration') or {}).get('provenance',{}).get('basis_interpretation')
-            if interpretation:
+            # Source provenance is editorial evidence, not trusted draft
+            # decision state. Canonical 2.1 permits free-text annotations; do
+            # not call .get() on a string or silently grant it user authority.
+            if 'basis_interpretation' in provenance:
+                interpretation=provenance['basis_interpretation']
                 item=review['rows'][-1]
-                item['basis_interpretation']=copy.deepcopy(interpretation)
-                provenance=entry['declaration']['provenance']
+                if isinstance(interpretation,str):
+                    if not interpretation.strip() or len(interpretation)>500:
+                        raise NutritionError('data.entries[].declaration.provenance.basis_interpretation: texto vacío o demasiado largo.')
+                    item['basis_interpretation']=dict(
+                        kind='explicit_basis',status='proposed',origin='nutrition_import_2_1',
+                        quality=item.get('source_quality') or 'file_declared_unverified',
+                        measurement_verified=False,source_annotation=interpretation)
+                elif isinstance(interpretation,dict):
+                    if any(key in interpretation and not isinstance(interpretation[key],str)
+                           for key in ('kind','status','origin','choice','quality','stale_reason')):
+                        raise NutritionError('data.entries[].declaration.provenance.basis_interpretation: controles de decisión inválidos.')
+                    if 'source_basis' in interpretation and not isinstance(interpretation['source_basis'],dict):
+                        raise NutritionError('data.entries[].declaration.provenance.basis_interpretation.source_basis: objeto esperado.')
+                    item['basis_interpretation']=copy.deepcopy(interpretation)
+                else:
+                    raise NutritionError('data.entries[].declaration.provenance.basis_interpretation: se esperaba texto u objeto.')
                 if item.get('unit')=='portion':
-                    item['unit_label']=provenance.get('consumed_quantity',{}).get('unit')
+                    consumed=provenance.get('consumed_quantity')
+                    item['unit_label']=consumed.get('unit') if isinstance(consumed,dict) else None
                     item['basis_label']=provenance.get('basis_label')
-                # The canonical document already expresses explicit quantity/
-                # base units, possibly converted from nominal source portions.
-                # Bind edits to that representation, preserving historical
-                # source acceptance/evidence unchanged in provenance.
+                # A source cannot pre-accept a textual basis assertion. Historic
+                # structured decisions retain their existing explicit semantics.
                 from app.services.importers.nutrition_legacy_semantics import semantic_inputs
-                if interpretation.get('status') in {'accepted','explicit'}:
+                if item['basis_interpretation'].get('status') in {'accepted','explicit'}:
                     item['canonical_basis_inputs']=semantic_inputs(item)
     row=NutritionImportDraft(user_id=user_id,source_sha256=source.sha256,
         source_json={'upload_id':source.id,'profile':found['profile'],'classification_hint':found['classification_hint'],

@@ -28,6 +28,7 @@ from app.services.mobile_health import health_progress
 from app.services.mobile_progress import history_page
 from app.services.mobile_sync import MobileSyncError
 from app.services.nutrition_patterns import NutritionPatternsService
+from app.services.energy_balance import EnergyBalanceService
 
 
 PERIOD_PRESETS = (
@@ -106,17 +107,17 @@ def _clean_text(value: str, maximum: int = 500) -> str:
     return value[:maximum]
 
 
-def sanitize_untrusted_data(value, *, depth: int = 0):
+def sanitize_untrusted_data(value, *, depth: int = 0, max_items: int = 100):
     """Bound imported/external values before they cross the provider boundary."""
     if depth > 8:
         return "[truncated]"
     if isinstance(value, dict):
         return {
-            _clean_text(str(key), 80): sanitize_untrusted_data(item, depth=depth + 1)
+            _clean_text(str(key), 80): sanitize_untrusted_data(item, depth=depth + 1, max_items=max_items)
             for key, item in list(value.items())[:80]
         }
     if isinstance(value, (list, tuple)):
-        return [sanitize_untrusted_data(item, depth=depth + 1) for item in value[:100]]
+        return [sanitize_untrusted_data(item, depth=depth + 1, max_items=max_items) for item in value[:max_items]]
     if isinstance(value, str):
         return _clean_text(value)
     if value is None or isinstance(value, (bool, int, float)):
@@ -486,6 +487,33 @@ def _nutrition(user: User, arguments: dict) -> AIToolExecution:
     return AIToolExecution(sanitize_untrusted_data(data), tuple(evidence))
 
 
+def _energy_balance(user: User, arguments: dict) -> AIToolExecution:
+    try:
+        period = DashboardDateRange.from_query(
+            {"from": arguments["date_from"], "to": arguments["date_to"],
+             "compare": "previous" if arguments.get("compare_previous") else ""},
+            _timezone(user),
+        )
+        data = EnergyBalanceService().build(user.id, period, include_daily=arguments.get("include_daily", False),
+                                           comparison_mode=arguments.get("comparison_mode", "auto"))
+    except DashboardRangeError as error:
+        raise AIToolError("invalid_range", str(error), rejected=True) from error
+    evidence = []
+
+    def attach_sources(result):
+        counts = Counter((item["metric"], item["source"]) for item in result.pop("provenance"))
+        sources = [_source_item(metric, source, count, {
+            key: result["period"][key] for key in ("from", "to", "timezone")
+        }) for (metric, source), count in counts.items()]
+        sources.append(_calculated_evidence("energy_balance", result["period"]))
+        result["sources"] = sources
+        evidence.extend(sources)
+    attach_sources(data)
+    if data["comparison"] is not None:
+        attach_sources(data["comparison"]["previous"])
+    return AIToolExecution(sanitize_untrusted_data(serialize_dashboard(data), max_items=366), tuple(evidence))
+
+
 def _food_patterns(user: User, arguments: dict) -> AIToolExecution:
     date_range = _date_range(user, arguments)
     result = NutritionPatternsService().build(user.id, date_range)
@@ -730,6 +758,26 @@ def _gym_session(user, arguments):
 class AIToolRegistry:
     def __init__(self):
         self._handlers: dict[str, tuple[AIToolDefinition, Callable[[User, dict], AIToolExecution]]] = {}
+        self._register(
+            "get_energy_balance",
+            "Balance energético owner-only de fechas locales inclusivas (máximo 366 días). "
+            "Cruza ingesta y gasto TOTAL canónicos, sin añadir calorías activas. "
+            "Usar para balance, déficit, superávit y consumo frente a gasto, incluso desde nutrición. "
+            "compare_previous=true calcula el periodo contiguo anterior; un mes completo compara meses calendario. "
+            "comparison_mode=equal_days conserva ventanas móviles aunque coincidan con un mes; "
+            "calendar_month exige un único mes completo; auto reconoce meses completos por sus límites. "
+            "include_daily=true devuelve todos los días; siempre incluye extremos, cobertura y denominadores. "
+            "Los balances parciales sólo representan días comparables, nunca todo el periodo.",
+            {"type": "object", "properties": {
+                "date_from": {"type": "string", "format": "date", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+                "date_to": {"type": "string", "format": "date", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+                "compare_previous": {"type": "boolean"}, "include_daily": {"type": "boolean"},
+                "comparison_mode": {"type": "string", "enum": ["auto", "equal_days", "calendar_month"]}},
+             "required": ["date_from", "date_to"], "additionalProperties": False},
+            _energy_balance,
+            _metadata(("all", "energy", "nutrition"), ("daily_nutrition", "daily_energy"),
+                      ("balance", "intake", "expenditure"), ("summary", "trend", "compare", "coverage")),
+        )
         self._register("get_coach_brief", "Señales determinísticas owner-only con cobertura y evidencia estructurada.",
             {"type": "object", "properties": {
                 "preset": {"type": "string", "enum": ["today", "7d"]},

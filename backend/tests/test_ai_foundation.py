@@ -462,6 +462,7 @@ def test_tool_registry_is_allowlisted_and_excludes_medical_shell_sql_and_urls(ap
     with app.app_context():
         names = {item.name for item in AIToolRegistry().definitions}
     assert names == {
+        "get_energy_balance",
         "get_dashboard_summary",
             "get_coach_brief",
         "get_latest_body_measurement",

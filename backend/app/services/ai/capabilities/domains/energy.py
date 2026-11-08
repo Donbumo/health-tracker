@@ -19,10 +19,10 @@ MANIFEST = AICapabilityManifest(
     entities=("daily_nutrition", "daily_energy"),
     metrics=METRICS,
     read_capabilities=(
-        ReadCapability(AIIntent.SUMMARY, ("get_dashboard_summary",), tuple(item.id for item in METRICS)),
-        ReadCapability(AIIntent.TREND, ("get_dashboard_summary",), tuple(item.id for item in METRICS), ("7d", "30d", "90d"), 2),
-        ReadCapability(AIIntent.COMPARE, ("get_dashboard_summary",), tuple(item.id for item in METRICS), ("7d", "30d", "90d"), 2),
-        ReadCapability(AIIntent.COVERAGE, ("get_dashboard_summary",), tuple(item.id for item in METRICS)),
+        ReadCapability(AIIntent.SUMMARY, ("get_energy_balance",), tuple(item.id for item in METRICS)),
+        ReadCapability(AIIntent.TREND, ("get_energy_balance",), tuple(item.id for item in METRICS), ("7d", "30d", "90d"), 2),
+        ReadCapability(AIIntent.COMPARE, ("get_energy_balance",), tuple(item.id for item in METRICS), ("today", "7d", "30d", "90d"), 1),
+        ReadCapability(AIIntent.COVERAGE, ("get_energy_balance",), tuple(item.id for item in METRICS)),
     ),
     comparisons=True,
 )

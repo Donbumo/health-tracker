@@ -14,12 +14,12 @@ MANIFEST = AICapabilityManifest(
     read_capabilities=(
         ReadCapability(
             AIIntent.SUMMARY,
-            ("get_dashboard_summary",),
+            ("get_dashboard_summary", "get_energy_balance"),
             description="Resumen longitudinal combinado.",
         ),
         ReadCapability(
             AIIntent.COMPARE,
-            ("get_dashboard_summary",),
+            ("get_dashboard_summary", "get_energy_balance"),
             periods=("7d", "30d", "90d"),
             description="Comparación contra el periodo anterior equivalente.",
         ),

@@ -231,9 +231,13 @@ class FakeAIProvider(AIProvider):
         if "get_energy_balance" in allowed_tool_names and (
             len(allowed_tool_names) == 1 or self._is_energy_question(text)
         ):
+            try:
+                arguments = self._energy_arguments(request, text)
+            except (ValueError, OverflowError) as error:
+                raise AIProviderError("invalid_energy_period", "La fecha o comparación solicitada no es válida.", 422) from error
             return AIProviderResponse(tool_calls=(AIProviderToolCall(
                 call_id=str(uuid.uuid4()), name="get_energy_balance",
-                arguments=self._energy_arguments(request, text),
+                arguments=arguments,
             ),), usage=self._usage(request, original))
         if len(allowed_tool_names) == 1:
             name = allowed_tool_names[0]
@@ -519,11 +523,18 @@ class FakeAIProvider(AIProvider):
         zone = re.search(r"User timezone: ([\w/+-]+)", request.safety_instructions)
         timezone_name = zone.group(1) if zone else "UTC"
         dates = re.findall(r"\b\d{4}-\d{2}-\d{2}\b", text)
+        numeric = list(re.finditer(r"(?<!\d)(\d{1,2})[/-](\d{1,2})(?:[/-](\d{4}))?(?!\d)", text))
         if dates:
             start, end = date.fromisoformat(dates[0]), date.fromisoformat(dates[1] if len(dates) > 1 else dates[0])
+        elif numeric:
+            parsed = [date(int(m.group(3) or today.year), int(m.group(2)), int(m.group(1))) for m in numeric]
+            start, end = parsed[0], parsed[1] if len(parsed) > 1 else parsed[0]
+        elif re.search(r"\bayer\b", text):
+            start = end = today - timedelta(days=1)
         else:
             months = ("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre")
-            month = next((name for name in months if re.search(rf"\b{name}\b", text)), None)
+            named_months = list(re.finditer(r"\b(" + "|".join(months) + r")\b", text))
+            month = named_months[0].group(1) if named_months else None
             if month:
                 month_number = months.index(month) + 1
                 year = re.search(r"\b(19\d{2}|20\d{2})\b", text)
@@ -535,13 +546,17 @@ class FakeAIProvider(AIProvider):
                     start = date(year_number, month_number, 1)
                     next_month = date(year_number + 1, 1, 1) if month_number == 12 else date(year_number, month_number + 1, 1)
                     end = next_month - timedelta(days=1)
+                    if len(named_months) > 1 and months.index(named_months[1].group(1)) + 1 != (start - timedelta(days=1)).month:
+                        raise ValueError("Only the contiguous previous calendar month is supported")
             elif "semana pasada" in text or "semana anterior" in text:
                 end = today - timedelta(days=today.weekday() + 1)
                 start = end - timedelta(days=6)
             else:
-                count = re.search(r"ultimos?\s+(\d+)\s+dias?", text)
+                count = re.search(r"ultimos?\s+(\d+|siete|treinta|noventa)\s+dias?", text)
                 if count:
-                    end, start = today, today - timedelta(days=int(count.group(1)) - 1)
+                    raw = count.group(1)
+                    number = int(raw) if raw.isdigit() else {"siete": 7, "treinta": 30, "noventa": 90}[raw]
+                    end, start = today, today - timedelta(days=number - 1)
                 else:
                     selected = re.search(r"Validated plan period: (today|7d|30d|90d)", request.safety_instructions)
                     preset = _explicit_preset(text) or (selected.group(1) if selected else "30d")
@@ -550,7 +565,7 @@ class FakeAIProvider(AIProvider):
         return {"date_from": start.isoformat(), "date_to": end.isoformat(),
                 "compare_previous": "Previous comparison requested: true" in request.safety_instructions or
                                     any(term in text for term in ("compara", "frente", "versus", "respecto")),
-                "comparison_mode": "equal_days" if re.search(r"ultimos?\s+\d+\s+dias?", text) else "auto",
+                "comparison_mode": "equal_days" if re.search(r"ultimos?\s+(?:\d+|siete|treinta|noventa)\s+dias?", text) else "auto",
                 "include_daily": any(term in text for term in ("que dia", "cada dia", "diario", "tendencia"))}
 
     @classmethod
@@ -816,9 +831,15 @@ class FakeAIProvider(AIProvider):
             if data.get("comparison"):
                 previous = data["comparison"]["previous"]
                 content += (f" Periodo anterior: {previous['period']['from']} a {previous['period']['to']}; "
+                            f"ingesta registrada {_number(previous['metrics']['consumed_kcal'])} kcal; "
+                            f"gasto total registrado {_number(previous['metrics']['expended_kcal'])} kcal; "
                             f"balance conocido {_number(previous['metrics']['balance_kcal'])} kcal "
                             f"en {previous['coverage']['both_known_days']} días comparables. "
-                            "Los deltas de promedios indican sus denominadores; las muestras parciales tienen cobertura distinta.")
+                            "Las muestras parciales tienen cobertura distinta. ")
+                for metric, label in (("consumed_kcal", "ingesta"), ("expended_kcal", "gasto"), ("balance_kcal", "balance")):
+                    delta = data['comparison']['deltas'][metric]
+                    content += (f"Cambio de promedio diario de {label}: {_number(delta['daily_average_delta'])} kcal; "
+                                f"denominadores {delta['current_days']}/{delta['previous_days']} días; {delta['state']}. ")
         elif result.name == "get_dashboard_summary":
             energy = metrics.get("energy") or {}
             protein = metrics.get("protein") or {}

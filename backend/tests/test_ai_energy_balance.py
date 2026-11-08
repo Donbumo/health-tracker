@@ -338,11 +338,16 @@ def test_energy_manifest_exact_plan_and_no_duplicate_calculation(app, user):
         assert isinstance(internal["metrics"]["balance_kcal"], Decimal)
 
 
-def test_responses_adapter_exposes_authorized_schema_and_roundtrips_energy(app, user):
+@pytest.mark.parametrize("phrase", ["26/10", "26-10-2026", "26 de octubre de 2026", "2026-10-26"])
+def test_responses_adapter_exposes_authorized_schema_and_roundtrips_energy(app, user, phrase):
     requests = []
     def transport(_url, _headers, body, _timeout):
         document = json.loads(body)
         requests.append(document)
+        serialized = json.dumps(document, ensure_ascii=False)
+        assert phrase in serialized
+        assert "DD/MM" in serialized
+        assert "Current user-local date:" in serialized
         assert document["store"] is False
         assert [item["name"] for item in document["tools"]] == ["get_energy_balance"]
         outputs = [item for item in document["input"] if item.get("type") == "function_call_output"]
@@ -366,7 +371,7 @@ def test_responses_adapter_exposes_authorized_schema_and_roundtrips_energy(app, 
         account.ai_remote_consent_enabled = True
         service = AIConversationService()
         conversation = service.create(user, title="Synthetic cloud transport QA")
-        assistant, _ = service.send_message(account, conversation.public_id, "Balance del 26 de octubre", intent_spec=AIIntentSpec(AIIntent.SUMMARY, "energy"))
+        assistant, _ = service.send_message(account, conversation.public_id, "Balance del " + phrase, intent_spec=AIIntentSpec(AIIntent.SUMMARY, "energy"))
         assert "-349.887" in assistant.content
         assert len(requests) == 2
         assert "test-user" not in json.dumps(requests)
@@ -450,3 +455,54 @@ def test_calendar_mode_rejects_partial_month_and_assistant_preserves_rolling_int
         call = db.session.scalar(db.select(AIToolCall))
         assert call.sanitized_arguments_json["comparison_mode"] == "equal_days"
         assert call.result_summary_json["period"]["previous_from"] == "2026-10-02"
+
+
+@pytest.mark.parametrize(("phrase", "start", "end"), [
+    ("26/10", "2026-10-26", "2026-10-26"),
+    ("26-10-2026", "2026-10-26", "2026-10-26"),
+    ("26 de octubre de 2026", "2026-10-26", "2026-10-26"),
+    ("2026-10-26", "2026-10-26", "2026-10-26"),
+    ("ayer", "2026-11-07", "2026-11-07"),
+    ("hoy", "2026-11-08", "2026-11-08"),
+    ("semana pasada", "2026-10-26", "2026-11-01"),
+    ("últimos 7 días", "2026-11-02", "2026-11-08"),
+    ("últimos 30 días", "2026-10-10", "2026-11-08"),
+    ("octubre de 2026", "2026-10-01", "2026-10-31"),
+    ("compara octubre contra septiembre", "2026-10-01", "2026-10-31"),
+])
+@pytest.mark.parametrize("context", ["free", "energy", "nutrition", "all", "compare"])
+def test_mission_date_grammar_runs_through_conversation(app, user, phrase, start, end, context):
+    enable_ai(app)
+    app.config["AI_TODAY_OVERRIDE"] = date(2026, 11, 8)
+    with app.app_context():
+        seed(user, date(2026, 10, 26), "2100.123", "2450.01")
+        account = db.session.get(User, user)
+        account.timezone = "America/Mexico_City"
+        service = AIConversationService()
+        conversation = service.create(user, title="Synthetic mission date QA")
+        spec = (None if context == "free" else
+                AIIntentSpec(AIIntent.COMPARE, "energy", period="30d", comparison=True) if context == "compare" else
+                AIIntentSpec(AIIntent.SUMMARY, context, period="30d"))
+        service.send_message(account, conversation.public_id, "Balance energético: " + phrase, intent_spec=spec)
+        call = db.session.scalar(db.select(AIToolCall))
+        assert call.status == "completed"
+        assert call.tool_name == "get_energy_balance"
+        assert call.sanitized_arguments_json["date_from"] == start
+        assert call.sanitized_arguments_json["date_to"] == end
+        assert call.result_summary_json["period"]["timezone"] == "America/Mexico_City"
+        if "compara octubre" in phrase:
+            assert call.result_summary_json["period"]["previous_from"] == "2026-09-01"
+            assert call.result_summary_json["period"]["previous_to"] == "2026-09-30"
+
+
+@pytest.mark.parametrize("phrase", ["31/02/2026", "2026-02-30", "compara octubre contra agosto"])
+def test_mission_invalid_fake_dates_are_safe_errors(app, user, phrase):
+    enable_ai(app)
+    with app.app_context():
+        service = AIConversationService()
+        conversation = service.create(user, title="Synthetic invalid date QA")
+        with pytest.raises(AIServiceError) as error:
+            service.send_message(db.session.get(User, user), conversation.public_id, "Balance: " + phrase)
+        assert error.value.code == "invalid_energy_period"
+        assert error.value.status == 422
+        assert db.session.scalar(db.select(db.func.count()).select_from(AIToolCall)) == 0

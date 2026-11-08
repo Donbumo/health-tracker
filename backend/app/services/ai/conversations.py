@@ -75,11 +75,14 @@ averages or periods. Use one aggregate summary tool when it already covers a mul
 metric question. Ask for clarification only when the answer would materially change.
 Use get_energy_balance when supplied for energy balance, deficit, surplus, or intake
 versus expenditure across nutrition and energy. Resolve explicit dates using the
-user-local date/timezone. Request compare_previous=true for period comparisons and
-include_daily=true for daily detail. Report comparable-day balance and denominators;
+user-local date/timezone. Request compare_previous=true for period comparisons.
+Interpret DD/MM, DD-MM-YYYY, Spanish day/month names and ISO dates as local dates.
+Without a supplied year, use the current user-local year. Yesterday is the previous
+local calendar day. Preserve the first named month as the current comparison period.
+Use include_daily=true for daily detail. Report comparable-day balance and denominators.
 For rolling windows use comparison_mode=equal_days even if dates match a full month.
 For calendar-month comparisons use calendar_month; auto recognizes a single full month.
-only complete_balance_kcal represents the whole recorded period. Never infer lack of
+Only complete_balance_kcal represents the whole recorded period. Never infer lack of
 history from null previous_from/previous_to: these mean comparison was not requested.
 
 For action drafts, preserve every explicit user-supplied field supported by the draft

@@ -9,35 +9,39 @@
   </section>
 
   <section class="card narrow-form">
+    {% set unit_suffix = {'weight_kg': 'kg', 'body_fat_percent': '%', 'muscle_mass_kg': 'kg', 'water_percent': '%', 'bmr_kcal': 'kcal'} %}
+    {% if form.errors %}
+      <div class="form-error-summary" role="alert" aria-labelledby="weigh-in-error-title">
+        <h2 id="weigh-in-error-title">Revisa {{ form.errors|length }} campo{% if form.errors|length != 1 %}s{% endif %} antes de guardar</h2>
+        <ul>
+          {% for field_name, field_errors in form.errors.items() %}
+            {% for error in field_errors %}<li><a href="#{{ field_name }}">{{ form[field_name].label.text }}</a>: {{ error }}</li>{% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
     <form method="post" novalidate>
       {{ form.hidden_tag() }}
       <div class="field">
         {{ form.recorded_at.label }}
-        {{ form.recorded_at() }}
+        {{ form.recorded_at(**({'aria_describedby': 'recorded_at-error'} if form.recorded_at.errors else {})) }}
         <span class="help">Zona horaria: {{ timezone_name }}</span>
-        {% for error in form.recorded_at.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        {% for error in form.recorded_at.errors %}<span class="field-error" id="recorded_at-error">{{ error }}</span>{% endfor %}
       </div>
-      <div class="field">
-        {{ form.weight_kg.label }}
-        {{ form.weight_kg(type="number") }}
-        {% for error in form.weight_kg.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
-      </div>
-      <div class="field">
-        {{ form.body_fat_percent.label }}
-        {{ form.body_fat_percent(type="number") }}
-        {% for error in form.body_fat_percent.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
-      </div>
-      {% for field in [form.muscle_mass_kg, form.water_percent, form.visceral_fat, form.bmr_kcal, form.bmi] %}
+      {% for field in [form.weight_kg, form.body_fat_percent, form.muscle_mass_kg, form.water_percent, form.visceral_fat, form.bmr_kcal, form.bmi] %}
         <div class="field">
           {{ field.label }}
-          {{ field(type="number") }}
-          {% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+          <div class="field-suffix">
+            {{ field(type="number", **({'aria_describedby': field.name + '-error'} if field.errors else {})) }}
+            {% if field.name in unit_suffix %}<span aria-hidden="true">{{ unit_suffix[field.name] }}</span>{% endif %}
+          </div>
+          {% for error in field.errors %}<span class="field-error" id="{{ field.name }}-error">{{ error }}</span>{% endfor %}
         </div>
       {% endfor %}
       <div class="field">
         {{ form.notes.label }}
-        {{ form.notes(rows=4) }}
-        {% for error in form.notes.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+        {{ form.notes(rows=4, **({'aria_describedby': 'notes-error'} if form.notes.errors else {})) }}
+        {% for error in form.notes.errors %}<span class="field-error" id="notes-error">{{ error }}</span>{% endfor %}
       </div>
       {{ form.submit(class_="button") }}
     </form>

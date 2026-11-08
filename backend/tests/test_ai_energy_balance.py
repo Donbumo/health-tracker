@@ -347,6 +347,7 @@ def test_responses_adapter_exposes_authorized_schema_and_roundtrips_energy(app, 
         serialized = json.dumps(document, ensure_ascii=False)
         assert phrase in serialized
         assert "DD/MM" in serialized
+        assert "Respond in Spanish" in serialized
         assert "Current user-local date:" in serialized
         assert document["store"] is False
         assert [item["name"] for item in document["tools"]] == ["get_energy_balance"]

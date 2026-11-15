@@ -1,0 +1,260 @@
+{
+  "format": "health-tracker-nutrition",
+  "version": "1.0",
+  "destination": "consumed",
+  "date": "2030-01-15",
+  "note": "QA ficticia, valores inventados para comprobar el contrato.",
+  "meals": [
+    {
+      "type": "breakfast",
+      "foods": [
+        {
+          "name": "Arroz ficticio",
+          "quantity": {
+            "amount": 150,
+            "unit": "g"
+          },
+          "nutrition": {
+            "basis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "values": {
+              "energy": {
+                "value": 130,
+                "unit": "kcal"
+              },
+              "protein": {
+                "value": 1,
+                "unit": "g"
+              },
+              "carbohydrate_total": {
+                "value": 2,
+                "unit": "g"
+              },
+              "net_carbs": {
+                "value": 3,
+                "unit": "g"
+              },
+              "fat": {
+                "value": 4,
+                "unit": "g"
+              },
+              "fiber": {
+                "value": 5,
+                "unit": "g"
+              },
+              "sugar": {
+                "value": 0,
+                "unit": "g"
+              },
+              "sodium": {
+                "value": 1,
+                "unit": "mg"
+              },
+              "potassium": {
+                "value": 2,
+                "unit": "mg"
+              },
+              "calcium": {
+                "value": 3,
+                "unit": "mg"
+              },
+              "iron": {
+                "value": 4,
+                "unit": "mg"
+              },
+              "magnesium": {
+                "value": 5,
+                "unit": "mg"
+              },
+              "phosphorus": {
+                "value": 6,
+                "unit": "mg"
+              },
+              "zinc": {
+                "value": "1.125",
+                "unit": "mg",
+                "quality": "estimated"
+              },
+              "vitamin_c": {
+                "value": 8,
+                "unit": "mg"
+              },
+              "vitamin_e_alpha": {
+                "value": 9,
+                "unit": "mg"
+              },
+              "thiamin": {
+                "value": 10,
+                "unit": "mg"
+              },
+              "riboflavin": {
+                "value": 11,
+                "unit": "mg"
+              },
+              "niacin": {
+                "value": 12,
+                "unit": "mg"
+              },
+              "vitamin_b6": {
+                "value": 13,
+                "unit": "mg"
+              },
+              "choline": {
+                "value": 14,
+                "unit": "mg"
+              },
+              "vitamin_a_rae": {
+                "value": 1,
+                "unit": "ug"
+              },
+              "retinol": {
+                "value": 2,
+                "unit": "ug"
+              },
+              "vitamin_a_re": {
+                "value": 3,
+                "unit": "ug"
+              },
+              "vitamin_d": {
+                "value": 4,
+                "unit": "ug"
+              },
+              "vitamin_k1": {
+                "value": 5,
+                "unit": "ug"
+              },
+              "vitamin_k2": {
+                "value": 6,
+                "unit": "ug"
+              },
+              "vitamin_b12": {
+                "value": 7,
+                "unit": "ug"
+              },
+              "folate_dfe": {
+                "value": 8,
+                "unit": "ug"
+              },
+              "folate_food": {
+                "value": 9,
+                "unit": "ug"
+              }
+            },
+            "quality": "label",
+            "source": "Etiqueta ficticia de QA"
+          }
+        }
+      ]
+    },
+    {
+      "type": "lunch",
+      "foods": [
+        {
+          "name": "Sopa ficticia",
+          "quantity": {
+            "amount": 250,
+            "unit": "ml"
+          },
+          "nutrition": {
+            "basis": {
+              "amount": 100,
+              "unit": "ml"
+            },
+            "values": {
+              "energy": {
+                "value": 60,
+                "unit": "kcal"
+              },
+              "vitamin_d": {
+                "state": "trace",
+                "unit": "ug"
+              },
+              "sodium": {
+                "state": "below_limit",
+                "unit": "mg",
+                "limit": "0.25"
+              }
+            },
+            "quality": "estimated",
+            "additional_nutrients": [
+              {
+                "name": "Cromo",
+                "observation": {
+                  "value": "0.2",
+                  "unit": "ug"
+                }
+              }
+            ]
+          },
+          "ingredients": [
+            {
+              "name": "Agua de QA"
+            },
+            {
+              "name": "Vegetal de QA"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "dinner",
+      "foods": [
+        {
+          "name": "Platillo ficticio",
+          "quantity": {
+            "amount": "1.25",
+            "unit": "portion",
+            "label": "tazón de este platillo"
+          },
+          "nutrition": {
+            "basis": {
+              "kind": "consumed"
+            },
+            "values": {
+              "energy": {
+                "value": "165.125",
+                "unit": "kcal"
+              },
+              "protein": {
+                "state": "unknown"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "snack",
+      "foods": [
+        {
+          "name": "Galleta ficticia",
+          "quantity": {
+            "amount": 2,
+            "unit": "piece",
+            "label": "galleta de este tipo"
+          },
+          "nutrition": {
+            "basis": {
+              "amount": 1,
+              "unit": "piece",
+              "label": "galleta de este tipo"
+            },
+            "values": {
+              "energy": {
+                "value": 30,
+                "unit": "kcal"
+              },
+              "fiber": {
+                "value": 0,
+                "unit": "g"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

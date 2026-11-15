@@ -1,0 +1,24 @@
+{
+  "format": "health-tracker-nutrition",
+  "version": "1.0",
+  "date": "2030-01-15",
+  "note": "QA ficticia.",
+  "meals": [
+    {
+      "type": "snack",
+      "foods": [
+        {
+          "name": "Galleta ficticia",
+          "nutrition": {
+            "values": {
+              "sodium": {
+                "value": 2,
+                "unit": "g"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

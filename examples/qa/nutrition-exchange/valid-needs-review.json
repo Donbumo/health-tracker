@@ -1,0 +1,111 @@
+{
+  "format": "health-tracker-nutrition",
+  "version": "1.0",
+  "note": "QA ficticia, faltantes y contradicciones deliberados.",
+  "meals": [
+    {
+      "name": "Comida sin fecha",
+      "foods": [
+        {
+          "name": "Alimento ficticio sin base",
+          "quantity": {
+            "amount": 150,
+            "unit": "g"
+          },
+          "nutrition": {
+            "values": {
+              "energy": {
+                "value": 85,
+                "unit": "kcal"
+              }
+            }
+          }
+        },
+        {
+          "name": "Bebida ficticia con unidades incompatibles",
+          "quantity": {
+            "amount": 200,
+            "unit": "ml"
+          },
+          "nutrition": {
+            "basis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "values": {
+              "energy": {
+                "value": 90,
+                "unit": "kcal"
+              }
+            }
+          }
+        },
+        {
+          "name": "Alimento ficticio sin cantidad ni nutrientes"
+        }
+      ]
+    },
+    {
+      "type": "lunch",
+      "date": "2030-01-16",
+      "foods": [
+        {
+          "name": "Plato ficticio con dos fuentes",
+          "quantity": {
+            "amount": 100,
+            "unit": "g"
+          },
+          "nutrition": {
+            "basis": {
+              "kind": "consumed"
+            },
+            "values": {
+              "energy": {
+                "value": 120,
+                "unit": "kcal"
+              }
+            }
+          },
+          "ingredients": [
+            {
+              "name": "Ingrediente ficticio A",
+              "quantity": {
+                "amount": 60,
+                "unit": "g"
+              },
+              "nutrition": {
+                "basis": {
+                  "kind": "consumed"
+                },
+                "values": {
+                  "energy": {
+                    "value": 40,
+                    "unit": "kcal"
+                  }
+                }
+              }
+            },
+            {
+              "name": "Ingrediente ficticio B",
+              "quantity": {
+                "amount": 40,
+                "unit": "g"
+              },
+              "nutrition": {
+                "basis": {
+                  "kind": "consumed"
+                },
+                "values": {
+                  "energy": {
+                    "value": 70,
+                    "unit": "kcal"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

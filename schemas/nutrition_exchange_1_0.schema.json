@@ -1,0 +1,555 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://health-tracker.local/schemas/nutrition_exchange_1_0.schema.json",
+  "title": "Health Tracker Nutrition Exchange 1.0",
+  "description": "Proposed public input format. Structural validity permits review; the importer checks semantics and owner consent separately.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "version",
+    "meals"
+  ],
+  "properties": {
+    "format": {
+      "const": "health-tracker-nutrition"
+    },
+    "version": {
+      "const": "1.0"
+    },
+    "destination": {
+      "enum": [
+        "consumed",
+        "plan",
+        "recipe",
+        "product"
+      ]
+    },
+    "date": {
+      "$ref": "#/$defs/date"
+    },
+    "meals": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 250,
+      "items": {
+        "$ref": "#/$defs/meal"
+      }
+    },
+    "note": {
+      "$ref": "#/$defs/note"
+    }
+  },
+  "$defs": {
+    "short_text": {
+      "type": "string",
+      "maxLength": 200,
+      "pattern": "\\S"
+    },
+    "unit_text": {
+      "type": "string",
+      "maxLength": 32,
+      "pattern": "\\S"
+    },
+    "source_text": {
+      "type": "string",
+      "maxLength": 500,
+      "pattern": "\\S"
+    },
+    "note": {
+      "type": "string",
+      "maxLength": 10000,
+      "pattern": "\\S"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "nonnegative_decimal": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100000000
+        },
+        {
+          "type": "string",
+          "pattern": "^(?:(?:0|[1-9][0-9]{0,7})(?:\\.[0-9]{1,12})?|100000000(?:\\.0{1,12})?)(?![\\s\\S])"
+        }
+      ]
+    },
+    "positive_decimal": {
+      "anyOf": [
+        {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100000000
+        },
+        {
+          "type": "string",
+          "pattern": "^(?:(?:0|[1-9][0-9]{0,7})(?:\\.[0-9]{1,12})?|100000000(?:\\.0{1,12})?)(?![\\s\\S])",
+          "not": {
+            "pattern": "^0(?:\\.0+)?$"
+          }
+        }
+      ]
+    },
+    "quantity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "amount",
+        "unit"
+      ],
+      "properties": {
+        "amount": {
+          "$ref": "#/$defs/positive_decimal"
+        },
+        "unit": {
+          "enum": [
+            "g",
+            "ml",
+            "portion",
+            "piece"
+          ]
+        },
+        "label": {
+          "$ref": "#/$defs/short_text"
+        }
+      },
+      "if": {
+        "properties": {
+          "unit": {
+            "enum": [
+              "portion",
+              "piece"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "label"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "label"
+          ]
+        }
+      }
+    },
+    "basis": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/quantity"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind"
+          ],
+          "properties": {
+            "kind": {
+              "const": "consumed"
+            }
+          }
+        }
+      ]
+    },
+    "quality": {
+      "enum": [
+        "declared",
+        "estimated",
+        "label",
+        "unknown"
+      ]
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "enum": [
+            "known",
+            "unknown",
+            "trace",
+            "below_limit"
+          ]
+        },
+        "value": {
+          "$ref": "#/$defs/nonnegative_decimal"
+        },
+        "unit": {
+          "$ref": "#/$defs/unit_text"
+        },
+        "limit": {
+          "$ref": "#/$defs/positive_decimal"
+        },
+        "quality": {
+          "$ref": "#/$defs/quality"
+        },
+        "source": {
+          "$ref": "#/$defs/source_text"
+        },
+        "note": {
+          "$ref": "#/$defs/note"
+        }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "value",
+            "unit"
+          ],
+          "properties": {
+            "state": {
+              "const": "known"
+            }
+          },
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "limit"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "state"
+          ],
+          "properties": {
+            "state": {
+              "const": "unknown"
+            }
+          },
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "value"
+                ]
+              },
+              {
+                "required": [
+                  "limit"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "state",
+            "unit"
+          ],
+          "properties": {
+            "state": {
+              "const": "trace"
+            }
+          },
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "value"
+                ]
+              },
+              {
+                "required": [
+                  "limit"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "state",
+            "unit",
+            "limit"
+          ],
+          "properties": {
+            "state": {
+              "const": "below_limit"
+            }
+          },
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "value"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "kcal": {
+      "$ref": "#/$defs/observation",
+      "properties": {
+        "unit": {
+          "const": "kcal"
+        }
+      }
+    },
+    "g": {
+      "$ref": "#/$defs/observation",
+      "properties": {
+        "unit": {
+          "const": "g"
+        }
+      }
+    },
+    "mg": {
+      "$ref": "#/$defs/observation",
+      "properties": {
+        "unit": {
+          "const": "mg"
+        }
+      }
+    },
+    "ug": {
+      "$ref": "#/$defs/observation",
+      "properties": {
+        "unit": {
+          "const": "ug"
+        }
+      }
+    },
+    "values": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "energy": {
+          "$ref": "#/$defs/kcal"
+        },
+        "protein": {
+          "$ref": "#/$defs/g"
+        },
+        "carbohydrate_total": {
+          "$ref": "#/$defs/g"
+        },
+        "net_carbs": {
+          "$ref": "#/$defs/g"
+        },
+        "fat": {
+          "$ref": "#/$defs/g"
+        },
+        "fiber": {
+          "$ref": "#/$defs/g"
+        },
+        "sugar": {
+          "$ref": "#/$defs/g"
+        },
+        "sodium": {
+          "$ref": "#/$defs/mg"
+        },
+        "potassium": {
+          "$ref": "#/$defs/mg"
+        },
+        "calcium": {
+          "$ref": "#/$defs/mg"
+        },
+        "iron": {
+          "$ref": "#/$defs/mg"
+        },
+        "magnesium": {
+          "$ref": "#/$defs/mg"
+        },
+        "phosphorus": {
+          "$ref": "#/$defs/mg"
+        },
+        "zinc": {
+          "$ref": "#/$defs/mg"
+        },
+        "vitamin_c": {
+          "$ref": "#/$defs/mg"
+        },
+        "vitamin_e_alpha": {
+          "$ref": "#/$defs/mg"
+        },
+        "thiamin": {
+          "$ref": "#/$defs/mg"
+        },
+        "riboflavin": {
+          "$ref": "#/$defs/mg"
+        },
+        "niacin": {
+          "$ref": "#/$defs/mg"
+        },
+        "vitamin_b6": {
+          "$ref": "#/$defs/mg"
+        },
+        "choline": {
+          "$ref": "#/$defs/mg"
+        },
+        "vitamin_a_rae": {
+          "$ref": "#/$defs/ug"
+        },
+        "retinol": {
+          "$ref": "#/$defs/ug"
+        },
+        "vitamin_a_re": {
+          "$ref": "#/$defs/ug"
+        },
+        "vitamin_d": {
+          "$ref": "#/$defs/ug"
+        },
+        "vitamin_k1": {
+          "$ref": "#/$defs/ug"
+        },
+        "vitamin_k2": {
+          "$ref": "#/$defs/ug"
+        },
+        "vitamin_b12": {
+          "$ref": "#/$defs/ug"
+        },
+        "folate_dfe": {
+          "$ref": "#/$defs/ug"
+        },
+        "folate_food": {
+          "$ref": "#/$defs/ug"
+        }
+      },
+      "minProperties": 1
+    },
+    "additional_nutrient": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "observation"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/short_text"
+        },
+        "observation": {
+          "$ref": "#/$defs/observation"
+        }
+      }
+    },
+    "nutrition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "basis": {
+          "$ref": "#/$defs/basis"
+        },
+        "values": {
+          "$ref": "#/$defs/values"
+        },
+        "quality": {
+          "$ref": "#/$defs/quality"
+        },
+        "source": {
+          "$ref": "#/$defs/source_text"
+        },
+        "note": {
+          "$ref": "#/$defs/note"
+        },
+        "additional_nutrients": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/additional_nutrient"
+          }
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "values"
+          ]
+        },
+        {
+          "required": [
+            "additional_nutrients"
+          ]
+        }
+      ]
+    },
+    "food_fields": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/short_text"
+        },
+        "quantity": {
+          "$ref": "#/$defs/quantity"
+        },
+        "nutrition": {
+          "$ref": "#/$defs/nutrition"
+        },
+        "note": {
+          "$ref": "#/$defs/note"
+        }
+      }
+    },
+    "ingredient": {
+      "$ref": "#/$defs/food_fields",
+      "unevaluatedProperties": false
+    },
+    "food": {
+      "$ref": "#/$defs/food_fields",
+      "properties": {
+        "ingredients": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/ingredient"
+          }
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "meal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "foods"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "breakfast",
+            "lunch",
+            "dinner",
+            "snack",
+            "other"
+          ]
+        },
+        "date": {
+          "$ref": "#/$defs/date"
+        },
+        "name": {
+          "$ref": "#/$defs/short_text"
+        },
+        "foods": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 250,
+          "items": {
+            "$ref": "#/$defs/food"
+          }
+        },
+        "note": {
+          "$ref": "#/$defs/note"
+        }
+      }
+    }
+  }
+}

@@ -3,7 +3,7 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 from decimal import Decimal, ROUND_HALF_UP
 from uuid import uuid4
-from flask import render_template, request, redirect, url_for, abort, current_app, flash, session
+from flask import render_template, request, redirect, url_for, abort, current_app, flash, session, jsonify
 from flask_login import login_required, current_user
 from itsdangerous import URLSafeTimedSerializer, BadSignature
 from sqlalchemy.exc import IntegrityError
@@ -52,6 +52,13 @@ def micro_exact(raw):
 @nutrition_bp.errorhandler(NutritionError)
 def nutrition_error(error):
     db.session.rollback()
+    from app.services.importers.nutrition_exchange.intake import IntakeError
+
+    if isinstance(error, IntakeError) and request.accept_mimetypes.best_match(
+        ['text/html', 'application/json']
+    ) == 'application/json':
+        from dataclasses import asdict
+        return jsonify(diagnostics=[asdict(item) for item in error.diagnostics]), error.status
     return render_template("nutrition/error.html",message=str(error)),error.status
 
 

@@ -12,6 +12,7 @@ from app.models.nutrition_intelligence import CatalogFood, FoodCatalogRevision
 from app.services import food_catalog as catalog, nutrition_import as imports
 from app.services.nutrition_math import NUTRIENTS, NutritionError, decimal, ingredient
 from app.services.importers.nutrition_legacy_semantics import current as interpretation_current
+from app.services.importers.nutrition_exchange.projection import EXCHANGE_PROFILES
 
 
 def exact_binding(user_id, proposal, cache):
@@ -127,8 +128,38 @@ def issue(code, message, **values):
     return dict(code=code, message=message, **values)
 
 
+_EXCHANGE_MESSAGES = {
+    'missing_destination': 'Selecciona el destino de estas comidas.',
+    'destination_requires_review': 'Este destino necesita una definición o composición revisada.',
+    'missing_date': 'Indica una fecha de calendario para esta comida.',
+    'missing_name': 'Indica el nombre de este alimento.',
+    'missing_quantity': 'Indica la cantidad y unidad consumidas.',
+    'missing_meal_type': 'Selecciona el momento de esta comida.',
+    'missing_nutrition': 'Añade los nutrientes que conozcas de este alimento.',
+    'unverified_composition': 'Revisa las cantidades, bases y cobertura de los ingredientes.',
+    'missing_basis': 'Indica a qué cantidad corresponden los nutrientes declarados.',
+    'incompatible_units': 'La cantidad y la base usan unidades o etiquetas distintas. Revisa su equivalencia.',
+    'missing_equivalence': 'Falta una equivalencia verificada entre la cantidad y la base.',
+    'invalid_equivalence': 'Revisa el valor y la precisión de la equivalencia.',
+    'unrepresentable_contribution': 'El aporte calculado supera el rango o la precisión admitida.',
+    'conflicting_authority': 'Elige la declaración del plato o los aportes de sus ingredientes.',
+    'possible_duplicate': 'Compara este alimento con la entrada coincidente antes de guardarlo.',
+    'day_overlap': 'Comprueba el solapamiento con el agregado nutricional de esa fecha.',
+    'stale_revision': 'Los datos de origen cambiaron. Revisa la decisión anterior.',
+}
+
+
+def _exchange_issues(diagnostics):
+    return [dict(problem, message=_EXCHANGE_MESSAGES.get(problem['code'], 'Revisa la evidencia de este campo.'))
+            for problem in diagnostics if problem['severity'] in {'decision', 'invalid'}]
+
+
 def row_issues(row, review, index):
     item = review['rows'][index]
+    if row.source_json.get('profile') in EXCHANGE_PROFILES:
+        pending = _exchange_issues(item['exchange_diagnostics'])
+        if pending:
+            return pending
     errors = []
     if item.get('basis_conflict') and not item.get('basis_conflict_resolved'):
         errors.append(issue('basis_conflict','El archivo declara bases nutricionales contradictorias. Revisa a qué cantidad pertenecen sus valores.'))
@@ -223,10 +254,18 @@ def overview(row):
     foods = {}
     counts = dict(ready=0, decision=0, invalid=0, omitted=0)
     file_issues=row.source_json.get('file_issues',[]) if review['destination']=='consumed' else []
+    exchange = row.source_json.get('profile') in EXCHANGE_PROFILES
+    exchange_view = {}
+    if exchange:
+        diagnostics = row.source_json.get('exchange_diagnostics', [])
+        file_issues = [*file_issues, *(problem['message'] for problem in _exchange_issues(diagnostics))]
+        exchange_view['diagnostics'] = diagnostics
     for index, item in enumerate(review['rows']):
         errors = [] if item.get('skip') else row_issues(row, review, index)
         empty = not item.get('name') and not item.get('declaration') and not item.get('ingredients') and not item.get('ingredient_proposals')
         state = 'omitted' if item.get('skip') else 'invalid' if empty or item.get('unsupported_vector') else 'decision' if errors else 'ready'
+        if exchange and state != 'omitted' and any(problem.get('severity') == 'invalid' for problem in errors):
+            state = 'invalid'
         if state=='ready' and file_issues and basis_metadata(item).get('file_conflict'):
             state='blocked';counts.setdefault('blocked',0)
         counts[state] += 1
@@ -241,8 +280,10 @@ def overview(row):
                 food = foods[key]
             bindings.append(dict(binding=binding, food=food))
         from app.services.nutrition_import_preview import nutritional_preview
-        preview=nutritional_preview(item,review['destination'],row.user_id)
+        preview=nutritional_preview(item,review['destination'],row.user_id,exchange=exchange)
         records.append(dict(index=index, item=item, state=state, issues=errors, bindings=bindings,preview=preview))
+        if exchange:
+            records[-1]['diagnostics'] = item['exchange_diagnostics']
     from app.models import DailyNutrition
     conflicts=[]
     if review['destination']=='consumed':
@@ -263,7 +304,8 @@ def overview(row):
     from app.services.nutrition_import_basis import grouped as grouped_basis
     from app.services.nutrition_import_preview import presentation
     return dict(review=review, records=records, counts=counts, file_issues=file_issues, day_conflicts=conflicts, declaration_eligible=eligible,
-        **presentation(records,review['destination']),
+        **exchange_view,
+        **presentation(records,review['destination'],exchange=exchange),
         legacy_total_count=sum(grouped(item) for item in review['rows'] if not item.get('skip')),
         declared_basis_count=sum(grouped_basis(item) for item in review['rows'] if not item.get('skip')),
         newly_extracted_declarations=sum('new_source_declaration_requires_review' in detail['fields']
@@ -271,11 +313,18 @@ def overview(row):
 
 
 def document(row, view=None):
+    exchange = row.source_json.get('profile') in EXCHANGE_PROFILES
+    if exchange:
+        from app.services.importers.nutrition_exchange.preparation import enabled
+        if not enabled():
+            raise NutritionError('El intercambio nutricional sólo está disponible en QA.',409)
     if (row.review_json.get('destination')=='consumed' and row.source_json.get('file_issues')):
         raise NutritionError(row.source_json['file_issues'][0])
     if row.source_json.get('reprocess_pending'):
         raise NutritionError('Revisa y acepta los campos conservados de la revisión anterior antes de confirmar.')
     view = view or overview(row)
+    if exchange and view['file_issues']:
+        raise NutritionError('Resuelve los pendientes del archivo antes de confirmar el lote.')
     if view['counts']['decision'] or view['counts']['invalid']:
         raise NutritionError('Resuelve las excepciones agrupadas antes de confirmar el lote.')
     review = copy.deepcopy(view['review'])
@@ -291,6 +340,8 @@ def save_decisions(user_id, key, revision, data):
     imports.ni.enabled(); imports.ni.lock_owner(user_id)
     row = imports.owned(user_id, key, True)
     imports.assert_pending(row, revision)
+    if row.source_json.get('profile') in EXCHANGE_PROFILES:
+        raise NutritionError('Usa la revisión semántica del intercambio para cambiar este borrador.',409)
     edit_index = None
     if 'edit_index' in data:
         try:edit_index=int(data['edit_index'])

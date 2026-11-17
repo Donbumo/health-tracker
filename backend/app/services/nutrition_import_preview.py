@@ -19,7 +19,7 @@ MEALS = {'breakfast': 'Desayuno', 'lunch': 'Comida', 'dinner': 'Cena',
          'snack': 'Colación', 'other': 'Otro'}
 
 
-def nutritional_preview(item, destination, user_id):
+def nutritional_preview(item, destination, user_id, *, exchange=False):
     """Compute known contributions even when an unrelated date/identity blocks.
 
     Ambiguous bases/units never contribute a plausible-looking subtotal.
@@ -28,6 +28,8 @@ def nutritional_preview(item, destination, user_id):
     from app.services import nutrition_import as imports
     from app.services.importers.nutrition_legacy_semantics import current
     from app.services.nutrition_import_portions import sufficient
+    if exchange and not item['exchange_preview_available']:
+        return None
     try:
         if not current(item) or (item.get('basis_conflict') and not item.get('basis_conflict_resolved')):
             return None
@@ -73,14 +75,16 @@ def aggregate(records):
     return summarize_parts(parts)
 
 
-def presentation(records, destination):
+def presentation(records, destination, *, exchange=False):
     groups = OrderedDict()
     for record in records:
         item = record['item']
         record['original_fields']=original_fields(item)
         preview = record['preview']
         from app.services.importers.nutrition_legacy_semantics import current
-        record['basis_pending']=not current(item) or any(p['code'] in {'basis','basis_conflict','portion'} for p in record['issues'])
+        record['basis_pending']=not current(item) or any(p['code'] in {
+            'basis','basis_conflict','portion','missing_basis','incompatible_units','missing_equivalence'
+        } for p in record['issues'])
         record['declared_values']={}
         for key,n in item.get('declaration',{}).items():
             try:
@@ -101,7 +105,12 @@ def presentation(records, destination):
             problem['code'] in {'basis','basis_conflict'} for problem in record['issues']) else
             'correction' if record['issues'] else 'quantity')
         key = (item.get('date') or item.get('planned_for') or '', item.get('meal_type') or '')
-        group = groups.setdefault(key, dict(date=key[0], meal=MEALS.get(key[1], ''), records=[]))
+        meal_name = MEALS.get(key[1], '')
+        if exchange:
+            source_meal = item['source_provenance']['meal']
+            key += (source_meal['path'],)
+            meal_name = source_meal['name'] or meal_name
+        group = groups.setdefault(key, dict(date=key[0], meal=meal_name, records=[]))
         group['records'].append(record)
         record['display_amount'] = (item.get('basis_amount') if destination == 'products' else item.get('amount'))
         record['display_unit'] = ((item.get('basis_label') or item.get('basis_unit')) if destination == 'products'

@@ -34,18 +34,24 @@ def owned(user_id,key,lock=False):
 
 def start(user_id,payload,filename,mime=None,*,commit=False):
     ni.enabled()
-    if len(payload)>MAX_BYTES:raise NutritionError('Archivo mayor de 10 MiB.')
     try:
-        found=extract(payload,filename,mime)
+        found=_extract_review(payload,filename,mime,user_id)
         if found.get('standard'):validate_json_document(found['standard'],'nutrition_import_2_1')
     except NutritionError:raise
     except Exception as error:raise NutritionError('No se pudo extraer el documento; revisa su formato y límites.') from error
     # Reuse the official owner-isolated original upload store only AFTER parse.
     from app.services.files import store_uploaded_file
+    from app.services.importers.nutrition_exchange.projection import EXCHANGE_PROFILES
     source=None;duplicate=True;path=None
     try:
         ni.lock_owner(user_id)
-        source,duplicate=store_uploaded_file(FileStorage(stream=io.BytesIO(payload),filename=filename,content_type=mime),user_id,commit=False)
+        if found['profile'] in EXCHANGE_PROFILES:
+            # A normal SELECT can reuse a pre-lock snapshot under REPEATABLE READ.
+            source=db.session.scalar(db.select(UploadedFile).where(
+                UploadedFile.user_id==user_id,UploadedFile.sha256==found['source']['sha256'],
+            ).with_for_update())
+        if source is None:
+            source,duplicate=store_uploaded_file(FileStorage(stream=io.BytesIO(payload),filename=filename,content_type=mime),user_id,commit=False)
         if not duplicate:
             directory=(Path(current_app.config['UPLOAD_ROOT'])/f'user_{user_id}').resolve()
             path=(directory/source.stored_filename).resolve()
@@ -61,15 +67,30 @@ def start(user_id,payload,filename,mime=None,*,commit=False):
         raise
 
 
+def _extract_review(payload, filename, mime, user_id, *, exchange_decisions=None):
+    from app.services.importers.nutrition_exchange.preparation import extract_exchange
+
+    found = extract_exchange(payload, filename, mime, user_id, decisions=exchange_decisions)
+    if found is not None:
+        return found
+    if len(payload) > MAX_BYTES:
+        raise NutritionError('Archivo mayor de 10 MiB.')
+    return extract(payload, filename, mime)
+
+
 def _review_from_source(user_id,found,source,*,reuse=True):
+    from app.services.importers.nutrition_exchange.projection import EXCHANGE_PROFILES
+
     found['source']['file']=source.original_filename
     for item in found['rows']:
         if item['evidence'].get('sha256')==source.sha256:
             item['evidence']['file']=source.original_filename
     review={'name':source.original_filename[:200],'destination':found['classification_hint'] if found['classification_hint'] in DESTINATIONS else '',
             'rows':found['rows']}
-    prior=db.session.execute(db.select(NutritionImportReceipt).where(NutritionImportReceipt.user_id==user_id,
-        NutritionImportReceipt.event_key==ni.hash_document({'file':source.sha256}))).scalar_one_or_none()
+    exchange=found['profile'] in EXCHANGE_PROFILES
+    prior_query=db.select(NutritionImportReceipt).where(NutritionImportReceipt.user_id==user_id,
+        NutritionImportReceipt.event_key==ni.hash_document({'file':source.sha256}))
+    prior=db.session.scalar(prior_query.with_for_update() if exchange else prior_query)
     if found.get('standard'):
         document=found['standard']; validate_json_document(document,'nutrition_import_2_1')
         review.update(name=document['data']['name'],destination=document['data']['destination'],rows=[])
@@ -114,18 +135,30 @@ def _review_from_source(user_id,found,source,*,reuse=True):
     row=NutritionImportDraft(user_id=user_id,source_sha256=source.sha256,
         source_json={'upload_id':source.id,'profile':found['profile'],'classification_hint':found['classification_hint'],
             'warnings':found['warnings'],'text':found['text'],'evidence':found['source'],'extractor_version':EXTRACTOR_VERSION},review_json=review)
-    for key in ('file_issues','document_notes'):
+    for key in ('file_issues','document_notes','exchange_diagnostics'):
         if found.get(key):row.source_json=dict(row.source_json,**{key:copy.deepcopy(found[key])})
     if prior:
+        if reuse and exchange:
+            completed=db.session.scalar(db.select(NutritionImportDraft).where(
+                NutritionImportDraft.user_id==user_id,NutritionImportDraft.source_sha256==source.sha256,
+                NutritionImportDraft.state=='completed',
+                NutritionImportDraft.source_json['profile'].as_string()==found['profile'],
+            ).order_by(NutritionImportDraft.id.desc()).limit(1).with_for_update())
+            if completed:
+                return completed
         row.source_json=dict(row.source_json,already_imported=True)
         row.state='completed'
     elif reuse:
-        existing=db.session.execute(db.select(NutritionImportDraft).where(
+        query=db.select(NutritionImportDraft).where(
             NutritionImportDraft.user_id==user_id,NutritionImportDraft.source_sha256==source.sha256,
-            NutritionImportDraft.state=='pending').order_by(NutritionImportDraft.id.desc())).scalars()
+            NutritionImportDraft.state=='pending').order_by(NutritionImportDraft.id.desc())
+        existing=db.session.scalars(query.with_for_update() if exchange else query)
         for number,pending in enumerate(existing):
             if pending.source_json.get('plan_identity'):continue
-            try:assert_pending(pending,pending.revision)
+            profile=pending.source_json.get('profile')
+            if profile!=found['profile'] and {profile,found['profile']} & EXCHANGE_PROFILES:
+                continue
+            try:assert_pending(pending,pending.revision,lock_original=exchange)
             except NutritionError:
                 # Reupload is not permission to discard an older parser's
                 # decisions. Offer its explicit verified reprocess action.
@@ -135,15 +168,17 @@ def _review_from_source(user_id,found,source,*,reuse=True):
     db.session.add(row);db.session.flush();return row
 
 
-def assert_pending(row,revision):
+def assert_pending(row,revision,*,lock_original=False):
     created=row.created_at.replace(tzinfo=timezone.utc) if row.created_at.tzinfo is None else row.created_at
     try:revision=int(revision)
     except (ValueError,TypeError) as error:raise NutritionError('Revisión inválida; reabre el resumen.',409) from error
     if row.state!='pending' or row.revision!=revision or datetime.now(timezone.utc)-created>timedelta(hours=24):
         raise NutritionError('La revisión cambió o venció. Reabre el archivo.',409)
     upload_id=(row.source_json or {}).get('upload_id')
-    if upload_id and not db.session.scalar(db.select(UploadedFile.id).where(UploadedFile.id==upload_id,UploadedFile.user_id==row.user_id)):
-        raise NutritionError('El original ya no está disponible. Reabre el archivo antes de confirmar.',409)
+    if upload_id:
+        query=db.select(UploadedFile.id).where(UploadedFile.id==upload_id,UploadedFile.user_id==row.user_id)
+        if not db.session.scalar(query.with_for_update() if lock_original else query):
+            raise NutritionError('El original ya no está disponible. Reabre el archivo antes de confirmar.',409)
 
 
 def review_status(row):
@@ -181,7 +216,7 @@ def recover(user_id,key,revision):
     return fresh
 
 
-def verified_original(row, *, lock=True):
+def verified_original(row, *, lock=True, exchange_decisions=None):
     """Owner-bound retained upload, bounded bytes, size and SHA checked first."""
     user_id=row.user_id
     upload_id=row.source_json.get('upload_id')
@@ -195,12 +230,54 @@ def verified_original(row, *, lock=True):
         path=resolve_uploaded_download(source,user_id=user_id)
         with path.open('rb') as stream:payload=stream.read(MAX_BYTES+1)
         if len(payload)>MAX_BYTES:raise NutritionError('El original supera el límite actual.',409)
-        found=extract(payload,source.original_filename,source.mime_type)
+        from app.services.importers.nutrition_exchange.projection import EXCHANGE_PROFILES
+
+        if row.source_json.get('profile') in EXCHANGE_PROFILES:
+            found=_extract_review(payload,source.original_filename,source.mime_type,user_id,
+                                  exchange_decisions=exchange_decisions)
+        else:
+            found=extract(payload,source.original_filename,source.mime_type)
     except (BackupError,OSError) as error:
         raise NutritionError('El original no está disponible o no supera la comprobación de integridad. No se creó otra revisión.',409) from error
     if source.sha256!=row.source_sha256 or found['source']['sha256']!=row.source_sha256:
         raise NutritionError('La evidencia del original no coincide; no se recupera la revisión.',409)
     return source,found
+
+
+def apply_exchange_decision(user_id, key, revision, decision):
+    """Record one owner-verified source decision in an isolated Phase B draft."""
+    from app.services.importers.nutrition_exchange.intake import IntakeError
+    from app.services.importers.nutrition_exchange.preparation import enabled
+    from app.services.importers.nutrition_exchange.projection import EXCHANGE_PROFILES
+    from app.services.importers.nutrition_exchange.source import issue
+
+    ni.enabled()
+    if not enabled():
+        raise NutritionError('La revisión de intercambio aún no está habilitada.', 404)
+    ni.lock_owner(user_id)
+    row = owned(user_id, key, True)
+    assert_pending(row, revision)
+    if row.source_json.get('profile') not in EXCHANGE_PROFILES:
+        raise NutritionError('La revisión corresponde a otro formato nutricional.', 409)
+    if decision.authority not in {None, 'dish', 'ingredients'} or not (decision.authority or decision.equivalence):
+        raise NutritionError('Indica qué autoridad o equivalencia comprobaste.')
+    path = decision.original.path
+    source, found = verified_original(row, exchange_decisions={path: decision})
+    projected = next((item for item in found['rows'] if item['evidence']['path'] == path), None)
+    review = copy.deepcopy(row.review_json)
+    index = next((i for i, item in enumerate(review['rows']) if item['evidence']['path'] == path), None)
+    if projected is None or index is None or any(
+        item['code'] == 'stale_revision' for item in projected['exchange_diagnostics']
+    ):
+        raise IntakeError((issue('stale_revision', path, 'food'),), status=409)
+    if not projected['exchange_preview_available']:
+        raise NutritionError('La decisión no resuelve la base o la autoridad de este alimento.')
+    projected['evidence']['file'] = source.original_filename
+    review['rows'][index] = projected
+    row.review_json = review
+    row.revision += 1
+    db.session.flush()
+    return row
 
 
 def original_policy(row):
@@ -261,6 +338,10 @@ def delete_original(user_id,key,revision,*,confirmed=False):
 
 def update(user_id,key,revision,action,data):
     ni.enabled();ni.lock_owner(user_id);row=owned(user_id,key,True);assert_pending(row,revision)
+    from app.services.importers.nutrition_exchange.projection import EXCHANGE_PROFILES
+
+    if row.source_json.get('profile') in EXCHANGE_PROFILES and action != 'cancel':
+        raise NutritionError('Usa la revisión de evidencia de intercambio para cambiar esta fila.',409)
     review=copy.deepcopy(row.review_json)
     if action=='cancel':row.state='cancelled'
     elif action=='destination':

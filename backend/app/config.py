@@ -15,6 +15,8 @@ def _as_bool(value: str | None, default: bool = False) -> bool:
 
 
 class Config:
+    DEMO_SEED_ENABLED = _as_bool(os.getenv("DEMO_SEED_ENABLED"), False)
+    DEMO_SEED_ENVIRONMENT = os.getenv("DEMO_SEED_ENVIRONMENT", "")
     APP_VERSION = os.getenv("APP_VERSION") or os.getenv("GIT_COMMIT", "unknown")
     RELEASE_LABEL = "Health Tracker Beta 1.1"
     SECRET_KEY = os.getenv("SECRET_KEY")

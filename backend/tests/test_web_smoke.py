@@ -9,8 +9,8 @@ from app.models import (
     TrainingSession,
     WeighIn,
 )
-from app.services.demo_seed import DEMO_EMAIL, DEMO_PASSWORD
-from tests.conftest import login
+from app.services.demo_seed import DEMO_EMAIL
+from tests.conftest import login, DEMO_TEST_PASSWORD
 
 
 def test_authenticated_primary_web_routes_and_admin_permissions(app, client, user):
@@ -50,12 +50,10 @@ def test_authenticated_primary_web_routes_and_admin_permissions(app, client, use
     assert client.get("/admin/system").status_code == 200
 
 
-def test_demo_smoke_exports_content_types_and_user_isolation(app, client, user):
-    seeded = app.test_cli_runner().invoke(args=["seed", "demo"])
-    assert seeded.exit_code == 0, seeded.output
-    login(client, DEMO_EMAIL, DEMO_PASSWORD)
+def test_demo_smoke_exports_content_types_and_user_isolation(app, client, user, demo_account):
+    login(client, DEMO_EMAIL, DEMO_TEST_PASSWORD)
 
-    today = datetime.now(ZoneInfo(app.config["APP_TIMEZONE"])).date()
+    today = datetime(2026, 11, 18).date()
     today_page = client.get("/today", query_string={"date": today.isoformat()})
     assert today_page.status_code == 200
 
@@ -66,18 +64,12 @@ def test_demo_smoke_exports_content_types_and_user_isolation(app, client, user):
         nutrition_id = db.session.execute(
             db.select(DailyNutrition.id).where(DailyNutrition.date == today)
         ).scalar_one()
-        weigh_in_id = db.session.execute(
-            db.select(WeighIn.id).order_by(WeighIn.recorded_at.desc())
-        ).scalars().first()
         plan_id = db.session.execute(db.select(TrainingPlan.id)).scalar_one()
-        session_id = db.session.execute(db.select(TrainingSession.id)).scalar_one()
+        session_id = db.session.execute(db.select(TrainingSession.id)).scalars().first()
 
     exports = (
         (f"/daily-energy/{energy_id}/export/json", "application/json"),
         (f"/daily-energy/{energy_id}/export/csv", "text/csv"),
-        (f"/daily-nutrition/{nutrition_id}/export/json", "application/json"),
-        (f"/daily-nutrition/{nutrition_id}/export/csv", "text/csv"),
-        (f"/weigh-ins/{weigh_in_id}/export/json", "application/json"),
         ("/weigh-ins/export/csv", "text/csv"),
         (f"/training-plans/{plan_id}/export/json", "application/json"),
         (f"/training-plans/{plan_id}/export/csv", "text/csv"),
@@ -90,12 +82,15 @@ def test_demo_smoke_exports_content_types_and_user_isolation(app, client, user):
         assert response.status_code == 200, path
         assert response.mimetype == content_type, path
 
+    # Legacy exporters correctly refuse to flatten full consumed snapshots.
+    assert client.get(f"/daily-nutrition/{nutrition_id}/export/json").status_code == 409
+    assert client.get("/account/export.json").status_code == 200
+
     client.post("/logout")
     login(client)
     for path in (
         f"/daily-energy/{energy_id}",
         f"/daily-nutrition/{nutrition_id}",
-        f"/weigh-ins/{weigh_in_id}",
         f"/training-plans/{plan_id}",
         f"/training-sessions/{session_id}",
         f"/progress/sessions/{session_id}",

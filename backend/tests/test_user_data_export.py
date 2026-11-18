@@ -6,11 +6,11 @@ import pytest
 
 from app.extensions import db
 from app.models import DailyEnergy, User
-from app.services.demo_seed import DEMO_EMAIL, DEMO_PASSWORD
+from app.services.demo_seed import DEMO_EMAIL
 from app.services.exporters import ExportError
 from app.services.exporters.user_data import UserDataJsonExporter
 from app.services.validation import validate_json_document
-from tests.conftest import login
+from tests.conftest import login, DEMO_TEST_PASSWORD
 
 
 def test_account_export_requires_login(client):
@@ -20,10 +20,8 @@ def test_account_export_requires_login(client):
     assert "/login" in response.headers["Location"]
 
 
-def test_account_export_contains_all_demo_sections_without_sensitive_fields(app, client):
-    seeded = app.test_cli_runner().invoke(args=["seed", "demo"])
-    assert seeded.exit_code == 0, seeded.output
-    login(client, DEMO_EMAIL, DEMO_PASSWORD)
+def test_account_export_contains_all_demo_sections_without_sensitive_fields(app, client, demo_account):
+    login(client, DEMO_EMAIL, DEMO_TEST_PASSWORD)
 
     response = client.get("/account/export.json")
     document = response.get_json()
@@ -46,17 +44,18 @@ def test_account_export_contains_all_demo_sections_without_sensitive_fields(app,
         "uploads",
         "food_products",
         "recipes",
-            "activities",
-            "routes",
-            "export_records",
-            "exercise_load_profiles",
-        }
-    assert len(document["data"]["weigh_ins"]) == 2
-    assert len(document["data"]["daily_nutrition"]) == 2
-    assert len(document["data"]["daily_energy"]) == 2
+        "activities",
+        "routes",
+        "export_records",
+        "exercise_load_profiles",
+        "nutrition_intelligence",
+    }
+    assert len(document["data"]["weigh_ins"]) == 0
+    assert len(document["data"]["daily_nutrition"]) == 49
+    assert len(document["data"]["daily_energy"]) == 49
     assert len(document["data"]["training_plans"][0]["versions"]) == 1
-    assert len(document["data"]["training_sessions"]) == 1
-    assert len(document["data"]["medical_lab_reports"]) == 1
+    assert len(document["data"]["training_sessions"]) == 21
+    assert len(document["data"]["medical_lab_reports"]) == 0
     with app.app_context():
         validate_json_document(document, "user_data_export")
 

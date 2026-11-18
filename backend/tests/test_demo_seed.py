@@ -57,7 +57,7 @@ def test_creation_login_hash_scope_and_no_future(demo_enabled, client):
         assert count(TrainingSession) == 21 and count(TrainingSet) == 378
         assert count(TrainingPlan) == count(TrainingPlanVersion) == 1
         assert count(Recipe) == 12 and count(Exercise) == 8
-        assert count(WeighIn) == count(MedicalLabReport) == 0
+        assert count(WeighIn) == 49 and count(MedicalLabReport) == 0
         for model in (DailyNutrition, DailyEnergy):
             days = db.session.scalars(db.select(model).order_by(model.date)).all()
             assert days[0].date == date(2026, 10, 1) and days[-1].date == AS_OF

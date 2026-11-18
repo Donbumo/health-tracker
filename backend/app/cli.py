@@ -68,20 +68,21 @@ def seed_group() -> None:
 @click.option("--as-of", type=click.DateTime(formats=["%Y-%m-%d"]), help="Fecha local de referencia; hoy por defecto.")
 @click.option("--confirm-local", is_flag=True, help="Confirma la escritura sintética en un entorno local autorizado.")
 @click.option("--confirm-production", is_flag=True, help="Sólo con autorización explícita y DEMO_SEED_ENVIRONMENT=production.")
+@click.option("--body-only", is_flag=True, help="Completa únicamente pesajes de la DEMO existente; conserva los demás módulos.")
 @with_appcontext
-def seed_demo_command(as_of, confirm_local, confirm_production) -> None:
+def seed_demo_command(as_of, confirm_local, confirm_production, body_only) -> None:
     """Create or extend real synthetic history for the dedicated DEMO account."""
     try:
         if confirm_local and confirm_production:
             raise DemoSeedError("Elige sólo una confirmación de entorno.")
         _user, created = seed_demo_data(as_of=as_of.date() if as_of else None,
-            confirmed=confirm_local or confirm_production, production=confirm_production)
+            confirmed=confirm_local or confirm_production, production=confirm_production, body_only=body_only)
     except DemoSeedError as error:
         raise click.ClickException(str(error)) from error
     except Exception:
         raise click.ClickException("No se pudo generar la DEMO; se revirtieron las escrituras del lote.") from None
 
-    total_created = sum(created.values())
+    total_created = sum(value for key, value in created.items() if key != "body_measurements")
     click.echo("Demo QA listo; todos los registros son ficticios.")
     click.echo(f"Email: {DEMO_EMAIL}")
     click.echo(f"Registros creados en esta ejecución: {total_created}")

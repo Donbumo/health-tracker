@@ -50,7 +50,7 @@ def test_account_export_contains_all_demo_sections_without_sensitive_fields(app,
         "exercise_load_profiles",
         "nutrition_intelligence",
     }
-    assert len(document["data"]["weigh_ins"]) == 0
+    assert len(document["data"]["weigh_ins"]) == 49
     assert len(document["data"]["daily_nutrition"]) == 49
     assert len(document["data"]["daily_energy"]) == 49
     assert len(document["data"]["training_plans"][0]["versions"]) == 1

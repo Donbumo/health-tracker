@@ -1,5 +1,7 @@
 """Versioned, entirely synthetic DEMO inputs; no database or filesystem writes."""
 from decimal import Decimal
+from datetime import datetime, time, timezone
+from zoneinfo import ZoneInfo
 from uuid import NAMESPACE_URL, uuid5
 
 DEMO_EMAIL = "demo@healthtracker.test"
@@ -7,6 +9,13 @@ DEMO_NAME = "Health Tracker Demo"
 DEMO_SOURCE = "demo_history_v1"
 DEMO_NOTE = "DEMO_HISTORY_V1: datos sintéticos de demostración; no son mediciones."
 DEMO_PLAN_NAME = "DEMO · Full Body A/B/C"
+DEMO_BODY_SOURCE = "demo_body_v1"
+DEMO_HEIGHT_M = Decimal("1.78")
+DEMO_BODY_NOTE = (
+    "DEMO_BODY_V1: perfil completamente ficticio; valores sintéticos independientes "
+    "del balance calórico. Estatura fija: 1.78 m. BMR, cuando existe, es una "
+    "estimación sintética ilustrativa, no una medición clínica ni el gasto de reposo."
+)
 
 
 def identity(key):
@@ -18,6 +27,38 @@ DEMO_PUBLIC_ID = identity("account")
 
 def variation(day, key, size):
     return uuid5(NAMESPACE_URL, f"demo-history-v1/{day.isoformat()}/{key}").int % size
+
+
+def body_document(user_id, day, anchor, timezone_name):
+    """Generate the existing weigh_in 1.0 contract, without persistence.
+
+    A bounded independent synthetic profile: at day 48 the underlying weight
+    trend is 77.2 kg. Decimal cycles add normal fluctuations without tying any
+    value to food intake, exercise or the energy balance.
+    """
+    offset = max(0, (day - anchor).days)
+    progress = Decimal(offset) / Decimal(offset + 48)
+    wave = tuple(map(Decimal, ("0", ".12", ".18", ".06", "-.08", "-.14", "-.03")))
+    jitter = Decimal(variation(day, "body/weight", 7) - 3) / 100
+    weight = (Decimal("78.4") - Decimal("2.4") * progress + wave[offset % 7] + jitter).quantize(Decimal(".001"))
+    recorded_at = datetime.combine(day, time(7), ZoneInfo(timezone_name)).astimezone(timezone.utc)
+    data = {"recorded_at": recorded_at.isoformat(), "weight_kg": float(weight),
+            "source": DEMO_BODY_SOURCE, "notes": DEMO_BODY_NOTE}
+    # Tuesday/Thursday/Saturday; composition shares that day's single weigh-in.
+    if day.weekday() in {1, 3, 5}:
+        noise = Decimal(variation(day, "body/composition", 7) - 3) / 100
+        values = {
+            "body_fat_percent": Decimal("23.4") - Decimal("1.2") * progress + noise,
+            "muscle_mass_kg": Decimal("56.8") + Decimal(".4") * progress - noise / 2,
+            "water_percent": Decimal("55.2") + Decimal("1.2") * progress - noise,
+            "visceral_fat": Decimal("8") - Decimal(".4") * progress + noise / 3,
+            "bmi": weight / DEMO_HEIGHT_M ** 2,
+        }
+        data.update({field: float(value.quantize(Decimal(".001"))) for field, value in values.items()})
+        # Explicitly illustrative estimate, independent of DailyEnergy.resting.
+        data["bmr_kcal"] = float((Decimal("1700") + 10 * (weight - 75)).quantize(Decimal(".01")))
+    return {"schema_version": "1.0", "record_type": "weigh_in", "user_id": user_id,
+            "source_type": "manual_generated", "data": data}
 
 
 # Exact existing USDA identities; fallback values are synthetic approximations

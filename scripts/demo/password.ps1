@@ -1,8 +1,9 @@
-param([switch]$CopyToClipboard)
+param([switch]$CopyToClipboard, [switch]$RequireExisting)
 $ErrorActionPreference = 'Stop'
 $demoCredentialDirectory = Join-Path $env:LOCALAPPDATA 'HealthTrackerDemo'
 $demoCredentialPath = Join-Path $demoCredentialDirectory 'password.dpapi'
 if (-not (Test-Path -LiteralPath $demoCredentialPath)) {
+    if ($RequireExisting) { throw 'Falta la credencial DEMO existente; no se generó otra contraseña.' }
     New-Item -ItemType Directory -Path $demoCredentialDirectory -Force | Out-Null
     $demoIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
     & icacls $demoCredentialDirectory /inheritance:r /grant:r "${demoIdentity}:(OI)(CI)F" 'SYSTEM:(OI)(CI)F' | Out-Null

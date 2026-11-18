@@ -8,12 +8,13 @@ from flask import current_app
 from sqlalchemy import func, or_
 
 from app.extensions import db
-from app.models import DailyNutrition, FoodProduct, NutritionItem, Recipe, TrainingPlan, TrainingSession, User
+from app.models import DailyNutrition, FoodProduct, NutritionItem, Recipe, TrainingPlan, TrainingSession, User, WeighIn
 from app.services import food_catalog, gym_programs, gym_sessions
 from app.services import nutrition_intelligence as nutrition
 from app.services.demo_fixtures import (
     DEMO_EMAIL, DEMO_NAME, DEMO_SOURCE, DEMO_NOTE, DEMO_PUBLIC_ID, DEMO_PLAN_NAME,
     FOODS, MENUS, MOVEMENTS, DAY_MOVEMENTS, EXTERNAL_MOVEMENTS, identity, variation, performance,
+    DEMO_BODY_SOURCE, DEMO_BODY_NOTE, body_document,
 )
 from app.services.energy_days import upsert_document, view as energy_view
 from app.services.importers.routine_draft import RoutineImportDraft
@@ -25,7 +26,7 @@ class DemoSeedError(ValueError):
     pass
 
 
-def _authorize(confirmed, production=False):
+def _authorize(confirmed, production=False, body_only=False):
     if not confirmed or current_app.config.get("DEMO_SEED_ENABLED") is not True:
         raise DemoSeedError("Requiere DEMO_SEED_ENABLED=true y confirmación explícita del entorno.")
     environment = current_app.config.get("DEMO_SEED_ENVIRONMENT", "")
@@ -39,7 +40,7 @@ def _authorize(confirmed, production=False):
         raise DemoSeedError("Generación DEMO prohibida en producción.")
     if db.engine.url.host not in {None, "localhost", "127.0.0.1", "::1", "db"}:
         raise DemoSeedError("La base DEMO debe ser local; no se permiten hosts remotos.")
-    if not current_app.config.get("NUTRITION_INTELLIGENCE_ENABLED"):
+    if not body_only and not current_app.config.get("NUTRITION_INTELLIGENCE_ENABLED"):
         raise DemoSeedError("Requiere NUTRITION_INTELLIGENCE_ENABLED=true.")
     password = os.environ.get("DEMO_USER_PASSWORD", "")
     if len(password) < 12:
@@ -47,7 +48,7 @@ def _authorize(confirmed, production=False):
     return password
 
 
-def _account(password, created):
+def _account(password, created, *, existing_only=False):
     accounts = db.session.scalars(db.select(User).where(or_(
         func.lower(User.email) == DEMO_EMAIL, func.lower(User.username) == DEMO_EMAIL,
         User.public_id == DEMO_PUBLIC_ID,
@@ -63,6 +64,8 @@ def _account(password, created):
         if not user.check_password(password):
             raise DemoSeedError("La contraseña suministrada no coincide; usa la administración para cambiarla.")
         return user
+    if existing_only:
+        raise DemoSeedError("--body-only requiere la cuenta DEMO existente; no creará otra cuenta.")
     user = User(public_id=DEMO_PUBLIC_ID, username=DEMO_EMAIL, email=DEMO_EMAIL,
                 display_name=DEMO_NAME, role="user", timezone=current_app.config["APP_TIMEZONE"])
     user.set_password(password)
@@ -120,7 +123,7 @@ def _recipes(user, created):
     return recipes
 
 
-def _plan(user, start, created):
+def _plan(user, start, created, *, existing_only=False):
     plans = db.session.scalars(db.select(TrainingPlan).where(
         TrainingPlan.user_id == user.id, TrainingPlan.name == DEMO_PLAN_NAME)).all()
     if plans:
@@ -136,6 +139,8 @@ def _plan(user, start, created):
         except ValueError as error:
             raise DemoSeedError("La rutina existente carece de procedencia DEMO verificable.") from error
         return plan, version, start
+    if existing_only:
+        raise DemoSeedError("--body-only requiere la rutina DEMO que identifica el inicio histórico.")
     draft = RoutineImportDraft({"name": DEMO_PLAN_NAME, "description": DEMO_NOTE + " | " + start.isoformat()}, [
         {"name": "Full Body " + chr(65 + index), "exercises": [
             {"raw_name": MOVEMENTS[m][0], "create_new": True, "sets": [
@@ -231,18 +236,69 @@ def _session(user, plan, version, day, anchor, created):
     created["training_sessions"] += 1
 
 
-def seed_demo_data(*, as_of=None, confirmed=False, production=False):
+def _body_history(user, anchor, as_of, created):
+    from app.services.importers.weigh_in import persist_weigh_in_document
+    from app.services.validation import validate_json_document
+    zone = ZoneInfo(user.timezone or current_app.config["APP_TIMEZONE"])
+    start_at = datetime.combine(anchor, time.min, zone).astimezone(timezone.utc)
+    end_at = datetime.combine(as_of + timedelta(days=1), time.min, zone).astimezone(timezone.utc)
+    rows = db.session.scalars(db.select(WeighIn).where(
+        WeighIn.user_id == user.id, WeighIn.recorded_at >= start_at, WeighIn.recorded_at < end_at
+    ).with_for_update()).all()
+    by_day = {}
+    for row in rows:
+        timestamp = row.recorded_at.replace(tzinfo=timezone.utc) if row.recorded_at.tzinfo is None else row.recorded_at
+        local_day = timestamp.astimezone(zone).date()
+        if local_day in by_day:
+            raise DemoSeedError("Hay varios pesajes en un día DEMO; no se modificó el lote.")
+        by_day[local_day] = row
+    missing = (as_of - anchor).days + 1 - len(by_day)
+    if missing > 366:
+        raise DemoSeedError("Completa los pesajes DEMO en intervalos pendientes de hasta 366 días.")
+    for offset in range((as_of - anchor).days + 1):
+        day = anchor + timedelta(days=offset)
+        document = body_document(user.id, day, anchor, zone.key)
+        validate_json_document(document, "weigh_in")
+        public_id = identity("weigh-in/" + day.isoformat())
+        existing = by_day.get(day)
+        if existing:
+            timestamp = existing.recorded_at.replace(tzinfo=timezone.utc) if existing.recorded_at.tzinfo is None else existing.recorded_at
+            if (timestamp != datetime.fromisoformat(document["data"]["recorded_at"]) or
+                    existing.public_id != public_id or existing.client_event_id != public_id or
+                    existing.source != DEMO_BODY_SOURCE or existing.notes != DEMO_BODY_NOTE or
+                    existing.raw_payload_json != document or existing.revision != 1):
+                raise DemoSeedError("Un pesaje del día es manual o fue modificado; no se sobrescribirá.")
+            # Also detect direct edits that retained the original JSON/markers.
+            from app.services.exporters.weigh_in import build_weigh_in_document
+            exported = build_weigh_in_document(existing, user.id)
+            exported["source_type"] = document["source_type"]
+            expected = dict(document, data=dict(document["data"], recorded_at=exported["data"]["recorded_at"]))
+            if exported != expected:
+                raise DemoSeedError("Los valores del pesaje DEMO cambiaron; no se sobrescribirán.")
+            continue
+        record, duplicate = persist_weigh_in_document(document, user.id, public_id=public_id, client_event_id=public_id)
+        if duplicate:
+            raise DemoSeedError("Conflicto de identidad del pesaje; se canceló el lote.")
+        created["weigh_ins"] += 1
+        created["body_measurements"] += int(record.body_fat_percentage is not None)
+
+
+def seed_demo_data(*, as_of=None, confirmed=False, production=False, body_only=False):
     """Append missing days atomically; never reset or rewrite existing history."""
-    password = _authorize(confirmed, production)
+    password = _authorize(confirmed, production, body_only)
     today = datetime.now(ZoneInfo(current_app.config["APP_TIMEZONE"])).date()
     as_of = as_of or today
     if not isinstance(as_of, date) or not date(2020, 2, 1) <= as_of <= today:
         raise DemoSeedError("--as-of debe estar entre 2020-02-01 y la fecha local actual.")
     start = (as_of.replace(day=1) - timedelta(days=1)).replace(day=1)
-    created = dict.fromkeys(("users", "foods", "recipes", "nutrition_days", "meals", "energy_days", "training_plans", "training_sessions", "training_sets"), 0)
+    created = dict.fromkeys(("users", "foods", "recipes", "nutrition_days", "meals", "energy_days", "training_plans", "training_sessions", "training_sets", "weigh_ins", "body_measurements"), 0)
     try:
-        user = _account(password, created)
-        plan, version, anchor = _plan(user, start, created)
+        user = _account(password, created, existing_only=body_only)
+        plan, version, anchor = _plan(user, start, created, existing_only=body_only)
+        if body_only:
+            _body_history(user, anchor, as_of, created)
+            db.session.commit()
+            return user, created
         last_nutrition = db.session.scalar(db.select(db.func.max(DailyNutrition.date)).where(
             DailyNutrition.user_id == user.id, DailyNutrition.source == DEMO_SOURCE))
         from app.models import DailyEnergy
@@ -258,6 +314,8 @@ def seed_demo_data(*, as_of=None, confirmed=False, production=False):
             food = _nutrition_day(user, day, recipes, created)
             _energy_day(user, day, food, created)
             _session(user, plan, version, day, anchor, created)
+        # Independent backfill: never inherit the nutrition/energy cursor.
+        _body_history(user, anchor, as_of, created)
         db.session.commit()
     except Exception:
         db.session.rollback()

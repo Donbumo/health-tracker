@@ -6,6 +6,8 @@ Corrección de lectores para todas las cuentas y aprovisionamiento **explícito*
 
 Se inspeccionó PR [#47](https://github.com/Donbumo/health-tracker/pull/47), abierto, con head `2b7876b49fb63c5591a66b2f22539e2ad7a463ec`. Esta rama no incorpora sus commits ni modifica `demo_seed.py`, `demo_fixtures.py`, el importador de pesajes o los servicios de sesiones. El comando nuevo requiere la cuenta histórica verificable que crea #47; el `seed-demo` antiguo de master no crea esa identidad y no debe usarse para este procedimiento.
 
+La simulación `git merge-tree --write-tree` entre esta implementación y ese head no reportó conflictos; no cambió ramas, índice ni checkout. Es una comprobación de integración, no un merge ni autorización para desplegar.
+
 La aceptación ejecuta cuatro módulos de ese commit **sólo en el proceso QA**, cargados mediante `git show` de rutas fijas. Esto permite comprobar la ampliación corporal pendiente sin mezclar implementaciones en el PR. El ref debe ser código local confiable e inspeccionado; si #47 cambia, repetir esta aceptación con el nuevo commit. Revisar e integrar ambos PR por separado antes del despliegue; no hacer cherry-picks automáticos. No se ejecutó ningún cambio en el NAS.
 
 ## Diagnóstico reproducido
@@ -68,8 +70,13 @@ La aceptación usa la fuente pública USDA filtrada a los 16 alimentos, y los se
 - Octubre: totales **255,64 g**, 31/31 días. Noviembre 1–18: **263,81 g**, 18/18. Noviembre 12–18: **266,05 g**, 7/7; razón frente a 265 g **100,40%**. Septiembre no tiene metas aplicables. Netos desconocidos en los 49 días.
 - MariaDB: migraciones desde vacío hasta 0046, `db check` sin diferencias; dos sembradores concurrentes crean siete y reutilizan siete tanto en READ COMMITTED como REPEATABLE READ.
 - UI Edge/Playwright: 360, 390, 430, 768, 1024 y 1366 px, claro/oscuro; seis nutrientes, siete metas, barras y ausencias correctas, sin overflow, etiquetas recortadas ni errores JS. Capturas inspeccionadas visualmente.
+- En esas mismas 12 combinaciones se comprueban además listado nutricional antiguo, detalle diario y Balance diario, con totales visibles y sin desbordamiento global.
 
-Evidencia revisable: [capturas y reportes QA](../design/demo-carbs-goals/README.md). Los cambios funcionales están en los lectores de `dashboard/nutrition.py`, `dashboard/summary.py`, `dashboard/goals.py`, `dashboard/provenance.py`, `engagement.py`, `coach.py`, `mobile_health.py`, el template/CSS y sus pruebas. El aprovisionamiento nuevo vive en `services/demo_goals.py` y `demo_goals_cli.py`, registrado en `app/__init__.py`; las descripciones de schemas aclaran la semántica existente sin cambiar su forma.
+Pruebas específicas: **136 passed, 2 skipped** para carbohidratos/metas DEMO, Coach, dashboard, engagement, API móvil, Nutrition Intelligence y exportaciones. Tras completar las vistas antiguas, **31 passed** para regresiones DEMO, balance, smoke web, exportaciones y empty states. Las dos omisiones específicas son suites MariaDB del entorno Docker; la aceptación MariaDB dedicada sí se ejecutó con la base desechable descrita. `compileall`, `git diff --check` y `docker compose config --quiet` pasan (configuración QA ficticia, sin leer `.env`).
+
+Suite completa: **1874 passed, 35 skipped**, sin fallos. El worktree nuevo no incluía las fixtures históricas ignoradas de importación FIT/GPX/TCX/CSV: se generaron los FIT con `examples/qa/real-file-imports/generate_fit_fixtures.py` y se prepararon únicamente las fixtures ficticias ya identificadas por su README. No se añadieron esos archivos ignorados al PR. La advertencia de ZIP duplicado procede del test que comprueba su rechazo.
+
+Evidencia revisable: [capturas y reportes QA](../design/demo-carbs-goals/README.md). Los cambios funcionales están en los lectores de `dashboard/nutrition.py`, `dashboard/summary.py`, `dashboard/goals.py`, `dashboard/provenance.py`, `daily_balance.py`, `engagement.py`, `coach.py`, `mobile_health.py`, los templates/CSS y sus pruebas. El aprovisionamiento nuevo vive en `services/demo_goals.py` y `demo_goals_cli.py`, registrado en `app/__init__.py`; las descripciones de schemas aclaran la semántica existente sin cambiar su forma.
 
 Las pruebas `backend/tests/test_demo_carbs_goals.py` no dependen de refs externos: usan fixtures ficticias para ambos carbohidratos, sólo totales, sólo netos, bases incompatibles, parcialidad, población comparable, metas diarias/semanales, fechas sin meta, UUID/idempotencia, metas editadas/manuales, aislamiento, rollback y Coach neutral. Las demás suites de nutrición, dashboard, metas, API móvil y exportaciones cubren sus rutas y contratos existentes.
 

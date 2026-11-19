@@ -54,7 +54,7 @@ const assert = require('node:assert/strict');
       for (const route of ['/daily-nutrition', detail, '/daily-balance?date=2026-11-18']) {
         const response = await page.goto(`${origin}${route}`);
         assert.equal(response.status(), 200);
-        assert.match(await page.locator('main').innerText(), /Carbohidratos totales/);
+        assert.match(await page.locator('main').innerText(), /carbohidratos totales/i);
         assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       }
       results.push({width, theme, ...geometry, metrics: 6, goals: goalCount, legacyViews: 3});

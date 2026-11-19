@@ -26,6 +26,7 @@ from app.models import (
 )
 from app.models.engagement import GOAL_TYPES, REMINDER_TYPES
 from app.services.mobile_sync import MobileSyncError, rfc3339, validate_timezone
+from app.services.nutrition_intelligence import comparison_value
 
 
 GOAL_STATES = {"active", "paused", "completed", "archived"}
@@ -208,6 +209,8 @@ def owned_goal(user_id: int, public_id: str, *, lock=False) -> UserGoal:
 
 def create_goal(user_id: int, payload: dict) -> UserGoal:
     values = _goal_values(payload, creating=True)
+    # Serialize inserts with explicit DEMO goal provisioning for the same owner.
+    db.session.execute(db.select(User.id).where(User.id == user_id).with_for_update()).scalar_one()
     public_id = _uuid(payload.get("public_id") or uuid.uuid4())
     if db.session.execute(db.select(UserGoal.id).where(UserGoal.public_id == public_id)).scalar_one_or_none():
         raise MobileSyncError("conflict", "El identificador ya existe.", 409)
@@ -633,15 +636,26 @@ def _goal_counts(goal: UserGoal, start: date, end: date, data: dict) -> tuple[in
             "nutrition_calories": "calories", "nutrition_protein": "protein_g",
             "nutrition_carbohydrates": "total_carbs_g", "nutrition_fat": "fat_g",
         }[goal.goal_type]
-        completed = 0
+        values = []
         for row in data["nutrition"]:
             if row.date not in day_set:
                 continue
-            value = getattr(row, field)
-            if field == "total_carbs_g" and value is None:
-                value = row.net_carbs_g
-            completed += value is not None and value >= goal.target_value
-        return completed, len(days), details
+            value = comparison_value(row, field)
+            if value is not None:
+                values.append(value)
+        # Goal directions (minimum/maximum/nominal) are not part of this contract.
+        # Count recording coverage; never label nutrient excess as achievement.
+        registered = sum(values, Decimal(0)) / len(values) if values else None
+        details.update({
+            "measurement": "recording_coverage", "field": field,
+            "data_days": len(values), "goal_days": len(days),
+            "registered_average": _number(registered), "target_value": _number(goal.target_value),
+            "registered_percent_of_target": (
+                float(round(registered * 100 / goal.target_value, 2))
+                if registered is not None and len(values) == len(days) else None
+            ),
+        })
+        return len(values), len(days), details
     if goal.goal_type == "weight_logging_frequency":
         zone = ZoneInfo(goal.timezone)
         recorded = set()
@@ -730,9 +744,12 @@ def adherence_summary(user: User, *, days: int, end: date | None = None, timezon
         status = _status(goal, completed, expected, start, end, today)
         percentage = min(100.0, round(completed * 100 / expected, 2)) if expected > 0 else None
         previous_percentage = min(100.0, round(previous_completed * 100 / previous_expected, 2)) if previous_expected > 0 else None
+        summary_text = _summary_text(status, completed, expected)
+        if goal.goal_type.startswith("nutrition_") and goal.state != "paused":
+            summary_text = f"{completed} de {expected} días con registro completo; cobertura, sin evaluar cumplimiento nutricional."
         items.append({
             "goal": serialize_goal(goal), "status": status, "completed": completed,
-            "expected": expected, "percentage": percentage, "summary": _summary_text(status, completed, expected),
+            "expected": expected, "percentage": percentage, "summary": summary_text,
             "comparison": {
                 "previous_completed": previous_completed, "previous_expected": previous_expected,
                 "absolute_change": completed - previous_completed,

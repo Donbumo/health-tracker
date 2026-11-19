@@ -19,6 +19,8 @@ def source_label(source: str | None, *, has_source_file: bool = False) -> str | 
     normalized = (source or "").strip().casefold()
     if not normalized:
         return None
+    if normalized == "demo_goals_v1":
+        return "DEMO sintético"
     if normalized == "manual" or normalized.startswith("manual_"):
         return "Manual"
     if "health_connect" in normalized or "health connect" in normalized:

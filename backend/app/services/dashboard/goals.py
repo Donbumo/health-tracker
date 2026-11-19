@@ -14,7 +14,7 @@ from app.services.dashboard.provenance import source_label
 GOAL_PRESENTATION = {
     "nutrition_calories": ("Calorías", "Nutrición"),
     "nutrition_protein": ("Proteína", "Nutrición"),
-    "nutrition_carbohydrates": ("Carbohidratos", "Nutrición"),
+    "nutrition_carbohydrates": ("Carbohidratos totales", "Nutrición"),
     "nutrition_fat": ("Grasa", "Nutrición"),
     "daily_steps": ("Pasos", "Actividad"),
     "training_sessions_per_week": ("Sesiones", "Entrenamiento"),

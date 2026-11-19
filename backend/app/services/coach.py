@@ -314,7 +314,7 @@ class CoachSignalEngine:
                 continue
             metric = goal["type"]
             observed = (summary["activity"]["step_days"] if metric == "daily_steps" else
-                        summary["energy"]["nutrition_days"] if metric.startswith("nutrition_") else
+                        goal.get("data_days", 0) if metric.startswith("nutrition_") else
                         training["planned"] if metric == "scheduled_workouts_completion" else
                         training["sessions"] if metric.startswith("training_") else 0)
             if observed < 5 and metric in {"daily_steps", "nutrition_calories", "nutrition_protein", "nutrition_carbohydrates", "nutrition_fat"}:
@@ -322,17 +322,19 @@ class CoachSignalEngine:
             if not observed:
                 continue
             percent = _decimal(goal["percent"])
-            if percent is None or not (percent >= 100 or percent < 80):
+            nutrition_goal = metric.startswith("nutrition_")
+            if percent is None or (not nutrition_goal and not (percent >= 100 or percent < 80)):
                 continue
-            weekly.append(cls._signal(period=period, domain="goals", kind="goal_reached" if percent >= 100 else "goal_gap",
-                metric=metric, title=f'{goal["label"]}: ' + ("objetivo alcanzado" if percent >= 100 else "por debajo del objetivo"),
-                message="Comparación descriptiva con tu meta configurada y los registros disponibles.",
+            weekly.append(cls._signal(period=period, domain="goals", kind="recorded" if nutrition_goal else "goal_reached" if percent >= 100 else "goal_gap",
+                metric=metric, title=f'{goal["label"]}: ' + ("registrado respecto al objetivo" if nutrition_goal else "objetivo alcanzado" if percent >= 100 else "por debajo del objetivo"),
+                message=(f"Registrado/objetivo: {percent}%. No evalúa cumplimiento nutricional."
+                         if nutrition_goal else "Comparación descriptiva con tu meta configurada y los registros disponibles."),
                 current=goal["actual"], baseline=goal["target"], change=percent,
-                unit=goal["unit"], coverage=_coverage(observed, 7, minimum=5 if metric.startswith("nutrition_") or metric == "daily_steps" else 1),
+                unit=goal["unit"], coverage=_coverage(observed, goal["applicable_days"], minimum=5 if nutrition_goal or metric == "daily_steps" else 1),
                 provenance=("Dashboard · objetivos", goal["source"]),
                 evidence=(_evidence("Valor registrado", goal["actual"], "Dashboard", period),
                           _evidence("Meta configurada", goal["target"], goal["source"], period)),
-                severity="medium" if percent < 80 else "low"))
+                severity="medium" if not nutrition_goal and percent < 80 else "low"))
 
         # Cross-domain wording stays descriptive and requires both complete windows.
         volume_up = _decimal(gym_week["comparison"])

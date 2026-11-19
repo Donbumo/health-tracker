@@ -448,6 +448,7 @@ tbody tr:last-child td { border-bottom: 0; }
   .macro-row { grid-template-columns: minmax(0, 1fr) 3rem; }
   .macro-row progress, .macro-row .macro-no-goal { grid-column: 1 / -1; }
   .macro-row > span { grid-column: 2; grid-row: 1; }
+  .macro-row > .macro-no-goal { grid-row: auto; text-align: left; }
   .distribution-list li { align-items: flex-start; flex-direction: column; gap: .15rem; }
   .metadata, .detail-list { grid-template-columns: 1fr; gap: .15rem; }
   .metadata dd, .detail-list dd { margin-bottom: .55rem; }

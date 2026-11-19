@@ -9,18 +9,19 @@
     <div class="metric"><strong>{{ record.calories if record.calories is not none else '—' }}</strong><span>calorías</span></div>
     <div class="metric"><strong>{{ record.protein_g if record.protein_g is not none else '—' }}</strong><span>proteína g</span></div>
     <div class="metric"><strong>{{ record.fat_g if record.fat_g is not none else '—' }}</strong><span>grasa g</span></div>
-    <div class="metric"><strong>{{ record.net_carbs_g if record.net_carbs_g is not none else '—' }}</strong><span>net carbs g</span></div>
-    <div class="metric"><strong>{{ record.total_carbs_g if record.total_carbs_g is not none else '—' }}</strong><span>carbs totales g</span></div>
+    <div class="metric"><strong>{{ record.total_carbs_g if record.total_carbs_g is not none else '—' }}</strong><span>Carbohidratos totales g</span></div>
     <div class="metric"><strong>{{ record.fiber_g if record.fiber_g is not none else '—' }}</strong><span>fibra g</span></div>
+    <div class="metric"><strong>{{ record.net_carbs_g if record.net_carbs_g is not none else '—' }}</strong><span>Carbohidratos netos g</span></div>
   </section>
   {% for meal in record.meals %}
     <section class="card">
       <h2>{{ meal.name or meal.meal_type }}</h2>
       <div class="table-wrap"><table>
-        <thead><tr><th>Item</th><th>Cantidad</th><th>Calorías</th><th>Proteína</th><th>Grasa</th><th>Net carbs</th></tr></thead>
+        <thead><tr><th>Item</th><th>Cantidad</th><th>Calorías</th><th>Proteína (g)</th><th>Carbohidratos totales (g)</th><th>Grasa (g)</th><th>Carbohidratos netos (g)</th></tr></thead>
         <tbody>{% for item in meal.items %}<tr>
           <td>{{ item.name }}</td><td>{{ item.quantity if item.quantity is not none else '—' }} {{ item.unit or '' }}</td>
           <td>{{ item.calories if item.calories is not none else '—' }}</td><td>{{ item.protein_g if item.protein_g is not none else '—' }}</td>
+          <td>{{ item.total_carbs_g if item.total_carbs_g is not none else '—' }}</td>
           <td>{{ item.fat_g if item.fat_g is not none else '—' }}</td><td>{{ item.net_carbs_g if item.net_carbs_g is not none else '—' }}</td>
         </tr>{% endfor %}</tbody>
       </table></div>

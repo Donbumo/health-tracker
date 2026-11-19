@@ -25,6 +25,7 @@ from app.services.daily_balance import effective_energy_record
 from app.services import energy_days
 from app.services.mobile_sync import MobileSyncError, rfc3339
 from app.services.engagement import active_goal_targets
+from app.services.nutrition_intelligence import comparison_value as nutrition_comparison_value
 
 
 LB_TO_KG = Decimal("0.45359237")
@@ -616,7 +617,7 @@ def serialize_nutrition_item(record: NutritionItem) -> dict:
         "data_complete": (not log or all(log.snapshot_json['summary'][n]['state']=='complete' for n in ('energy','protein','fat','carbohydrate_total'))) and all(
             value is not None for value in (
                 record.calories, record.protein_g, record.fat_g,
-                record.total_carbs_g if record.total_carbs_g is not None else record.net_carbs_g,
+                record.total_carbs_g,
             )
         ),
         "revision": record.revision,
@@ -1020,7 +1021,7 @@ def health_today(user_id: int, target: date, timezone_name: str | None) -> dict:
         "calories_kcal": _number(nutrition.calories) if nutrition else None,
         "protein_g": _number(nutrition.protein_g) if nutrition else None,
         "carbohydrate_g": _number(
-            nutrition.total_carbs_g if nutrition and nutrition.total_carbs_g is not None else nutrition.net_carbs_g if nutrition else None
+            nutrition.total_carbs_g if nutrition else None
         ),
         "fat_g": _number(nutrition.fat_g) if nutrition else None,
         "fiber_g": _number(nutrition.fiber_g) if nutrition else None,
@@ -1110,7 +1111,7 @@ def health_progress(user_id: int, start: date, end: date, timezone_name: str | N
             "steps": step.steps if step else None,
             "calories_kcal": _number(day.calories) if day else None,
             "protein_g": _number(day.protein_g) if day else None,
-            "carbohydrate_g": _number(day.total_carbs_g if day and day.total_carbs_g is not None else day.net_carbs_g if day else None),
+            "carbohydrate_g": _number(nutrition_comparison_value(day, "total_carbs_g")),
             "fat_g": _number(day.fat_g) if day else None,
             "weight_source": weight.source if weight else None,
             "steps_source": (step.field_sources['steps'].source if step and step.field_sources.get('steps') else 'user_override' if step and step.steps is not None else None),

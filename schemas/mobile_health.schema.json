@@ -701,6 +701,7 @@
                   "$ref": "#/$defs/decimal"
                 },
                 "carbohydrate_g": {
+                  "description": "Total carbohydrates only; unknown totals never fall back to net carbohydrates.",
                   "$ref": "#/$defs/decimal"
                 },
                 "fat_g": {
@@ -880,6 +881,7 @@
                 "$ref": "#/$defs/decimal"
               },
               "carbohydrate_g": {
+                "description": "Complete total carbohydrates only; partial or unknown totals are null. Net carbohydrates remain a separate nutrient.",
                 "$ref": "#/$defs/decimal"
               },
               "fat_g": {

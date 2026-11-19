@@ -170,19 +170,19 @@
 
   <section class="dashboard-card dashboard-card-span-7" aria-labelledby="nutrition-title">
     <div class="dashboard-card-heading">
-      <div><p class="eyebrow">Nutrición</p><h2 id="nutrition-title">Promedios diarios</h2><p class="help">Los progresos comparan solo metas configuradas y días aplicables.</p></div>
+      <div><p class="eyebrow">Nutrición</p><h2 id="nutrition-title">Promedios diarios</h2><p class="help">Porcentaje registrado respecto al objetivo en días aplicables con datos completos. Superar el 100% no indica un beneficio nutricional.</p></div>
       {{ source_details(nutrition.sources) }}
     </div>
     <div class="macro-list">
-      {% for key in ('calories', 'protein', 'fat', 'net_carbs', 'fiber') %}
+      {% for key in ('calories', 'protein', 'total_carbs', 'fat', 'fiber', 'net_carbs') %}
         {% set item = nutrition.averages[key] %}
         <div class="macro-row">
-          <div><strong>{{ item.label }}</strong><span>{{ number(item.average, 1) }} {{ item.unit }}{% if item.goal is not none %} / {{ number(item.goal, 1) }} {{ item.unit }}{% endif %}</span></div>
+          <div><strong>{{ item.label }}</strong><span>{{ number(item.average, 1) }} {{ item.unit }}{% if item.goal is not none %} · objetivo {{ number(item.goal, 1) }} {{ item.unit }}{% endif %}</span><span>{{ item.days }}/{{ dashboard.range.days }} días con datos · {{ item.goal_days }} con objetivo{% if item.goal_days %} · {{ item.goal_data_days }} comparables{% endif %}</span>{% if item.goal_days and item.goal_data_days and item.goal_data_days != item.days %}<span>En días con objetivo: {{ number(item.goal_actual_average, 1) }} {{ item.unit }}</span>{% endif %}</div>
           {% if item.percent_of_goal is not none %}
-            <progress value="{{ [item.percent_of_goal|float, 100]|min }}" max="100" aria-label="{{ item.label }}: {{ number(item.percent_of_goal) }} por ciento del objetivo"></progress>
-            <span>{{ number(item.percent_of_goal) }}%</span>
+            <progress value="{{ [item.percent_of_goal|float, 100]|min }}" max="100" aria-label="{{ item.label }}: {{ number(item.percent_of_goal, 1) }} por ciento del objetivo"></progress>
+            <span>{{ number(item.percent_of_goal, 1) }}%</span>
           {% else %}
-            <span class="macro-no-goal">{{ item.days }}/{{ dashboard.range.days }} días · sin meta</span>
+            <span class="macro-no-goal">{{ 'Sin datos completos comparables' if item.goal_days else 'Sin meta' }}</span>
           {% endif %}
         </div>
       {% endfor %}
@@ -191,13 +191,14 @@
   </section>
 
   <section class="dashboard-card dashboard-card-span-5" aria-labelledby="goals-title">
-    <div class="dashboard-card-heading"><div><p class="eyebrow">Seguimiento</p><h2 id="goals-title">Metas</h2></div></div>
+    <div class="dashboard-card-heading"><div><p class="eyebrow">Seguimiento</p><h2 id="goals-title">Metas</h2><p class="help">Registrado / objetivo; frecuencia semanal proporcional a los días aplicables. La relación nutricional es descriptiva.</p></div></div>
     {% if dashboard.goals %}
       <ul class="goal-list">
         {% for goal in dashboard.goals %}
           <li>
             <div><strong>{{ goal.label }}</strong><span>{{ goal.domain }} · {{ goal.source or 'Fuente no indicada' }}</span></div>
             <div class="goal-values"><strong>{{ number(goal.actual, 1) }}</strong><span> / {{ number(goal.target, 1) }} {{ goal.display_unit }}</span></div>
+            <span class="help">{% if goal.data_days is not none %}{{ goal.data_days }} días con datos · {% endif %}{{ goal.applicable_days }} con objetivo · {{ number(goal.percent, 1) }}{% if goal.percent is not none %}% registrado{% endif %}</span>
             {% if goal.percent is not none %}<progress value="{{ [goal.percent|float, 100]|min }}" max="100" aria-label="{{ goal.label }}: {{ number(goal.percent) }} por ciento"></progress>{% endif %}
           </li>
         {% endfor %}

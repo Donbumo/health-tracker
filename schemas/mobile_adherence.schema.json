@@ -25,7 +25,7 @@
           "percentage": {"type": ["number", "null"], "minimum": 0},
           "summary": {"type": "string", "maxLength": 200},
           "comparison": {"type": "object"},
-          "details": {"type": "object"}
+          "details": {"type": "object", "description": "For nutrition, completed/expected/percentage/status describe recording coverage, not nutritional achievement. measurement=recording_coverage; field identifies the canonical nutrient; data_days and goal_days delimit coverage; registered_average and target_value are decimal strings or null; registered_percent_of_target is an uncapped neutral ratio, null unless every applicable day has complete data."}
         }
       }
     },

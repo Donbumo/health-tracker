@@ -1,0 +1,31 @@
+<section class="ni-exchange-entry">
+  <h1>Importar comidas con IA</h1>
+  <div class="ni-inline">
+    <button class="secondary" type="button" id="ni-copy-prompt" hidden>Copiar prompt para IA</button>
+    <a href="{{ url_for('nutrition.exchange_resource', resource='example') }}">Descargar ejemplo</a>
+  </div>
+  <p id="ni-copy-status" role="status"></p>
+  <details class="ni-card">
+    <summary>Instrucciones para tu asistente</summary>
+    <label for="ni-exchange-prompt">Prompt para copiar</label>
+    <textarea id="ni-exchange-prompt" readonly rows="8">{{ exchange_prompt }}</textarea>
+    <a href="{{ url_for('nutrition.exchange_resource', resource='schema') }}">Descargar especificación del formato</a>
+  </details>
+  <div class="ni-columns">
+    <form method="post" class="ni-card">
+      {{ csrf() }}
+      <h2>Pegar JSON</h2>
+      <label for="ni-exchange-json">Respuesta de tu asistente</label>
+      <textarea id="ni-exchange-json" name="exchange_json" rows="6" required placeholder="Pega aquí el contenido completo"></textarea>
+      <button>Revisar comidas pegadas</button>
+    </form>
+    <form method="post" enctype="multipart/form-data" class="ni-card">
+      {{ csrf() }}
+      <h2>Subir archivo</h2>
+      <label for="ni-exchange-file">Archivo de comidas</label>
+      <input id="ni-exchange-file" name="file" type="file" accept=".json,application/json" required>
+      <button>Revisar archivo de comidas</button>
+    </form>
+  </div>
+  <script src="{{ url_for('static', filename='js/nutrition-exchange.js') }}" defer></script>
+</section>

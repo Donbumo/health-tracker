@@ -48,9 +48,9 @@ def exact_binding(user_id, proposal, cache):
             'amount': proposal.get('amount'), 'unit': proposal.get('unit')}
 
 
-def prepared(row,destination=None):
+def prepared(row,destination=None,*,review_json=None):
     """Resolve exact file identities without changing persistent review state."""
-    review = copy.deepcopy(row.review_json)
+    review = copy.deepcopy(row.review_json if review_json is None else review_json)
     if destination is not None:review['destination']=destination
     from app.services.nutrition_import_basis import prepare as prepare_basis
     prepare_basis(row,review)
@@ -248,18 +248,28 @@ def row_issues(row, review, index):
     return errors
 
 
-def overview(row):
-    review = prepared(row)
+def overview(row, *, exchange_lock=False):
+    from app.services.importers.nutrition_exchange.preparation import web_enabled
+    from app.services.importers.nutrition_exchange import revisions
+
+    exchange = row.source_json.get('profile') in EXCHANGE_PROFILES
+    exchange_web = exchange and web_enabled()
+    diagnostics = row.source_json.get('exchange_diagnostics', [])
+    review_json = None
+    if exchange_web and row.state == 'pending':
+        review_json, diagnostics = revisions.refresh(row, lock=exchange_lock)
+    review = prepared(row, review_json=review_json)
     records = []
     foods = {}
     counts = dict(ready=0, decision=0, invalid=0, omitted=0)
     file_issues=row.source_json.get('file_issues',[]) if review['destination']=='consumed' else []
-    exchange = row.source_json.get('profile') in EXCHANGE_PROFILES
-    exchange_view = {}
+    exchange_view = {'exchange_web': exchange_web}
     if exchange:
-        diagnostics = row.source_json.get('exchange_diagnostics', [])
         file_issues = [*file_issues, *(problem['message'] for problem in _exchange_issues(diagnostics))]
         exchange_view['diagnostics'] = diagnostics
+    if exchange_web:
+        exchange_view['exchange_groups'] = revisions.groups(review['rows'])
+        exchange_view['exchange_units'] = revisions.UNIT_NAMES
     for index, item in enumerate(review['rows']):
         errors = [] if item.get('skip') else row_issues(row, review, index)
         empty = not item.get('name') and not item.get('declaration') and not item.get('ingredients') and not item.get('ingredient_proposals')
@@ -317,12 +327,12 @@ def document(row, view=None):
     if exchange:
         from app.services.importers.nutrition_exchange.preparation import enabled
         if not enabled():
-            raise NutritionError('El intercambio nutricional sólo está disponible en QA.',409)
+            raise NutritionError('El intercambio de comidas está desactivado.',409)
     if (row.review_json.get('destination')=='consumed' and row.source_json.get('file_issues')):
         raise NutritionError(row.source_json['file_issues'][0])
     if row.source_json.get('reprocess_pending'):
         raise NutritionError('Revisa y acepta los campos conservados de la revisión anterior antes de confirmar.')
-    view = view or overview(row)
+    view = view or overview(row, exchange_lock=exchange)
     if exchange and view['file_issues']:
         raise NutritionError('Resuelve los pendientes del archivo antes de confirmar el lote.')
     if view['counts']['decision'] or view['counts']['invalid']:

@@ -1,0 +1,74 @@
+{
+  "format": "health-tracker-nutrition",
+  "version": "1.0",
+  "destination": "consumed",
+  "date": "2030-05-03",
+  "meals": [
+    {
+      "type": "lunch",
+      "foods": [
+        {
+          "name": "Arroz ficticio QA",
+          "quantity": {
+            "amount": 150,
+            "unit": "g"
+          },
+          "nutrition": {
+            "basis": {
+              "amount": 100,
+              "unit": "g"
+            },
+            "values": {
+              "energy": {
+                "value": 130,
+                "unit": "kcal",
+                "quality": "estimated"
+              },
+              "protein": {
+                "value": 2.7,
+                "unit": "g"
+              }
+            },
+            "quality": "estimated",
+            "source": "Tabla ficticia QA"
+          }
+        },
+        {
+          "name": "Yogur ficticio QA",
+          "quantity": {
+            "amount": 1,
+            "unit": "portion",
+            "label": "taza de prueba"
+          },
+          "nutrition": {
+            "basis": {
+              "kind": "consumed"
+            },
+            "values": {
+              "energy": {
+                "value": 65.125,
+                "unit": "kcal"
+              },
+              "carbohydrate_total": {
+                "value": 0,
+                "unit": "g"
+              },
+              "potassium": {
+                "state": "unknown"
+              },
+              "iron": {
+                "state": "trace",
+                "unit": "mg"
+              },
+              "vitamin_d": {
+                "state": "below_limit",
+                "unit": "ug",
+                "limit": 0.2
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

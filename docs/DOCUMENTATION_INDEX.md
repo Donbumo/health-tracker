@@ -14,7 +14,7 @@ Usa este archivo para cargar solo el contexto necesario. Las reglas canónicas i
 
 ## Uso diario y web
 
-- Universal Nutrition Import: [RFC y contrato HTNX 1.0](NUTRITION_EXCHANGE_RFC.md) y [motor de Fase B para QA](NUTRITION_EXCHANGE_ENGINE.md).
+- Universal Nutrition Import: [RFC y contrato HTNX 1.0](NUTRITION_EXCHANGE_RFC.md), [motor de preparación](NUTRITION_EXCHANGE_ENGINE.md) e [interfaz web y validación](NUTRITION_EXCHANGE_WEB.md).
 
 - Importación nutricional simplificada: [auditoría, métricas, recibos y QA](NUTRITION_IMPORT_UX.md). Tres pantallas, excepciones agrupadas, confirmación global; PR independiente sin merge ni despliegue.
 

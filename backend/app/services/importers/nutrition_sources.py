@@ -203,6 +203,8 @@ def json_rows(document, evidence):
     """Select a parent collection once; never also import its ingredient children."""
     if isinstance(document,list):return [normalized_row(row,dict(evidence,row=i+1)) for i,row in enumerate(bounded_rows(document))]
     if not isinstance(document,dict):raise NutritionError('JSON nutricional debe ser objeto o lista.')
+    if document.get('format') == 'health-tracker-nutrition':
+        raise NutritionError('El formato de intercambio nutricional aún no está habilitado.',422)
     if document.get('type')=='nutrition_import':
         if document.get('schema_version')!='2.1':raise NutritionError('Versión nutrition_import no admitida; usa el contrato 2.1.')
         from app.services.validation import validate_json_document,JsonSchemaValidationError
@@ -320,7 +322,7 @@ def extract(payload,filename,mime=None,depth=0):
     name=str(filename).replace('\\','/').rsplit('/',1)[-1][:200]
     evidence={'file':name,'sha256':hashlib.sha256(payload).hexdigest()}
     rows=[];texts=[];warnings=[];profile=None;standard=None;file_issues=[];document_notes=[]
-    stripped=payload.lstrip()
+    stripped=payload.removeprefix(b'\xef\xbb\xbf').lstrip()
     if payload.startswith(b'%PDF-'):
         from pypdf import PdfReader
         reader=PdfReader(io.BytesIO(payload),strict=True)

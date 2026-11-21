@@ -37,6 +37,7 @@ def daily_balance(user_id: int, target_date: date) -> dict:
         "protein_g": nutrition.protein_g if nutrition is not None else None,
         "fat_g": nutrition.fat_g if nutrition is not None else None,
         "net_carbs_g": nutrition.net_carbs_g if nutrition is not None else None,
+        "total_carbs_g": nutrition.total_carbs_g if nutrition is not None else None,
         "fiber_g": nutrition.fiber_g if nutrition is not None else None,
         "calories_expended": calories_expended,
         "active_calories": energy.active_calories if energy is not None else None,

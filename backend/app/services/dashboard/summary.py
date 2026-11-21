@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from decimal import Decimal, ROUND_HALF_UP
+from datetime import timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from app.services.dashboard.activity import ActivityTrendService
 from app.services.dashboard.comparison import DashboardComparisonService
 from app.services.dashboard.date_range import DashboardDateRange
-from app.services.dashboard.goals import DashboardGoalsService
+from app.services.dashboard.goals import DashboardGoalsService, goal_for_day
 from app.services.dashboard.insights import DashboardInsightsService
 from app.services.dashboard.nutrition import NutritionTrendService
 from app.services.dashboard.serializers import serialize_dashboard
@@ -38,45 +40,72 @@ class DashboardSummaryService:
         )
 
     @staticmethod
-    def _goal_progress(goals: list[dict], period: dict, date_range: DashboardDateRange) -> list[dict]:
+    def _goal_progress(goals: list[dict], period: dict, date_range: DashboardDateRange,
+                       loaded_goals: list, loaded_training: dict, loaded_weight: list) -> list[dict]:
         nutrition = period["summary"]["nutrition"]["averages"]
-        activity = period["summary"]["activity"]
         training = period["summary"]["training"]
-        weight = period["summary"]["weight"]
-        weeks = Decimal(date_range.days) / Decimal("7")
         actuals = {
-            "nutrition_calories": (nutrition["calories"]["average"], "kcal"),
-            "nutrition_protein": (nutrition["protein"]["average"], "g"),
-            "nutrition_carbohydrates": (nutrition["net_carbs"]["average"], "g"),
-            "nutrition_fat": (nutrition["fat"]["average"], "g"),
-            "daily_steps": (activity["steps_average"], "step"),
-            "training_sessions_per_week": (
-                (Decimal(training["sessions"]) / weeks).quantize(TWO_PLACES, rounding=ROUND_HALF_UP),
-                "session",
-            ),
-            "active_days_per_week": (
-                (Decimal(training["active_days"]) / weeks).quantize(TWO_PLACES, rounding=ROUND_HALF_UP),
-                "day",
-            ),
             "scheduled_workouts_completion": (training["completed_plans"], "workout"),
-            "weight_logging_frequency": (
-                (Decimal(weight["entries"]) / weeks).quantize(TWO_PLACES, rounding=ROUND_HALF_UP),
-                "log",
-            ),
             "active_plan_tracking": (1 if training["planned"] else 0, "plan"),
         }
         enriched = []
         for goal in goals:
             actual, actual_unit = actuals.get(goal["type"], (None, goal["unit"]))
+            days_with_data = None
+            target = goal["target"]
+            eligible = {}
+            for offset in range(date_range.days):
+                day = date_range.start_date + timedelta(days=offset)
+                selected = goal_for_day(loaded_goals, goal["type"], day)
+                if selected is not None:
+                    eligible[day] = selected
+            metric = {"nutrition_calories": "calories", "nutrition_protein": "protein",
+                      "nutrition_carbohydrates": "total_carbs", "nutrition_fat": "fat"}.get(goal["type"])
+            complete = True
+            if metric:
+                item = nutrition[metric]
+                actual = item["goal_actual_average"]
+                days_with_data = item["goal_data_days"]
+                complete = days_with_data == item["goal_days"]
+            elif goal["type"] == "daily_steps":
+                points = [p for p in period["trends"]["activity"] if p["date"] in eligible and p["steps"] is not None]
+                days_with_data = len(points)
+                actual = (sum(Decimal(p["steps"]) for p in points) / len(points)) if points else None
+                complete = days_with_data == len(eligible)
+            elif goal["type"] in {"training_sessions_per_week", "active_days_per_week", "weight_logging_frequency"}:
+                zone = ZoneInfo(date_range.timezone)
+                def local_day(value):
+                    return (value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value).astimezone(zone).date()
+                if goal["type"] == "weight_logging_frequency":
+                    dates = {local_day(row.recorded_at) for row in loaded_weight} & eligible.keys()
+                    count = len(dates)
+                else:
+                    dates = {row.public_id: local_day(row.performed_at) for row in loaded_training["sessions"]}
+                    dates = [day for day in dates.values() if day in eligible]
+                    count = len(set(dates)) if goal["type"] == "active_days_per_week" else len(dates)
+                days_with_data = len(set(dates))
+                # Frequency is proportional to the days where a goal actually applies.
+                weekly = goal["period"] == "weekly"
+                scale = Decimal(7 if weekly else 1)
+                actual = Decimal(count) * scale / len(eligible) if eligible else None
+                expected_daily = sum((g.target_value / (7 if g.period == "weekly" else 1)
+                                      for g in eligible.values()), Decimal(0))
+                target = expected_daily * scale / len(eligible) if eligible else target
             percent = None
-            if actual is not None and Decimal(goal["target"]) > 0:
+            if complete and actual is not None and Decimal(target) > 0:
                 percent = (
-                    Decimal(actual) / Decimal(goal["target"]) * Decimal("100")
+                    Decimal(actual) / Decimal(target) * Decimal("100")
                 ).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+            if metric:
+                percent = nutrition[metric]["percent_of_goal"]
+            if actual is not None:
+                actual = Decimal(actual).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
             enriched.append(
                 {
                     **goal,
+                    "target": Decimal(target).quantize(TWO_PLACES, rounding=ROUND_HALF_UP),
                     "actual": actual,
+                    "data_days": days_with_data,
                     "actual_unit": actual_unit,
                     "percent": percent,
                 }
@@ -125,7 +154,8 @@ class DashboardSummaryService:
             },
         }
         configured_goals = self.goals.build(loaded_goals, date_range)
-        result["goals"] = self._goal_progress(configured_goals, result, date_range)
+        result["goals"] = self._goal_progress(configured_goals, result, date_range,
+                                             loaded_goals, loaded_training, loaded_weight)
         return result
 
     def build(

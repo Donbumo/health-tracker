@@ -1,6 +1,6 @@
 # Prompt para generar un archivo HTNX 1.0
 
-Borrador para copiar desde Health Tracker en una fase posterior del [RFC](NUTRITION_EXCHANGE_RFC.md).
+Texto de «Copiar prompt para IA» en Health Tracker. Sigue el [contrato del RFC](NUTRITION_EXCHANGE_RFC.md).
 
 ```text
 Convierte el registro de comidas que te proporcioné en un único objeto JSON de

@@ -67,10 +67,10 @@ def start(user_id,payload,filename,mime=None,*,commit=False):
         raise
 
 
-def _extract_review(payload, filename, mime, user_id, *, exchange_decisions=None):
+def _extract_review(payload, filename, mime, user_id, *, exchange_decisions=None, exchange_options=None, lock=False):
     from app.services.importers.nutrition_exchange.preparation import extract_exchange
 
-    found = extract_exchange(payload, filename, mime, user_id, decisions=exchange_decisions)
+    found = extract_exchange(payload, filename, mime, user_id, decisions=exchange_decisions, options=exchange_options, lock=lock)
     if found is not None:
         return found
     if len(payload) > MAX_BYTES:
@@ -216,7 +216,7 @@ def recover(user_id,key,revision):
     return fresh
 
 
-def verified_original(row, *, lock=True, exchange_decisions=None):
+def verified_original(row, *, lock=True, exchange_decisions=None, exchange_options=None):
     """Owner-bound retained upload, bounded bytes, size and SHA checked first."""
     user_id=row.user_id
     upload_id=row.source_json.get('upload_id')
@@ -234,7 +234,7 @@ def verified_original(row, *, lock=True, exchange_decisions=None):
 
         if row.source_json.get('profile') in EXCHANGE_PROFILES:
             found=_extract_review(payload,source.original_filename,source.mime_type,user_id,
-                                  exchange_decisions=exchange_decisions)
+                                  exchange_decisions=exchange_decisions,exchange_options=exchange_options,lock=lock)
         else:
             found=extract(payload,source.original_filename,source.mime_type)
     except (BackupError,OSError) as error:

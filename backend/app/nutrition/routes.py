@@ -2,8 +2,9 @@
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 from decimal import Decimal, ROUND_HALF_UP
+from pathlib import Path
 from uuid import uuid4
-from flask import render_template, request, redirect, url_for, abort, current_app, flash, session, jsonify
+from flask import render_template, request, redirect, url_for, abort, current_app, flash, session, jsonify, send_file
 from flask_login import login_required, current_user
 from itsdangerous import URLSafeTimedSerializer, BadSignature
 from sqlalchemy.exc import IntegrityError
@@ -59,6 +60,22 @@ def nutrition_error(error):
     ) == 'application/json':
         from dataclasses import asdict
         return jsonify(diagnostics=[asdict(item) for item in error.diagnostics]), error.status
+    if isinstance(error, IntakeError):
+        messages = {
+            'invalid_json': 'Revisa que la respuesta contenga un solo documento JSON completo.',
+            'invalid_utf8': 'Guarda el archivo como texto UTF-8 antes de subirlo.',
+            'duplicate_key': 'Una propiedad aparece repetida. Pide una nueva copia del documento.',
+            'limit_exceeded': 'El documento supera un límite de tamaño o estructura. Divide las comidas en archivos más pequeños.',
+            'unsupported_version': 'Pide a tu asistente un archivo compatible con el ejemplo descargable.',
+            'format_conflict': 'El documento mezcla formatos. Pide un archivo nuevo siguiendo las instrucciones.',
+            'numeric_limit': 'Corrige el número fuera de rango o con demasiados decimales.',
+            'non_finite_number': 'Usa un número finito o declara el valor como desconocido.',
+            'schema_error': 'Revisa la estructura y los valores del campo siguiendo el ejemplo descargable.',
+        }
+        diagnostics = [(messages.get(item.code, 'Comprueba este campo usando el ejemplo descargable.'), item.path)
+                       for item in error.diagnostics]
+        return render_template('nutrition/error.html', message='Corrige el documento para revisarlo.',
+                               diagnostics=diagnostics), error.status
     return render_template("nutrition/error.html",message=str(error)),error.status
 
 
@@ -332,19 +349,56 @@ def my_food(key=None):
 @login_required
 def import_upload():
     ni.enabled()
+    from app.services.importers.nutrition_exchange.preparation import web_enabled
+
     if request.method=='GET':
         from app.services.importers.registry import ImportAdapterRegistry
         pending=db.session.scalars(db.select(NutritionImportDraft).where(NutritionImportDraft.user_id==current_user.id, NutritionImportDraft.state=='pending').order_by(NutritionImportDraft.id.desc()).limit(20)).all()
         from app.services import nutrition_import as imports
         statuses=[(review,imports.review_status(review)) for review in pending]
         return render('import_upload',adapter=ImportAdapterRegistry().get('nutrition_sources'),
+            exchange_enabled=web_enabled(), exchange_prompt=_exchange_prompt() if web_enabled() else None,
             pending_reviews=[review for review,status in statuses if status['can_resume']],
             unavailable_reviews=[(review,status) for review,status in statuses if not status['can_resume']])
     from app.services import nutrition_import as imports
     file=request.files.get('file')
+    pasted=request.form.get('exchange_json') if web_enabled() else None
+    if pasted is not None:
+        if file or not pasted.strip():
+            raise NutritionError('Pega un documento JSON o selecciona un archivo.')
+        row=imports.start(current_user.id,pasted.encode('utf-8'),'Comidas pegadas.json','application/json',commit=True)
+        return redirect(url_for('nutrition.import_review',key=row.public_id))
     if not file:raise NutritionError('Selecciona un archivo.')
     row=imports.start(current_user.id,file.stream.read(10*1024*1024+1),file.filename,file.mimetype,commit=True)
     return redirect(url_for('nutrition.import_review',key=row.public_id))
+
+
+def _exchange_prompt():
+    backend = Path(current_app.root_path).parent
+    path = backend / 'docs' / 'NUTRITION_EXCHANGE_PROMPT.md'
+    if not path.is_file():
+        path = backend.parent / 'docs' / path.name
+    return path.read_text(encoding='utf-8').split('```text\n', 1)[1].split('```', 1)[0].strip()
+
+
+@nutrition_bp.get('/import/exchange/1.0/<resource>')
+@login_required
+def exchange_resource(resource):
+    from app.services.importers.nutrition_exchange.preparation import web_enabled
+
+    ni.enabled()
+    if not web_enabled():
+        abort(404)
+    if resource == 'schema':
+        path = Path(current_app.config['SCHEMA_ROOT']) / 'nutrition_exchange_1_0.schema.json'
+        name = 'nutrition_exchange_1_0.schema.json'
+    elif resource == 'example':
+        backend = Path(current_app.root_path).parent
+        path = backend.parent / 'examples' / 'qa' / 'nutrition-exchange' / 'valid-explicit.json'
+        name = 'ejemplo-comidas.json'
+    else:
+        abort(404)
+    return send_file(path, mimetype='application/json', as_attachment=True, download_name=name)
 
 
 @nutrition_bp.get('/import/<key>')
@@ -372,7 +426,7 @@ def import_review(key,edit_error=None):
                 token=_import_serializer().dumps({'owner':current_user.id,'draft':row.public_id,'revision':row.revision,
                     'document':ni.hash_document(document),'executor':executor.build_confirmation_token(user_id=current_user.id,target_type='nutrition_import',payload=document,plan=plan)})
         except ValueError as error:blocking=[str(error)]
-    try:editing=int(request.args.get('edit',request.form.get('edit_index','')))
+    try:editing=int('' if view.get('exchange_web') else request.args.get('edit',request.form.get('edit_index','')))
     except (ValueError,TypeError):editing=None
     if editing is not None and not 0 <= editing < len(view['records']):editing=None
     panel=request.args.get('panel',request.form.get('editor_panel','quantity'))
@@ -449,6 +503,22 @@ def import_decisions(key):
     if request.form.get('edit_index') is not None:
         return redirect(url_for('nutrition.import_review',key=row.public_id)+'#record-'+str(int(request.form['edit_index'])))
     return redirect(url_for('nutrition.import_review',key=row.public_id)+'#import-summary')
+
+
+@nutrition_bp.post('/import/<key>/exchange-decision')
+@login_required
+def exchange_decision(key):
+    from app.services.importers.nutrition_exchange.revisions import save
+
+    try:
+        row = save(current_user.id, key, request.form)
+    except NutritionError as error:
+        db.session.rollback()
+        if error.status == 404:
+            raise
+        return import_review(key, edit_error=str(error)), error.status
+    db.session.commit()
+    return redirect(url_for('nutrition.import_review', key=row.public_id) + '#import-summary')
 
 
 @nutrition_bp.post('/import/<key>/change')

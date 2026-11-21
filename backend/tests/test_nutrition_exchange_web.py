@@ -280,3 +280,96 @@ def test_independent_provider_output_through_official_preview(app, client, user,
     assert all(text in page.text for text in ("Tabla ficticia QA", "Traza", "Bajo el límite", "Desconocido", "Declarado · 0 g"))
     assert ("Etiqueta declarada" in page.text) is expects_label
     assert db.session.query(MealLog).count() == db.session.query(NutritionImportReceipt).count() == 0
+
+
+def test_authentic_markdown_clipboard_paste_and_upload_keep_original(app, client, user):
+    from hashlib import sha256
+
+    from app.services.backups import resolve_uploaded_download
+    from app.services.nutrition_math import NUTRIENTS
+
+    enable(app)
+    login(client)
+    original = (FIXTURE.parent / "providers/chatgpt.clipboard.txt").read_bytes()
+    row = upload(client, user, original, paste=True)
+    replay = upload(client, user, original)
+    assert replay.id == row.id
+    assert row.source_json["profile"] == "htnx_1_0"
+    stored = db.session.query(UploadedFile).one()
+    assert stored.sha256 == sha256(original).hexdigest()
+    assert resolve_uploaded_download(stored, user_id=user).read_bytes() == original
+    view = compact.overview(row)
+    assert view["counts"] == {"ready": 2, "decision": 1, "invalid": 0, "omitted": 0}
+    first, second, pending = view["records"]
+    assert first["item"]["exchange_input"]["quantity"]["amount"] == "125.125"
+    assert first["item"]["exchange_input"]["basis"]["amount"] == "100"
+    assert first["item"]["exchange_input"]["basis"]["unit"] == "g"
+    assert second["item"]["exchange_input"]["quantity"]["unit"] == "portion"
+    assert second["item"]["exchange_input"]["basis_kind"] == "consumed"
+    assert pending["item"]["exchange_input"]["quantity"]["unit"] == "piece"
+    assert pending["preview"] is None
+    assert set(first["preview"]) == set(view["batch_summary"]) == NUTRIENTS.keys()
+    expected = {
+        "energy": "130.125", "protein": "2.75", "carbohydrate_total": "18.5", "net_carbs": "16.25",
+        "fat": "4.75", "fiber": "2.25", "sugar": "1.5", "sodium": "120.25", "potassium": "150.5",
+        "calcium": "200.25", "iron": "2.125", "magnesium": "30.5", "phosphorus": "70.25", "zinc": "1.125",
+        "vitamin_c": "3.25", "vitamin_e_alpha": "4.125", "thiamin": "0.125", "riboflavin": "0.25",
+        "niacin": "1.5", "vitamin_b6": "0.75", "choline": "8.25", "vitamin_a_rae": "12.5",
+        "retinol": "3.25", "vitamin_a_re": "11.5", "vitamin_d": "0.875", "vitamin_k1": "2.5",
+        "vitamin_k2": "1.25", "vitamin_b12": "0.375", "folate_dfe": "21.25", "folate_food": "18.5",
+    }
+    assert expected.keys() == NUTRIENTS.keys()
+    for key, source in expected.items():
+        nutrient = first["preview"][key]
+        assert nutrient["unit"] == NUTRIENTS[key][1]
+        assert Decimal(nutrient["value"]) == Decimal(source) * Decimal("1.25125")
+    observations = first["item"]["source_provenance"]["food"]["nutrition"]["observations"]
+    assert observations["energy"]["quality"] == "label" and observations["protein"]["quality"] == "estimated"
+    sparse = second["item"]["source_provenance"]["food"]["nutrition"]["observations"]
+    assert set(sparse) == {"energy", "potassium", "iron", "vitamin_d"}
+    assert Decimal(sparse["energy"]["value"]) == 0
+    assert sparse["potassium"]["state"] == "unknown" and sparse["iron"]["state"] == "trace"
+    assert sparse["vitamin_d"]["state"] == "below_limit" and Decimal(sparse["vitamin_d"]["limit"]) == Decimal("0.2")
+    assert Decimal(view["batch_summary"]["energy"]["value"]) == Decimal("162.81890625")
+    assert Decimal(view["batch_summary"]["protein"]["value"]) == Decimal("3.4409375")
+    page = client.get(f"/nutrition/import/{row.public_id}")
+    assert page.status_code == 200
+    for caption in ("Etiqueta ficticia QA Alfa", "Estimado", "Etiqueta declarada", "Traza", "Cromo",
+                    "Bajo el límite", "Desconocido", "No proporcionado", "Declarado · 72.5 kcal"):
+        assert caption in page.text
+    assert not re.search(r'name="consent_consumed"[^>]*checked', page.text)
+    assert re.search(r'<button[^>]*disabled[^>]*>Guardar todo</button>', page.text)
+    assert db.session.query(MealLog).count() == db.session.query(NutritionImportReceipt).count() == 0
+
+
+@pytest.mark.parametrize("pattern,replacement,code", [
+    (b'"version": "1.0"', b'"version": "9.9"', "unsupported_version"),
+    (b'"version": "1.0"', b'"version": "1.0", "version": "1.0"', "duplicate_key"),
+    (b'"version": "1.0"', b'"version": "1.0", "unexpected": 1', "schema_error"),
+])
+def test_clipboard_transport_does_not_relax_htnx_validation(app, client, user, pattern, replacement, code):
+    enable(app)
+    login(client)
+    raw = (FIXTURE.parent / "providers/chatgpt.clipboard.txt").read_bytes()
+    rejected = client.post("/nutrition/import", data={"exchange_json": raw.replace(pattern, replacement).decode()},
+                           headers={"Accept": "application/json"})
+    assert rejected.status_code == 422
+    assert code in {entry["code"] for entry in rejected.json["diagnostics"]}
+    assert db.session.query(UploadedFile).count() == db.session.query(NutritionImportDraft).count() == 0
+
+
+def test_clipboard_conversion_preserves_literal_backslashes_and_requires_array_pattern(app, client, user):
+    enable(app)
+    login(client)
+    raw = (FIXTURE.parent / "providers/chatgpt.clipboard.txt").read_bytes()
+    edited = raw.replace(b'"destination":', br'"note": "literal \\[QA\\] and \\_QA", "destination":', 1)
+    row = upload(client, user, edited)
+    assert compact.overview(row)["counts"]["ready"] == 2
+    from app.services.importers.nutrition_exchange.preparation import _parse_exchange
+
+    assert _parse_exchange(edited).document["note"] == r"literal \[QA\] and \_QA"
+    invalid = payload().replace(b'"note": "', br'"note": "\_ ', 1)
+    response = client.post("/nutrition/import", data={"exchange_json": invalid.decode()},
+                           headers={"Accept": "application/json"})
+    assert response.status_code == 422
+    assert response.json["diagnostics"][0]["code"] == "invalid_json"

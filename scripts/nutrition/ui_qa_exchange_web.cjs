@@ -7,12 +7,14 @@ const { chromium } = require("playwright");
 
 const base = "http://127.0.0.1:8067";
 const fixturePath = path.join(__dirname, "../../examples/qa/nutrition-exchange/valid-explicit.json");
+const clipboardPath = path.join(path.dirname(fixturePath), "providers/chatgpt.clipboard.txt");
 const evidence = process.env.QA_EXCHANGE_BROWSER_OUTPUT;
 assert(evidence, "Provide an external output directory for fictitious QA screenshots.");
 
 async function main() {
     await fs.mkdir(evidence, { recursive: true });
     const fixture = JSON.parse(await fs.readFile(fixturePath, "utf8"));
+    const clipboard = await fs.readFile(clipboardPath);
     const browser = await chromium.launch({ channel: "msedge", headless: true });
     const evidenceCases = [];
     try {
@@ -68,6 +70,22 @@ async function main() {
             await page.getByText("1 listos · 0 pendientes · 0 inválidos", { exact: true }).waitFor();
             assert(await page.getByText("Aporte · 195 kcal", { exact: false }).first().isVisible());
 
+            await page.goto(base + "/nutrition/import");
+            await page.locator("#ni-exchange-json").fill(clipboard.toString("utf8"));
+            await page.getByRole("button", { name: "Revisar comidas pegadas" }).click();
+            await page.getByText("2 listos · 1 pendientes · 0 inválidos", { exact: true }).waitFor();
+            const clipboardUrl = page.url();
+            await page.goto(base + "/nutrition/import");
+            await page.locator("#ni-exchange-file").setInputFiles({
+                name: "qa-portapapeles.json", mimeType: "application/json", buffer: clipboard,
+            });
+            await page.getByRole("button", { name: "Revisar archivo de comidas" }).click();
+            await page.getByText("2 listos · 1 pendientes · 0 inválidos", { exact: true }).waitFor();
+            assert.equal(page.url(), clipboardUrl);
+            assert(await page.locator("#record-2").getByText("Declarado · 72.5 kcal", { exact: true }).isVisible());
+            assert(await page.getByRole("button", { name: "Guardar todo" }).isDisabled());
+            assert(!(await page.locator("[name=consent_consumed]").isChecked()));
+
             const file = structuredClone(fixture);
             file.note = "Lote ficticio del recorrido " + randomUUID();
             file.meals = [file.meals[0]];
@@ -104,7 +122,7 @@ async function main() {
                 }
             }
             assert.deepEqual(errors, []);
-            evidenceCases.push({ surface, paste: 4, commonSpanish: 1, nutrients: 30, ready: expected[0], pending: expected[1], layouts: 12, errors: 0 });
+            evidenceCases.push({ surface, paste: 4, commonSpanish: 1, clipboardPasteAndUpload: 3, nutrients: 30, ready: expected[0], pending: expected[1], layouts: 12, errors: 0 });
             await context.close();
         }
     } finally {

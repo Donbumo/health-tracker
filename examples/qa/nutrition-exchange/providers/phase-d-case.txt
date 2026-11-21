@@ -1,0 +1,7 @@
+Registro totalmente ficticio para QA, sin datos personales. Fecha 2031-03-12, destino consumed. Una comida lunch llamada Comida ficticia. Tres alimentos en este orden:
+
+Barra QA Alfa. Cantidad consumida 125.125 g. Todos los valores corresponden a 100 g, fuente Etiqueta ficticia QA Alfa y calidad de etiqueta salvo protein, que es estimado. energy 130.125 kcal. En g: protein 2.75, carbohydrate_total 18.5, net_carbs 16.25, fat 4.75, fiber 2.25, sugar 1.5. En mg: sodium 120.25, potassium 150.5, calcium 200.25, iron 2.125, magnesium 30.5, phosphorus 70.25, zinc 1.125, vitamin_c 3.25, vitamin_e_alpha 4.125, thiamin 0.125, riboflavin 0.25, niacin 1.5, vitamin_b6 0.75, choline 8.25. En ug: vitamin_a_rae 12.5, retinol 3.25, vitamin_a_re 11.5, vitamin_d 0.875, vitamin_k1 2.5, vitamin_k2 1.25, vitamin_b12 0.375, folate_dfe 21.25, folate_food 18.5.
+
+Infusión QA Beta. Cantidad 1 portion, etiqueta taza de prueba. Los valores son para el total consumido. energy conocido exactamente cero kcal, potassium explícitamente desconocido, iron en traza mg, vitamin_d bajo el límite de 0.2 ug. Observación adicional Cromo 1.25 ug. Se omiten los otros nutrientes.
+
+Postre QA Gamma. Cantidad 1 piece, etiqueta pieza de prueba. energy declarado 72.5 kcal. La base no aparece en la fuente, así que conserva el valor y omite la base. Se omiten los otros nutrientes.

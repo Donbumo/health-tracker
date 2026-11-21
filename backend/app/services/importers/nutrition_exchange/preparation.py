@@ -2,6 +2,7 @@
 
 from hashlib import sha256
 import json
+import re
 from uuid import uuid4
 
 from flask import current_app
@@ -17,6 +18,8 @@ from .source import issue
 # Escaped evidence can exceed the input size. Bound the technical draft before
 # the SQL transport and before creating an original.
 MAX_REVIEW_BYTES = 4 * 1024 * 1024
+_CLIPBOARD_MEALS = re.compile(rb'"meals"\s*:\s*\\\[')
+_CLIPBOARD_ESCAPE = re.compile(rb"\\([\\_\[\]])")
 
 
 def enabled():
@@ -96,9 +99,31 @@ def extract_exchange(payload, filename, mime, user_id, *, decisions=None, option
         raise NutritionError(f"No se pudo preparar la revisión. Referencia de incidencia {reference}.", 500) from None
 
 
+def _parse_exchange(payload):
+    schema_root = current_app.config.get("SCHEMA_ROOT")
+    try:
+        return intake.parse(payload, schema_root=schema_root)
+    except intake.IntakeError as error:
+        if (not web_enabled()
+                or any(item.code != "invalid_json" for item in error.diagnostics)
+                or b'"health-tracker-nutrition"' not in payload
+                or not _CLIPBOARD_MEALS.search(payload)):
+            raise
+        # Some Markdown clipboards escape JSON array brackets and underscores.
+        # Preserve literal backslash pairs and use the same strict intake on the
+        # decoded view. The caller keeps the uploaded bytes for SHA and storage.
+        decoded = _CLIPBOARD_ESCAPE.sub(
+            lambda escape: escape[0] if escape[1] == b"\\" else escape[1], payload
+        )
+        parsed = intake.parse(decoded, schema_root=schema_root)
+        if parsed.profile != "htnx_1_0":
+            raise
+        return parsed
+
+
 def _extract_json(payload, user_id, *, decisions, options, lock):
     try:
-        parsed = intake.parse(payload, schema_root=current_app.config.get("SCHEMA_ROOT"))
+        parsed = _parse_exchange(payload)
     except intake.IntakeError as error:
         if all(item.code == "unsupported_format" for item in error.diagnostics):
             return None

@@ -4,6 +4,8 @@ En Nutrición → Importar archivo se puede copiar el [prompt HTNX 1.0](NUTRITIO
 
 La revisión ordena los alimentos por comida y distingue los valores declarados, calculados y pendientes. Conserva cero, desconocido, traza, bajo el límite y dato omitido. Los nutrientes adicionales se muestran en procedencia y quedan fuera de los totales. Una base ausente con cantidad en la misma unidad métrica se puede resolver en grupo si el propietario confirma la relación con la cantidad consumida. Las bases incompatibles se revisan por alimento. El flujo resuelve el destino de comidas consumidas. Los flujos existentes siguen gestionando planes, recetas y productos.
 
+Algunos portapapeles Markdown escapan corchetes y guiones bajos al copiar un documento HTNX. La entrada web reconoce esa representación tras el fallo de sintaxis, conserva íntegro el original y valida la vista decodificada con el mismo esquema y los mismos límites.
+
 Los posibles duplicados muestran coincidencias en el archivo o en el historial del propietario. El usuario puede elegir si la entrada corresponde a un evento distinto o debe omitirse. El solapamiento con un resumen diario tiene una confirmación independiente que conserva el registro existente.
 
 ## Activación
@@ -19,13 +21,15 @@ El flujo comparte el motor HTNX, los borradores y el escritor oficial `StandardI
 | Manual | [Ejemplo HTNX](../examples/qa/nutrition-exchange/valid-explicit.json) con cuatro comidas, 30 claves nutricionales y un total de 570.125 kcal. |
 | Gemini | [Salida independiente](../examples/qa/nutrition-exchange/providers/gemini.json). Dos alimentos listos. Conserva la calidad estimada y la calidad de etiqueta declarada. |
 | Perplexity | [Bloque JSON independiente](../examples/qa/nutrition-exchange/providers/perplexity.json). Dos alimentos listos. El asistente omitió la calidad de etiqueta del yogur ficticio y la aplicación respetó la omisión. |
-| ChatGPT | Pendiente. La sesión pública no devolvió una respuesta a la prueba. |
+| ChatGPT | [Copia original de la respuesta](../examples/qa/nutrition-exchange/providers/chatgpt.clipboard.txt) obtenida el 21 de noviembre de 2026 en ChatGPT web, sesión pública. La interfaz no mostró un identificador de modelo. Pegado y subida de la misma copia con 2 listos, 1 pendiente y 0 inválidos. |
 | Claude | Pendiente. El servicio pidió iniciar sesión. |
 | JSON común | Casos sintéticos representativos en español e inglés. Sirven para probar adaptadores, agrupación y contradicciones. |
 
 Gemini y Perplexity recibieron el mismo caso ficticio en conversaciones separadas mediante sus interfaces. El caso pide una base de 100 g para una cantidad de 150 g y una base consumida para una porción nominal. Ambas salidas conservaron el total de 260.125 kcal, 4.05 g de proteína, el cero declarado, potasio desconocido, hierro en trazas y un límite en vitamina D. Las pruebas HTTP usan el JSON de cada asistente tal como se obtuvo.
 
-El [handoff del Issue #44](https://github.com/Donbumo/health-tracker/issues/44#issuecomment-7052471836) requiere además las dos salidas independientes pendientes antes de la activación pública. El alcance de la prueba de navegador es local y con datos ficticios.
+La prueba de ChatGPT une el [prompt oficial](NUTRITION_EXCHANGE_PROMPT.md) y el [mismo registro ficticio preparado para Claude](../examples/qa/nutrition-exchange/providers/phase-d-case.txt), separados por una línea en blanco. «Copiar respuesta» devolvió escapes Markdown en corchetes y guiones bajos. La copia se conserva byte por byte y la prueba HTTP compara los 30 valores y sus unidades con el registro ficticio. El archivo conserva 162.81890625 kcal de aporte, calidad mixta y la declaración visible del alimento pendiente. La prueba comprueba que pegar y subir no duplican el borrador.
+
+El [handoff de cierre](https://github.com/Donbumo/health-tracker/issues/44#issuecomment-7058462180) mantiene la validación independiente con Claude y la aprobación PM como gates de activación. Las pruebas de navegador usan datos ficticios y un entorno local.
 
 [Entrada en escritorio](../design/nutrition-exchange/qa/desktop-entry.png) · [Resumen móvil con una excepción](../design/nutrition-exchange/qa/mobile-review.png) · [Declaración visible en la fila pendiente](../design/nutrition-exchange/qa/mobile-exception.png).
 

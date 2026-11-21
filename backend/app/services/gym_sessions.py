@@ -42,7 +42,7 @@ def session_day(record, user_id):
     raise GymError("Día histórico no encontrado.", 404)
 
 
-def start_session(user_id, plan_public_id, version_public_id, week_number, day_number, submission_id):
+def start_session(user_id, plan_public_id, version_public_id, week_number, day_number, submission_id, *, performed_at=None):
     user = lock_user(user_id)
     try:
         submission_id = str(uuid.UUID(submission_id))
@@ -64,7 +64,8 @@ def start_session(user_id, plan_public_id, version_public_id, week_number, day_n
     ongoing = db.session.execute(db.select(TrainingSession).where(TrainingSession.user_id == user_id, TrainingSession.training_plan_version_id == version.id, TrainingSession.planned_week_number == week_number, TrainingSession.planned_day_number == day_number, TrainingSession.status == "in_progress", TrainingSession.deleted_at.is_(None))).scalar_one_or_none()
     if ongoing:
         return ongoing
-    now = datetime.now(timezone.utc)
+    # Trusted administrative callers may replay historical sessions.
+    now = utc(performed_at) if performed_at is not None else datetime.now(timezone.utc)
     record = TrainingSession(user_id=user_id, training_plan_id=plan.id, training_plan_version_id=version.id, planned_week_number=week_number, planned_day_number=day_number, status="in_progress", started_at=now, performed_at=now, timezone=user.timezone or current_app.config["APP_TIMEZONE"], client_submission_id=submission_id, client_payload_sha256=fingerprint)
     db.session.add(record)
     db.session.flush()
@@ -179,7 +180,7 @@ def complete_set(user_id, public_id, exercise_order, set_number, values):
     return record, training_set, False
 
 
-def finish_session(user_id, public_id, status):
+def finish_session(user_id, public_id, status, *, completed_at=None):
     if status not in {"completed", "abandoned"}:
         raise GymError("Estado inválido.")
     record = owned_session(user_id, public_id, lock=True)
@@ -190,8 +191,11 @@ def finish_session(user_id, public_id, status):
     count = db.session.execute(db.select(db.func.count(TrainingSet.id)).join(TrainingSessionExercise).where(TrainingSet.user_id == user_id, TrainingSessionExercise.user_id == user_id, TrainingSessionExercise.training_session_id == record.id)).scalar_one()
     if status == "completed" and not count:
         raise GymError("Completa al menos una serie o cierra como incompleta.")
+    finished = utc(completed_at) if completed_at is not None else datetime.now(timezone.utc)
+    if finished < utc(record.started_at or record.performed_at):
+        raise GymError("El cierre no puede ser anterior al inicio.")
     record.status = status
-    record.completed_at = datetime.now(timezone.utc)
+    record.completed_at = finished
     record.duration_seconds = min(604800, max(1, int((record.completed_at - utc(record.started_at or record.performed_at)).total_seconds())))
     record.revision += 1
     if count and status == "completed":

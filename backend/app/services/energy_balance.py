@@ -11,6 +11,8 @@ from app.services.nutrition_series import build_points
 
 
 def previous_energy_period(period, mode="auto"):
+    if mode == "auto" and period.comparison_mode == "month-to-date":
+        return period.previous_period(), "month-to-date"
     end = period.start_date - timedelta(days=1)
     # A whole calendar month compares with the whole preceding calendar month.
     calendar_month = (period.start_date.day == 1

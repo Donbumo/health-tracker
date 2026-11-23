@@ -552,6 +552,36 @@
         "unit"
       ]
     },
+    "food_provenance_scalar": {
+      "type": [
+        "string",
+        "number",
+        "null",
+        "boolean"
+      ]
+    },
+    "ambiguous_source_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "classification"],
+      "properties": {
+        "value": { "type": "string" },
+        "classification": { "type": "string" },
+        "unit": { "type": "string" },
+        "basis": { "type": "string" },
+        "original_unit": { "type": "string" }
+      }
+    },
+    "original_source_serving": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "gram_weight", "description"],
+      "properties": {
+        "id": { "type": "string" },
+        "gram_weight": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
     "food": {
       "type": "object",
       "additionalProperties": false,
@@ -646,14 +676,32 @@
         "provenance": {
           "type": "object",
           "maxProperties": 40,
+          "properties": {
+            "ambiguous_fields": {
+              "description": "Unresolved source observations retained as evidence.",
+              "anyOf": [
+                { "$ref": "#/$defs/food_provenance_scalar" },
+                {
+                  "type": "object",
+                  "maxProperties": 30,
+                  "additionalProperties": { "$ref": "#/$defs/ambiguous_source_field" }
+                }
+              ]
+            },
+            "original_servings": {
+              "description": "Serving labels and gram weights exactly as supplied by the source.",
+              "anyOf": [
+                { "$ref": "#/$defs/food_provenance_scalar" },
+                {
+                  "type": "array",
+                  "maxItems": 100,
+                  "items": { "$ref": "#/$defs/original_source_serving" }
+                }
+              ]
+            }
+          },
           "additionalProperties": {
-            "type": [
-              "string",
-              "number",
-              "integer",
-              "null",
-              "boolean"
-            ]
+            "$ref": "#/$defs/food_provenance_scalar"
           }
         },
         "catalog_revision": {

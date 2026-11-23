@@ -157,3 +157,33 @@
   .ni-inline-editor { padding:.75rem; }
   .ni-inline-editor input,.ni-inline-editor select { font-size:16px; }
 }
+
+.ni-exchange-entry textarea {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    resize: vertical;
+    font-size: 1rem;
+}
+
+.ni-exchange-entry, .ni-exchange-meal, .ni-exchange-food {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.ni-exchange-food {
+    padding-block: 1rem;
+    border-block-start: 1px solid var(--border);
+}
+
+.ni-exchange-food form, .ni-exchange-meal > details {
+    margin-block: .6rem;
+}
+
+.ni-exchange-food label, .ni-exchange-meal label {
+    min-width: 0;
+}
+
+.ni-exchange-entry button, .ni-exchange-meal button {
+    min-height: 44px;
+}

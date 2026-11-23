@@ -1,0 +1,157 @@
+{% macro observed(observation) -%}
+  {% if not observation %}No proporcionado
+  {% elif observation.state == 'known' %}{{ observation.value|micro_exact }} {{ observation.unit }}
+  {% elif observation.state == 'unknown' %}Desconocido
+  {% elif observation.state == 'trace' %}Traza
+  {% else %}Bajo el límite · {{ observation.limit|micro_exact }} {{ observation.unit }}{% endif %}
+{%- endmacro %}
+{% macro fields(prefix, quantity) %}
+  <label>Cantidad <input name="{{ prefix }}_amount" inputmode="decimal" value="{{ quantity.amount or '' }}" maxlength="24"></label>
+  <label>Unidad <select name="{{ prefix }}_unit"><option value="">Elegir</option>{% for unit, caption in exchange_units.items() %}<option value="{{ unit }}"{% if quantity.unit == unit %} selected{% endif %}>{{ caption }}</option>{% endfor %}</select></label>
+  <label>Descripción de la pieza o porción <input name="{{ prefix }}_label" value="{{ quantity.label or '' }}" maxlength="200"></label>
+{% endmacro %}
+{% macro decision(action, index=none) %}{{ mutation(action,index) }}{% endmacro %}
+{% set decision_url = url_for('nutrition.exchange_decision', key=row.public_id) %}
+{% set states = {'ready':'Listo','decision':'Pendiente','invalid':'Inválido','omitted':'Omitido'} %}
+{% set quality_names = {'declared':'Declarado','estimated':'Estimado','unknown':'Calidad desconocida','label':'Etiqueta declarada'} %}
+{% set meal_types = {'breakfast':'Desayuno','lunch':'Comida','dinner':'Cena','snack':'Colación','other':'Otra comida'} %}
+{% set macros = ('energy','protein','carbohydrate_total','fat') %}
+<section class="ni-card" id="import-summary">
+  <h2>Resumen del archivo</h2>
+  <p role="status">{{ counts.ready }} listos · {{ counts.decision }} pendientes · {{ counts.invalid }} inválidos{% if counts.omitted %} · {{ counts.omitted }} omitidos{% endif %}</p>
+  {% if edit_error %}<p role="alert">{{ edit_error }}</p>{% endif %}
+  {% for message in file_issues %}<p role="alert">{{ message }}</p>{% endfor %}
+  {% if review.destination != 'consumed' %}
+  <form method="post" action="{{ decision_url }}">
+    {{ decision('destination') }}
+    <label>Destino <select name="destination" required><option value="">Elegir</option><option value="consumed">Consumos reales</option></select></label>
+    <button>Aplicar destino</button>
+  </form>
+  {% else %}<p>Destino · Consumos reales</p>{% endif %}
+</section>
+{% for unit, proposal in exchange_groups.items() %}
+<section class="ni-card">
+  <h2>Una base para {{ proposal.paths|length }} alimentos</h2>
+  <p>Confirma únicamente si los valores declarados corresponden a la cantidad consumida de cada alimento en {{ exchange_units[unit] }}.</p>
+  <form method="post" action="{{ decision_url }}">
+    {{ decision('group') }}<input type="hidden" name="unit" value="{{ unit }}"><input type="hidden" name="context" value="{{ proposal.witness }}">
+    <label class="ni-check"><input type="checkbox" name="verified" value="yes" required> Verifiqué estas bases en el registro de comidas.</label>
+    <button>Aplicar bases del grupo</button>
+  </form>
+</section>
+{% endfor %}
+
+{% set day_controls = namespace(shown=[]) %}
+{% for group in groups %}
+<section class="ni-card ni-exchange-meal" aria-labelledby="exchange-meal-{{ loop.index }}">
+  <header class="ni-heading"><h2 id="exchange-meal-{{ loop.index }}">{{ group.meal or 'Comida' }}</h2><span>{{ group.date or 'Fecha pendiente' }}</span></header>
+  {% set first = group.records[0] %}
+  <details>
+    <summary>Editar fecha o tipo de comida</summary>
+    <form method="post" action="{{ decision_url }}" class="ni-inline">
+      {{ decision('meal', first.index) }}
+      <label>Fecha <input type="date" name="date" value="{{ first.item.date or '' }}" required></label>
+      <label>Tipo <select name="meal_type" required><option value="">Elegir</option>{% for key, caption in meal_types.items() %}<option value="{{ key }}"{% if key == first.item.meal_type %} selected{% endif %}>{{ caption }}</option>{% endfor %}</select></label>
+      <button>Aplicar a la comida</button>
+    </form>
+  </details>
+  {% set overlap = namespace(evidence=none) %}
+  {% for entry in group.records %}
+    {% if entry.item.exchange_day and 'day_overlap' in entry.diagnostics|map(attribute='code')|list %}{% set overlap.evidence = entry.item.exchange_day %}{% endif %}
+  {% endfor %}
+  {% if overlap.evidence and group.date not in day_controls.shown %}
+    {% set day_controls.shown = day_controls.shown + [group.date] %}
+    <details class="ni-card" open>
+      <summary>Revisar datos existentes para {{ group.date }}</summary>
+      {% if overlap.evidence.energy is not none %}<p>Resumen existente · {{ overlap.evidence.energy|micro_exact }} kcal</p>{% endif %}
+      <p>Compara las comidas de este archivo con tu historial de ese día.</p>
+      <form method="post" action="{{ decision_url }}">
+        {{ decision('day') }}<input type="hidden" name="date" value="{{ group.date }}"><input type="hidden" name="context" value="{{ overlap.evidence.witness }}">
+        <label class="ni-check"><input type="checkbox" name="verified" value="yes" required> Verifiqué que estas comidas son adicionales al registro existente.</label>
+        <button>Conservar el registro previo y añadir</button>
+      </form>
+    </details>
+  {% endif %}
+  {% for record in group.records %}
+    {% set item = record.item %}
+    {% set input = item.exchange_input %}
+    {% set provenance = item.source_provenance %}
+    {% set declaration = provenance.food.nutrition %}
+    {% set codes = record.diagnostics|map(attribute='code')|list %}
+    <article class="ni-exchange-food" id="record-{{ record.index }}">
+      <header class="ni-heading"><h3>{{ item.name or 'Alimento sin nombre' }}</h3><span class="ni-record-state">{{ states[record.state] }}</span></header>
+      <p>Cantidad consumida · {{ input.quantity.amount|micro_exact ~ ' ' ~ input.quantity.unit_name if input.quantity else 'Por indicar' }}<br>
+      Base de referencia · {{ input.basis.amount|micro_exact ~ ' ' ~ input.basis.unit_name if input.basis else 'Por indicar' }}</p>
+      {% if record.issues %}<ul>{% for problem in record.issues %}<li>{{ problem.message }}</li>{% endfor %}</ul>{% endif %}
+      <dl class="ni-nutrient-details">
+        {% for key in macros %}<div><dt>{{ nutrients[key][0] }}</dt><dd>Declarado · {{ observed(declaration.observations.get(key) if declaration else none) }}{% if record.preview and record.preview[key].value is not none %}<br>Aporte · {{ record.preview[key].value|micro_exact }} {{ record.preview[key].unit }}{% endif %}</dd></div>{% endfor %}
+      </dl>
+      <details>
+        <summary>Ver nutrientes y procedencia</summary>
+        {% if declaration and declaration.evidence.source %}<p>Fuente · {{ declaration.evidence.source }}</p>{% endif %}
+        {% if declaration and declaration.evidence.note %}<p class="ni-evidence">{{ declaration.evidence.note }}</p>{% endif %}
+        {% if declaration and declaration.basis %}<p>Base original · {{ declaration.basis.amount|micro_exact }} {{ declaration.basis.label or exchange_units.get(declaration.basis.unit, declaration.basis.unit) }}</p>{% endif %}
+        {% if provenance.authority == 'ingredients' %}<p>Aporte calculado a partir de los ingredientes.</p>{% endif %}
+        {% if provenance.food.ingredients %}<p>Ingredientes declarados · {{ provenance.food.ingredients|map(attribute='name')|join(', ') }}</p>{% endif %}
+        <dl class="ni-nutrient-details">
+        {% for key, definition in nutrients.items() %}
+          {% set n = declaration.observations.get(key) if declaration else none %}
+          <div><dt>{{ definition[0] }}</dt><dd>Declarado · {{ observed(n) }}{% if n %}<br>{{ quality_names.get(n.quality, n.quality) }}{% if n.evidence.source %} · {{ n.evidence.source }}{% endif %}{% endif %}
+          {% if record.preview and record.preview[key].value is not none %}<br>Aporte · {{ record.preview[key].value|micro_exact }} {{ record.preview[key].unit }}{% endif %}</dd></div>
+        {% endfor %}
+        </dl>
+        {% for extra in declaration.additional_nutrients if declaration %}<p>{{ extra.name }} · {{ observed(extra) }} · Evidencia fuera del catálogo</p>{% endfor %}
+      </details>
+      {% if record.state != 'omitted' %}
+      <details><summary>Editar cantidad</summary><form method="post" action="{{ decision_url }}" class="ni-inline">{{ decision('quantity', record.index) }}{{ fields('quantity', input.quantity) }}<button>Aplicar cantidad</button></form></details>
+      {% if item.declaration %}
+      <details><summary>Confirmar o corregir base</summary>
+        <form method="post" action="{{ decision_url }}">
+          {{ decision('basis', record.index) }}
+          <label>Los valores declarados corresponden a <select name="basis_kind" required>
+            <option value="">Elegir</option><option value="consumed">La cantidad consumida</option><option value="reference">La cantidad de referencia que indico abajo</option>
+          </select></label>
+          <div class="ni-inline">{{ fields('basis', input.basis) }}</div><button>Aplicar base</button>
+        </form>
+      </details>
+      {% endif %}
+      {% if 'missing_equivalence' in codes or 'incompatible_units' in codes %}
+      <details open><summary>Indicar equivalencia verificada</summary>
+        <form method="post" action="{{ decision_url }}">{{ decision('equivalence', record.index) }}
+          {% if input.quantity and input.basis %}<p>Indica cuántas unidades de {{ input.basis.unit_name }} equivale a una unidad de {{ input.quantity.unit_name }} de este alimento.</p>{% endif %}
+          <label>Unidades de la base por unidad consumida <input name="factor" inputmode="decimal" maxlength="24" required></label>
+          <label>Cómo comprobaste la equivalencia <input name="source" maxlength="500" required></label>
+          <label class="ni-check"><input type="checkbox" name="verified" value="yes" required> Verifiqué la equivalencia para este alimento.</label>
+          <button>Aplicar equivalencia</button>
+        </form>
+      </details>
+      {% endif %}
+      {% if 'conflicting_authority' in codes %}
+      <form method="post" action="{{ decision_url }}">{{ decision('authority', record.index) }}<label>Fuente del aporte <select name="choice" required><option value="">Elegir</option><option value="dish">Declaración del plato</option><option value="ingredients">Suma de los ingredientes</option></select></label><button>Aplicar fuente</button></form>
+      {% endif %}
+      {% endif %}
+      {% if item.exchange_duplicate %}
+      <details{% if 'possible_duplicate' in codes %} open{% endif %}><summary>Comparar posible duplicado</summary>
+        <p>Nueva entrada · {{ item.name }} · {{ input.quantity.amount|micro_exact }} {{ input.quantity.unit_name }}{% if record.preview and record.preview.energy.value is not none %} · {{ record.preview.energy.value|micro_exact }} kcal{% endif %}</p>
+        <ul>{% for name, location, kcal in item.exchange_duplicate.matches %}<li>{{ location }} · {{ name }}{% if kcal is not none %} · {{ kcal|micro_exact }} kcal{% endif %}</li>{% endfor %}</ul>
+        <form method="post" action="{{ decision_url }}">{{ decision('duplicate', record.index) }}<input type="hidden" name="context" value="{{ item.exchange_duplicate.witness }}">
+          <label>Decisión <select name="choice" required><option value="">Elegir</option><option value="distinct">Añadir como consumo distinto</option><option value="omit">Omitir sólo esta entrada</option></select></label><button>Aplicar decisión</button>
+        </form>
+      </details>
+      {% endif %}
+    </article>
+  {% endfor %}
+  <p>Aporte calculado de la comida · {{ group.summary.energy.value|micro_exact ~ ' kcal' if group.summary.energy.value is not none else 'Pendiente de revisión' }}</p>
+</section>
+{% endfor %}
+<section class="ni-card ni-save-all">
+  <h2>Guardar comidas</h2>
+  <dl class="ni-nutrient-details">{% for key in macros %}<div><dt>{{ nutrients[key][0] }}</dt><dd>{{ batch_summary[key].value|micro_exact ~ ' ' ~ batch_summary[key].unit if batch_summary[key].value is not none else 'Sin aporte calculado' }}</dd></div>{% endfor %}</dl>
+  <form method="post" action="{{ url_for('nutrition.import_confirm',key=row.public_id) }}" class="ni-import-confirm">
+    {{ csrf() }}<input type="hidden" name="revision" value="{{ row.revision }}"><input type="hidden" name="token" value="{{ token or '' }}">
+    <label class="ni-check"><input type="checkbox" name="consent_consumed" value="yes" required> Confirmo que estas comidas son consumos reales y autorizo guardarlos.</label>
+    {% if not token %}<p id="import-block-reason" role="status">{{ blocking[0] if blocking else 'Resuelve los pendientes antes de guardar.' }}</p>{% endif %}
+    <button{% if not token %} disabled aria-describedby="import-block-reason"{% endif %}>Guardar todo</button>
+  </form>
+</section>
+{% include 'nutrition/original_controls.html' %}

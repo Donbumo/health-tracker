@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend/ ./
 COPY schemas/ /app/schemas/
 COPY examples/ /examples/
+COPY docs/NUTRITION_EXCHANGE_PROMPT.md /app/docs/NUTRITION_EXCHANGE_PROMPT.md
 COPY scripts/release/ /app/scripts/release/
 COPY scripts/portability/ /app/scripts/portability/
 RUN chmod +x /app/docker-entrypoint.sh \

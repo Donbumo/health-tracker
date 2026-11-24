@@ -1,0 +1,237 @@
+{
+  "qa_only": true,
+  "engine": "mysql",
+  "demo_ref": "2b7876b49fb63c5591a66b2f22539e2ad7a463ec",
+  "counts": {
+    "daily_nutrition": 49,
+    "daily_energy": 49,
+    "nutrition_items": 196,
+    "meal_logs": 196,
+    "training_sessions": 21,
+    "training_sets": 378,
+    "weigh_ins": 49
+  },
+  "composition_days": 21,
+  "nutrient_states": {
+    "complete_total_unknown_net": 49
+  },
+  "created_goals": [
+    "nutrition_calories",
+    "nutrition_protein",
+    "nutrition_carbohydrates",
+    "nutrition_fat",
+    "daily_steps",
+    "training_sessions_per_week",
+    "weight_logging_frequency"
+  ],
+  "reused_goals": [
+    "nutrition_calories",
+    "nutrition_protein",
+    "nutrition_carbohydrates",
+    "nutrition_fat",
+    "daily_steps",
+    "training_sessions_per_week",
+    "weight_logging_frequency"
+  ],
+  "history_unchanged": true,
+  "concurrency": [
+    {
+      "isolation": "READ COMMITTED",
+      "created": 7,
+      "reused": 7
+    },
+    {
+      "isolation": "REPEATABLE READ",
+      "created": 7,
+      "reused": 7
+    }
+  ],
+  "summaries": {
+    "2026-10-01": {
+      "total_carbs_average": "255.64",
+      "days": 31,
+      "goals": [
+        {
+          "type": "nutrition_calories",
+          "actual": "2211.88",
+          "target": "2350.00",
+          "percent": "94.12",
+          "data_days": 31,
+          "applicable_days": 31
+        },
+        {
+          "type": "nutrition_protein",
+          "actual": "146.96",
+          "target": "155.00",
+          "percent": "94.82",
+          "data_days": 31,
+          "applicable_days": 31
+        },
+        {
+          "type": "nutrition_carbohydrates",
+          "actual": "255.64",
+          "target": "265.00",
+          "percent": "96.47",
+          "data_days": 31,
+          "applicable_days": 31
+        },
+        {
+          "type": "nutrition_fat",
+          "actual": "69.34",
+          "target": "75.00",
+          "percent": "92.46",
+          "data_days": 31,
+          "applicable_days": 31
+        },
+        {
+          "type": "daily_steps",
+          "actual": "8461.03",
+          "target": "8000.00",
+          "percent": "105.76",
+          "data_days": 31,
+          "applicable_days": 31
+        },
+        {
+          "type": "training_sessions_per_week",
+          "actual": "2.94",
+          "target": "3.00",
+          "percent": "97.85",
+          "data_days": 13,
+          "applicable_days": 31
+        },
+        {
+          "type": "weight_logging_frequency",
+          "actual": "7.00",
+          "target": "7.00",
+          "percent": "100.00",
+          "data_days": 31,
+          "applicable_days": 31
+        }
+      ]
+    },
+    "2026-11-01": {
+      "total_carbs_average": "263.81",
+      "days": 18,
+      "goals": [
+        {
+          "type": "nutrition_calories",
+          "actual": "2311.82",
+          "target": "2350.00",
+          "percent": "98.38",
+          "data_days": 18,
+          "applicable_days": 18
+        },
+        {
+          "type": "nutrition_protein",
+          "actual": "153.07",
+          "target": "155.00",
+          "percent": "98.76",
+          "data_days": 18,
+          "applicable_days": 18
+        },
+        {
+          "type": "nutrition_carbohydrates",
+          "actual": "263.81",
+          "target": "265.00",
+          "percent": "99.55",
+          "data_days": 18,
+          "applicable_days": 18
+        },
+        {
+          "type": "nutrition_fat",
+          "actual": "73.42",
+          "target": "75.00",
+          "percent": "97.89",
+          "data_days": 18,
+          "applicable_days": 18
+        },
+        {
+          "type": "daily_steps",
+          "actual": "8248.33",
+          "target": "8000.00",
+          "percent": "103.10",
+          "data_days": 18,
+          "applicable_days": 18
+        },
+        {
+          "type": "training_sessions_per_week",
+          "actual": "3.11",
+          "target": "3.00",
+          "percent": "103.70",
+          "data_days": 8,
+          "applicable_days": 18
+        },
+        {
+          "type": "weight_logging_frequency",
+          "actual": "7.00",
+          "target": "7.00",
+          "percent": "100.00",
+          "data_days": 18,
+          "applicable_days": 18
+        }
+      ]
+    },
+    "2026-11-12": {
+      "total_carbs_average": "266.05",
+      "days": 7,
+      "goals": [
+        {
+          "type": "nutrition_calories",
+          "actual": "2341.59",
+          "target": "2350.00",
+          "percent": "99.64",
+          "data_days": 7,
+          "applicable_days": 7
+        },
+        {
+          "type": "nutrition_protein",
+          "actual": "154.84",
+          "target": "155.00",
+          "percent": "99.90",
+          "data_days": 7,
+          "applicable_days": 7
+        },
+        {
+          "type": "nutrition_carbohydrates",
+          "actual": "266.05",
+          "target": "265.00",
+          "percent": "100.40",
+          "data_days": 7,
+          "applicable_days": 7
+        },
+        {
+          "type": "nutrition_fat",
+          "actual": "74.62",
+          "target": "75.00",
+          "percent": "99.49",
+          "data_days": 7,
+          "applicable_days": 7
+        },
+        {
+          "type": "daily_steps",
+          "actual": "8280.86",
+          "target": "8000.00",
+          "percent": "103.51",
+          "data_days": 7,
+          "applicable_days": 7
+        },
+        {
+          "type": "training_sessions_per_week",
+          "actual": "3.00",
+          "target": "3.00",
+          "percent": "100.00",
+          "data_days": 3,
+          "applicable_days": 7
+        },
+        {
+          "type": "weight_logging_frequency",
+          "actual": "7.00",
+          "target": "7.00",
+          "percent": "100.00",
+          "data_days": 7,
+          "applicable_days": 7
+        }
+      ]
+    }
+  }
+}

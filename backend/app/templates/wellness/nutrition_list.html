@@ -8,19 +8,20 @@
   <section class="card">
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Fecha</th><th>Calorías</th><th>Proteína</th><th>Grasa</th><th>Net carbs</th><th>Fibra</th></tr></thead>
+        <thead><tr><th>Fecha</th><th>Calorías</th><th>Proteína (g)</th><th>Carbohidratos totales (g)</th><th>Grasa (g)</th><th>Fibra (g)</th><th>Carbohidratos netos (g)</th></tr></thead>
         <tbody>
           {% for record in records %}
             <tr>
               <td><a href="{{ url_for('wellness.nutrition_detail', record_id=record.id) }}">{{ record.date.isoformat() }}</a></td>
               <td>{{ record.calories if record.calories is not none else '—' }}</td>
               <td>{{ record.protein_g if record.protein_g is not none else '—' }}</td>
+              <td>{{ record.total_carbs_g if record.total_carbs_g is not none else '—' }}</td>
               <td>{{ record.fat_g if record.fat_g is not none else '—' }}</td>
-              <td>{{ record.net_carbs_g if record.net_carbs_g is not none else '—' }}</td>
               <td>{{ record.fiber_g if record.fiber_g is not none else '—' }}</td>
+              <td>{{ record.net_carbs_g if record.net_carbs_g is not none else '—' }}</td>
             </tr>
           {% else %}
-            <tr><td colspan="6"><p>No hay registros de nutrición.</p><a class="button" href="{{ url_for('wellness.manual_nutrition') }}">Capturar nuevo</a> <a class="button button-secondary" href="{{ url_for('wellness.nutrition_import') }}">Importar JSON</a></td></tr>
+            <tr><td colspan="7"><p>No hay registros de nutrición.</p><a class="button" href="{{ url_for('wellness.manual_nutrition') }}">Capturar nuevo</a> <a class="button button-secondary" href="{{ url_for('wellness.nutrition_import') }}">Importar JSON</a></td></tr>
           {% endfor %}
         </tbody>
       </table>

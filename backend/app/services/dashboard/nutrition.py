@@ -16,9 +16,10 @@ TWO_PLACES = Decimal("0.01")
 NUTRITION_METRICS = (
     ("calories", "Calorías", "calories", "kcal", "nutrition_calories"),
     ("protein", "Proteína", "protein_g", "g", "nutrition_protein"),
+    ("total_carbs", "Carbohidratos totales", "total_carbs_g", "g", "nutrition_carbohydrates"),
     ("fat", "Grasa", "fat_g", "g", "nutrition_fat"),
-    ("net_carbs", "Carbohidratos netos", "net_carbs_g", "g", "nutrition_carbohydrates"),
     ("fiber", "Fibra", "fiber_g", "g", None),
+    ("net_carbs", "Carbohidratos netos", "net_carbs_g", "g", None),
 )
 
 
@@ -126,11 +127,16 @@ class NutritionTrendService:
             ]
             total = _sum_or_none(values)
             targets = []
+            paired_values = []
             if goal_type:
                 for day in _dates(date_range):
                     goal = goal_for_day(goals, goal_type, day)
                     if goal is not None:
                         targets.append(goal.target_value)
+                        row = nutrition_by_date.get(day)
+                        value = comparison_value(row, field) if row else None
+                        if value is not None:
+                            paired_values.append(value)
             goal_average = _average(_sum_or_none(targets), len(targets))
             average = _average(total, len(values))
             macro_summaries[key] = {
@@ -140,7 +146,12 @@ class NutritionTrendService:
                 "days": len(values),
                 "goal": goal_average,
                 "goal_days": len(targets),
-                "percent_of_goal": _percentage(average, goal_average),
+                "goal_data_days": len(paired_values),
+                "goal_actual_average": _average(_sum_or_none(paired_values), len(paired_values)),
+                "percent_of_goal": (
+                    _percentage(_sum_or_none(paired_values), _sum_or_none(targets))
+                    if len(paired_values) == len(targets) else None
+                ),
             }
 
         protein_values = [point["grams"] for point in protein_points]
@@ -191,7 +202,8 @@ class NutritionTrendService:
                         len(goal_points),
                     ),
                     "balance": protein_balance,
-                    "compliance_percent": _percentage(paired_consumed, paired_goal),
+                    "compliance_percent": (_percentage(paired_consumed, paired_goal)
+                                           if len(paired) == len(goal_points) else None),
                     "days_at_goal": sum(
                         point["grams"] >= point["target"] for point in paired
                     ),

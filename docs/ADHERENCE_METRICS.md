@@ -10,11 +10,13 @@ Los rangos soportados son 7, 30 y 90 días, con comparación contra el periodo i
 - Días activos: fechas locales distintas con sesión.
 - Programaciones: programaciones del periodo completadas frente a las existentes; si no hay ninguna, el denominador no es válido.
 - Pasos: días aplicables con valor canónico disponible que alcanza el objetivo configurado.
-- Nutrición: días con el campo canónico completo que alcanza el target explícito; un campo ausente no cuenta como completo.
+- Nutrición: cobertura de días con el campo canónico completo, independientemente de superar el target. Carbohidratos usa exclusivamente `total_carbs_g`; nunca sustituye totales por netos. Un subtotal parcial o campo ausente no cuenta como completo.
 - Peso: fechas locales con registro frente a frecuencia diaria, por días o semanal.
 - Plan activo: sólo sesiones asociadas al UUID público del plan elegido.
 
 La fecha efectiva nunca precede `start_date` y respeta `end_date` y días ISO. Los datos manuales e importados usan la resolución canónica ya existente. Un denominador cero produce `percentage: null` y “Sin datos suficientes”. El porcentaje se limita a 100; el conteo conserva logros adicionales.
+
+Para nutrición, `completed`, `expected`, `percentage` y `status` describen **cobertura de registro**, no cumplimiento nutricional. `details.measurement` vale `recording_coverage`; incluye `field`, `data_days`, `goal_days`, `registered_average`, `target_value` y `registered_percent_of_target`. Esta última razón es descriptiva, puede superar 100 y queda en null si falta un día aplicable completo. El modelo no distingue mínimo, máximo u objetivo nominal, por lo que no interpreta consumir más como beneficio. Resumen y Coach muestran una razón neutral registrado/objetivo, con cobertura; su porcentaje se omite cuando faltan datos aplicables completos.
 
 ## Estados y comparación
 

@@ -195,7 +195,9 @@ def test_coverage_gates_nutrition_activity_and_goals_with_owner_isolation(app, u
         db.session.commit()
         brief = CoachBriefService().build(db.session.get(User, user), today=today)
         types = {item["type"] for item in brief["week"]["signals"]}
-        assert {"energy_change", "steps_change", "goal_gap"} <= types
+        assert {"energy_change", "steps_change"} <= types
+        # Six observed days do not establish a full seven-day goal ratio.
+        assert "goal_gap" not in types
         energy = next(item for item in brief["week"]["signals"] if item["type"] == "energy_change")
         assert energy["coverage"]["observed"] == 6
         assert energy["current"] == "1800.00" and energy["baseline"] == "2200.00"

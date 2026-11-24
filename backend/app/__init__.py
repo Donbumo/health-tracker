@@ -146,6 +146,8 @@ def create_app(test_config: dict | None = None) -> Flask:
     from app.nutrition_cli import nutrition_catalog_group
     app.cli.add_command(nutrition_catalog_group)
     register_commands(app)
+    from app.demo_goals_cli import seed_demo_goals_command
+    app.cli.add_command(seed_demo_goals_command)
     from app.catalog_cli import catalog_group
     from app.exercise_catalog import catalog_bp
     app.cli.add_command(catalog_group)

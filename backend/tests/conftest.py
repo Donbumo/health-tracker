@@ -62,3 +62,22 @@ def login(client, username="test-user", password="test-password"):
         data={"username": username, "password": password},
         follow_redirects=False,
     )
+
+
+# Fictional test credential, used only with isolated QA databases.
+DEMO_TEST_PASSWORD = "fictional-demo-test-password"
+
+
+@pytest.fixture
+def demo_enabled(app, monkeypatch):
+    app.config.update(DEMO_SEED_ENABLED=True, DEMO_SEED_ENVIRONMENT="test",
+                      NUTRITION_INTELLIGENCE_ENABLED=True)
+    monkeypatch.setenv("DEMO_USER_PASSWORD", DEMO_TEST_PASSWORD)
+    return app
+
+
+@pytest.fixture
+def demo_account(demo_enabled):
+    result = demo_enabled.test_cli_runner().invoke(args=["seed", "demo", "--as-of", "2026-11-18", "--confirm-local"])
+    assert result.exit_code == 0, result.output
+    return result

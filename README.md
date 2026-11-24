@@ -94,6 +94,8 @@ docker compose config --quiet
 
 Las pruebas usan fixtures ficticias. No copies archivos reales a Git ni ejecutes QA destructiva contra los volúmenes persistentes del usuario.
 
+Cuenta DEMO con historial sintético real, contraseña por entorno e invocación explícita: [generación y verificación](docs/DEMO_HISTORY.md).
+
 Para el cliente Android usa JDK 17, Android SDK 36 y los comandos de [android/README.md](android/README.md). La URL debe ser HTTPS; HTTP solo se habilita explícitamente en builds debug para servidores locales.
 
 ## Documentación

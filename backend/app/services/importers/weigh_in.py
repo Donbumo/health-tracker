@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from app.extensions import db
@@ -41,16 +41,31 @@ def import_weigh_in_file(
         document = load_json_source(source_file, user_id)
     except ImporterError as error:
         raise WeighInImportError(str(error)) from error
+    record, duplicate = persist_weigh_in_document(document, user_id, source_file=source_file)
+    if not duplicate:
+        db.session.commit()
+    return record, duplicate
+
+
+def persist_weigh_in_document(document, user_id, *, source_file=None, public_id=None, client_event_id=None):
+    """Official validated persistence shared by file imports and admin batches.
+
+    Caller owns commit/rollback. Server-supplied UUIDs are internal identities,
+    not extra public JSON fields. Existing measurements are never overwritten.
+    """
     validate_json_document(document, "weigh_in")
     if document["user_id"] != user_id:
         raise WeighInImportError("Weigh-in document does not belong to this user")
-    if document["source_type"] != source_file.source_type:
+    if source_file is not None and source_file.user_id != user_id:
+        raise WeighInImportError("Weigh-in file does not belong to this user")
+    if source_file is not None and document["source_type"] != source_file.source_type:
         raise WeighInImportError("Weigh-in source type does not match its file")
 
     data = document["data"]
     recorded_at = datetime.fromisoformat(data["recorded_at"].replace("Z", "+00:00"))
     if recorded_at.tzinfo is None or recorded_at.utcoffset() is None:
         raise WeighInImportError("Weigh-in recorded_at must include a timezone")
+    recorded_at = recorded_at.astimezone(timezone.utc)
     source = data.get("source", document["source_type"]).strip()
     if not source:
         raise WeighInImportError("Weigh-in source must not be blank")
@@ -79,10 +94,14 @@ def import_weigh_in_file(
         bmr_kcal=_decimal(data, "bmr_kcal"),
         bmi=_decimal(data, "bmi"),
         source=source,
-        source_file_id=source_file.id,
+        source_file_id=source_file.id if source_file is not None else None,
         raw_payload_json=document,
         notes=data.get("notes"),
     )
+    if public_id is not None:
+        record.public_id = public_id
+    if client_event_id is not None:
+        record.client_event_id = client_event_id
     db.session.add(record)
-    db.session.commit()
+    db.session.flush()
     return record, False

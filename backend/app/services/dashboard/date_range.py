@@ -69,6 +69,7 @@ class DashboardDateRange:
     end_date: date
     timezone: str
     compare_previous: bool = False
+    comparison_mode: str = "equal_days"
 
     @property
     def days(self) -> int:
@@ -76,10 +77,15 @@ class DashboardDateRange:
 
     @property
     def previous_end(self) -> date:
+        if self.comparison_mode == "month-to-date":
+            last = self.start_date.replace(day=1) - timedelta(days=1)
+            return last.replace(day=min(last.day, self.end_date.day))
         return self.start_date - timedelta(days=1)
 
     @property
     def previous_start(self) -> date:
+        if self.comparison_mode == "month-to-date":
+            return self.previous_end.replace(day=1)
         return self.previous_end - timedelta(days=self.days - 1)
 
     @property
@@ -120,7 +126,7 @@ class DashboardDateRange:
             "timezone": self.timezone,
             "days": self.days,
             "label": self.label,
-            "compare": "previous" if self.compare_previous else None,
+            "compare": ("month-to-date" if self.comparison_mode == "month-to-date" else "previous") if self.compare_previous else None,
             "previous_from": (
                 self.previous_start.isoformat() if self.compare_previous else None
             ),
@@ -152,8 +158,8 @@ class DashboardDateRange:
         raw_from = (query.get("from") or query.get("start") or "").strip()
         raw_to = (query.get("to") or query.get("end") or "").strip()
         raw_compare = (query.get("compare") or "").strip()
-        compare_previous = raw_compare == "previous"
-        if raw_compare not in {"", "previous"}:
+        compare_previous = raw_compare in {"previous", "month-to-date"}
+        if raw_compare not in {"", "previous", "month-to-date"}:
             raise DashboardRangeError(
                 "La comparación solicitada no es válida. Usa el periodo anterior."
             )
@@ -200,10 +206,14 @@ class DashboardDateRange:
             raise DashboardRangeError(
                 f"El rango no puede superar {MAX_DASHBOARD_DAYS} días."
             )
+        if raw_compare == "month-to-date" and (start_date.day != 1 or
+                (start_date.year, start_date.month) != (end_date.year, end_date.month) or start_date == MIN_DAY):
+            raise DashboardRangeError("La comparación mensual requiere un rango desde el día 1 de un único mes.")
         return cls(
             preset=preset,
             start_date=start_date,
             end_date=end_date,
             timezone=timezone_name,
             compare_previous=compare_previous,
+            comparison_mode="month-to-date" if raw_compare == "month-to-date" else "equal_days",
         )

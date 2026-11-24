@@ -65,13 +65,15 @@
   <form method="get" action="{{ url_for('main.dashboard') }}" class="health-date-form">
     <label for="health-date">Día seleccionado <input id="health-date" type="date" name="as_of" min="1900-01-01" max="9998-12-31" required value="{{ dashboard.range['to'] }}"></label>
     <input type="hidden" name="preset" value="{{ dashboard.range.preset if dashboard.range.preset != 'custom' else '7d' }}">
-    {% if dashboard.range.compare %}<input type="hidden" name="compare" value="previous">{% endif %}
+    {% if dashboard.range.compare %}<input type="hidden" name="compare" value="{{ dashboard.range.compare }}">{% endif %}
     <button type="submit" class="button button-secondary">Consultar</button>
   </form>
   <nav class="period-switcher" aria-label="Periodo del dashboard">
     {% for days in (7, 30, 90) %}
-      <a href="{{ url_for('main.dashboard', period=days, as_of=dashboard.range['to'], compare=dashboard.range.compare) }}" class="period-option{% if dashboard.range.preset == days|string + 'd' %} is-active{% endif %}"{% if dashboard.range.preset == days|string + 'd' %} aria-current="page"{% endif %}>{{ days }} días</a>
+      <a href="{{ url_for('main.dashboard', period=days, as_of=dashboard.range['to'], compare='previous' if dashboard.range.compare else none) }}" class="period-option{% if dashboard.range.preset == days|string + 'd' %} is-active{% endif %}"{% if dashboard.range.preset == days|string + 'd' %} aria-current="page"{% endif %}>{{ days }} días</a>
     {% endfor %}
+    <a href="{{ url_for('main.dashboard', preset='this-month', as_of=dashboard.range['to'], compare='month-to-date') }}" class="period-option">Mes actual · mismos días</a>
+    <a href="{{ url_for('main.dashboard', preset='previous-month', as_of=dashboard.range['to']) }}" class="period-option">Mes anterior completo</a>
     <details class="period-custom">
       <summary>Fechas</summary>
       <p class="help">Anterior equivalente: {{ dashboard.comparison.range.label }}</p>

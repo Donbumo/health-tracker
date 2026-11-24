@@ -1,6 +1,5 @@
 from app.extensions import db
 from app.models import DailyNutrition, MedicalLabReport
-from app.services.demo_seed import DEMO_EMAIL, DEMO_PASSWORD
 from tests.conftest import login
 
 
@@ -41,10 +40,14 @@ def test_logout_after_rendering_admin_page(app, client):
     assert client.get("/admin/users").status_code == 302
 
 
-def test_logout_after_rendering_nutrition_and_medical_details(app, client):
-    seeded = app.test_cli_runner().invoke(args=["seed", "demo"])
-    assert seeded.exit_code == 0, seeded.output
-    login(client, DEMO_EMAIL, DEMO_PASSWORD)
+def test_logout_after_rendering_nutrition_and_medical_details(app, client, user):
+    # Independent synthetic medical fixture: the DEMO generator excludes medicine.
+    from datetime import date
+    with app.app_context():
+        db.session.add(DailyNutrition(user_id=user, date=date(2026, 11, 18), source="qa_logout"))
+        db.session.add(MedicalLabReport(user_id=user, date=date(2026, 11, 18), source="qa_logout"))
+        db.session.commit()
+    login(client)
 
     with app.app_context():
         nutrition_id = db.session.execute(
